@@ -24,11 +24,10 @@ export default function AppLayout({
   const isClub = currentRole === 'CLUB';
 
   const clubNavItems = [
-    { id: 'OVERVIEW',   label: 'Dashboard',   icon: Home },
-    { id: 'ROSTER',     label: 'Roster',      icon: Users },
-    { id: 'MEETS',      label: 'Meets',       icon: Trophy },
-    { id: 'SEEDING',    label: 'Seeding',     icon: Layers },
-    { id: 'TRANSFERS',  label: 'Transfers',   icon: ArrowRightLeft },
+    { id: 'OVERVIEW',   label: 'Dashboard',           icon: Home },
+    { id: 'ROSTER',     label: 'Athlete Management',  icon: Users },
+    { id: 'MEETS',      label: 'Meets',               icon: Trophy },
+    { id: 'TRANSFERS',  label: 'Transfers',           icon: ArrowRightLeft },
   ];
 
   const athleteNavItems = [

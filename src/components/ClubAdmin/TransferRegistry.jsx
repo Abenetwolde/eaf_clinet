@@ -94,45 +94,97 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
         </div>
       </div>
 
-      {/* Transfers List */}
-      <div className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="table-responsive">
-          <table className="gov-table">
-            <thead>
-              <tr>
-                <th>Athlete</th>
-                <th>From Club</th>
-                <th>To Target Club</th>
-                <th>Transfer Fee (ETB)</th>
-                <th>Federation Clearance</th>
-                <th>Contract Hash</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transfers.map(t => (
-                <tr key={t.id}>
-                  <td style={{ fontWeight: 700, color: 'var(--text-heading)' }}>{t.athleteName}</td>
-                  <td style={{ fontSize: '0.85rem' }}>{t.fromClub}</td>
-                  <td style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--eth-blue)' }}>{t.toClub}</td>
-                  <td style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-heading)' }}>{t.transferFee}</td>
-                  <td>
-                    {t.eafClearanceStatus === 'APPROVED' ? (
-                      <span className="badge badge-green">
-                        <CheckCircle2 size={12} /> Approved
-                      </span>
-                    ) : (
-                      <span className="badge badge-amber">
-                        <AlertCircle size={12} /> Pending Clearance
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {t.contractHash}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '32px' }}>
+        {/* Inbound Requests List */}
+        <div>
+          <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '12px', color: 'var(--text-heading)' }}>
+            Inbound Requests (Other clubs requesting your athletes)
+          </h4>
+          <div className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="table-responsive">
+              <table className="gov-table">
+                <thead>
+                  <tr>
+                    <th>Requested Athlete</th>
+                    <th>Requesting Club</th>
+                    <th>Proposed Fee (ETB)</th>
+                    <th>Rationale</th>
+                    <th>Status / Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ fontWeight: 700, color: 'var(--text-heading)' }}>Tadesse Worku</td>
+                    <td style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--eth-blue)' }}>Defense Sports Club (Mekelakeya)</td>
+                    <td style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-heading)' }}>850,000 ETB</td>
+                    <td style={{ fontSize: '0.85rem' }}>National team alignment strategy</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className="btn-gov-primary" style={{ padding: '6px 12px', fontSize: '0.75rem' }}>Approve</button>
+                        <button className="btn-gov-secondary" style={{ padding: '6px 12px', fontSize: '0.75rem', borderColor: 'var(--accent)', color: 'var(--accent)' }}>Reject</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: 700, color: 'var(--text-heading)' }}>Diribe Welteji</td>
+                    <td style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--eth-blue)' }}>Ethiopian Airlines AC</td>
+                    <td style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-heading)' }}>1,200,000 ETB</td>
+                    <td style={{ fontSize: '0.85rem' }}>Contract buyout clause activation</td>
+                    <td>
+                      <span className="badge badge-amber"><AlertCircle size={12} /> Under Negotiation</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Outbound / Initiated Transfers List */}
+        <div>
+          <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '12px', color: 'var(--text-heading)' }}>
+            Outbound & Initiated Transfers
+          </h4>
+          <div className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div className="table-responsive">
+              <table className="gov-table">
+                <thead>
+                  <tr>
+                    <th>Athlete</th>
+                    <th>From Club</th>
+                    <th>To Target Club</th>
+                    <th>Transfer Fee (ETB)</th>
+                    <th>Federation Clearance</th>
+                    <th>Contract Hash</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transfers.map(t => (
+                    <tr key={t.id}>
+                      <td style={{ fontWeight: 700, color: 'var(--text-heading)' }}>{t.athleteName}</td>
+                      <td style={{ fontSize: '0.85rem' }}>{t.fromClub}</td>
+                      <td style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--eth-blue)' }}>{t.toClub}</td>
+                      <td style={{ fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-heading)' }}>{t.transferFee}</td>
+                      <td>
+                        {t.eafClearanceStatus === 'APPROVED' ? (
+                          <span className="badge badge-green">
+                            <CheckCircle2 size={12} /> Approved
+                          </span>
+                        ) : (
+                          <span className="badge badge-amber">
+                            <AlertCircle size={12} /> Pending Clearance
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {t.contractHash}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 

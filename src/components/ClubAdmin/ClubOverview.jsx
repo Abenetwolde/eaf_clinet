@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2 } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 export default function ClubOverview({ club, athletes, transfers, onChangeSubPage, onNotify, onAddClub }) {
   const verifiedCount = athletes.filter(a => a.faydaStatus === 'VERIFIED').length;
@@ -15,33 +16,24 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
   const [phone, setPhone] = useState('');
   const [logo, setLogo] = useState('🏃‍♂️');
 
-  const handleRegisterClubSubmit = (e) => {
-    e.preventDefault();
-    const newClubObj = {
-      id: `CLUB-00${Math.floor(5 + Math.random() * 90)}`,
-      name: `${clubName} (${clubAmharic})`,
-      shortName: clubName,
-      region,
-      manager,
-      email,
-      phone,
-      licensedAthletes: 0,
-      pendingVerifications: 0,
-      unlicensedAthletes: 0,
-      transfersCount: 0,
-      logo,
-      clubRank: 5,
-      totalPoints: 0
-    };
-
-    if (onAddClub) onAddClub(newClubObj);
-    setShowClubModal(false);
-    setClubName('');
-    setClubAmharic('');
-    setManager('');
-    setEmail('');
-    setPhone('');
-  };
+  
+  const performanceData = [
+    { month: 'Jan', points: 120 },
+    { month: 'Feb', points: 150 },
+    { month: 'Mar', points: 170 },
+    { month: 'Apr', points: 210 },
+    { month: 'May', points: 190 },
+    { month: 'Jun', points: 280 },
+    { month: 'Jul', points: 310 },
+  ];
+  
+  const eventsData = [
+    { name: 'Sprints', value: 12 },
+    { name: 'Middle Dist', value: 18 },
+    { name: 'Long Dist', value: 35 },
+    { name: 'Field Events', value: 8 },
+  ];
+  const COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#8B5CF6'];
 
   return (
     <div>
@@ -57,13 +49,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button 
-            onClick={() => setShowClubModal(true)}
-            className="btn-gov-primary"
-          >
-            <Plus size={16} />
-            Register New Club
-          </button>
+          
 
           <button 
             onClick={() => onNotify("Exporting Official Club Roster Index PDF...", "info")}
@@ -123,6 +109,50 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-heading)' }}>Rank #{club.clubRank}</div>
           <div style={{ fontSize: '0.78rem', color: '#7C3AED', fontWeight: 600, marginTop: '4px' }}>
             {club.totalPoints} Points Total
+          </div>
+        </div>
+      </div>
+
+      
+      {/* Analytics Charts */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', marginBottom: '28px' }}>
+        <div className="gov-card">
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-heading)' }}>Performance Points (YTD)</h3>
+          <div style={{ height: '240px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={performanceData} margin={{ top: 5, right: 20, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                <Line type="monotone" dataKey="points" stroke="#0EA5E9" strokeWidth={3} dot={{ r: 4, fill: '#0EA5E9' }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="gov-card">
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-heading)' }}>Athlete Discipline Distribution</h3>
+          <div style={{ height: '240px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={eventsData}
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  labelLine={false}
+                  style={{ fontSize: '0.75rem', fontWeight: 600 }}
+                >
+                  {eventsData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
@@ -235,118 +265,6 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         </div>
       </div>
 
-      {/* Register New Club Modal */}
-      {showClubModal && (
-        <div className="modal-backdrop" onClick={() => setShowClubModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-heading)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Building2 size={20} color="var(--eth-blue)" />
-                Register New Ethiopian Athletics Club
-              </h3>
-              <button onClick={() => setShowClubModal(false)} className="btn-gov-secondary" style={{ padding: '4px 10px' }}>✕</button>
-            </div>
-
-            <form onSubmit={handleRegisterClubSubmit}>
-              <div className="form-group">
-                <label className="form-label">Club Official Name (English)</label>
-                <input 
-                  type="text" 
-                  className="form-input"
-                  value={clubName}
-                  onChange={(e) => setClubName(e.target.value)}
-                  placeholder="e.g. Bekoji Athletics Club"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Club Name (Amharic)</label>
-                <input 
-                  type="text" 
-                  className="form-input"
-                  value={clubAmharic}
-                  onChange={(e) => setClubAmharic(e.target.value)}
-                  placeholder="e.g. በቆጂ የሩጫ አካዳሚ"
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div className="form-group">
-                  <label className="form-label">Regional State</label>
-                  <select 
-                    className="form-select"
-                    value={region}
-                    onChange={(e) => setRegion(e.target.value)}
-                  >
-                    <option value="Oromia Region">Oromia Region</option>
-                    <option value="Addis Ababa / Federal">Addis Ababa / Federal</option>
-                    <option value="Sidama Region">Sidama Region</option>
-                    <option value="Amhara Region">Amhara Region</option>
-                    <option value="Tigray Region">Tigray Region</option>
-                    <option value="South Ethiopia Region">South Ethiopia Region</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Club Symbol / Emoji</label>
-                  <input 
-                    type="text" 
-                    className="form-input"
-                    value={logo}
-                    onChange={(e) => setLogo(e.target.value)}
-                    placeholder="e.g. 🏃‍♂️ or 🦅"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Club Executive Manager</label>
-                <input 
-                  type="text" 
-                  className="form-input"
-                  value={manager}
-                  onChange={(e) => setManager(e.target.value)}
-                  placeholder="e.g. Coach Sentayehu Eshetu"
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div className="form-group">
-                  <label className="form-label">Official Email</label>
-                  <input 
-                    type="email" 
-                    className="form-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="contact@club.et"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Phone Number</label>
-                  <input 
-                    type="text" 
-                    className="form-input"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+251 91 123 4567"
-                    required
-                  />
-                </div>
-              </div>
-
-              <button type="submit" className="btn-gov-primary" style={{ width: '100%', padding: '12px', marginTop: '10px' }}>
-                Submit Club Registration to EAF
-              </button>
-            </form>
           </div>
-        </div>
-      )}
-    </div>
   );
 }
