@@ -1,91 +1,21 @@
 import React, { useState } from 'react';
 import { TrendingUp, Download, Eye, ShieldCheck, X, CheckCircle2, Calendar, MapPin, FileCheck, QrCode } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 function EAFQrCode({ code = "EAF-MEET-202-2026-243", size = 150 }) {
   return (
     <div style={{
-      width: size,
-      height: size,
       background: '#FFFFFF',
-      padding: '10px',
-      borderRadius: '16px',
-      border: '2px solid #0EA5E9',
-      boxShadow: '0 8px 24px rgba(14, 165, 233, 0.15)',
-      display: 'flex',
-      flexDirection: 'column',
+      padding: '12px',
+      borderRadius: '8px',
+      border: '1px solid #E2E8F0',
+      display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      margin: '0 auto'
+      margin: '0 auto',
+      background: '#FFF'
     }}>
-      <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
-        {/* Outer Corner Finder Patterns */}
-        {/* Top Left */}
-        <rect x="5" y="5" width="26" height="26" rx="4" fill="#0F172A" />
-        <rect x="9" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
-        <rect x="13" y="13" width="10" height="10" rx="1.5" fill="#0EA5E9" />
-
-        {/* Top Right */}
-        <rect x="69" y="5" width="26" height="26" rx="4" fill="#0F172A" />
-        <rect x="73" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
-        <rect x="77" y="13" width="10" height="10" rx="1.5" fill="#0EA5E9" />
-
-        {/* Bottom Left */}
-        <rect x="5" y="69" width="26" height="26" rx="4" fill="#0F172A" />
-        <rect x="9" y="73" width="18" height="18" rx="2" fill="#FFFFFF" />
-        <rect x="13" y="77" width="10" height="10" rx="1.5" fill="#0EA5E9" />
-
-        {/* Matrix Data Modules */}
-        <rect x="36" y="8" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="44" y="8" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="52" y="8" width="5" height="5" rx="1" fill="#0F172A" />
-
-        <rect x="36" y="16" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="44" y="16" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="58" y="16" width="5" height="5" rx="1" fill="#0EA5E9" />
-
-        <rect x="8" y="36" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="16" y="36" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="24" y="36" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="36" y="36" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="44" y="36" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="52" y="36" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="68" y="36" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="76" y="36" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="84" y="36" width="5" height="5" rx="1" fill="#0EA5E9" />
-
-        <rect x="8" y="44" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="24" y="44" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="68" y="44" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="84" y="44" width="5" height="5" rx="1" fill="#0F172A" />
-
-        <rect x="8" y="52" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="16" y="52" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="36" y="52" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="52" y="52" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="76" y="52" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="84" y="52" width="5" height="5" rx="1" fill="#0F172A" />
-
-        <rect x="36" y="68" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="44" y="68" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="52" y="68" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="68" y="68" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="76" y="68" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="84" y="68" width="5" height="5" rx="1" fill="#0EA5E9" />
-
-        <rect x="36" y="76" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="52" y="76" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="68" y="76" width="5" height="5" rx="1" fill="#0F172A" />
-
-        <rect x="36" y="84" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="44" y="84" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="52" y="84" width="5" height="5" rx="1" fill="#0EA5E9" />
-        <rect x="76" y="84" width="5" height="5" rx="1" fill="#0F172A" />
-        <rect x="84" y="84" width="5" height="5" rx="1" fill="#0EA5E9" />
-
-        {/* Center EAF Emblem Shield */}
-        <circle cx="50" cy="50" r="11" fill="#FFFFFF" stroke="#0EA5E9" strokeWidth="1.5" />
-        <text x="50" y="53" fontSize="8" fontWeight="900" fill="#0EA5E9" textAnchor="middle">EAF</text>
-      </svg>
+      <QRCodeSVG value={code} size={size} />
     </div>
   );
 }

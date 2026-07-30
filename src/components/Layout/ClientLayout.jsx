@@ -101,11 +101,11 @@ export default function ClientLayout({
                 style={{
                   display: 'flex', alignItems: 'center', gap: '8px',
                   padding: '12px 24px', borderRadius: '14px', border: 'none',
-                  background: isActive ? 'var(--primary)' : '#FFFFFF',
+                  background: isActive ? 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)' : '#FFFFFF',
                   color: isActive ? '#FFFFFF' : '#64748B',
                   fontWeight: isActive ? 800 : 700,
                   fontSize: '0.9rem', cursor: 'pointer',
-                  boxShadow: isActive ? '0 8px 16px rgba(11,87,142,0.25)' : '0 2px 6px rgba(0,0,0,0.04)',
+                  boxShadow: isActive ? '0 8px 16px rgba(14, 165, 233, 0.25)' : '0 2px 6px rgba(0,0,0,0.04)',
                   transition: 'all 0.2s', whiteSpace: 'nowrap'
                 }}
               >
