@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { Trophy, Calendar, MapPin, Phone, Mail, Award, Users, Filter, CheckCircle2, User, Building, Clock, ChevronRight } from 'lucide-react';
+import { 
+  Trophy, Calendar, MapPin, Phone, Mail, Award, Users, Filter, 
+  CheckCircle2, User, Building, Clock, ChevronRight, ShieldCheck, X, Download, Printer, Check
+} from 'lucide-react';
 import { MOCK_ATHLETES, MOCK_EVENT_RESULTS, MOCK_CLUBS } from '../data/mockData';
 
 // Helper to determine banner image based on meet ID
@@ -10,6 +13,103 @@ const getBannerUrl = (meetId) => {
   return 'https://images.unsplash.com/photo-1532444458054-01a7dd3e9fca?w=900&auto=format&fit=crop&q=80';
 };
 
+// Realistic High-Density SVG 2D QR Code Matrix
+const RealisticQRCode = ({ size = 150 }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ borderRadius: '8px', background: '#FFFFFF', padding: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+    <rect width="100" height="100" fill="#FFFFFF" />
+    
+    {/* Corner Finder Pattern - Top Left */}
+    <rect x="5" y="5" width="26" height="26" rx="4" fill="#0F172A" />
+    <rect x="9" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
+    <rect x="13" y="13" width="10" height="10" rx="1.5" fill="#0EA5E9" />
+
+    {/* Corner Finder Pattern - Top Right */}
+    <rect x="69" y="5" width="26" height="26" rx="4" fill="#0F172A" />
+    <rect x="73" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
+    <rect x="77" y="13" width="10" height="10" rx="1.5" fill="#0EA5E9" />
+
+    {/* Corner Finder Pattern - Bottom Left */}
+    <rect x="5" y="69" width="26" height="26" rx="4" fill="#0F172A" />
+    <rect x="9" y="73" width="18" height="18" rx="2" fill="#FFFFFF" />
+    <rect x="13" y="77" width="10" height="10" rx="1.5" fill="#0EA5E9" />
+
+    {/* Alignment Pattern Bottom Right */}
+    <rect x="73" y="73" width="14" height="14" rx="2" fill="#0F172A" />
+    <rect x="76" y="76" width="8" height="8" rx="1" fill="#FFFFFF" />
+    <rect x="78" y="78" width="4" height="4" fill="#0EA5E9" />
+
+    {/* Timing & Matrix Pixels */}
+    <rect x="36" y="8" width="5" height="5" fill="#0F172A" />
+    <rect x="44" y="8" width="5" height="5" fill="#0F172A" />
+    <rect x="52" y="8" width="5" height="5" fill="#0F172A" />
+    <rect x="60" y="8" width="5" height="5" fill="#0F172A" />
+
+    <rect x="36" y="16" width="5" height="5" fill="#0EA5E9" />
+    <rect x="48" y="16" width="5" height="5" fill="#0F172A" />
+    <rect x="56" y="16" width="5" height="5" fill="#0F172A" />
+
+    <rect x="36" y="24" width="5" height="5" fill="#0F172A" />
+    <rect x="44" y="24" width="5" height="5" fill="#0EA5E9" />
+    <rect x="52" y="24" width="5" height="5" fill="#0F172A" />
+    <rect x="60" y="24" width="5" height="5" fill="#0EA5E9" />
+
+    <rect x="8" y="36" width="5" height="5" fill="#0F172A" />
+    <rect x="16" y="36" width="5" height="5" fill="#0EA5E9" />
+    <rect x="24" y="36" width="5" height="5" fill="#0F172A" />
+    <rect x="36" y="36" width="5" height="5" fill="#0F172A" />
+    <rect x="44" y="36" width="5" height="5" fill="#0EA5E9" />
+    <rect x="56" y="36" width="5" height="5" fill="#0F172A" />
+    <rect x="68" y="36" width="5" height="5" fill="#0F172A" />
+    <rect x="76" y="36" width="5" height="5" fill="#0EA5E9" />
+    <rect x="84" y="36" width="5" height="5" fill="#0F172A" />
+
+    <rect x="8" y="44" width="5" height="5" fill="#0EA5E9" />
+    <rect x="20" y="44" width="5" height="5" fill="#0F172A" />
+    <rect x="28" y="44" width="5" height="5" fill="#0F172A" />
+    <rect x="40" y="44" width="5" height="5" fill="#0F172A" />
+    <rect x="60" y="44" width="5" height="5" fill="#0EA5E9" />
+    <rect x="72" y="44" width="5" height="5" fill="#0F172A" />
+    <rect x="88" y="44" width="5" height="5" fill="#0F172A" />
+
+    <rect x="8" y="52" width="5" height="5" fill="#0F172A" />
+    <rect x="16" y="52" width="5" height="5" fill="#0F172A" />
+    <rect x="24" y="52" width="5" height="5" fill="#0EA5E9" />
+    <rect x="36" y="52" width="5" height="5" fill="#0F172A" />
+    <rect x="48" y="52" width="5" height="5" fill="#0EA5E9" />
+    <rect x="56" y="52" width="5" height="5" fill="#0F172A" />
+    <rect x="68" y="52" width="5" height="5" fill="#0F172A" />
+    <rect x="80" y="52" width="5" height="5" fill="#0EA5E9" />
+
+    <rect x="8" y="60" width="5" height="5" fill="#0EA5E9" />
+    <rect x="20" y="60" width="5" height="5" fill="#0F172A" />
+    <rect x="28" y="60" width="5" height="5" fill="#0EA5E9" />
+    <rect x="44" y="60" width="5" height="5" fill="#0F172A" />
+    <rect x="52" y="60" width="5" height="5" fill="#0F172A" />
+    <rect x="64" y="60" width="5" height="5" fill="#0EA5E9" />
+    <rect x="76" y="60" width="5" height="5" fill="#0F172A" />
+    <rect x="84" y="60" width="5" height="5" fill="#0F172A" />
+
+    <rect x="36" y="68" width="5" height="5" fill="#0F172A" />
+    <rect x="44" y="68" width="5" height="5" fill="#0EA5E9" />
+    <rect x="56" y="68" width="5" height="5" fill="#0F172A" />
+    <rect x="64" y="68" width="5" height="5" fill="#0F172A" />
+
+    <rect x="36" y="76" width="5" height="5" fill="#0EA5E9" />
+    <rect x="48" y="76" width="5" height="5" fill="#0F172A" />
+    <rect x="56" y="76" width="5" height="5" fill="#0EA5E9" />
+
+    <rect x="36" y="84" width="5" height="5" fill="#0F172A" />
+    <rect x="44" y="84" width="5" height="5" fill="#0F172A" />
+    <rect x="52" y="84" width="5" height="5" fill="#0EA5E9" />
+    <rect x="60" y="84" width="5" height="5" fill="#0F172A" />
+    <rect x="68" y="84" width="5" height="5" fill="#0EA5E9" />
+
+    {/* Center EAF Emblem circle */}
+    <circle cx="50" cy="50" r="9" fill="#FFFFFF" stroke="#0F172A" strokeWidth="1.5" />
+    <circle cx="50" cy="50" r="6" fill="#0EA5E9" />
+  </svg>
+);
+
 export default function CompetitionDetail({ meet, onBack, onRegister, language = 'en' }) {
   const [activeTab, setActiveTab] = useState('about');
   
@@ -18,6 +118,11 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
   const [resultClubFilter, setResultClubFilter] = useState('ALL');
   const [resultAgeFilter, setResultAgeFilter] = useState('ALL');
   const [resultGenderFilter, setResultGenderFilter] = useState('ALL');
+
+  // Individual Meet Registration Modal State
+  const [showIndividualModal, setShowIndividualModal] = useState(false);
+  const [selectedDisciplines, setSelectedDisciplines] = useState(meet ? [meet.disciplines[0]] : []);
+  const [registrationPass, setRegistrationPass] = useState(null);
 
   if (!meet) return null;
 
@@ -43,6 +148,46 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
     tabEvents: language === 'en' ? 'Events & Categories' : 'የውድድር አይነቶች',
     tabStarters: language === 'en' ? 'Starter Lists' : 'የተወዳዳሪዎች ዝርዝር',
     tabResults: language === 'en' ? 'Live Results & Participants' : 'የቀጥታ ውጤቶች',
+  };
+
+  // Ethiopian Fayda National ID Mock Profile Data
+  const faydaNationalIdData = {
+    fullName: 'Haile Demisse Tadesse',
+    amharicName: 'ኃይሌ ደሚሴ ታደሰ',
+    faydaFin: '9840-3920-1124',
+    dob: '2002-04-12 (Age 24)',
+    gender: 'Male / ወንድ',
+    region: 'Addis Ababa City Administration (አዲስ አበባ ከተማ አስተዳደር)',
+    subcity: 'Bole Sub-City, Woreda 03',
+    houseNo: 'House No. 482/09',
+    photoUrl: '/images/athlete_haile.png',
+    faydaVerified: true,
+    club: 'Independent / Unaffiliated Athlete'
+  };
+
+  const handleToggleDiscipline = (disc) => {
+    if (selectedDisciplines.includes(disc)) {
+      if (selectedDisciplines.length > 1) {
+        setSelectedDisciplines(selectedDisciplines.filter(d => d !== disc));
+      }
+    } else {
+      setSelectedDisciplines([...selectedDisciplines, disc]);
+    }
+  };
+
+  const handleSubmitMeetRegistration = () => {
+    const pass = {
+      passId: `EAF-PASS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      bib: `BIB-9042`,
+      meetTitle: meet.title,
+      venue: meet.venue,
+      date: meet.date,
+      bannerUrl: getBannerUrl(meet.id),
+      athlete: faydaNationalIdData,
+      events: selectedDisciplines,
+      registeredAt: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    };
+    setRegistrationPass(pass);
   };
 
   // Mock static info for About Tab based on Meet
@@ -71,7 +216,6 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
     if (d.toLowerCase().includes('men')) gender = 'Men';
     else if (d.toLowerCase().includes('women')) gender = 'Women';
     else {
-      // Alternating mock gender
       gender = d.length % 2 === 0 ? 'Men' : 'Women';
     }
 
@@ -92,7 +236,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
     };
   });
 
-  // Generate Starter Lists from MOCK_ATHLETES + some extra mock entries
+  // Generate Starter Lists
   const starterList = MOCK_ATHLETES.map((ath, idx) => ({
     bib: `BIB-30${idx + 1}`,
     name: ath.name,
@@ -105,14 +249,12 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
     verified: ath.faydaStatus === 'VERIFIED'
   }));
 
-  // Fetch Results if available, or construct mock ones
+  // Fetch Results if available
   const rawResults = MOCK_EVENT_RESULTS[meet.id] || [];
   
-  // Flatten results and enrich with athlete details for advanced filtering
   const resultsData = [];
   rawResults.forEach(disciplineBlock => {
     disciplineBlock.results.forEach(res => {
-      // Find matching athlete if possible to extract gender/age
       const matchingAthlete = MOCK_ATHLETES.find(a => a.name === res.athleteName);
       
       let gender = disciplineBlock.discipline.toLowerCase().includes('women') ? 'Women' : 'Men';
@@ -135,7 +277,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
         time: res.time,
         pb: res.pb,
         sb: res.sb,
-        nr: res.pos === 1 && meet.id === 'MEET-2026-01' && disciplineBlock.discipline === '800m', // Tigist broke NR
+        nr: res.pos === 1 && meet.id === 'MEET-2026-01' && disciplineBlock.discipline === '800m',
         event: disciplineBlock.discipline,
         gender,
         ageGroup: ageTier,
@@ -144,7 +286,6 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
     });
   });
 
-  // Filtered Results
   const filteredResults = resultsData.filter(r => {
     if (resultEventFilter !== 'ALL' && r.event !== resultEventFilter) return false;
     if (resultClubFilter !== 'ALL' && r.club !== resultClubFilter) return false;
@@ -153,7 +294,6 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
     return true;
   });
 
-  // Unique lists for filtering dropdowns
   const uniqueEvents = [...new Set(resultsData.map(r => r.event))];
   const uniqueClubs = [...new Set(resultsData.map(r => r.club))];
 
@@ -205,7 +345,6 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
             backgroundPosition: 'center',
           }}
         />
-        {/* Modern dark gradient overlay */}
         <div 
           style={{
             position: 'absolute',
@@ -328,14 +467,14 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
             <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFE082', marginBottom: '8px' }}>
               {t.actionTitle}
             </h3>
-            <p style={{ color: '#94A3B8', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '24px' }}>
+            <p style={{ color: '#94A3B8', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '24px' }}>
               Register for this meet to secure your spot. Athlete entries require Fayda ID biometric verification. Club entries must be managed by certified coaches.
             </p>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <button 
-              onClick={() => onRegister('ATHLETE')}
+              onClick={() => setShowIndividualModal(true)}
               className="btn-accent"
               style={{
                 width: '100%',
@@ -343,32 +482,12 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                 borderRadius: '12px',
                 justifyContent: 'space-between',
                 background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
-                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)'
+                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
+                cursor: 'pointer'
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <User size={18} /> {t.regIndividual}
-              </span>
-              <ChevronRight size={16} />
-            </button>
-
-            <button 
-              onClick={() => onRegister('CLUB')}
-              className="btn-gov-secondary"
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: '12px',
-                justifyContent: 'space-between',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#FFFFFF',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Building size={18} /> {t.regClub}
               </span>
               <ChevronRight size={16} />
             </button>
@@ -377,7 +496,6 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
       </div>
 
       {/* ── B. TABBED INFORMATION ARCHITECTURE ── */}
-      {/* Tab Selectors */}
       <div 
         style={{ 
           display: 'flex', 
@@ -575,7 +693,6 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
               </div>
             ) : (
               <div>
-                {/* Advanced Result Filters */}
                 <div 
                   className="gov-card" 
                   style={{ 
@@ -649,7 +766,6 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   </div>
                 </div>
 
-                {/* Filtered Results Table */}
                 {filteredResults.length === 0 ? (
                   <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '36px', color: 'var(--text-muted)', borderRadius: '18px' }}>
                     <p style={{ fontWeight: 700 }}>No results matches your filter selection.</p>
@@ -720,6 +836,218 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
         )}
 
       </div>
+
+      {/* ── INDIVIDUAL ATHLETE MEET REGISTRATION MODAL ── */}
+      {showIndividualModal && (
+        <div className="modal-backdrop" onClick={() => { setShowIndividualModal(false); setRegistrationPass(null); }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '0', maxWidth: '720px', borderRadius: '24px', overflow: 'hidden' }}>
+            
+            {/* Modal Header with Event Banner */}
+            <div style={{ position: 'relative', height: '140px', background: '#0F172A' }}>
+              <img src={getBannerUrl(meet.id)} alt={meet.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0F172A 0%, transparent 100%)' }} />
+              
+              <button 
+                onClick={() => { setShowIndividualModal(false); setRegistrationPass(null); }}
+                style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
+              >
+                <X size={20} />
+              </button>
+
+              <div style={{ position: 'absolute', bottom: '16px', left: '24px', zIndex: 5, color: '#FFF' }}>
+                <span className="badge badge-green" style={{ marginBottom: '4px', display: 'inline-flex', gap: '4px', fontSize: '0.72rem' }}>
+                  <ShieldCheck size={12} /> Individual Athlete Registration
+                </span>
+                <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#FFF', margin: 0 }}>{meet.title}</h3>
+              </div>
+            </div>
+
+            {/* Modal Content Body */}
+            <div style={{ padding: '24px' }}>
+              {!registrationPass ? (
+                <div>
+                  {/* Fayda Ethiopian Digital National ID Card Block */}
+                  <div style={{ background: 'linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%)', border: '2px solid #BFDBFE', borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid #DBEAFE', paddingBottom: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>🇪🇹</span>
+                        <div>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 900, color: '#1E3A8A', letterSpacing: '0.04em' }}>ETHIOPIAN NATIONAL ID (FAYDA)</div>
+                          <div style={{ fontSize: '0.65rem', color: '#3B82F6', fontWeight: 800 }}>የኢትዮጵያ ብሔራዊ ዲጂታል መታወቂያ</div>
+                        </div>
+                      </div>
+                      <span className="badge badge-green" style={{ fontSize: '0.72rem', padding: '4px 10px' }}>
+                        <ShieldCheck size={13} /> Biometric Authenticated
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                      <img 
+                        src={faydaNationalIdData.photoUrl} 
+                        alt="Athlete Profile" 
+                        style={{ width: '80px', height: '80px', borderRadius: '14px', objectFit: 'cover', border: '2px solid #3B82F6' }}
+                      />
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px 16px', fontSize: '0.83rem', flex: 1 }}>
+                        <div>
+                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>FULL NAME</span>
+                          <strong style={{ color: '#0F172A', fontSize: '0.92rem' }}>{faydaNationalIdData.fullName}</strong>
+                          <div style={{ color: '#0284C7', fontSize: '0.76rem', fontWeight: 700 }}>{faydaNationalIdData.amharicName}</div>
+                        </div>
+
+                        <div>
+                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>FAYDA FIN</span>
+                          <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>{faydaNationalIdData.faydaFin}</strong>
+                        </div>
+
+                        <div>
+                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>DATE OF BIRTH</span>
+                          <span style={{ color: '#0F172A', fontWeight: 600 }}>{faydaNationalIdData.dob}</span>
+                        </div>
+
+                        <div>
+                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>GENDER</span>
+                          <span style={{ color: '#0F172A', fontWeight: 600 }}>{faydaNationalIdData.gender}</span>
+                        </div>
+
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>REGIONAL STATE & ADDRESS</span>
+                          <span style={{ color: '#0F172A', fontWeight: 600 }}>{faydaNationalIdData.region} · {faydaNationalIdData.subcity} ({faydaNationalIdData.houseNo})</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Select Disciplines for this Meet */}
+                  <div className="form-group" style={{ marginBottom: '24px' }}>
+                    <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', marginBottom: '8px', display: 'block' }}>
+                      Select Meet Events / Disciplines to Enroll:
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                      {meet.disciplines.map(d => {
+                        const checked = selectedDisciplines.includes(d);
+                        return (
+                          <label 
+                            key={d} 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '10px', 
+                              padding: '12px', 
+                              borderRadius: '12px', 
+                              border: checked ? '2px solid #0EA5E9' : '1px solid #E2E8F0', 
+                              background: checked ? '#F0F9FF' : '#FFFFFF',
+                              cursor: 'pointer',
+                              fontWeight: 700,
+                              fontSize: '0.88rem',
+                              color: checked ? '#0284C7' : '#334155',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <input 
+                              type="checkbox" 
+                              checked={checked}
+                              onChange={() => handleToggleDiscipline(d)}
+                              style={{ width: '18px', height: '18px', accentColor: '#0EA5E9' }}
+                            />
+                            {d}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Submit Enrollment Button */}
+                  <button 
+                    onClick={handleSubmitMeetRegistration}
+                    className="btn-accent" 
+                    style={{ width: '100%', padding: '14px', borderRadius: '12px', fontSize: '0.95rem', justifyContent: 'center' }}
+                  >
+                    Confirm &amp; Generate EAF Digital Accreditation Pass
+                  </button>
+                </div>
+              ) : (
+                /* Generated Digital Pass Card with Event Banner & Realistic QR Code */
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ width: '100%', background: '#FFFFFF', border: '2px solid #0F172A', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 12px 30px rgba(0,0,0,0.15)', marginBottom: '20px' }}>
+                    
+                    {/* Event Banner Top */}
+                    <div style={{ position: 'relative', height: '110px' }}>
+                      <img src={registrationPass.bannerUrl} alt="Meet Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.75)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', color: '#FFF' }}>
+                        <div>
+                          <div style={{ fontSize: '0.72rem', color: '#FFE082', fontWeight: 800, textTransform: 'uppercase' }}>OFFICIAL EAF ATHLETE ACCREDITATION</div>
+                          <div style={{ fontSize: '1.1rem', fontWeight: 900 }}>{registrationPass.meetTitle}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>{registrationPass.venue} · {registrationPass.date}</div>
+                        </div>
+                        <span style={{ background: '#0EA5E9', color: '#FFF', fontWeight: 900, padding: '6px 12px', borderRadius: '8px', fontSize: '0.85rem', fontFamily: 'var(--font-mono)' }}>
+                          {registrationPass.bib}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Athlete Info + Realistic QR Code */}
+                    <div style={{ padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <img 
+                          src={registrationPass.athlete.photoUrl} 
+                          alt="Athlete" 
+                          style={{ width: '70px', height: '70px', borderRadius: '14px', objectFit: 'cover', border: '2px solid #0EA5E9' }}
+                        />
+                        <div>
+                          <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A' }}>{registrationPass.athlete.fullName}</div>
+                          <div style={{ fontSize: '0.82rem', color: '#0284C7', fontWeight: 800 }}>{registrationPass.athlete.amharicName}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '4px' }}>
+                            Fayda FIN: <strong style={{ color: '#0F172A', fontFamily: 'var(--font-mono)' }}>{registrationPass.athlete.faydaFin}</strong>
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#16A34A', fontWeight: 700, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <ShieldCheck size={14} /> Fayda Identity Verified
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Realistic SVG QR Code */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <RealisticQRCode size={130} />
+                        <div style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', color: '#64748B', marginTop: '4px', fontWeight: 700 }}>
+                          {registrationPass.passId}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Disciplines Registered */}
+                    <div style={{ background: '#F8FAFC', borderTop: '1px solid #E2E8F0', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ fontSize: '0.82rem', color: '#475569', fontWeight: 700 }}>
+                        Events Enrolled: <strong style={{ color: '#0F172A' }}>{registrationPass.events.join(', ')}</strong>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Issued: {registrationPass.registeredAt}</div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                    <button 
+                      onClick={() => window.print()} 
+                      className="btn-gov-secondary" 
+                      style={{ flex: 1, padding: '12px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      <Printer size={16} /> Print Official Accreditation Pass
+                    </button>
+                    <button 
+                      onClick={() => { setShowIndividualModal(false); setRegistrationPass(null); }} 
+                      className="btn-gov-primary" 
+                      style={{ flex: 1, padding: '12px', justifyContent: 'center' }}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -174,12 +174,9 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
           </div>
 
           {/* Quick navigation cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
             {[
-              { page: 'CHECKIN', icon: Navigation,  color: '#92620A',            title: 'GPS Check-In & QR Code',  desc: 'Geofenced venue check-in and call room QR code generator.' },
-              { page: 'RACES',   icon: Activity,    color: 'var(--primary)',     title: 'Live Race Splits',        desc: 'Real-time split times and broadcast results feed.' },
-              { page: 'RECORDS', icon: Award,       color: '#7C3AED',            title: 'Career Records Vault',    desc: 'Full competition history and official achievements.' },
-              { page: 'RESULTS', icon: Trophy,      color: '#C8A84B',            title: 'Event Results',           desc: 'View official competition results and champions across all meets.' },
+              { page: 'RECORDS', icon: Award, color: '#7C3AED', title: 'Career Records Vault', desc: 'Full competition history, verified split breakdown, and official achievements.' },
             ].map(c => {
               const Icon = c.icon;
               return (

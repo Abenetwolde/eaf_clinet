@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { 
   ShieldCheck, 
-  Navigation, 
-  Activity, 
-  CreditCard, 
+  Award, 
+  Trophy,
+  CreditCard
 } from 'lucide-react';
 import FaydaVerification from './FaydaVerification';
-import GeofenceCheckin from './GeofenceCheckin';
-import LiveRaceTracker from './LiveRaceTracker';
+import RecordsVault from './RecordsVault';
+import EventResults from './EventResults';
 
 export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicense, onNotify }) {
-  const [activeTab, setActiveTab] = useState('FAYDA'); // 'FAYDA', 'CHECKIN', 'RACES'
+  const [activeTab, setActiveTab] = useState('RECORDS'); // 'RECORDS', 'FAYDA', 'RESULTS'
 
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
@@ -51,7 +51,7 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
               {athlete.amharicName} — {athlete.clubName}
             </p>
 
-            <div style={{ display: 'flex', gap: '16px', marginTop: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '8px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600, flexWrap: 'wrap' }}>
               <span>Fayda FIN: <strong style={{ color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>{athlete.faydaFin}</strong></span>
               <span>•</span>
               <span>Discipline: <strong style={{ color: 'var(--text-main)' }}>{athlete.primaryEvent}</strong></span>
@@ -83,102 +83,11 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
         )}
       </div>
 
-      {/* Tabs Navigation */}
-      <div style={{
-        display: 'flex',
-        gap: '12px',
-        borderBottom: '2px solid rgba(226, 232, 240, 0.8)',
-        paddingBottom: '16px',
-        marginBottom: '28px',
-        overflowX: 'auto'
-      }}>
-        <button
-          onClick={() => setActiveTab('FAYDA')}
-          style={{
-            padding: '12px 24px',
-            borderRadius: '12px',
-            border: 'none',
-            background: activeTab === 'FAYDA' ? 'rgba(0, 168, 89, 0.12)' : 'transparent',
-            color: activeTab === 'FAYDA' ? '#00A859' : 'var(--text-muted)',
-            fontWeight: 800,
-            fontSize: '0.9rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <ShieldCheck size={18} />
-          Fayda ID & Document Verification (FR-1.1)
-        </button>
-
-        <button
-          onClick={() => setActiveTab('CHECKIN')}
-          style={{
-            padding: '12px 24px',
-            borderRadius: '12px',
-            border: 'none',
-            background: activeTab === 'CHECKIN' ? 'rgba(255, 184, 0, 0.15)' : 'transparent',
-            color: activeTab === 'CHECKIN' ? '#D97706' : 'var(--text-muted)',
-            fontWeight: 800,
-            fontSize: '0.9rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <Navigation size={18} />
-          GPS Check-In & Call Room QR (FR-1.3)
-        </button>
-
-        <button
-          onClick={() => setActiveTab('RACES')}
-          style={{
-            padding: '12px 24px',
-            borderRadius: '12px',
-            border: 'none',
-            background: activeTab === 'RACES' ? 'rgba(0, 114, 206, 0.12)' : 'transparent',
-            color: activeTab === 'RACES' ? '#0072CE' : 'var(--text-muted)',
-            fontWeight: 800,
-            fontSize: '0.9rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <Activity size={18} />
-          Live Split Tracker & Badges (FR-3.1)
-        </button>
-      </div>
-
-      {/* Tab Content Rendering */}
-      {activeTab === 'FAYDA' && (
-        <FaydaVerification 
-          athlete={athlete}
-          onUpdateAthlete={onUpdateAthlete}
-          onNotify={onNotify}
-        />
-      )}
-
-      {activeTab === 'CHECKIN' && (
-        <GeofenceCheckin 
-          athlete={athlete}
-          onUpdateAthlete={onUpdateAthlete}
-          onNotify={onNotify}
-        />
-      )}
-
-      {activeTab === 'RACES' && (
-        <LiveRaceTracker 
-          athlete={athlete}
-          onNotify={onNotify}
-        />
-      )}
+      {/* Career Records Vault View */}
+      <RecordsVault 
+        athlete={athlete}
+        onNotify={onNotify}
+      />
     </div>
   );
 }

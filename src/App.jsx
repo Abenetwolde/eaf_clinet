@@ -196,28 +196,31 @@ export default function App() {
           alignItems: 'center',
           justifyContent: 'space-between',
           position: 'sticky',
-          top: '12px',
-          margin: '12px auto',
-          width: 'calc(100% - 32px)',
-          maxWidth: '1240px',
-          borderRadius: '16px',
+          top: '0px',
+          margin: '0 auto',
+          width: '100%',
+          maxWidth: '100%',
+          borderRadius: '0px',
+          borderLeft: 'none',
+          borderRight: 'none',
+          borderTop: 'none',
           zIndex: 50,
           transition: 'all 0.3s ease'
         }}>
           {/* Logo + brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '40px', height: '40px', background: '#FFFFFF', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+            <div style={{ width: '44px', height: '44px', background: '#FFFFFF', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, border: '1px solid #E2E8F0', padding: '2px' }}>
               <img
                 src="/images/logo.jpeg"
                 alt="EAF Logo"
-                style={{ width: '36px', height: '36px', objectFit: 'cover', borderRadius: '4px' }}
+                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px' }}
               />
             </div>
             <div className="hidden-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
                 Ethiopian Athletics Federation
               </div>
-              <div style={{ fontSize: '0.6rem', color: '#0EA5E9', fontWeight: 700 }}>
+              <div style={{ fontSize: '0.65rem', color: '#0EA5E9', fontWeight: 800 }}>
                 የኢትዮጵያ አትሌቲክስ ፌዴሬሽን
               </div>
             </div>

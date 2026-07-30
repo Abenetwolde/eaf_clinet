@@ -351,7 +351,7 @@ export const MOCK_MEETS = [
     enrolledClubsCount: 18,
     totalAthletesEnrolled: 240,
     geofenceCoordinates: { lat: 9.0108, lng: 38.7612, radiusMeters: 500 },
-    bannerUrl: "https://images.unsplash.com/photo-1532444458054-01a7dd3e9fca?w=900&auto=format&fit=crop&q=80",
+    bannerUrl: "/images/banner_grand_prix.png",
     enrolledAthletes: []
   },
   {
@@ -364,7 +364,7 @@ export const MOCK_MEETS = [
     enrolledClubsCount: 24,
     totalAthletesEnrolled: 310,
     geofenceCoordinates: { lat: 7.0621, lng: 38.4764, radiusMeters: 600 },
-    bannerUrl: "https://images.unsplash.com/photo-1595435742656-5272d0b3fa82?w=900&auto=format&fit=crop&q=80",
+    bannerUrl: "/images/banner_youth_games.png",
     enrolledAthletes: []
   },
   {
@@ -377,7 +377,7 @@ export const MOCK_MEETS = [
     enrolledClubsCount: 12,
     totalAthletesEnrolled: 180,
     geofenceCoordinates: { lat: 9.0380, lng: 38.7710, radiusMeters: 800 },
-    bannerUrl: "https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=900&auto=format&fit=crop&q=80",
+    bannerUrl: "/images/banner_jan_meda.png",
     enrolledAthletes: []
   }
 ];

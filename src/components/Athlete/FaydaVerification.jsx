@@ -68,28 +68,43 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
       </div>
 
       {/* Current Fayda profile (read-only, from Fayda) */}
-      <div className="gov-card" style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #1A1F2E 0%, #1E2740 100%)', border: 'none' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-          <ShieldCheck size={18} color="var(--accent)" />
-          <span style={{ fontWeight: 800, color: '#FFFFFF', fontSize: '0.9rem' }}>Fayda Profile (Government Sourced)</span>
-          {athlete.faydaStatus === 'VERIFIED' && <span className="badge badge-green" style={{ fontSize: '0.65rem' }}>VERIFIED</span>}
+      <div className="gov-card" style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)', border: 'none', borderRadius: '18px', padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+          <ShieldCheck size={20} color="#0EA5E9" />
+          <span style={{ fontWeight: 900, color: '#FFFFFF', fontSize: '0.95rem' }}>Fayda Government Sourced Biometric Profile</span>
+          {athlete.faydaStatus === 'VERIFIED' && <span className="badge badge-green" style={{ fontSize: '0.7rem', background: '#10B981', color: '#FFF' }}>VERIFIED</span>}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-          {[
-            { label: 'Full Name', value: athlete.name, color: '#FFFFFF' },
-            { label: 'Amharic Name', value: athlete.amharicName, color: '#C8A84B' },
-            { label: 'Date of Birth', value: athlete.dob || '—', color: '#8FA8BC' },
-            { label: 'Gender', value: athlete.gender || '—', color: '#8FA8BC' },
-            { label: 'Age Division', value: athlete.ageTier, color: '#8FA8BC' },
-          ].map(f => (
-            <div key={f.label}>
-              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#5A7A94', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '3px' }}>{f.label}</div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 700, color: f.color }}>{f.value}</div>
+        
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative' }}>
+            <img 
+              src={athlete.photoUrl || '/images/runner_marathon.png'} 
+              alt={athlete.name} 
+              style={{ width: '88px', height: '88px', borderRadius: '16px', objectFit: 'cover', border: '3px solid #0EA5E9', boxShadow: '0 8px 16px rgba(0,0,0,0.2)' }}
+            />
+            <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: '#0EA5E9', color: '#FFF', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 900 }}>
+              ✓
             </div>
-          ))}
+          </div>
+
+          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px' }}>
+            {[
+              { label: 'Full Name', value: athlete.name, color: '#FFFFFF' },
+              { label: 'Amharic Name', value: athlete.amharicName, color: '#0EA5E9' },
+              { label: 'Date of Birth', value: athlete.dob || '—', color: '#CBD5E1' },
+              { label: 'Gender', value: athlete.gender || '—', color: '#CBD5E1' },
+              { label: 'Age Division', value: athlete.ageTier, color: '#F59E0B' },
+            ].map(f => (
+              <div key={f.label}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '3px' }}>{f.label}</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: f.color }}>{f.value}</div>
+              </div>
+            ))}
+          </div>
         </div>
+        
         {athlete.faydaHash && (
-          <div style={{ marginTop: '14px', fontSize: '0.72rem', color: '#5A7A94', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ marginTop: '16px', fontSize: '0.75rem', color: '#64748B', fontFamily: 'var(--font-mono)', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
             Audit Hash: {athlete.faydaHash}
           </div>
         )}

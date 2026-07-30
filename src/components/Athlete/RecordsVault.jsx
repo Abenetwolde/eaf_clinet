@@ -1,26 +1,157 @@
 import React, { useState } from 'react';
-import { Trophy, TrendingUp, Download, ChevronDown, ChevronUp, Activity } from 'lucide-react';
-import { MOCK_MEETS, MOCK_EVENT_RESULTS } from '../../data/mockData';
+import { TrendingUp, Download, Eye, ShieldCheck, X, CheckCircle2, Calendar, MapPin, FileCheck, QrCode } from 'lucide-react';
 
-const MEDAL_COLORS = { 1: '#C8A84B', 2: '#A8B8C8', 3: '#C87040' };
+function EAFQrCode({ code = "EAF-MEET-202-2026-243", size = 150 }) {
+  return (
+    <div style={{
+      width: size,
+      height: size,
+      background: '#FFFFFF',
+      padding: '10px',
+      borderRadius: '16px',
+      border: '2px solid #0EA5E9',
+      boxShadow: '0 8px 24px rgba(14, 165, 233, 0.15)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: '0 auto'
+    }}>
+      <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
+        {/* Outer Corner Finder Patterns */}
+        {/* Top Left */}
+        <rect x="5" y="5" width="26" height="26" rx="4" fill="#0F172A" />
+        <rect x="9" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
+        <rect x="13" y="13" width="10" height="10" rx="1.5" fill="#0EA5E9" />
+
+        {/* Top Right */}
+        <rect x="69" y="5" width="26" height="26" rx="4" fill="#0F172A" />
+        <rect x="73" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
+        <rect x="77" y="13" width="10" height="10" rx="1.5" fill="#0EA5E9" />
+
+        {/* Bottom Left */}
+        <rect x="5" y="69" width="26" height="26" rx="4" fill="#0F172A" />
+        <rect x="9" y="73" width="18" height="18" rx="2" fill="#FFFFFF" />
+        <rect x="13" y="77" width="10" height="10" rx="1.5" fill="#0EA5E9" />
+
+        {/* Matrix Data Modules */}
+        <rect x="36" y="8" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="44" y="8" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="52" y="8" width="5" height="5" rx="1" fill="#0F172A" />
+
+        <rect x="36" y="16" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="44" y="16" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="58" y="16" width="5" height="5" rx="1" fill="#0EA5E9" />
+
+        <rect x="8" y="36" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="16" y="36" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="24" y="36" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="36" y="36" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="44" y="36" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="52" y="36" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="68" y="36" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="76" y="36" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="84" y="36" width="5" height="5" rx="1" fill="#0EA5E9" />
+
+        <rect x="8" y="44" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="24" y="44" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="68" y="44" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="84" y="44" width="5" height="5" rx="1" fill="#0F172A" />
+
+        <rect x="8" y="52" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="16" y="52" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="36" y="52" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="52" y="52" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="76" y="52" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="84" y="52" width="5" height="5" rx="1" fill="#0F172A" />
+
+        <rect x="36" y="68" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="44" y="68" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="52" y="68" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="68" y="68" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="76" y="68" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="84" y="68" width="5" height="5" rx="1" fill="#0EA5E9" />
+
+        <rect x="36" y="76" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="52" y="76" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="68" y="76" width="5" height="5" rx="1" fill="#0F172A" />
+
+        <rect x="36" y="84" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="44" y="84" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="52" y="84" width="5" height="5" rx="1" fill="#0EA5E9" />
+        <rect x="76" y="84" width="5" height="5" rx="1" fill="#0F172A" />
+        <rect x="84" y="84" width="5" height="5" rx="1" fill="#0EA5E9" />
+
+        {/* Center EAF Emblem Shield */}
+        <circle cx="50" cy="50" r="11" fill="#FFFFFF" stroke="#0EA5E9" strokeWidth="1.5" />
+        <text x="50" y="53" fontSize="8" fontWeight="900" fill="#0EA5E9" textAnchor="middle">EAF</text>
+      </svg>
+    </div>
+  );
+}
 
 export default function RecordsVault({ athlete, onNotify }) {
-  const [activeTab, setActiveTab] = useState('pbs');
-  const [expandedDisc, setExpandedDisc] = useState(null);
-  const [selectedMeet, setSelectedMeet] = useState(Object.keys(MOCK_EVENT_RESULTS)[0]);
+  const [selectedRecordDetail, setSelectedRecordDetail] = useState(null);
 
   const records = [
-    { event: '5,000m',  pb: '12:51.20', sb: '12:51.20', date: 'May 18, 2026',  venue: 'Addis Ababa Stadium',  rankingPts: 1248 },
-    { event: '3,000m',  pb: '7:28.40',  sb: '7:30.10',  date: 'Feb 12, 2026',  venue: 'Lievin Indoor Arena',  rankingPts: 1210 },
-    { event: '10,000m', pb: '26:49.00', sb: '26:55.00', date: 'June 02, 2025', venue: 'Hengelo FBK Games',   rankingPts: 1235 },
-  ];
-
-  const meetResults = MOCK_EVENT_RESULTS[selectedMeet] || [];
-
-  const tabs = [
-    { id: 'pbs',     label: 'Personal Bests' },
-    { id: 'live',    label: 'Live Results' },
-    { id: 'history', label: 'Competition History' },
+    { 
+      event: '5,000m',  
+      pb: '12:51.20', 
+      sb: '12:51.20', 
+      date: 'May 18, 2026',  
+      venue: 'Addis Ababa National Stadium (አዲስ አበባ ስታዲየም)',  
+      rankingPts: 1248,
+      splits: [
+        { mark: '1,000m', time: '2:34.10', diff: '2:34.10', pace: '2:34/km' },
+        { mark: '2,000m', time: '5:09.30', diff: '2:35.20', pace: '2:35/km' },
+        { mark: '3,000m', time: '7:43.00', diff: '2:33.70', pace: '2:33/km' },
+        { mark: '4,000m', time: '10:18.50', diff: '2:35.50', pace: '2:35/km' },
+        { mark: '5,000m', time: '12:51.20', diff: '2:32.70', pace: '2:32/km' }
+      ],
+      referee: 'Eng. Kebede Tadesse (EAF Technical Delegate #77402)',
+      wind: '+0.4 m/s',
+      temp: '21°C Clear',
+      altitude: '2,355 meters',
+      hash: '0x8F92A7C319D04B8E12F54'
+    },
+    { 
+      event: '3,000m',  
+      pb: '7:28.40',  
+      sb: '7:30.10',  
+      date: 'Feb 12, 2026',  
+      venue: 'Lievin Indoor Arena',  
+      rankingPts: 1210,
+      splits: [
+        { mark: '1,000m', time: '2:29.80', diff: '2:29.80', pace: '2:29/km' },
+        { mark: '2,000m', time: '5:00.10', diff: '2:30.30', pace: '2:30/km' },
+        { mark: '3,000m', time: '7:28.40', diff: '2:28.30', pace: '2:28/km' }
+      ],
+      referee: 'IAAF Certified Officiating Panel #9920',
+      wind: 'Indoor (0.0 m/s)',
+      temp: '19°C Controlled',
+      altitude: '100 meters',
+      hash: '0x3E11D92B5F841C908A721'
+    },
+    { 
+      event: '10,000m', 
+      pb: '26:49.00', 
+      sb: '26:55.00', 
+      date: 'June 02, 2025', 
+      venue: 'Hengelo FBK Games',   
+      rankingPts: 1235,
+      splits: [
+        { mark: '2,000m', time: '5:21.80', diff: '5:21.80', pace: '2:40/km' },
+        { mark: '4,000m', time: '10:44.00', diff: '5:22.20', pace: '2:41/km' },
+        { mark: '6,000m', time: '16:05.50', diff: '5:21.50', pace: '2:40/km' },
+        { mark: '8,000m', time: '21:28.10', diff: '5:22.60', pace: '2:41/km' },
+        { mark: '10,000m', time: '26:49.00', diff: '5:20.90', pace: '2:40/km' }
+      ],
+      referee: 'World Athletics Official Jury #ETH-2025',
+      wind: '+0.2 m/s',
+      temp: '18°C Mild',
+      altitude: '15 meters',
+      hash: '0x992B45A8812EF1A7030C8'
+    },
   ];
 
   return (
@@ -28,221 +159,220 @@ export default function RecordsVault({ athlete, onNotify }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
         <div>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-heading)' }}>Records &amp; Career Vault</h3>
+          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-heading)' }}>Career Records Vault</h3>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Personal bests, live competition results, and career history
+            Full competition history, verified split breakdown, and official achievements.
           </p>
         </div>
-        <button onClick={() => onNotify(`Exporting Career Passport for ${athlete.name}...`, 'info')} className="btn-gov-primary">
+        <button onClick={() => onNotify(`Exporting Official EAF Career Passport for ${athlete.name}...`, 'info')} className="btn-gov-primary">
           <Download size={16} /> Export Career Passport PDF
         </button>
       </div>
 
       {/* World ranking card */}
-      <div className="gov-card" style={{ background: 'linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%)', border: 'none', color: '#FFFFFF', marginBottom: '24px' }}>
+      <div className="gov-card" style={{ background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)', border: 'none', color: '#FFFFFF', marginBottom: '24px', borderRadius: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>World Athletics Ranking</div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0EA5E9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>World Athletics Ranking</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 900, lineHeight: 1.1 }}>1,248 Performance Points</div>
-            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)', marginTop: '6px' }}>
+            <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '6px' }}>
               #4 Nationally · #12 Global 5,000m
             </div>
           </div>
           <div>
-            <span style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', color: '#FFFFFF', borderRadius: '8px', padding: '8px 16px', fontSize: '0.82rem', fontWeight: 700 }}>
-              ✓ Olympic Qualifier Standard Met
+            <span style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid rgba(16, 185, 129, 0.4)', color: '#34D399', borderRadius: '10px', padding: '8px 16px', fontSize: '0.82rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <ShieldCheck size={16} /> Olympic Qualifier Standard Met
             </span>
           </div>
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: '#F0F5FA', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{
-              padding: '8px 20px', borderRadius: '9px', border: 'none', cursor: 'pointer',
-              fontWeight: 700, fontSize: '0.85rem', transition: 'all 0.15s',
-              background: activeTab === t.id ? 'var(--primary)' : 'transparent',
-              color: activeTab === t.id ? '#FFFFFF' : 'var(--text-muted)',
-              boxShadow: activeTab === t.id ? '0 2px 8px rgba(11,87,142,0.25)' : 'none',
-            }}>
-            {t.label}
-          </button>
-        ))}
+      {/* Verified Records Table */}
+      <div className="gov-card" style={{ padding: 0, overflow: 'hidden', borderRadius: '18px' }}>
+        <div style={{ padding: '14px 20px', background: '#0F172A', color: '#FFFFFF', fontWeight: 800, fontSize: '0.88rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>Official Verified Personal Bests &amp; Season Bests</span>
+          <span style={{ fontSize: '0.75rem', color: '#0EA5E9' }}>Fayda Cryptographic Audit Active</span>
+        </div>
+        <div className="table-responsive">
+          <table className="gov-table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Personal Best</th>
+                <th>Season Best</th>
+                <th>Date</th>
+                <th>Venue</th>
+                <th>WA Points</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {records.map((r, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 800, color: '#0F172A' }}>{r.event}</td>
+                  <td><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#0284C7', fontSize: '1rem' }}>{r.pb}</span></td>
+                  <td><span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-heading)' }}>{r.sb}</span></td>
+                  <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{r.date}</td>
+                  <td style={{ fontSize: '0.85rem' }}>{r.venue}</td>
+                  <td><span className="badge badge-blue"><TrendingUp size={12} /> {r.rankingPts}</span></td>
+                  <td>
+                    <button 
+                      onClick={() => setSelectedRecordDetail(r)}
+                      className="btn-gov-secondary"
+                      style={{ padding: '6px 12px', fontSize: '0.78rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Eye size={14} /> Show Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* ── PERSONAL BESTS TAB ── */}
-      {activeTab === 'pbs' && (
-        <div className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', background: 'var(--primary)', color: '#FFFFFF', fontWeight: 800, fontSize: '0.88rem' }}>
-            Official Verified Personal Bests &amp; Season Bests
-          </div>
-          <div className="table-responsive">
-            <table className="gov-table">
-              <thead>
-                <tr>
-                  <th>Event</th>
-                  <th>Personal Best</th>
-                  <th>Season Best</th>
-                  <th>Date</th>
-                  <th>Venue</th>
-                  <th>WA Points</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((r, i) => (
-                  <tr key={i}>
-                    <td style={{ fontWeight: 800 }}>{r.event}</td>
-                    <td><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', fontSize: '1rem' }}>{r.pb}</span></td>
-                    <td><span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-heading)' }}>{r.sb}</span></td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{r.date}</td>
-                    <td style={{ fontSize: '0.85rem' }}>{r.venue}</td>
-                    <td><span className="badge badge-blue"><TrendingUp size={12} /> {r.rankingPts}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* ── SHOW DETAILS & APPLICATION MODAL ── */}
+      {selectedRecordDetail && (
+        <div className="modal-backdrop" onClick={() => setSelectedRecordDetail(null)} style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', zIndex: 9999 }}>
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()} 
+            style={{ 
+              padding: '0', 
+              maxWidth: '680px', 
+              width: '92%', 
+              borderRadius: '24px', 
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
+              border: '1px solid #E2E8F0',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
+            {/* 1. Events Banner */}
+            <div style={{ position: 'relative', width: '100%', height: '180px', overflow: 'hidden' }}>
+              <img 
+                src="/images/banner_grand_prix.png" 
+                alt="Addis Ababa International Grand Prix 2026" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              <div style={{ 
+                position: 'absolute', 
+                inset: 0, 
+                background: 'linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.4) 60%, rgba(0, 0, 0, 0.2) 100%)',
+                padding: '24px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="badge badge-green" style={{ fontSize: '0.78rem', background: '#10B981', color: '#FFF', padding: '6px 12px', fontWeight: 800 }}>
+                    <CheckCircle2 size={13} /> Official EAF Entry Pass
+                  </span>
+                  <button 
+                    onClick={() => setSelectedRecordDetail(null)}
+                    style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+                  >
+                    <X size={20} color="#FFFFFF" />
+                  </button>
+                </div>
 
-      {/* ── LIVE RESULTS TAB ── */}
-      {activeTab === 'live' && (
-        <div>
-          {/* Meet selector */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
-            {Object.keys(MOCK_EVENT_RESULTS).map(meetId => {
-              const meet = MOCK_MEETS.find(m => m.id === meetId);
-              if (!meet) return null;
-              const isSelected = selectedMeet === meetId;
-              return (
-                <button key={meetId} onClick={() => { setSelectedMeet(meetId); setExpandedDisc(null); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '8px 16px', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                    background: isSelected ? 'var(--primary)' : '#F0F5FA',
-                    color: isSelected ? '#FFFFFF' : 'var(--text-body)',
-                    fontWeight: 700, fontSize: '0.84rem', transition: 'all 0.15s',
-                  }}>
-                  <Activity size={14} />
-                  {meet.title.length > 40 ? meet.title.slice(0, 40) + '…' : meet.title}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Meet banner */}
-          {(() => {
-            const meet = MOCK_MEETS.find(m => m.id === selectedMeet);
-            if (!meet) return null;
-            return (
-              <div style={{ position: 'relative', borderRadius: '14px', overflow: 'hidden', height: '120px', marginBottom: '20px' }}>
-                <img src={meet.bannerUrl} alt={meet.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', padding: '20px' }}>
-                  <div>
-                    <div style={{ fontWeight: 900, fontSize: '1.1rem', color: '#FFFFFF' }}>{meet.title}</div>
-                    <div style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)', marginTop: '4px' }}>{meet.date} · {meet.venue}</div>
+                <div>
+                  <h3 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#FFFFFF', margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                    Addis Ababa International Grand Prix 2026
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '6px', color: '#E2E8F0', fontSize: '0.84rem', fontWeight: 700 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <MapPin size={14} color="#38BDF8" /> Addis Ababa National Stadium (አዲስ አበባ ስታዲየም)
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Calendar size={14} color="#38BDF8" /> August 12-14, 2026
+                    </span>
                   </div>
                 </div>
               </div>
-            );
-          })()}
+            </div>
 
-          {/* Results accordions */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {meetResults.map((disc, di) => {
-              const isOpen = expandedDisc === di;
-              const winner = disc.results[0];
-              return (
-                <div key={di} className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
-                  <button onClick={() => setExpandedDisc(isOpen ? null : di)}
-                    style={{
-                      width: '100%', padding: '14px 18px', cursor: 'pointer', border: 'none',
-                      background: isOpen ? 'var(--primary)' : '#F8FAFC',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      transition: 'background 0.15s',
-                    }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Trophy size={16} color={isOpen ? '#C8A84B' : 'var(--primary)'} />
-                      <span style={{ fontWeight: 800, fontSize: '0.95rem', color: isOpen ? '#FFFFFF' : 'var(--text-heading)' }}>{disc.discipline}</span>
-                      <span style={{ fontSize: '0.76rem', color: isOpen ? 'rgba(255,255,255,0.65)' : 'var(--text-muted)' }}>{disc.results.length} athletes</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {winner && (
-                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: isOpen ? '#C8A84B' : 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                          🥇 {winner.athleteName.split(' ')[0]} — {winner.time}
-                        </span>
-                      )}
-                      {isOpen ? <ChevronUp size={16} color={isOpen ? '#FFFFFF' : 'var(--text-muted)'} /> : <ChevronDown size={16} color="var(--text-muted)" />}
-                    </div>
-                  </button>
-                  {isOpen && (
-                    <div className="table-responsive">
-                      <table className="gov-table">
-                        <thead>
-                          <tr><th style={{ width: 52 }}>Pos</th><th>Athlete</th><th>Club</th><th>Time</th><th>Marks</th></tr>
-                        </thead>
-                        <tbody>
-                          {disc.results.map((r, ri) => (
-                            <tr key={ri}>
-                              <td style={{ textAlign: 'center' }}>
-                                {r.pos <= 3
-                                  ? <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', background: MEDAL_COLORS[r.pos] + '22', border: `2px solid ${MEDAL_COLORS[r.pos]}`, fontWeight: 900, fontSize: '0.85rem', color: MEDAL_COLORS[r.pos] }}>
-                                      {['🥇', '🥈', '🥉'][r.pos - 1]}
-                                    </span>
-                                  : <span style={{ fontWeight: 700, color: 'var(--text-muted)' }}>{r.pos}</span>
-                                }
-                              </td>
-                              <td>
-                                <div style={{ fontWeight: 700 }}>{r.athleteName}</div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{r.nat}</div>
-                              </td>
-                              <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{r.club}</td>
-                              <td><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '0.95rem', color: r.pos === 1 ? '#C8A84B' : 'var(--primary)' }}>{r.time}</span></td>
-                              <td>
-                                <div style={{ display: 'flex', gap: '4px' }}>
-                                  {r.pb && <span className="badge badge-amber" style={{ fontSize: '0.65rem' }}>PB</span>}
-                                  {r.sb && <span className="badge badge-blue" style={{ fontSize: '0.65rem' }}>SB</span>}
-                                  {!r.pb && !r.sb && <span style={{ color: 'var(--text-dim)' }}>—</span>}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+            {/* Modal Body */}
+            <div style={{ padding: '24px 28px' }}>
+              
+              {/* Application Details Card */}
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', marginBottom: '14px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0EA5E9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Application Details</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B', marginTop: '2px' }}>Submitted on 2026-07-15</div>
+                  </div>
+                  <span style={{ background: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <FileCheck size={14} /> Verified Record
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
-      {/* ── COMPETITION HISTORY TAB ── */}
-      {activeTab === 'history' && (
-        <div className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', background: 'var(--primary)', color: '#FFFFFF', fontWeight: 800, fontSize: '0.88rem' }}>
-            Competition History
-          </div>
-          <div className="table-responsive">
-            <table className="gov-table">
-              <thead>
-                <tr><th>Year</th><th>Competition</th><th>Result / Time</th></tr>
-              </thead>
-              <tbody>
-                {(athlete.achievements || []).length === 0 ? (
-                  <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '32px' }}>No competition history recorded</td></tr>
-                ) : (athlete.achievements || []).map((a, i) => (
-                  <tr key={i}>
-                    <td style={{ fontWeight: 700, color: 'var(--text-muted)' }}>{a.year}</td>
-                    <td style={{ fontWeight: 700 }}>{a.title}</td>
-                    <td><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)' }}>{a.time}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 700 }}>Selected Disciplines &amp; Status</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                      <span style={{ background: '#0EA5E9', color: '#FFFFFF', fontWeight: 900, padding: '4px 10px', borderRadius: '6px', fontSize: '0.9rem' }}>
+                        {selectedRecordDetail.event}
+                      </span>
+                      <span style={{ color: '#16A34A', fontWeight: 800, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        ✓ Approved
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* QR Code Container */}
+              <div style={{ background: '#F1F5F9', border: '2px dashed #CBD5E1', borderRadius: '20px', padding: '20px', textAlign: 'center', marginBottom: '20px' }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <QrCode size={16} color="#0EA5E9" /> Entry QR Code
+                </div>
+                
+                {/* SVG 2D QR Code Matrix */}
+                <EAFQrCode code="EAF-MEET-202-2026-243" size={160} />
+
+                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '1rem', color: '#0F172A', marginTop: '12px', letterSpacing: '0.08em' }}>
+                  EAF-MEET-202-2026-243
+                </div>
+                <p style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '4px', fontWeight: 600 }}>
+                  Scan this code at the Call Room for quick check-in.
+                </p>
+              </div>
+
+              {/* Verified Race Splits */}
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F172A', marginBottom: '10px' }}>Official Race Split Times</h4>
+                <div style={{ border: '1px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ background: '#F1F5F9', color: '#475569', textAlign: 'left', fontWeight: 800 }}>
+                        <th style={{ padding: '8px 12px' }}>Split</th>
+                        <th style={{ padding: '8px 12px' }}>Accumulated</th>
+                        <th style={{ padding: '8px 12px' }}>Segment</th>
+                        <th style={{ padding: '8px 12px' }}>Pace</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedRecordDetail.splits.map((s, idx) => (
+                        <tr key={idx} style={{ borderTop: '1px solid #E2E8F0' }}>
+                          <td style={{ padding: '8px 12px', fontWeight: 800, color: '#0F172A' }}>{s.mark}</td>
+                          <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#0284C7' }}>{s.time}</td>
+                          <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', color: '#475569' }}>{s.diff}</td>
+                          <td style={{ padding: '8px 12px', color: '#16A34A', fontWeight: 700 }}>{s.pace}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Entry Verification Warning Box */}
+              <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '14px 16px', fontSize: '0.78rem', color: '#1E40AF', lineHeight: 1.5 }}>
+                <strong>Entry Verification:</strong> All entries are cross-referenced with active EAF licenses and Fayda Biometric data. For queries regarding your approval, contact <a href="mailto:registrar@eaf.org.et" style={{ color: '#0284C7', fontWeight: 800 }}>registrar@eaf.org.et</a>.
+              </div>
+
+            </div>
           </div>
         </div>
       )}

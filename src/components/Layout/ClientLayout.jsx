@@ -8,7 +8,6 @@ export default function ClientLayout({
     { id: 'OVERVIEW', label: 'Home', icon: Home },
     { id: 'APPLIED', label: 'My Events', icon: BookOpen },
     { id: 'PROFILE', label: 'Profile', icon: UserCheck },
-    { id: 'NOTIFICATIONS', label: 'Updates', icon: Bell },
   ];
 
   return (
@@ -31,7 +30,38 @@ export default function ClientLayout({
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Updates Icon Button next to Sign Out */}
+          <button 
+            onClick={() => onChangeSubPage('NOTIFICATIONS')} 
+            title="Updates & Notifications"
+            style={{ 
+              background: activeSubPage === 'NOTIFICATIONS' ? '#E0F2FE' : '#F1F5F9',
+              border: activeSubPage === 'NOTIFICATIONS' ? '1px solid #0EA5E9' : 'none', 
+              padding: '9px 11px', 
+              borderRadius: '10px', 
+              color: activeSubPage === 'NOTIFICATIONS' ? '#0284C7' : '#475569', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              cursor: 'pointer',
+              position: 'relative',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Bell size={18} />
+            <span style={{
+              position: 'absolute',
+              top: '5px',
+              right: '5px',
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: '#0EA5E9',
+              border: '2px solid #FFFFFF'
+            }} />
+          </button>
+
           <button 
             onClick={onLogout} 
             style={{ 

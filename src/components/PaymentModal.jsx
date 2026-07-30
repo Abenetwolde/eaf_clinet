@@ -31,8 +31,8 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '32px' }}>
+    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 9999, padding: '32px 16px' }}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '40px 48px', maxWidth: '720px', width: '95%', margin: '30px auto', borderRadius: '24px', boxShadow: '0 32px 64px rgba(15, 23, 42, 0.25)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div>
             <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-main)' }}>
