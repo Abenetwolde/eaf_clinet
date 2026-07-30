@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Trophy, Calendar, MapPin, CheckCircle2, X, ShieldCheck, AlertTriangle, Users } from 'lucide-react';
 import { MOCK_MEETS } from '../../data/mockData';
 
-export default function AthleteEvents({ athlete, onNotify }) {
+export default function AthleteEvents({ athlete, onUpdateAthlete, onNotify }) {
   const [meets, setMeets] = useState(MOCK_MEETS.map(m => ({ ...m, athleteEnrolled: false, enrolledDiscipline: null })));
   const [enrollModal, setEnrollModal] = useState(null); // { meet }
   const [selectedDisc, setSelectedDisc] = useState('');
@@ -11,11 +11,29 @@ export default function AthleteEvents({ athlete, onNotify }) {
 
   const handleEnroll = () => {
     if (!selectedDisc) { onNotify('Please select a discipline.', 'error'); return; }
+    
+    // 1. Update local meets state
     setMeets(prev => prev.map(m =>
       m.id === enrollModal.id
         ? { ...m, athleteEnrolled: true, enrolledDiscipline: selectedDisc, totalAthletesEnrolled: m.totalAthletesEnrolled + 1 }
         : m
     ));
+
+    // 2. Persist to athlete profile (localStorage)
+    const newApplication = {
+      meetId: enrollModal.id,
+      meetTitle: enrollModal.title,
+      disciplines: [selectedDisc],
+      status: "Approved", // Auto-approved for this flow
+      appliedDate: new Date().toISOString().split('T')[0]
+    };
+    
+    const existingApps = athlete.appliedCompetitions || [];
+    onUpdateAthlete({
+      ...athlete,
+      appliedCompetitions: [newApplication, ...existingApps]
+    });
+
     onNotify(`Enrolled in ${selectedDisc} at ${enrollModal.title}!`, 'success');
     setEnrollModal(null);
     setSelectedDisc('');

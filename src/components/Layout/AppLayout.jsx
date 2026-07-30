@@ -2,7 +2,8 @@ import React from 'react';
 import {
   Building2, UserCheck, Users, ArrowRightLeft, Trophy,
   Navigation, Activity, LogOut, Home,
-  Bell, ChevronRight, Layers, Award, ShieldCheck, Globe
+  Bell, ChevronRight, Layers, Award, ShieldCheck, Globe,
+  BookOpen
 } from 'lucide-react';
 
 // EAF Logo — local file
@@ -32,6 +33,9 @@ export default function AppLayout({
 
   const athleteNavItems = [
     { id: 'OVERVIEW',   label: 'Dashboard',         icon: Home },
+    { id: 'APPLIED',    label: 'My Applications',   icon: BookOpen },
+    { id: 'PROFILE',    label: 'My Profile',        icon: UserCheck },
+    { id: 'NOTIFICATIONS', label: 'Notifications',  icon: Bell },
     { id: 'EVENTS',     label: 'Events',            icon: Globe },
     { id: 'CHECKIN',    label: 'Check-In',          icon: Navigation },
     { id: 'RACES',      label: 'Races',             icon: Activity },
