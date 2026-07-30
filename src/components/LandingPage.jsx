@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck } from 'lucide-react';
+import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 
 /* ─────────────────────────────────────────────
@@ -234,7 +234,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [selectedMeetId, setSelectedMeetId] = useState(null);
   const [selectedAthleteModal, setSelectedAthleteModal] = useState(null);
   const [selectedGalleryTab, setSelectedGalleryTab] = useState('All');
+  const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [activeLightboxImg, setActiveLightboxImg] = useState(null);
+  const [openFaq, setOpenFaq] = useState(null);
 
   // Search/Filter states
   const [searchText, setSearchText] = useState('');
@@ -1039,7 +1041,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 { src: '/images/TeleBirr-Logo-1024x468.png',              alt: 'Telebirr',      h: 46 },
                 { src: '/images/Cocacola-logo.jpg',                       alt: 'Coca-Cola',     h: 52 },
                 { src: '/images/OROMIA-1024x279.jpg',                     alt: 'Oromia Bank',   h: 46 },
-                // Repeated for infinite smooth scroll loop
                 { src: '/images/800px-Adidas_Logo.svg_.png',              alt: 'Adidas 2',      h: 46 },
                 { src: '/images/ETHIO-TELECOM-1200px-logo-1-1024x269.jpg', alt: 'Ethio Telecom 2', h: 48 },
                 { src: '/images/TeleBirr-Logo-1024x468.png',              alt: 'Telebirr 2',    h: 46 },
@@ -1054,8 +1055,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       height: s.h,
                       objectFit: 'contain',
                       maxWidth: '180px',
-                      filter: 'none', // ORIGINAL OWN COLOR
-                      opacity: 1,     // FULL VISIBILITY
+                      filter: 'none',
+                      opacity: 1,
                       transition: 'transform 0.2s',
                     }}
                   />
@@ -1080,77 +1081,197 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </p>
             </div>
 
-            {/* Category Filter Tabs */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: 36 }}>
-              {['All', 'Championships', 'Marathons', 'Track & Field', 'Ceremonies'].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setSelectedGalleryTab(tab)}
-                  style={{
-                    background: selectedGalleryTab === tab ? '#0EA5E9' : '#FFFFFF',
-                    color: selectedGalleryTab === tab ? '#FFFFFF' : '#475569',
-                    border: selectedGalleryTab === tab ? 'none' : '1px solid #CBD5E1',
-                    padding: '10px 22px',
-                    borderRadius: '30px',
-                    fontWeight: 800,
-                    fontSize: '0.88rem',
-                    cursor: 'pointer',
-                    boxShadow: selectedGalleryTab === tab ? '0 4px 14px rgba(14, 165, 233, 0.3)' : 'none',
-                    transition: 'all 0.2s'
-                  }}
+            {selectedAlbum ? (
+              <div>
+                <button 
+                  onClick={() => setSelectedAlbum(null)}
+                  style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', padding: '8px 16px', borderRadius: '12px', fontWeight: 800, color: '#0F172A', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
                 >
-                  {tab}
+                  <ChevronLeft size={16} /> Back to Albums
                 </button>
-              ))}
-            </div>
-
-            {/* Gallery Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
-              {filteredGallery.map(item => (
-                <div 
-                  key={item.id}
-                  className="hover-lift"
-                  onClick={() => setActiveLightboxImg(item)}
-                  style={{
-                    position: 'relative',
-                    borderRadius: '20px',
-                    overflow: 'hidden',
-                    height: '280px',
-                    cursor: 'pointer',
-                    boxShadow: '0 8px 24px rgba(15, 23, 42, 0.1)',
-                    border: '1px solid #E2E8F0'
-                  }}
-                >
-                  <img 
-                    src={item.img} 
-                    alt={item.title} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                  />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.9) 0%, transparent 60%)' }} />
-                  <div style={{ position: 'absolute', top: 14, left: 14, background: 'rgba(14, 165, 233, 0.9)', color: '#FFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800 }}>
-                    {item.category}
-                  </div>
-                  <div style={{ position: 'absolute', bottom: 16, left: 16, right: 16, color: '#FFF' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1.3, marginBottom: '4px' }}>{item.title}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#94A3B8', display: 'flex', gap: '10px' }}>
-                      <span>📍 {item.location}</span>
-                      <span>🗓️ {item.date}</span>
+                <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0F172A', marginBottom: '24px' }}>{selectedAlbum}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
+                  {GALLERY_IMAGES.filter(img => selectedAlbum === 'All' || img.category === selectedAlbum).map(item => (
+                    <div 
+                      key={item.id}
+                      className="hover-lift"
+                      onClick={() => setActiveLightboxImg(item)}
+                      style={{
+                        position: 'relative',
+                        borderRadius: '20px',
+                        overflow: 'hidden',
+                        height: '280px',
+                        cursor: 'pointer',
+                        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.1)',
+                        border: '1px solid #E2E8F0'
+                      }}
+                    >
+                      <img 
+                        src={item.img} 
+                        alt={item.title} 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.9) 0%, transparent 60%)' }} />
+                      <div style={{ position: 'absolute', bottom: 16, left: 16, right: 16, color: '#FFF' }}>
+                        <div style={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1.3, marginBottom: '4px' }}>{item.title}</div>
+                        <div style={{ fontSize: '0.78rem', color: '#94A3B8', display: 'flex', gap: '10px' }}>
+                          <span>📍 {item.location}</span>
+                          <span>🗓️ {item.date}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+                {['Championships', 'Marathons', 'Track & Field', 'Ceremonies'].map(albumName => {
+                  const coverImage = GALLERY_IMAGES.find(img => img.category === albumName)?.img || '/images/d1.jpg';
+                  const count = GALLERY_IMAGES.filter(img => img.category === albumName).length;
+                  return (
+                    <div 
+                      key={albumName}
+                      className="hover-lift"
+                      onClick={() => setSelectedAlbum(albumName)}
+                      style={{
+                        position: 'relative',
+                        borderRadius: '24px',
+                        overflow: 'hidden',
+                        height: '320px',
+                        cursor: 'pointer',
+                        boxShadow: '0 12px 32px rgba(15, 23, 42, 0.1)',
+                        border: '1px solid #E2E8F0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end'
+                      }}
+                    >
+                      <div style={{
+                        position: 'absolute', inset: 0,
+                        backgroundImage: `url(${coverImage})`,
+                        backgroundSize: 'cover', backgroundPosition: 'center',
+                      }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.2) 60%, transparent 100%)' }} />
+                      
+                      <div style={{ position: 'relative', zIndex: 1, padding: '24px' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: '#FFF', padding: '4px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '12px' }}>
+                          <FolderOpen size={14} /> {count} Photos
+                        </div>
+                        <h3 style={{ color: '#FFFFFF', fontSize: '1.4rem', fontWeight: 900, marginBottom: '8px' }}>
+                          {albumName}
+                        </h3>
+                        <div style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          View Album <ChevronRight size={16} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
       )}
 
-      {/* ── 9. FOOTER WITH RGB(14, 165, 233) BACKGROUND & CONTACT FORM ── */}
-      <footer id="contact" style={{ background: 'rgb(14, 165, 233)', color: '#FFFFFF', padding: '60px 24px 30px', borderTop: '4px solid #0284C7' }}>
+      {/* ── 8.5 FAQ SECTION ── */}
+      <section style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0F172A' }}>Frequently Asked Questions</h2>
+            <p style={{ color: '#64748B', marginTop: '8px', fontSize: '1rem' }}>Find answers about registration, Fayda IDs, and club licensing.</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {[
+              { q: 'How do I verify my Fayda ID?', a: 'Enter your 12-digit Fayda FIN on the registration screen. The system will automatically fetch your biometric profile from the national database.' },
+              { q: 'Can I register a new club online?', a: 'Yes. Switch to the Club Admin role and follow the club registration workflow. You will need your official club details and manager information.' },
+              { q: 'When are the results updated?', a: 'Results for live competitions are updated in real-time by the technical committee directly from the venue.' }
+            ].map((faq, idx) => (
+              <div key={idx} style={{ border: '1px solid #E2E8F0', borderRadius: '16px', background: '#F8FAFC', overflow: 'hidden' }}>
+                <button 
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                  style={{ width: '100%', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 800, color: '#0F172A', fontSize: '1.05rem' }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <HelpCircle size={20} color="#0EA5E9" />
+                    {faq.q}
+                  </span>
+                  {openFaq === idx ? <Minus size={20} color="#64748B" /> : <Plus size={20} color="#64748B" />}
+                </button>
+                {openFaq === idx && (
+                  <div style={{ padding: '0 20px 20px 52px', color: '#475569', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                    {faq.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 8.6 CONTACT FORM SECTION ── */}
+      <section id="contact-form" style={{ background: '#F0F9FF', padding: '60px 24px', borderTop: '1px solid #E0F2FE' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', background: '#FFFFFF', padding: '40px', borderRadius: '24px', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.05)', border: '1px solid #E2E8F0' }}>
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>Contact the Federation</h2>
+            <p style={{ color: '#64748B', marginTop: '8px', fontSize: '1rem' }}>Get in touch with EAF licensing, event directors or media team.</p>
+          </div>
+          
+          {contactSuccess ? (
+            <div style={{ background: '#DCFCE7', border: '1px solid #86EFAC', color: '#15803D', borderRadius: '12px', padding: '20px', textAlign: 'center', fontSize: '1rem', fontWeight: 800 }}>
+              ✓ Message Sent Successfully! Our team will respond shortly.
+            </div>
+          ) : (
+            <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <input 
+                  type="text" 
+                  placeholder="Your Full Name"
+                  value={contactForm.name}
+                  onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+                  required
+                  style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem' }}
+                />
+                <input 
+                  type="email" 
+                  placeholder="Email Address"
+                  value={contactForm.email}
+                  onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+                  required
+                  style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem' }}
+                />
+              </div>
+              <input 
+                type="text" 
+                placeholder="Subject / Concern"
+                value={contactForm.subject}
+                onChange={e => setContactForm({ ...contactForm, subject: e.target.value })}
+                required
+                style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem' }}
+              />
+              <textarea 
+                placeholder="Message Details..."
+                rows={4}
+                value={contactForm.message}
+                onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
+                required
+                style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem', resize: 'vertical' }}
+              />
+              <button 
+                type="submit" 
+                style={{ background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', fontWeight: 900, border: 'none', padding: '16px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(14, 165, 233, 0.25)' }}
+              >
+                <Send size={18} /> Send Message
+              </button>
+            </form>
+          )}
+        </div>
+      </section>
+
+      {/* ── 9. FOOTER WITH RGB(14, 165, 233) BACKGROUND ── */}
+      <footer style={{ background: 'rgb(14, 165, 233)', color: '#FFFFFF', padding: '60px 24px 30px', borderTop: '4px solid #0284C7' }}>
         <div style={{ maxWidth: 1240, margin: '0 auto' }}>
           
-          {/* Top Grid: Logo + Quick Links + Direct Contact + Contact Form */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 40, marginBottom: 48 }}>
-
             {/* Col 1: Logo & Info */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -1174,15 +1295,24 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 The official national governing body for track, field, road, cross-country and marathon athletics in Ethiopia since 1964.
               </p>
               <div style={{ display: 'flex', gap: 12 }}>
-                {['Facebook', 'Twitter', 'Instagram', 'YouTube'].map(social => (
-                  <a key={social} href="#social" 
+                {[
+                  { id: 'facebook', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg> },
+                  { id: 'twitter', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg> },
+                  { id: 'instagram', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg> },
+                  { id: 'youtube', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg> },
+                  { id: 'tiktok', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg> }
+                ].map(social => (
+                  <a key={social.id} href="#social" 
                     style={{
-                      padding: '8px 12px', borderRadius: '8px',
+                      width: '40px', height: '40px', borderRadius: '10px',
                       background: 'rgba(255, 255, 255, 0.2)', color: '#FFF',
-                      fontSize: '0.78rem', fontWeight: 800, textDecoration: 'none'
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      textDecoration: 'none', transition: 'all 0.2s'
                     }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
                   >
-                    {social}
+                    {social.icon}
                   </a>
                 ))}
               </div>
@@ -1232,63 +1362,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </div>
             </div>
 
-            {/* Col 4: FOOTER CONTACT FORM (NEWLY ADDED) */}
-            <div style={{ background: '#FFFFFF', padding: '24px', borderRadius: '20px', color: '#0F172A', boxShadow: '0 12px 28px rgba(0,0,0,0.15)' }}>
-              <h4 style={{ color: '#0F172A', fontWeight: 900, fontSize: '1.1rem', marginBottom: 6 }}>
-                Send Federation Inquiry
-              </h4>
-              <p style={{ fontSize: '0.78rem', color: '#64748B', marginBottom: 14 }}>
-                Get in touch with EAF licensing, event directors or media team
-              </p>
-
-              {contactSuccess ? (
-                <div style={{ background: '#DCFCE7', border: '1px solid #86EFAC', color: '#15803D', borderRadius: '12px', padding: '14px', textAlign: 'center', fontSize: '0.88rem', fontWeight: 800 }}>
-                  ✓ Message Sent Successfully! Our team will respond shortly.
-                </div>
-              ) : (
-                <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Your Full Name"
-                    value={contactForm.name}
-                    onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
-                    required
-                    style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
-                  />
-                  <input 
-                    type="email" 
-                    placeholder="Email Address"
-                    value={contactForm.email}
-                    onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
-                    required
-                    style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
-                  />
-                  <input 
-                    type="text" 
-                    placeholder="Subject / Concern"
-                    value={contactForm.subject}
-                    onChange={e => setContactForm({ ...contactForm, subject: e.target.value })}
-                    required
-                    style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
-                  />
-                  <textarea 
-                    placeholder="Message Details..."
-                    rows={2}
-                    value={contactForm.message}
-                    onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
-                    required
-                    style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem', resize: 'none' }}
-                  />
-                  <button 
-                    type="submit" 
-                    style={{ background: '#0EA5E9', color: '#FFF', fontWeight: 900, border: 'none', padding: '12px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.88rem' }}
-                  >
-                    <Send size={14} /> Send Message
-                  </button>
-                </form>
-              )}
-            </div>
-
           </div>
 
           {/* Bottom Copyright Bar */}
@@ -1300,7 +1373,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               EOSCRMS Government Portal System v4.2
             </p>
           </div>
-
         </div>
       </footer>
 
@@ -1336,24 +1408,16 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </button>
             </div>
 
-            {/* Athlete Bio & Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', background: '#F8FAFC', padding: '20px', borderRadius: '18px', marginBottom: '24px', border: '1px solid #E2E8F0' }}>
-              <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Primary Event</div>
-                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0F172A', marginTop: '2px' }}>{selectedAthleteModal.event}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Club Affiliation</div>
-                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0EA5E9', marginTop: '2px' }}>{selectedAthleteModal.club}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Personal Best</div>
-                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#D97706', marginTop: '2px' }}>{selectedAthleteModal.pb}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Age Division</div>
-                <div style={{ fontSize: '1rem', fontWeight: 800, color: '#15803D', marginTop: '2px' }}>{selectedAthleteModal.ageTier}</div>
-              </div>
+            {/* Athlete Bio & Stats Table */}
+            <div style={{ background: '#F8FAFC', padding: '20px', borderRadius: '18px', marginBottom: '24px', border: '1px solid #E2E8F0', overflowX: 'auto' }}>
+              <table className="gov-table" style={{ margin: 0 }}>
+                <tbody>
+                  <tr><td style={{ width: '40%', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Primary Event</td><td style={{ fontWeight: 800, color: '#0F172A' }}>{selectedAthleteModal.event}</td></tr>
+                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Club Affiliation</td><td style={{ fontWeight: 800, color: '#0EA5E9' }}>{selectedAthleteModal.club}</td></tr>
+                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Personal Best</td><td style={{ fontWeight: 800, color: '#D97706' }}>{selectedAthleteModal.pb}</td></tr>
+                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Age Division</td><td style={{ fontWeight: 800, color: '#15803D' }}>{selectedAthleteModal.ageTier}</td></tr>
+                </tbody>
+              </table>
             </div>
 
             {/* Athlete Quote */}

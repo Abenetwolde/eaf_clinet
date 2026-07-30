@@ -201,19 +201,23 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
     if (step === 2) return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
         <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>Review & Confirm Registration</h4>
-        <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px' }}>
-          {[
-            ['Club Name', `${clubName} (${clubAmharic})`],
-            ['Region', region],
-            ['Manager', manager],
-            ['Email', email],
-            ['Phone', phone],
-          ].map(([k, v]) => (
-            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem', marginBottom: '12px' }}>
-              <span style={{ color: '#64748B', fontWeight: 600 }}>{k}</span>
-              <span style={{ fontWeight: 800, color: '#0F172A' }}>{v}</span>
-            </div>
-          ))}
+        <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', overflowX: 'auto' }}>
+          <table className="gov-table">
+            <tbody>
+              {[
+                ['Club Name', `${clubName} (${clubAmharic})`],
+                ['Region', region],
+                ['Manager', manager],
+                ['Email', email],
+                ['Phone', phone],
+              ].map(([k, v]) => (
+                <tr key={k}>
+                  <td style={{ width: '40%', fontWeight: 700, color: '#64748B' }}>{k}</td>
+                  <td style={{ fontWeight: 900, color: '#0F172A' }}>{v}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: 1.5 }}>
           By registering, your club agrees to comply with Ethiopian Athletics Federation rules and mandate Fayda National ID verification for all athletes.
@@ -517,14 +521,23 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>Step 4: Final Confirmation</h4>
 
-          <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '24px', display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <img src={faydaResult?.photoUrl} alt="Photo" style={{ width: '80px', height: '80px', borderRadius: '14px', objectFit: 'cover' }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A' }}>{faydaResult?.name}</div>
-              <div style={{ fontSize: '0.85rem', color: '#0EA5E9', fontWeight: 700 }}>Fayda FIN: {faydaResult?.fin}</div>
-              <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '4px' }}>
-                Division: <strong>{faydaResult?.ageTier}</strong> · Events: <strong>{eventText}</strong> · Club: <strong>{club?.shortName}</strong>
+          <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+              <img src={faydaResult?.photoUrl} alt="Photo" style={{ width: '80px', height: '80px', borderRadius: '14px', objectFit: 'cover' }} />
+              <div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0F172A' }}>{faydaResult?.name}</div>
+                <div style={{ fontSize: '0.9rem', color: '#0EA5E9', fontWeight: 700 }}>Fayda FIN: {faydaResult?.fin}</div>
               </div>
+            </div>
+            
+            <div style={{ overflowX: 'auto' }}>
+              <table className="gov-table">
+                <tbody>
+                  <tr><td style={{ width: '40%', fontWeight: 700, color: '#64748B' }}>Division</td><td style={{ fontWeight: 900, color: '#0F172A' }}>{faydaResult?.ageTier}</td></tr>
+                  <tr><td style={{ fontWeight: 700, color: '#64748B' }}>Events</td><td style={{ fontWeight: 900, color: '#0F172A' }}>{eventText}</td></tr>
+                  <tr><td style={{ fontWeight: 700, color: '#64748B' }}>Club</td><td style={{ fontWeight: 900, color: '#0F172A' }}>{club?.shortName}</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
 

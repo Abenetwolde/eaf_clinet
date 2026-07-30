@@ -167,7 +167,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Buttons ── */
 .btn-gov-primary {
-  background: var(--primary);
+  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
   color: #FFFFFF;
   font-weight: 700;
   font-size: 0.9rem;
@@ -181,7 +181,7 @@ h1, h2, h3, h4, h5, h6 {
   gap: 8px;
   transition: background 0.15s ease, transform 0.1s ease;
 }
-.btn-gov-primary:hover  { background: #094A78; }
+.btn-gov-primary:hover  { background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%); }
 .btn-gov-primary:active { transform: scale(0.98); }
 
 .btn-gov-secondary {
@@ -222,7 +222,7 @@ h1, h2, h3, h4, h5, h6 {
 .btn-accent:active { transform: scale(0.98); }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, #094A78 100%);
+  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
   color: #FFFFFF;
   font-weight: 800;
   font-size: 0.95rem;
@@ -241,7 +241,7 @@ h1, h2, h3, h4, h5, h6 {
 .btn-primary:active { transform: scale(0.98); }
 
 .btn-telebirr {
-  background: #0B578E;
+  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
   color: #FFFFFF;
   font-weight: 700;
   font-size: 0.9rem;
@@ -255,7 +255,7 @@ h1, h2, h3, h4, h5, h6 {
   gap: 8px;
   transition: background 0.15s ease;
 }
-.btn-telebirr:hover { background: #094A78; }
+.btn-telebirr:hover { opacity: 0.9; }
 
 /* ── Forms ── */
 .form-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }

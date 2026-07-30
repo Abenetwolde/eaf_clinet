@@ -7,10 +7,10 @@ export default function Navbar({ currentRole, currentAthlete, currentClub, onSwi
       position: 'sticky',
       top: 0,
       zIndex: 50,
-      background: 'rgba(255, 255, 255, 0.88)',
-      backdropFilter: 'blur(20px)',
-      borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
-      boxShadow: '0 4px 20px rgba(15, 23, 42, 0.04)'
+      background: currentRole === 'LANDING' ? 'transparent' : 'rgba(255, 255, 255, 0.88)',
+      backdropFilter: currentRole === 'LANDING' ? 'none' : 'blur(20px)',
+      borderBottom: currentRole === 'LANDING' ? 'none' : '1px solid rgba(226, 232, 240, 0.8)',
+      boxShadow: currentRole === 'LANDING' ? 'none' : '0 4px 20px rgba(15, 23, 42, 0.04)'
     }}>
       <div style={{
         maxWidth: '1280px',
