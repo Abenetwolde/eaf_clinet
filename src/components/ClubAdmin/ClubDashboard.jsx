@@ -84,7 +84,7 @@ export default function ClubDashboard({ club, athletes, transfers, onRenewLicens
           </div>
           <div style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)' }}>{athletes.length} Athletes</div>
           <div style={{ fontSize: '0.78rem', color: '#00A859', fontWeight: 700, marginTop: '4px' }}>
-            {verifiedCount} Fayda Biometric Verified
+            {verifiedCount} Fayda  Verified
           </div>
         </div>
 

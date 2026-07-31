@@ -299,7 +299,7 @@ export default function RecordsVault({ athlete, onNotify }) {
 
               {/* Entry Verification Warning Box */}
               <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '14px 16px', fontSize: '0.78rem', color: '#1E40AF', lineHeight: 1.5 }}>
-                <strong>Entry Verification:</strong> All entries are cross-referenced with active EAF licenses and Fayda Biometric data. For queries regarding your approval, contact <a href="mailto:registrar@eaf.org.et" style={{ color: '#0284C7', fontWeight: 800 }}>registrar@eaf.org.et</a>.
+                <strong>Entry Verification:</strong> All entries are cross-referenced with active EAF licenses and Fayda data. For queries regarding your approval, contact <a href="mailto:registrar@eaf.org.et" style={{ color: '#0284C7', fontWeight: 800 }}>registrar@eaf.org.et</a>.
               </div>
 
             </div>

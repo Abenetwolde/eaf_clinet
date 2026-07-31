@@ -238,7 +238,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div>
           <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A', marginBottom: '6px' }}>
-            Step 1: Fayda Biometric ID Verification
+            Step 1: Fayda ID Verification
           </h4>
           <p style={{ fontSize: '0.88rem', color: '#64748B', lineHeight: 1.6 }}>
             Enter your 12-digit Fayda FIN. Full name, date of birth, age tier, and photo profile are fetched automatically from the government identity database.
@@ -301,7 +301,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <ShieldCheck size={18} color="#0284C7" />
-                <span style={{ fontWeight: 900, color: '#0369A1', fontSize: '0.95rem' }}>FAYDA BIOMETRIC PROFILE VERIFIED</span>
+                <span style={{ fontWeight: 900, color: '#0369A1', fontSize: '0.95rem' }}>FAYDA  PROFILE VERIFIED</span>
               </div>
 
               <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A', marginBottom: '2px' }}>
@@ -584,7 +584,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             </div>
             <div>
               <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F172A' }}>
-                {isClub ? 'Register Club Account' : 'Biometric Athlete Registration'}
+                {isClub ? 'Register Club Account' : 'Athlete Registration'}
               </h3>
               <p style={{ fontSize: '0.85rem', color: '#64748B' }}>
                 Ethiopian Athletics Federation — EOSCRMS Portal

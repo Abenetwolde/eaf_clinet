@@ -160,7 +160,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
     region: 'Addis Ababa City Administration (አዲስ አበባ ከተማ አስተዳደር)',
     subcity: 'Bole Sub-City, Woreda 03',
     houseNo: 'House No. 482/09',
-    photoUrl: '/images/athlete_haile.png',
+    photoUrl: '/images/athlete_haile.jpeg',
     faydaVerified: true,
     club: 'Independent / Unaffiliated Athlete'
   };
@@ -468,7 +468,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
               {t.actionTitle}
             </h3>
             <p style={{ color: '#94A3B8', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '24px' }}>
-              Register for this meet to secure your spot. Athlete entries require Fayda ID biometric verification. Club entries must be managed by certified coaches.
+              Register for this meet to secure your spot. Athlete entries require Fayda ID verification. Club entries must be managed by certified coaches.
             </p>
           </div>
 
@@ -877,7 +877,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                         </div>
                       </div>
                       <span className="badge badge-green" style={{ fontSize: '0.72rem', padding: '4px 10px' }}>
-                        <ShieldCheck size={13} /> Biometric Authenticated
+                        <ShieldCheck size={13} /> Authenticated
                       </span>
                     </div>
 

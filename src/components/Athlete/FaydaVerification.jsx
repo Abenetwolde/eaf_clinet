@@ -54,7 +54,7 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
           Fayda National ID & KYC Verification
         </h3>
         <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-          Proclamation No. 1284/2023 — Biometric verification mandatory for all registered athletes
+          Proclamation No. 1284/2023 —  verification mandatory for all registered athletes
         </p>
       </div>
 
@@ -71,7 +71,7 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
       <div className="gov-card" style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)', border: 'none', borderRadius: '18px', padding: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
           <ShieldCheck size={20} color="#0EA5E9" />
-          <span style={{ fontWeight: 900, color: '#FFFFFF', fontSize: '0.95rem' }}>Fayda Government Sourced Biometric Profile</span>
+          <span style={{ fontWeight: 900, color: '#FFFFFF', fontSize: '0.95rem' }}>Fayda Government Sourced Profile</span>
           {athlete.faydaStatus === 'VERIFIED' && <span className="badge badge-green" style={{ fontSize: '0.7rem', background: '#10B981', color: '#FFF' }}>VERIFIED</span>}
         </div>
         
