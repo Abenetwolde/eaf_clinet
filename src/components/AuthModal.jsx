@@ -53,7 +53,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
               EAF Portal Authentication
             </h3>
             <p style={{ fontSize: '0.9rem', color: '#64748B', marginTop: '6px' }}>
-              Sign in to manage club rosters, event registrations, and athlete biometric licenses
+              Sign in to manage club rosters, event registrations, and athlete  licenses
             </p>
           </div>
           <button 
@@ -189,7 +189,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
           }}>
             <ShieldCheck size={22} style={{ flexShrink: 0 }} />
             <div>
-              <div style={{ fontWeight: 800, color: '#0F172A', marginBottom: '2px' }}>Fayda FIN Biometric SSO Protected</div>
+              <div style={{ fontWeight: 800, color: '#0F172A', marginBottom: '2px' }}>Fayda FIN  SSO Protected</div>
               <div style={{ fontSize: '0.78rem', color: '#475569' }}>Proclamation No. 1284/2023 Compliant — National Digital ID Verification Active</div>
             </div>
           </div>

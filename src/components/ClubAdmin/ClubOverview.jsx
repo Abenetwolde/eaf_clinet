@@ -75,7 +75,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
           </div>
           <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-heading)' }}>{athletes.length} Athletes</div>
           <div style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: 600, marginTop: '4px' }}>
-            ✓ {verifiedCount} Fayda Biometric Verified
+            ✓ {verifiedCount} Fayda Verified
           </div>
         </div>
 

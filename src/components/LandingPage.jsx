@@ -372,7 +372,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#FFFFFF', border: '1px solid #BAE6FD', padding: '6px 16px', borderRadius: '30px', boxShadow: '0 4px 14px rgba(14,165,233,0.12)', marginBottom: '20px' }}>
               <Sparkles size={16} color="#0EA5E9" />
               <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0284C7', letterSpacing: '0.04em' }}>
-                ETHIOPIAN ATHLETICS FEDERATION — BIOMETRIC PLATFORM
+                ETHIOPIAN ATHLETICS FEDERATION —  PLATFORM
               </span>
             </div>
 
@@ -734,7 +734,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               <div>
                 <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>{loc.athletesTitle}</h2>
                 <p style={{ color: '#0EA5E9', fontWeight: 700, marginTop: '4px' }}>
-                  Click on any athlete card to view full biometric & competition profile details
+                  Click on any athlete card to view full  competition profile details
                 </p>
               </div>
 
@@ -855,7 +855,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               `}</style>
               <span className="ticker-inner">
                 {language === 'en' 
-                  ? 'Ethiopia wins 15 medals at 24th African Athletics Championship · EAF launches biometric athlete licensing with Fayda ID · Addis Ababa Grand Prix entries open ·'
+                  ? 'Ethiopia wins 15 medals at 24th African Athletics Championship · EAF launches athlete licensing with Fayda ID · Addis Ababa Grand Prix entries open ·'
                   : 'ኢትዮጵያ በ24ኛው የአፍሪካ አትሌቲክስ ሻምፒዮና 15 ሜዳሊያዎችን አሸንፋለች · ፌዴሬሽኑ የፋይዳ ባዮሜትሪክ ምዝገባን በይፋ ጀምሯል · የአዲስ አበባ ግራንድ ፕሪ ምዝገባ ተጀምሯል ·'}
               </span>
             </div>
@@ -954,7 +954,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 The Ethiopian Athletics Federation (EAF) is the national governing body for athletics in Ethiopia, officially recognized by World Athletics (WA) and a member of the African Athletics Confederation (AAC). Founded in 1964, EAF governs all track and field, road, cross-country, and marathon events in Ethiopia.
               </p>
               <p style={{ color: '#475569', lineHeight: 1.8, marginBottom: 28, fontSize: '0.92rem' }}>
-                EAF oversees the licensing of athletes and clubs through biometric Fayda digital IDs, organizes national championships, selects national teams for international competitions, and develops grassroots talent across all Ethiopian regional states.
+                EAF oversees the licensing of athletes and clubs through Fayda digital IDs, organizes national championships, selects national teams for international competitions, and develops grassroots talent across all Ethiopian regional states.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
@@ -1182,7 +1182,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {[
-              { q: 'How do I verify my Fayda ID?', a: 'Enter your 12-digit Fayda FIN on the registration screen. The system will automatically fetch your biometric profile from the national database.' },
+              { q: 'How do I verify my Fayda ID?', a: 'Enter your 12-digit Fayda FIN on the registration screen. The system will automatically fetch your profile from the national database.' },
               { q: 'Can I register a new club online?', a: 'Yes. Switch to the Club Admin role and follow the club registration workflow. You will need your official club details and manager information.' },
               { q: 'When are the results updated?', a: 'Results for live competitions are updated in real-time by the technical committee directly from the venue.' }
             ].map((faq, idx) => (

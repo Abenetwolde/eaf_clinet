@@ -423,7 +423,7 @@ export const MOCK_NEWS = [
     id: "NEWS-005",
     category: "FEDERATION",
     title: "Fayda ID Integration Now Mandatory for All Club Registrations",
-    summary: "Effective August 1, 2026, all new athlete registrations must be completed through the Fayda National ID biometric API. Secondary documents remain required for U16 and U18 athletes.",
+    summary: "Effective August 1, 2026, all new athlete registrations must be completed through the Fayda National ID API. Secondary documents remain required for U16 and U18 athletes.",
     date: "July 10, 2026",
     imageUrl: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&auto=format&fit=crop&q=80",
     tag: "Policy Update"

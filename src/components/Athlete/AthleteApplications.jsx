@@ -282,7 +282,7 @@ export default function AthleteApplications({ athlete, onNotify }) {
               <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '12px', padding: '12px 16px', display: 'flex', gap: '8px', fontSize: '0.78rem', color: '#1E40AF', lineHeight: 1.4 }}>
                 <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
-                  <strong>Entry Verification:</strong> All entries are cross-referenced with active EAF licenses and Fayda Biometric data. For queries regarding your approval, contact <a href="mailto:registrar@eaf.org.et" style={{ color: '#0284C7', fontWeight: 800 }}>registrar@eaf.org.et</a>.
+                  <strong>Entry Verification:</strong> All entries are cross-referenced with active EAF licenses and Fayda data. For queries regarding your approval, contact <a href="mailto:registrar@eaf.org.et" style={{ color: '#0284C7', fontWeight: 800 }}>registrar@eaf.org.et</a>.
                 </div>
               </div>
 
