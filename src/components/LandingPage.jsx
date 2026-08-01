@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 
@@ -251,6 +251,35 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [contactSuccess, setContactSuccess] = useState(false);
 
   const bannerScrollRef = useRef(null);
+  const athleteScrollRef = useRef(null);
+
+  // Auto-scroll athlete cards
+  useEffect(() => {
+    const el = athleteScrollRef.current;
+    if (!el) return;
+    let frame;
+    let paused = false;
+    let speed = 0.8;
+    const onEnter = () => { paused = true; };
+    const onLeave = () => { paused = false; };
+    el.addEventListener('mouseenter', onEnter);
+    el.addEventListener('mouseleave', onLeave);
+    const step = () => {
+      if (!paused && el) {
+        el.scrollLeft += speed;
+        if (el.scrollLeft >= el.scrollWidth / 2) {
+          el.scrollLeft = 0;
+        }
+      }
+      frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener('mouseenter', onEnter);
+      el.removeEventListener('mouseleave', onLeave);
+    };
+  }, []);
 
   const handleScrollBanners = (direction) => {
     if (bannerScrollRef.current) {
@@ -749,8 +778,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               )}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-              {(publicSubPage === "HOME" ? ATHLETES.slice(0, 4) : ATHLETES).map(athlete => (
+            <div 
+              ref={athleteScrollRef}
+              style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
+            >
+              {[...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => (
                 <div 
                   key={athlete.id} 
                   className="hover-lift"
