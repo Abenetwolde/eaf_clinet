@@ -253,33 +253,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const bannerScrollRef = useRef(null);
   const athleteScrollRef = useRef(null);
 
-  // Auto-scroll athlete cards
-  useEffect(() => {
-    const el = athleteScrollRef.current;
-    if (!el) return;
-    let frame;
-    let paused = false;
-    let speed = 0.8;
-    const onEnter = () => { paused = true; };
-    const onLeave = () => { paused = false; };
-    el.addEventListener('mouseenter', onEnter);
-    el.addEventListener('mouseleave', onLeave);
-    const step = () => {
-      if (!paused && el) {
-        el.scrollLeft += speed;
-        if (el.scrollLeft >= el.scrollWidth / 2) {
-          el.scrollLeft = 0;
-        }
-      }
-      frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-    return () => {
-      cancelAnimationFrame(frame);
-      el.removeEventListener('mouseenter', onEnter);
-      el.removeEventListener('mouseleave', onLeave);
-    };
-  }, []);
+  // CSS keyframe auto-scroll — no JS rAF needed, pauses on hover via CSS
 
   const handleScrollBanners = (direction) => {
     if (bannerScrollRef.current) {
@@ -398,12 +372,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '920px', margin: '0 auto' }}>
             
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#FFFFFF', border: '1px solid #BAE6FD', padding: '6px 16px', borderRadius: '30px', boxShadow: '0 4px 14px rgba(14,165,233,0.12)', marginBottom: '20px' }}>
+            {/* <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#FFFFFF', border: '1px solid #BAE6FD', padding: '6px 16px', borderRadius: '30px', boxShadow: '0 4px 14px rgba(14,165,233,0.12)', marginBottom: '20px' }}>
               <Sparkles size={16} color="#0EA5E9" />
               <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0284C7', letterSpacing: '0.04em' }}>
                 ETHIOPIAN ATHLETICS FEDERATION —  PLATFORM
               </span>
-            </div>
+            </div> */}
 
             <h1 style={{
               color: '#0F172A',
@@ -757,8 +731,23 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 4. FEATURED ATHLETES SPOTLIGHT (PLACED ABOVE NEWS SECTION AS REQUESTED!) ── */}
       {(publicSubPage === "HOME" || publicSubPage === "ATHLETES") && (
-        <section id="athletes" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
-          <div style={{ maxWidth: 1240, margin: '0 auto' }}>
+        <section id="athletes" style={{ background: '#FFFFFF', padding: '60px 0 60px', borderTop: '1px solid #E2E8F0', overflow: 'hidden' }}>
+          <style>{`
+            @keyframes athletes-scroll {
+              0%   { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .athletes-track {
+              display: flex;
+              gap: 24px;
+              width: max-content;
+              animation: athletes-scroll 32s linear infinite;
+            }
+            .athletes-track:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+          <div style={{ maxWidth: 1240, margin: '0 auto', paddingLeft: 24, paddingRight: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>{loc.athletesTitle}</h2>
@@ -777,27 +766,30 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 </button>
               )}
             </div>
+          </div>
 
-            <div 
-              ref={athleteScrollRef}
-              style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
-            >
-              {[...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => (
+          {/* Infinite CSS scroll strip — no overflow scroll bar */}
+          <div style={{ overflow: 'hidden', paddingBottom: '8px' }}>
+            <div className="athletes-track">
+              {[...ATHLETES, ...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => (
                 <div 
-                  key={athlete.id} 
+                  key={`${athlete.id}-${idx}`}
                   className="hover-lift"
                   onClick={() => setSelectedAthleteModal(athlete)}
                   style={{
-                    position: 'relative', 
-                    minHeight: 400,
-                    borderRadius: 24, 
+                    position: 'relative',
+                    width: '320px',
+                    minWidth: '320px',
+                    height: '420px',
+                    borderRadius: 24,
                     overflow: 'hidden',
-                    display: 'flex', 
-                    flexDirection: 'column', 
+                    display: 'flex',
+                    flexDirection: 'column',
                     justifyContent: 'flex-end',
                     cursor: 'pointer',
                     boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
-                    border: '1px solid #E2E8F0'
+                    border: '1px solid #E2E8F0',
+                    flexShrink: 0,
                   }}
                 >
                   <div style={{

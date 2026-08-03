@@ -371,7 +371,10 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                     onChange={(e) => {
                       let v = e.target.value.replace(/[^0-9]/g,'');
                       if(v.length > 12) v = v.slice(0,12);
-                      let fmt = v.replace(/(d{4})(d{0,4})(d{0,4})/,'$1-$2-$3').replace(/-+$/,'');
+                      let fmt = '';
+                      if(v.length>0) fmt += v.slice(0,4);
+                      if(v.length>4) fmt += '-' + v.slice(4,8);
+                      if(v.length>8) fmt += '-' + v.slice(8,12);
                       setNewAthleteFin(fmt);
                     }}
                     maxLength={14}
@@ -560,11 +563,14 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               {registrationSubmitted && (
                 <div style={{ background: '#FFF7ED', border: '2px solid #FCD34D', borderRadius: '14px', padding: '32px', textAlign: 'center', marginBottom: '20px' }}>
                   <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⏳</div>
-                  <div style={{ fontWeight: 900, color: '#92400E', fontSize: '1.2rem', marginBottom: '8px' }}>Registration Submitted — Awaiting Approval</div>
+                  <div style={{ fontWeight: 900, color: '#92400E', fontSize: '1.4rem', marginBottom: '12px' }}>🎉 Registration Submitted — Awaiting EAF Approval</div>
                   <div style={{ color: '#78350F', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                    Your application for <strong>{faydaVerifiedData?.fullName}</strong> has been received by the EAF registry.<br/>
-                    The federation will review and approve within <strong>2–5 business days</strong>.<br/>
-                    You will receive a notification once the athlete is cleared.
+                    Your registration application for <strong>{faydaVerifiedData?.fullName}</strong> has been successfully submitted to the Ethiopian Athletics Federation (EAF) Digital Registry.<br/><br/>
+                    📋 <strong>Application Reference:</strong> EAF-{new Date().getFullYear()}-{Math.floor(1000 + Math.random() * 9000)}<br/>
+                    ⏱️ <strong>Expected Review Time:</strong> 2–5 business days<br/>
+                    📱 <strong>Notification:</strong> SMS &amp; email will be sent to the registered Fayda mobile number<br/>
+                    🔒 <strong>Status:</strong> Pending biometric cross-verification<br/><br/>
+                    You will be notified once the athlete's Fayda identity is cleared and the EAF license is issued.
                   </div>
                 </div>
               )}
