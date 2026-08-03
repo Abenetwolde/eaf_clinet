@@ -22,7 +22,10 @@ export default function ClientLayout({
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div 
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+          onClick={() => onChangeSubPage('OVERVIEW')}
+        >
           <img src="/images/logo.jpeg" alt="EAF" style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }} />
           <div>
             <h1 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A', margin: 0, letterSpacing: '-0.02em' }}>EAF Athlete</h1>

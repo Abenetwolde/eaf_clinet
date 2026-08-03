@@ -252,8 +252,65 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   const bannerScrollRef = useRef(null);
   const athleteScrollRef = useRef(null);
+  const compScrollRef = useRef(null);
 
-  // CSS keyframe auto-scroll — no JS rAF needed, pauses on hover via CSS
+  // Auto-scroll competition cards
+  useEffect(() => {
+    const el = compScrollRef.current;
+    if (!el) return;
+    let frame;
+    let paused = false;
+    let speed = 0.85;
+    const onEnter = () => { paused = true; };
+    const onLeave = () => { paused = false; };
+    el.addEventListener('mouseenter', onEnter);
+    el.addEventListener('mouseleave', onLeave);
+    const step = () => {
+      if (!paused && el) {
+        el.scrollLeft += speed;
+        if (el.scrollLeft >= el.scrollWidth / 2) {
+          el.scrollLeft = 0;
+        }
+      }
+      frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(frame);
+      if (el) {
+        el.removeEventListener('mouseenter', onEnter);
+        el.removeEventListener('mouseleave', onLeave);
+      }
+    };
+  }, []);
+
+  // Auto-scroll athlete cards
+  useEffect(() => {
+    const el = athleteScrollRef.current;
+    if (!el) return;
+    let frame;
+    let paused = false;
+    let speed = 0.8;
+    const onEnter = () => { paused = true; };
+    const onLeave = () => { paused = false; };
+    el.addEventListener('mouseenter', onEnter);
+    el.addEventListener('mouseleave', onLeave);
+    const step = () => {
+      if (!paused && el) {
+        el.scrollLeft += speed;
+        if (el.scrollLeft >= el.scrollWidth / 2) {
+          el.scrollLeft = 0;
+        }
+      }
+      frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(frame);
+      el.removeEventListener('mouseenter', onEnter);
+      el.removeEventListener('mouseleave', onLeave);
+    };
+  }, []);
 
   const handleScrollBanners = (direction) => {
     if (bannerScrollRef.current) {
@@ -615,23 +672,22 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </div>
             ) : (
               <div 
-                ref={bannerScrollRef}
+                ref={compScrollRef}
                 style={{ 
                   display: 'flex', 
                   gap: '24px', 
-                  overflowX: 'auto', 
+                  overflowX: 'hidden', 
                   paddingBottom: '16px',
-                  scrollSnapType: 'x mandatory',
-                  scrollbarWidth: 'thin'
+                  cursor: 'grab'
                 }}
               >
-                {sortedMeets.map(meet => {
+                {[...sortedMeets, ...sortedMeets, ...sortedMeets].map((meet, idx) => {
                   const badgeColor = meet.status === 'REGISTRATION_OPEN' ? '#0EA5E9' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
                   const statusName = meet.status === 'REGISTRATION_OPEN' ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
                   
                   return (
                     <div 
-                      key={meet.id} 
+                      key={`${meet.id}-${idx}`} 
                       className="hover-lift" 
                       onClick={() => setSelectedMeetId(meet.id)}
                       style={{
@@ -731,23 +787,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 4. FEATURED ATHLETES SPOTLIGHT (PLACED ABOVE NEWS SECTION AS REQUESTED!) ── */}
       {(publicSubPage === "HOME" || publicSubPage === "ATHLETES") && (
-        <section id="athletes" style={{ background: '#FFFFFF', padding: '60px 0 60px', borderTop: '1px solid #E2E8F0', overflow: 'hidden' }}>
-          <style>{`
-            @keyframes athletes-scroll {
-              0%   { transform: translateX(0); }
-              100% { transform: translateX(-50%); }
-            }
-            .athletes-track {
-              display: flex;
-              gap: 24px;
-              width: max-content;
-              animation: athletes-scroll 32s linear infinite;
-            }
-            .athletes-track:hover {
-              animation-play-state: paused;
-            }
-          `}</style>
-          <div style={{ maxWidth: 1240, margin: '0 auto', paddingLeft: 24, paddingRight: 24 }}>
+        <section id="athletes" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+          <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>{loc.athletesTitle}</h2>
@@ -766,30 +807,31 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 </button>
               )}
             </div>
-          </div>
 
-          {/* Infinite CSS scroll strip — no overflow scroll bar */}
-          <div style={{ overflow: 'hidden', paddingBottom: '8px' }}>
-            <div className="athletes-track">
-              {[...ATHLETES, ...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => (
+            <div 
+              ref={athleteScrollRef}
+              style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
+            >
+              {[...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => (
                 <div 
-                  key={`${athlete.id}-${idx}`}
+                  key={`${athlete.id}-${idx}`} 
                   className="hover-lift"
                   onClick={() => setSelectedAthleteModal(athlete)}
                   style={{
-                    position: 'relative',
-                    width: '320px',
-                    minWidth: '320px',
-                    height: '420px',
-                    borderRadius: 24,
+                    position: 'relative', 
+                    minWidth: '380px',
+                    maxWidth: '400px',
+                    width: '380px',
+                    minHeight: '440px',
+                    flexShrink: 0,
+                    borderRadius: 24, 
                     overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column',
+                    display: 'flex', 
+                    flexDirection: 'column', 
                     justifyContent: 'flex-end',
                     cursor: 'pointer',
                     boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
-                    border: '1px solid #E2E8F0',
-                    flexShrink: 0,
+                    border: '1px solid #E2E8F0'
                   }}
                 >
                   <div style={{
@@ -1091,108 +1133,70 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         </section>
       )}
 
-      {/* ── 8. MEDIA & PHOTO/VIDEO GALLERY PAGE (WHEN MEDIA TAB IS ACTIVE) ── */}
-      {publicSubPage === 'MEDIA' && (
-        <section id="media" style={{ padding: '60px 24px', minHeight: '75vh', background: '#F8FAFC' }}>
+      {/* ── 8. MEDIA & PHOTO/VIDEO GALLERY COLLECTION (RENDERED ON HOME & MEDIA PAGES) ── */}
+      {(publicSubPage === 'HOME' || publicSubPage === 'MEDIA') && (
+        <section id="media" style={{ padding: '60px 24px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#E0F2FE', color: '#0284C7', padding: '6px 16px', borderRadius: '30px', fontWeight: 800, fontSize: '0.82rem', marginBottom: '12px' }}>
-                <Image size={16} /> EAF OFFICIAL MEDIA GALLERY
+                <Image size={16} /> EAF OFFICIAL MEDIA COLLECTION
               </div>
-              <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0F172A' }}>High-Resolution Photo & Video Gallery</h2>
+              <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0F172A' }}>High-Resolution Photo &amp; Video Gallery</h2>
               <p style={{ color: '#64748B', marginTop: '8px', fontSize: '1rem', maxWidth: '600px', margin: '8px auto 0' }}>
                 Explore historic championship moments, marathon victories, send-off ceremonies, and athlete training sessions
               </p>
             </div>
 
-            {selectedAlbum ? (
-              <div>
-                <button 
-                  onClick={() => setSelectedAlbum(null)}
-                  style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', padding: '8px 16px', borderRadius: '12px', fontWeight: 800, color: '#0F172A', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
-                >
-                  <ChevronLeft size={16} /> Back to Albums
-                </button>
-                <h3 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0F172A', marginBottom: '24px' }}>{selectedAlbum}</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '24px' }}>
-                  {GALLERY_IMAGES.filter(img => selectedAlbum === 'All' || img.category === selectedAlbum).map(item => (
-                    <div 
-                      key={item.id}
-                      className="hover-lift"
-                      onClick={() => setActiveLightboxImg(item)}
-                      style={{
-                        position: 'relative',
-                        borderRadius: '20px',
-                        overflow: 'hidden',
-                        height: '280px',
-                        cursor: 'pointer',
-                        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.1)',
-                        border: '1px solid #E2E8F0'
-                      }}
-                    >
-                      <img 
-                        src={item.img} 
-                        alt={item.title} 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      />
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.9) 0%, transparent 60%)' }} />
-                      <div style={{ position: 'absolute', bottom: 16, left: 16, right: 16, color: '#FFF' }}>
-                        <div style={{ fontSize: '1rem', fontWeight: 800, lineHeight: 1.3, marginBottom: '4px' }}>{item.title}</div>
-                        <div style={{ fontSize: '0.78rem', color: '#94A3B8', display: 'flex', gap: '10px' }}>
-                          <span>📍 {item.location}</span>
-                          <span>🗓️ {item.date}</span>
-                        </div>
+            {/* Asymmetric Mosaic Grid Layout Collection */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridAutoRows: '240px',
+              gap: '20px'
+            }}>
+              {GALLERY_IMAGES.map((item, idx) => {
+                const isHero = idx === 0;
+                const isTall = idx === 2 || idx === 5;
+                const isWide = idx === 3;
+                return (
+                  <div 
+                    key={item.id}
+                    className="hover-lift"
+                    onClick={() => setActiveLightboxImg(item)}
+                    style={{
+                      position: 'relative',
+                      borderRadius: '24px',
+                      overflow: 'hidden',
+                      gridColumn: isHero ? 'span 2' : isWide ? 'span 2' : 'span 1',
+                      gridRow: isHero ? 'span 2' : isTall ? 'span 2' : 'span 1',
+                      cursor: 'pointer',
+                      boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
+                      border: '1px solid #E2E8F0',
+                      minHeight: isTall ? '480px' : isHero ? '480px' : '240px'
+                    }}
+                  >
+                    <img 
+                      src={item.img} 
+                      alt={item.title} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.2) 60%, transparent 100%)' }} />
+                    <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 2 }}>
+                      <span style={{ background: '#0EA5E9', color: '#FFF', padding: '4px 12px', borderRadius: '14px', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                        {item.category}
+                      </span>
+                    </div>
+                    <div style={{ position: 'absolute', bottom: 20, left: 20, right: 20, color: '#FFF', zIndex: 2 }}>
+                      <h4 style={{ fontSize: isHero ? '1.5rem' : '1.1rem', fontWeight: 900, lineHeight: 1.2, marginBottom: '6px' }}>{item.title}</h4>
+                      <div style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        <span>📍 {item.location}</span>
+                        <span>🗓️ {item.date}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-                {['Championships', 'Marathons', 'Track & Field', 'Ceremonies'].map(albumName => {
-                  const coverImage = GALLERY_IMAGES.find(img => img.category === albumName)?.img || '/images/d1.jpg';
-                  const count = GALLERY_IMAGES.filter(img => img.category === albumName).length;
-                  return (
-                    <div 
-                      key={albumName}
-                      className="hover-lift"
-                      onClick={() => setSelectedAlbum(albumName)}
-                      style={{
-                        position: 'relative',
-                        borderRadius: '24px',
-                        overflow: 'hidden',
-                        height: '320px',
-                        cursor: 'pointer',
-                        boxShadow: '0 12px 32px rgba(15, 23, 42, 0.1)',
-                        border: '1px solid #E2E8F0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'flex-end'
-                      }}
-                    >
-                      <div style={{
-                        position: 'absolute', inset: 0,
-                        backgroundImage: `url(${coverImage})`,
-                        backgroundSize: 'cover', backgroundPosition: 'center',
-                      }} />
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.2) 60%, transparent 100%)' }} />
-                      
-                      <div style={{ position: 'relative', zIndex: 1, padding: '24px' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: '#FFF', padding: '4px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '12px' }}>
-                          <FolderOpen size={14} /> {count} Photos
-                        </div>
-                        <h3 style={{ color: '#FFFFFF', fontSize: '1.4rem', fontWeight: 900, marginBottom: '8px' }}>
-                          {albumName}
-                        </h3>
-                        <div style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          View Album <ChevronRight size={16} />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
       )}

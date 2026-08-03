@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X, Building2, UserCheck, ShieldCheck, RefreshCw, CheckCircle2, ArrowRight, Mail, Lock, Phone, User, Award, FileText, LockKeyhole } from 'lucide-react';
+import { X, Building2, UserCheck, ShieldCheck, RefreshCw, CheckCircle2, ArrowRight, Mail, Lock, Phone, User, Award, FileText, LockKeyhole, Clock, AlertCircle, Check } from 'lucide-react';
 import { MOCK_CLUBS } from '../data/mockData';
 
-// Step indicator
+// Step indicator bar
 function StepBar({ steps, current }) {
   return (
     <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
@@ -35,7 +35,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
   // Common account fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState('+251 91 234 5678');
 
   // Club-specific
   const [clubName, setClubName] = useState('');
@@ -46,42 +46,89 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
 
   // Athlete-specific
   const [faydaFin, setFaydaFin] = useState('');
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
   const [selectedClubId, setSelectedClubId] = useState('NONE');
   const [primaryEvent, setPrimaryEvent] = useState(['5,000m Long Distance']);
   const [faydaLoading, setFaydaLoading] = useState(false);
   const [faydaResult, setFaydaResult] = useState(null);
   const [faydaError, setFaydaError] = useState('');
 
+  // Athlete physical & contact metadata
+  const [weight, setWeight] = useState(58);
+  const [height, setHeight] = useState(172);
+  const [emergencyContact, setEmergencyContact] = useState('Ato Bekele Negash (+251 91 111 2233)');
+  const [medicalNotes, setMedicalNotes] = useState('Blood Group O+ | No known allergies');
+
+  // Pending approval screen state
+  const [isSubmittedPending, setIsSubmittedPending] = useState(false);
+  const [pendingRegistrationData, setPendingRegistrationData] = useState(null);
+
   const clubSteps = ['Account', 'Club Info', 'Confirm'];
   const athleteSteps = ['Fayda Verification', 'Sports Info', 'Account', 'Confirm'];
-
   const steps = isClub ? clubSteps : athleteSteps;
 
-  // ── Fayda lookup (simulated) ──
-  const handleFaydaLookup = () => {
-    if (faydaFin.length < 10) { setFaydaError('Enter a valid Fayda FIN (at least 10 digits)'); return; }
+  // Auto-format Fayda FIN into 12 digits (XXXX-XXXX-XXXX)
+  const handleFinChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 12);
+    let formatted = raw;
+    if (raw.length > 4 && raw.length <= 8) {
+      formatted = `${raw.slice(0, 4)}-${raw.slice(4)}`;
+    } else if (raw.length > 8) {
+      formatted = `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8)}`;
+    }
+    setFaydaFin(formatted);
+  };
+
+  // ── Step 1: Initiate Fayda lookup & launch OTP prompt ──
+  const handleInitiateFaydaLookup = () => {
+    const cleanDigits = faydaFin.replace(/\D/g, '');
+    if (cleanDigits.length < 10) {
+      setFaydaError('Enter a valid 12-digit Fayda FIN Number (e.g. 9840-3920-1124)');
+      return;
+    }
     setFaydaError('');
     setFaydaLoading(true);
     setTimeout(() => {
       setFaydaLoading(false);
+      setOtpStep(true); // Open OTP verification page
+    }, 900);
+  };
+
+  // ── Step 2: Confirm OTP & retrieve Fayda Biometrics ──
+  const handleVerifyOtp = () => {
+    if (otpCode.length < 6) {
+      setFaydaError('Enter a valid 6-digit SMS OTP passcode');
+      return;
+    }
+    setFaydaError('');
+    setOtpLoading(true);
+    setTimeout(() => {
+      setOtpLoading(false);
+      setOtpStep(false);
+
       const mockProfiles = [
-        { name: 'Almaz Bekele Negash', amharic: 'አልማዝ በቀለ ነጋሽ', dob: '2003-06-18', gender: 'Female', photoUrl: '/images/runner_female.png' },
-        { name: 'Dawit Fikadu Alemu', amharic: 'ዳዊት ፍካዱ አለሙ', dob: '2001-11-22', gender: 'Male', photoUrl: '/images/runner_marathon.png' },
-        { name: 'Marta Woldu Hailе', amharic: 'ማርታ ወልዱ ኃይሌ', dob: '2008-04-07', gender: 'Female', photoUrl: '/images/a1.jpg' },
+        { name: 'Almaz Bekele Negash', amharic: 'አልማዝ በቀለ ነጋሽ', dob: '2003-06-18', gender: 'Female', blood: 'O+', region: 'Oromia Regional State', photoUrl: '/images/runner_female.png' },
+        { name: 'Dawit Fikadu Alemu', amharic: 'ዳዊት ፍካዱ አለሙ', dob: '2001-11-22', gender: 'Male', blood: 'A+', region: 'Addis Ababa Administration', photoUrl: '/images/runner_marathon.png' },
+        { name: 'Marta Woldu Hailе', amharic: 'ማርታ ወልዱ ኃይሌ', dob: '2008-04-07', gender: 'Female', blood: 'B+', region: 'Amhara Regional State', photoUrl: '/images/a1.jpg' },
       ];
-      const pick = mockProfiles[faydaFin.length % mockProfiles.length];
+      const cleanDigits = faydaFin.replace(/\D/g, '');
+      const pick = mockProfiles[cleanDigits.length % mockProfiles.length];
       const age = 2026 - parseInt(pick.dob.substring(0, 4));
-      const tier = age <= 16 ? 'U16' : age <= 18 ? 'U18' : age <= 20 ? 'U20' : 'Senior';
+      const tier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : 'Senior Division';
+
       setFaydaResult({
         ...pick,
         ageTier: tier,
-        fin: faydaFin,
-        hash: '0xFAYDA_' + Math.random().toString(36).substring(2, 10).toUpperCase()
+        fin: faydaFin || '9840-3920-1124',
+        hash: '0xFAYDA_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+        verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
       });
-    }, 1200);
+    }, 1100);
   };
 
-  // ── Submit handlers ──
+  // ── Submit Handlers ──
   const handleClubSubmit = () => {
     const newClub = {
       id: 'CLUB-' + Math.floor(100 + Math.random() * 900),
@@ -92,7 +139,8 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
       unlicensedAthletes: 0, transfersCount: 0,
       logo: clubLogo, clubRank: 99, totalPoints: 0
     };
-    onRegisterSuccess('CLUB', { club: newClub });
+    setPendingRegistrationData({ type: 'CLUB', payload: { club: newClub } });
+    setIsSubmittedPending(true);
   };
 
   const handleAthleteSubmit = () => {
@@ -104,28 +152,138 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
 
     const newAthlete = {
       id: 'ATH-2026-' + Math.floor(100 + Math.random() * 900),
-      name: faydaResult.name,
-      amharicName: faydaResult.amharic,
-      dob: faydaResult.dob,
-      gender: faydaResult.gender,
-      ageTier: faydaResult.ageTier,
+      name: faydaResult?.name || 'Almaz Bekele Negash',
+      amharicName: faydaResult?.amharic || 'አልማዝ በቀለ ነጋሽ',
+      dob: faydaResult?.dob || '2003-06-18',
+      gender: faydaResult?.gender || 'Female',
+      ageTier: faydaResult?.ageTier || 'Senior Division',
       clubId: club.id,
       clubName: club.shortName,
-      faydaFin: faydaResult.fin,
+      faydaFin: faydaResult?.fin || faydaFin,
       faydaStatus: 'VERIFIED',
-      faydaHash: faydaResult.hash,
+      faydaHash: faydaResult?.hash || '0xFAYDA_982A1B0C',
       primaryEvent: displayEvent,
-      licenseStatus: 'UNLICENSED',
+      licenseStatus: 'PENDING_APPROVAL',
       licenseNumber: null,
       licenseExpiry: null,
-      photoUrl: faydaResult.photoUrl,
+      photoUrl: faydaResult?.photoUrl || '/images/runner_female.png',
       checkinStatus: 'NOT_CHECKED_IN',
       qrCodeData: null,
-      secondaryDoc: null,
-      weight: 58, height: 172, restingHR: 48, trainingLoad: 60,
+      weight, height, restingHR: 48, trainingLoad: 60,
+      emergencyContact, medicalNotes,
+      email: email || 'athlete@athletics.et',
+      phone: phone || '+251 91 234 5678',
+      region: faydaResult?.region || 'Oromia Regional State',
       personalBests: [], seasonBests: [], weightLog: [], trainingLog: [], achievements: []
     };
-    onRegisterSuccess('ATHLETE', { athlete: newAthlete });
+
+    setPendingRegistrationData({ type: 'ATHLETE', payload: { athlete: newAthlete } });
+    setIsSubmittedPending(true);
+  };
+
+  // ── Pending Approval View ──
+  const renderPendingApprovalScreen = () => {
+    const data = pendingRegistrationData?.payload;
+    const isAthleteData = pendingRegistrationData?.type === 'ATHLETE';
+    const refNumber = 'EAF-REG-2026-' + Math.floor(100000 + Math.random() * 900000);
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '10px 0' }}>
+        <div style={{
+          width: '80px', height: '80px', borderRadius: '50%',
+          background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+          border: '3px solid #F59E0B',
+          color: '#D97706',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: '20px',
+          boxShadow: '0 12px 28px rgba(245, 158, 11, 0.25)'
+        }}>
+          <Clock size={42} className="animate-pulse" />
+        </div>
+
+        <span className="badge badge-amber" style={{ fontSize: '0.82rem', padding: '6px 16px', borderRadius: '20px', marginBottom: '12px' }}>
+          ⏳ PENDING FEDERATION BOARD APPROVAL
+        </span>
+
+        <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F172A', marginBottom: '8px' }}>
+          Application Submitted Successfully!
+        </h3>
+
+        <p style={{ fontSize: '0.95rem', color: '#475569', maxWidth: '580px', lineHeight: 1.6, marginBottom: '24px' }}>
+          Your {isAthleteData ? 'athlete profile & Fayda identity biometrics' : 'club registration details'} have been securely logged and queued for audit by the <strong>Ethiopian Athletics Federation (EAF) Executive Board</strong>.
+        </p>
+
+        {/* Tracking Card */}
+        <div style={{
+          background: '#F8FAFC',
+          border: '1px solid #E2E8F0',
+          borderRadius: '20px',
+          padding: '24px',
+          width: '100%',
+          textAlign: 'left',
+          marginBottom: '24px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', pb: '12px', marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748B' }}>TRACKING REFERENCE ID</span>
+            <span style={{ fontSize: '1rem', fontWeight: 900, color: '#0EA5E9', fontFamily: 'var(--font-mono)' }}>{refNumber}</span>
+          </div>
+
+          {isAthleteData && data?.athlete && (
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+              <img
+                src={data.athlete.photoUrl}
+                alt="Passport Photo"
+                style={{
+                  width: '90px', height: '115px',
+                  objectFit: 'cover', borderRadius: '12px',
+                  border: '3px solid #FFFFFF',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.12)'
+                }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A' }}>{data.athlete.name}</div>
+                <div style={{ fontSize: '0.88rem', color: '#0284C7', fontWeight: 700, marginTop: '2px' }}>{data.athlete.amharicName}</div>
+                <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '6px' }}>
+                  Fayda FIN: <strong>{data.athlete.faydaFin}</strong> · Club: <strong>{data.athlete.clubName}</strong>
+                </div>
+                <div style={{ fontSize: '0.82rem', color: '#10B981', fontWeight: 800, marginTop: '4px' }}>
+                  ✓ Fayda Biometrics Verified · Status: Under Board Review
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isAthleteData && data?.club && (
+            <div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0F172A' }}>{data.club.name}</div>
+              <div style={{ fontSize: '0.88rem', color: '#64748B', marginTop: '4px' }}>
+                Region: <strong>{data.club.region}</strong> · Manager: <strong>{data.club.manager}</strong>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '16px', fontSize: '0.85rem', color: '#1E40AF', textAlign: 'left', marginBottom: '24px', width: '100%' }}>
+          📲 <strong>Notification Notice:</strong> You will receive an official SMS notification and email once your EAF license is reviewed and approved by federation officials.
+        </div>
+
+        <button
+          className="btn-accent"
+          style={{
+            width: '100%', padding: '16px', fontSize: '1.05rem', borderRadius: '14px',
+            background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF',
+            border: 'none', fontWeight: 900, cursor: 'pointer'
+          }}
+          onClick={() => {
+            if (pendingRegistrationData) {
+              onRegisterSuccess(pendingRegistrationData.type, pendingRegistrationData.payload);
+            }
+          }}
+        >
+          Acknowledge & Access Portal Dashboard →
+        </button>
+      </div>
+    );
   };
 
   // ── CLUB FLOW ──
@@ -238,92 +396,226 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div>
           <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A', marginBottom: '6px' }}>
-            Step 1: Fayda ID Verification
+            Step 1: Fayda FIN Verification
           </h4>
           <p style={{ fontSize: '0.88rem', color: '#64748B', lineHeight: 1.6 }}>
-            Enter your 12-digit Fayda FIN. Full name, date of birth, age tier, and photo profile are fetched automatically from the government identity database.
+            Enter your 12-digit Fayda FIN Number. Full legal name, date of birth, age division, and official passport photo are fetched from the National ID database.
           </p>
         </div>
 
         {/* Fayda Input */}
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>Fayda FIN Number (12 Digits)</label>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <input
-              className="form-input" style={{ flex: 1, padding: '14px 16px', fontSize: '1rem', borderRadius: '12px' }}
-              value={faydaFin} onChange={e => setFaydaFin(e.target.value)}
-              placeholder="e.g. 9840-3920-1124"
-            />
-            <button
-              type="button"
-              className="btn-accent"
-              style={{ whiteSpace: 'nowrap', padding: '14px 20px', borderRadius: '12px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-              onClick={handleFaydaLookup}
-              disabled={faydaLoading}
-            >
-              {faydaLoading ? <><RefreshCw size={16} className="animate-spin" /> Verifying...</> : <><ShieldCheck size={18} /> Verify Fayda FIN</>}
-            </button>
+        {!otpStep && !faydaResult && (
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+              Fayda FIN Number (12 Digits Auto-Formatted)
+            </label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input
+                className="form-input"
+                style={{ flex: 1, padding: '14px 16px', fontSize: '1.05rem', borderRadius: '12px', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', fontWeight: 700 }}
+                value={faydaFin}
+                onChange={handleFinChange}
+                placeholder="e.g. 9840-3920-1124"
+                maxLength={14}
+              />
+              <button
+                type="button"
+                className="btn-accent"
+                style={{ whiteSpace: 'nowrap', padding: '14px 22px', borderRadius: '12px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                onClick={handleInitiateFaydaLookup}
+                disabled={faydaLoading}
+              >
+                {faydaLoading ? <><RefreshCw size={16} className="animate-spin" /> Verifying FIN...</> : <><ShieldCheck size={18} /> Verify Fayda FIN</>}
+              </button>
+            </div>
+            {faydaError && <span style={{ color: '#EF4444', fontSize: '0.85rem', fontWeight: 700, marginTop: '6px', display: 'block' }}>{faydaError}</span>}
           </div>
-          {faydaError && <span style={{ color: '#EF4444', fontSize: '0.85rem', fontWeight: 700, marginTop: '4px' }}>{faydaError}</span>}
-        </div>
+        )}
 
-        {/* Fayda Verified Result Card with Profile Picture */}
+        {/* OTP Entry Page (After clicking Verify FIN) */}
+        {otpStep && !faydaResult && (
+          <div style={{
+            background: '#F0F9FF',
+            border: '2px solid #0EA5E9',
+            borderRadius: '20px',
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#0EA5E9', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Phone size={20} />
+              </div>
+              <div>
+                <h5 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A' }}>SMS OTP Authentication</h5>
+                <p style={{ fontSize: '0.83rem', color: '#0284C7', fontWeight: 700 }}>
+                  A 6-digit OTP passcode was sent to your Fayda registered mobile (+251 91 *** *78).
+                </p>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', textAlign: 'center', display: 'block', marginBottom: '8px' }}>
+                Enter 6-Digit Passcode (OTP)
+              </label>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', margin: '12px 0' }}>
+                {[0, 1, 2, 3, 4, 5].map(idx => (
+                  <input
+                    key={idx}
+                    id={`otp-box-${idx}`}
+                    type="text"
+                    maxLength={1}
+                    value={otpCode[idx] || ''}
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      const current = otpCode.split('');
+                      current[idx] = val;
+                      const newCode = current.join('').slice(0, 6);
+                      setOtpCode(newCode);
+                      if (val && idx < 5) {
+                        const nextEl = document.getElementById(`otp-box-${idx + 1}`);
+                        if (nextEl) nextEl.focus();
+                      }
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Backspace' && !otpCode[idx] && idx > 0) {
+                        const prevEl = document.getElementById(`otp-box-${idx - 1}`);
+                        if (prevEl) prevEl.focus();
+                      }
+                    }}
+                    style={{
+                      width: '52px',
+                      height: '60px',
+                      borderRadius: '12px',
+                      border: otpCode[idx] ? '2px solid #0EA5E9' : '1px solid #CBD5E1',
+                      background: otpCode[idx] ? '#F0F9FF' : '#FFFFFF',
+                      textAlign: 'center',
+                      fontSize: '1.5rem',
+                      fontWeight: 900,
+                      fontFamily: 'var(--font-mono)',
+                      outline: 'none',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {faydaError && <span style={{ color: '#EF4444', fontSize: '0.85rem', fontWeight: 700 }}>{faydaError}</span>}
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+              <button
+                type="button"
+                className="btn-gov-secondary"
+                style={{ flex: 1, padding: '12px', borderRadius: '10px' }}
+                onClick={() => setOtpStep(false)}
+              >
+                Back to FIN
+              </button>
+              <button
+                type="button"
+                className="btn-accent"
+                style={{ flex: 2, padding: '12px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                onClick={handleVerifyOtp}
+                disabled={otpLoading}
+              >
+                {otpLoading ? <><RefreshCw size={16} className="animate-spin" /> Confirming Passcode...</> : <><CheckCircle2 size={18} /> Confirm OTP & Retrieve Biometrics</>}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Fayda Verified Result List Card with Formal Passport Photo */}
         {faydaResult && (
           <div style={{
             background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)',
             border: '2px solid #0EA5E9',
             borderRadius: '20px',
             padding: '24px',
+            boxShadow: '0 8px 24px rgba(14, 165, 233, 0.15)',
             display: 'flex',
-            gap: '20px',
-            alignItems: 'center',
-            boxShadow: '0 8px 24px rgba(14, 165, 233, 0.15)'
+            flexDirection: 'column',
+            gap: '20px'
           }}>
-            {/* Athlete Fayda Profile Photo */}
-            <div style={{ position: 'relative', flexShrink: 0 }}>
-              <img
-                src={faydaResult.photoUrl}
-                alt="Fayda Profile Photo"
-                style={{
-                  width: '90px',
-                  height: '90px',
-                  borderRadius: '16px',
-                  objectFit: 'cover',
-                  border: '3px solid #FFFFFF',
-                  boxShadow: '0 6px 16px rgba(0,0,0,0.12)'
-                }}
-              />
-              <div style={{ position: 'absolute', bottom: '-6px', right: '-6px', background: '#10B981', color: '#FFF', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #FFF' }}>
-                <CheckCircle2 size={16} />
+            {/* Header Badge */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(14, 165, 233, 0.3)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={22} color="#0284C7" />
+                <span style={{ fontWeight: 900, color: '#0369A1', fontSize: '1rem', letterSpacing: '0.04em' }}>
+                  GOVERNMENT FAYDA ID BIOMETRICS VERIFIED
+                </span>
               </div>
+              <span style={{ background: '#10B981', color: '#FFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 }}>
+                AUTHENTICATED ✓
+              </span>
             </div>
 
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <ShieldCheck size={18} color="#0284C7" />
-                <span style={{ fontWeight: 900, color: '#0369A1', fontSize: '0.95rem' }}>FAYDA  PROFILE VERIFIED</span>
-              </div>
-
-              <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A', marginBottom: '2px' }}>
-                {faydaResult.name} ({faydaResult.amharic})
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px', fontSize: '0.82rem', color: '#475569' }}>
-                <span>DOB: <strong>{faydaResult.dob}</strong></span>
-                <span>Gender: <strong>{faydaResult.gender}</strong></span>
-                <span style={{ background: '#0EA5E9', color: '#FFF', padding: '2px 8px', borderRadius: '6px', fontWeight: 800 }}>
-                  Division: {faydaResult.ageTier}
+            {/* Profile Content Layout */}
+            <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              {/* Formal Passport Photo Frame */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                <div style={{
+                  width: '125px',
+                  height: '160px',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  border: '4px solid #FFFFFF',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
+                  position: 'relative',
+                  background: '#E2E8F0'
+                }}>
+                  <img
+                    src={faydaResult.photoUrl}
+                    alt="Formal Passport Photo"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  <div style={{
+                    position: 'absolute', top: '6px', right: '6px',
+                    background: '#10B981', color: '#FFF', borderRadius: '50%',
+                    width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid #FFF', boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                  }}>
+                    <CheckCircle2 size={14} />
+                  </div>
+                </div>
+                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#0369A1', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  📷 Official Passport Photo
                 </span>
               </div>
 
-              <div style={{ fontSize: '0.73rem', fontFamily: 'var(--font-mono)', color: '#64748B', marginTop: '6px' }}>
-                Audit Hash: {faydaResult.hash}
+              {/* Personal Information List */}
+              <div style={{ flex: 1, minWidth: '260px' }}>
+                <h5 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0369A1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+                  📋 Personal Identity Data List
+                </h5>
+                <div style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #BAE6FD', overflow: 'hidden' }}>
+                  <table className="gov-table" style={{ margin: 0 }}>
+                    <tbody>
+                      {[
+                        ['Full Legal Name (Eng)', faydaResult.name],
+                        ['Full Legal Name (Amh)', faydaResult.amharic],
+                        ['Fayda FIN Number', faydaResult.fin],
+                        ['Date of Birth (DOB)', `${faydaResult.dob} (Age 22)`],
+                        ['Age Division Tier', faydaResult.ageTier],
+                        ['Gender & Blood', `${faydaResult.gender} · Blood Type ${faydaResult.blood}`],
+                        ['Regional Delegation', faydaResult.region],
+                        ['Verification Hash', faydaResult.hash],
+                      ].map(([k, v]) => (
+                        <tr key={k}>
+                          <td style={{ width: '42%', fontWeight: 700, color: '#64748B', fontSize: '0.82rem', padding: '10px 14px' }}>{k}</td>
+                          <td style={{ fontWeight: 900, color: '#0F172A', fontSize: '0.85rem', padding: '10px 14px' }}>{v}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {!faydaResult && (
+        {!faydaResult && !otpStep && (
           <div style={{
             background: '#FFFBEB',
             border: '1px solid #FCD34D',
@@ -337,7 +629,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             fontWeight: 700
           }}>
             <LockKeyhole size={18} />
-            <span>🔒 Please click "Verify Fayda FIN" above to unlock the "Continue to Sports Info" button.</span>
+            <span>🔒 Please click "Verify Fayda FIN" above to enter your SMS OTP passcode.</span>
           </div>
         )}
 
@@ -400,7 +692,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             </label>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
               gap: '10px',
               background: '#F8FAFC',
               padding: '16px',
@@ -453,7 +745,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             </div>
           </div>
 
-          {/* Current Registered Club Dropdown with None option */}
+          {/* Current Registered Club Dropdown */}
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Current Registered Club</label>
             <select className="form-select" value={selectedClubId} onChange={e => setSelectedClubId(e.target.value)} style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }}>
@@ -464,8 +756,16 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             </select>
           </div>
 
-          <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '14px', padding: '16px', fontSize: '0.85rem', color: '#64748B' }}>
-            💡 <strong>Tip:</strong> You can log training sessions, personal records, and weight stats in your Athlete Dashboard after completing registration.
+          {/* Physical & Medical Stats Inputs */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            <div className="form-group">
+              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Weight (kg)</label>
+              <input className="form-input" type="number" value={weight} onChange={e => setWeight(Number(e.target.value))} style={{ padding: '12px 14px', borderRadius: '10px' }} />
+            </div>
+            <div className="form-group">
+              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Height (cm)</label>
+              <input className="form-input" type="number" value={height} onChange={e => setHeight(Number(e.target.value))} style={{ padding: '12px 14px', borderRadius: '10px' }} />
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
@@ -497,6 +797,11 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
           <input className="form-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+251 91 234 5678" required style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
         </div>
 
+        <div className="form-group">
+          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Emergency Contact Person & Phone</label>
+          <input className="form-input" type="text" value={emergencyContact} onChange={e => setEmergencyContact(e.target.value)} style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
+        </div>
+
         <div style={{ display: 'flex', gap: '12px' }}>
           <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(1)}>Back</button>
           <button
@@ -519,23 +824,56 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
 
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>Step 4: Final Confirmation</h4>
+          <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>Step 4: Final Confirmation Summary</h4>
 
-          <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-              <img src={faydaResult?.photoUrl} alt="Photo" style={{ width: '80px', height: '80px', borderRadius: '14px', objectFit: 'cover' }} />
-              <div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0F172A' }}>{faydaResult?.name}</div>
-                <div style={{ fontSize: '0.9rem', color: '#0EA5E9', fontWeight: 700 }}>Fayda FIN: {faydaResult?.fin}</div>
+          {/* Detailed Summary Card */}
+          <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Header Passport Card */}
+            <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{
+                width: '120px', height: '150px', borderRadius: '14px',
+                border: '4px solid #FFFFFF', boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+                overflow: 'hidden', flexShrink: 0
+              }}>
+                <img src={faydaResult?.photoUrl || '/images/runner_female.png'} alt="Passport Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#E0F2FE', color: '#0284C7', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
+                  <ShieldCheck size={14} /> FAYDA IDENTITY VERIFIED
+                </div>
+                <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0F172A' }}>{faydaResult?.name}</div>
+                <div style={{ fontSize: '0.95rem', color: '#0EA5E9', fontWeight: 700 }}>{faydaResult?.amharic}</div>
+                <div style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '6px' }}>
+                  Fayda FIN: <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>{faydaResult?.fin}</strong>
+                </div>
               </div>
             </div>
-            
-            <div style={{ overflowX: 'auto' }}>
-              <table className="gov-table">
+
+            {/* Maximum Metadata Data Table */}
+            <div style={{ overflowX: 'auto', background: '#FFFFFF', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+              <table className="gov-table" style={{ margin: 0 }}>
                 <tbody>
-                  <tr><td style={{ width: '40%', fontWeight: 700, color: '#64748B' }}>Division</td><td style={{ fontWeight: 900, color: '#0F172A' }}>{faydaResult?.ageTier}</td></tr>
-                  <tr><td style={{ fontWeight: 700, color: '#64748B' }}>Events</td><td style={{ fontWeight: 900, color: '#0F172A' }}>{eventText}</td></tr>
-                  <tr><td style={{ fontWeight: 700, color: '#64748B' }}>Club</td><td style={{ fontWeight: 900, color: '#0F172A' }}>{club?.shortName}</td></tr>
+                  {[
+                    ['Full Legal Name', `${faydaResult?.name} (${faydaResult?.amharic})`],
+                    ['Fayda FIN Number', faydaResult?.fin],
+                    ['Cryptographic Hash', faydaResult?.hash],
+                    ['Date of Birth & Division', `${faydaResult?.dob} · ${faydaResult?.ageTier}`],
+                    ['Gender & Blood Group', `${faydaResult?.gender} · Type ${faydaResult?.blood}`],
+                    ['Physical Stats', `Height: ${height} cm · Weight: ${weight} kg`],
+                    ['Athletics Club', club?.shortName],
+                    ['Primary Event(s)', eventText],
+                    ['Regional Delegation', faydaResult?.region || 'Oromia Regional State'],
+                    ['Account Email', email || 'athlete@athletics.et'],
+                    ['Phone Number', phone || '+251 91 234 5678'],
+                    ['Emergency Contact', emergencyContact],
+                    ['Medical Notes', medicalNotes],
+                    ['License Status', '⏳ PENDING FEDERATION AUDIT & APPROVAL'],
+                  ].map(([k, v]) => (
+                    <tr key={k}>
+                      <td style={{ width: '38%', fontWeight: 700, color: '#64748B', fontSize: '0.82rem', padding: '10px 14px' }}>{k}</td>
+                      <td style={{ fontWeight: 900, color: '#0F172A', fontSize: '0.85rem', padding: '10px 14px' }}>{v}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -545,10 +883,10 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(2)}>Back</button>
             <button
               className="btn-accent"
-              style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               onClick={handleAthleteSubmit}
             >
-              <CheckCircle2 size={18} /> Complete Athlete Registration
+              <CheckCircle2 size={18} /> Submit Athlete Registration to EAF
             </button>
           </div>
         </div>
@@ -563,8 +901,8 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
         onClick={e => e.stopPropagation()}
         style={{
           padding: '44px 48px',
-          maxWidth: '780px',
-          width: '95%',
+          maxWidth: '1220px',
+          width: '95vw',
           margin: '20px auto',
           borderRadius: '24px',
           boxShadow: '0 32px 64px rgba(15, 23, 42, 0.25)',
@@ -572,33 +910,38 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
         }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{
-              width: '50px', height: '50px', borderRadius: '14px',
-              background: isClub ? '#FEF3C7' : '#E0F2FE',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: isClub ? '#D97706' : '#0284C7'
-            }}>
-              {isClub ? <Building2 size={26} /> : <UserCheck size={26} />}
+        {!isSubmittedPending && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{
+                width: '50px', height: '50px', borderRadius: '14px',
+                background: isClub ? '#FEF3C7' : '#E0F2FE',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: isClub ? '#D97706' : '#0284C7'
+              }}>
+                {isClub ? <Building2 size={26} /> : <UserCheck size={26} />}
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F172A' }}>
+                  {isClub ? 'Register Club Account' : 'Athlete Registration'}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748B' }}>
+                  Ethiopian Athletics Federation — EOSCRMS Portal
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F172A' }}>
-                {isClub ? 'Register Club Account' : 'Athlete Registration'}
-              </h3>
-              <p style={{ fontSize: '0.85rem', color: '#64748B' }}>
-                Ethiopian Athletics Federation — EOSCRMS Portal
-              </p>
-            </div>
+            <button onClick={onClose} style={{ background: '#F1F5F9', border: 'none', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={20} color="#64748B" />
+            </button>
           </div>
-          <button onClick={onClose} style={{ background: '#F1F5F9', border: 'none', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <X size={20} color="#64748B" />
-          </button>
-        </div>
+        )}
 
-        <StepBar steps={steps} current={step} />
+        {!isSubmittedPending && <StepBar steps={steps} current={step} />}
 
-        {isClub ? renderClubStep() : renderAthleteStep()}
+        {isSubmittedPending
+          ? renderPendingApprovalScreen()
+          : (isClub ? renderClubStep() : renderAthleteStep())
+        }
       </div>
     </div>
   );

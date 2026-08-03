@@ -13,9 +13,7 @@ function EAFQrCode({ code = "EAF-MEET-202-2026-243", size = 150 }) {
       border: '1px solid #E2E8F0',
       display: 'inline-flex',
       alignItems: 'center',
-      justifyContent: 'center',
-      margin: '0 auto',
-      background: '#FFF'
+      margin: '0 auto'
     }}>
       <QRCodeSVG value={code} size={size} />
     </div>

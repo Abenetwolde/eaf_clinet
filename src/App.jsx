@@ -208,7 +208,10 @@ export default function App() {
           transition: 'all 0.3s ease'
         }}>
           {/* Logo + brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div 
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+            onClick={() => { setPublicSubPage('HOME'); setSelectedMeet(null); }}
+          >
             <div style={{ width: '44px', height: '44px', background: '#FFFFFF', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, border: '1px solid #E2E8F0', padding: '2px' }}>
               <img
                 src="/images/logo.jpeg"
