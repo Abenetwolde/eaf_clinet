@@ -847,8 +847,8 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
       {/* ── INDIVIDUAL ATHLETE MEET REGISTRATION MODAL ── */}
       {showIndividualModal && (
-        <div className="modal-backdrop" onClick={() => { setShowIndividualModal(false); setRegistrationPass(null); setIsPendingApproval(false); }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '0', maxWidth: '1500px', width: '95vw', borderRadius: '2px', overflow: 'hidden', boxShadow: '0 32px 72px rgba(15,23,42,0.35)' }}>
+        <div className="modal-backdrop" onClick={() => { setShowIndividualModal(false); setRegistrationPass(null); setIsPendingApproval(false); }} style={{ zIndex: 9999, padding: '24px 16px', overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '0', maxWidth: '1100px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', boxShadow: '0 32px 72px rgba(15,23,42,0.35)' }}>
             
             {/* Modal Header with Event Banner */}
             <div style={{ position: 'relative', height: '140px', background: '#0F172A' }}>

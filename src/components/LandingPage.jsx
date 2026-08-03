@@ -169,14 +169,16 @@ const ATHLETES = [
 ];
 
 const GALLERY_IMAGES = [
-  { id: 1, title: 'African Championships 2026 Medal Ceremony', category: 'Championships', img: '/images/d1.jpg', location: 'Accra Stadium', date: 'May 2026' },
-  { id: 2, title: 'London Marathon Ethiopian Elite Champions', category: 'Marathons', img: '/images/d2.jpeg', location: 'London, UK', date: 'April 2026' },
-  { id: 3, title: '4th Ethiopia Tamirt 10KM Start Line', category: 'Track & Field', img: '/images/d3.jpeg', location: 'Addis Ababa', date: 'April 2026' },
-  { id: 4, title: 'Technical Athletics Officials & Judging Seminar', category: 'Ceremonies', img: '/images/d4.jpg', location: 'EAF HQ', date: 'April 2026' },
-  { id: 5, title: 'National Team Delegation Send-Off Ceremony', category: 'Ceremonies', img: '/images/d5.jpg', location: 'Skylight Hotel', date: 'May 2026' },
-  { id: 6, title: 'Tigst Assefa Berlin World Record Moment', category: 'Marathons', img: '/images/a1.jpg', location: 'Berlin, Germany', date: 'September 2023' },
-  { id: 7, title: 'Selemon Barega Olympic Gold Victory Lap', category: 'Championships', img: '/images/a2.jpg', location: 'Tokyo Olympic Stadium', date: 'August 2021' },
-  { id: 8, title: 'High Altitude Endurance Training in Sululta', category: 'Track & Field', img: '/images/runners_training.png', location: 'Sululta, Ethiopia', date: 'June 2026' },
+  { id: 1, title: 'African Championships 2026 Medal Ceremony', category: 'Championships', img: '/images/d1.jpg', location: 'Accra Stadium', date: 'May 2026', type: 'PHOTO' },
+  { id: 2, title: 'London Marathon Ethiopian Elite Champions', category: 'Marathons', img: '/images/d2.jpeg', location: 'London, UK', date: 'April 2026', type: 'VIDEO' },
+  { id: 3, title: '4th Ethiopia Tamirt 10KM Start Line', category: 'Track & Field', img: '/images/d3.jpeg', location: 'Addis Ababa', date: 'April 2026', type: 'PHOTO' },
+  { id: 4, title: 'Technical Athletics Officials & Judging Seminar', category: 'Ceremonies', img: '/images/d4.jpg', location: 'EAF HQ', date: 'April 2026', type: 'PHOTO' },
+  { id: 5, title: 'National Team Delegation Send-Off Ceremony', category: 'Ceremonies', img: '/images/d5.jpg', location: 'Skylight Hotel', date: 'May 2026', type: 'VIDEO' },
+  { id: 6, title: 'Tigst Assefa Berlin World Record Moment', category: 'Marathons', img: '/images/a1.jpg', location: 'Berlin, Germany', date: 'September 2023', type: 'PHOTO' },
+  { id: 7, title: 'Selemon Barega Olympic Gold Victory Lap', category: 'Championships', img: '/images/a2.jpg', location: 'Tokyo Olympic Stadium', date: 'August 2021', type: 'VIDEO' },
+  { id: 8, title: 'High Altitude Endurance Training in Sululta', category: 'Track & Field', img: '/images/runners_training.png', location: 'Sululta, Ethiopia', date: 'June 2026', type: 'PHOTO' },
+  { id: 9, title: 'Addis Ababa International Grand Prix Warmup', category: 'Championships', img: '/images/banner_grand_prix.png', location: 'National Stadium', date: 'August 2026', type: 'PHOTO' },
+  { id: 10, title: 'Jan Meda National Cross-Country Olympic Trials', category: 'Track & Field', img: '/images/banner_jan_meda.png', location: 'Jan Meda Course', date: 'October 2026', type: 'VIDEO' }
 ];
 
 const STRUCTURE_ITEMS = [
@@ -1147,21 +1149,22 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </p>
             </div>
 
-            {/* Asymmetric Mosaic Grid Layout Collection */}
+            {/* Asymmetric Dense Mosaic Grid Layout Collection */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
               gridAutoRows: '240px',
+              gridAutoFlow: 'dense',
               gap: '20px'
             }}>
               {GALLERY_IMAGES.map((item, idx) => {
                 const isHero = idx === 0;
-                const isTall = idx === 2 || idx === 5;
-                const isWide = idx === 3;
+                const isTall = idx === 1 || idx === 6;
+                const isWide = idx === 3 || idx === 8;
                 return (
                   <div 
                     key={item.id}
-                    className="hover-lift"
+                    className="hover-lift media-grid-card"
                     onClick={() => setActiveLightboxImg(item)}
                     style={{
                       position: 'relative',
@@ -1172,20 +1175,34 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       cursor: 'pointer',
                       boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
                       border: '1px solid #E2E8F0',
-                      minHeight: isTall ? '480px' : isHero ? '480px' : '240px'
+                      minHeight: isTall || isHero ? '480px' : '240px'
                     }}
                   >
                     <img 
                       src={item.img} 
                       alt={item.title} 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      className="media-card-img"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} 
                     />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.2) 60%, transparent 100%)' }} />
-                    <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 2 }}>
+                    
+                    {/* Top Badges */}
+                    <div style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ background: '#0EA5E9', color: '#FFF', padding: '4px 12px', borderRadius: '14px', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
                         {item.category}
                       </span>
+                      {item.type === 'VIDEO' ? (
+                        <span style={{ background: 'rgba(239, 68, 68, 0.9)', color: '#FFF', padding: '4px 10px', borderRadius: '14px', fontSize: '0.7rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          🎥 HD Video
+                        </span>
+                      ) : (
+                        <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: '#FFF', padding: '4px 10px', borderRadius: '14px', fontSize: '0.7rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          📸 Photo
+                        </span>
+                      )}
                     </div>
+
+                    {/* Bottom Content */}
                     <div style={{ position: 'absolute', bottom: 20, left: 20, right: 20, color: '#FFF', zIndex: 2 }}>
                       <h4 style={{ fontSize: isHero ? '1.5rem' : '1.1rem', fontWeight: 900, lineHeight: 1.2, marginBottom: '6px' }}>{item.title}</h4>
                       <div style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
