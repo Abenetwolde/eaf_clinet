@@ -33,7 +33,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
     { name: 'Long Dist', value: 35 },
     { name: 'Field Events', value: 8 },
   ];
-  const COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#8B5CF6'];
+  const COLORS = ['var(--primary)', '#10B981', '#F59E0B', '#8B5CF6'];
 
   return (
     <div>
@@ -125,7 +125,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
                 <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
                 <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                <Line type="monotone" dataKey="points" stroke="#0EA5E9" strokeWidth={3} dot={{ r: 4, fill: '#0EA5E9' }} activeDot={{ r: 6 }} />
+                <Line type="monotone" dataKey="points" stroke="var(--primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--primary)' }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

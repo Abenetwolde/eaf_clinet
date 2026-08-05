@@ -25,6 +25,7 @@ import PaymentModal from './components/PaymentModal';
 import NotificationToast from './components/NotificationToast';
 
 import { MOCK_CLUBS, MOCK_ATHLETES, MOCK_TRANSFERS } from './data/mockData';
+import { Sun, Moon } from 'lucide-react';
 
 export default function App() {
   // Use localStorage for persistence
@@ -33,6 +34,7 @@ export default function App() {
   const [athleteSubPage, setAthleteSubPage] = useState('OVERVIEW');
   const [publicSubPage, setPublicSubPage] = useState('HOME'); // 'HOME' | 'COMPETITIONS' | 'ATHLETES' | 'MEDIA'
   const [language, setLanguage] = useState('en'); // 'en' | 'am'
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('eaf_darkMode') === 'true');
 
   const [clubs, setClubs] = useState(MOCK_CLUBS);
   const [athletes, setAthletes] = useState(() => {
@@ -63,6 +65,16 @@ export default function App() {
       }
     }
   }, [athletes]);
+
+  // Persist dark mode state to localStorage and document.documentElement class
+  useEffect(() => {
+    localStorage.setItem('eaf_darkMode', darkMode);
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   // Persist session
   useEffect(() => {
@@ -182,14 +194,14 @@ export default function App() {
     };
 
     return (
-      <div style={{ background: '#FFFFFF', minHeight: '100vh' }}>
+      <div style={{ background: darkMode ? '#0D1117' : '#FFFFFF', minHeight: '100vh', transition: 'background-color 0.3s' }}>
         {/* ── Floating Glassmorphism Header ── */}
         <header style={{
-          background: 'rgba(255, 255, 255, 0.95)',
+          background: darkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          border: '1px solid #E2E8F0',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+          border: '1px solid ' + (darkMode ? '#1E293B' : '#E2E8F0'),
+          boxShadow: darkMode ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.08)',
           padding: '0 24px',
           height: '72px',
           display: 'flex',
@@ -208,7 +220,7 @@ export default function App() {
           transition: 'all 0.3s ease'
         }}>
           {/* Logo + brand */}
-          <div 
+          <div
             style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
             onClick={() => { setPublicSubPage('HOME'); setSelectedMeet(null); }}
           >
@@ -220,10 +232,10 @@ export default function App() {
               />
             </div>
             <div className="hidden-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 900, color: darkMode ? '#F8FAFC' : '#0F172A', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
                 Ethiopian Athletics Federation
               </div>
-              <div style={{ fontSize: '0.65rem', color: '#0EA5E9', fontWeight: 800 }}>
+              <div style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 800 }}>
                 የኢትዮጵያ አትሌቲክስ ፌዴሬሽን
               </div>
             </div>
@@ -236,46 +248,91 @@ export default function App() {
                 key={link.label}
                 onClick={() => handleNavClick(link.page)}
                 style={{
-                  background: publicSubPage === link.page ? '#F1F5F9' : 'none', 
+                  background: publicSubPage === link.page ? (darkMode ? '#1E293B' : '#F1F5F9') : 'none',
                   border: 'none', cursor: 'pointer',
-                  color: publicSubPage === link.page ? '#0EA5E9' : '#64748B', 
+                  color: publicSubPage === link.page ? 'var(--primary)' : (darkMode ? '#94A3B8' : '#64748B'),
                   fontWeight: 700, fontSize: '0.85rem',
                   padding: '8px 14px', borderRadius: '8px',
                   transition: 'all 0.2s',
                   fontFamily: 'var(--font-sans)'
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#E2E8F0'; e.currentTarget.style.color = '#0EA5E9'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = publicSubPage === link.page ? '#F1F5F9' : 'none'; e.currentTarget.style.color = publicSubPage === link.page ? '#0EA5E9' : '#64748B'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = darkMode ? '#334155' : '#E2E8F0'; e.currentTarget.style.color = 'var(--primary)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = publicSubPage === link.page ? (darkMode ? '#1E293B' : '#F1F5F9') : 'none'; e.currentTarget.style.color = publicSubPage === link.page ? 'var(--primary)' : (darkMode ? '#94A3B8' : '#64748B'); }}
               >
                 {link.label}
               </button>
             ))}
           </nav>
 
-          
+
           {/* Right Side */}
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            {/* Language Switcher */}
+            
+            {/* Modern Segmented Language Switcher */}
+            <div style={{
+              display: 'flex',
+              background: darkMode ? '#1E293B' : '#F1F5F9',
+              border: '1px solid ' + (darkMode ? '#334155' : '#E2E8F0'),
+              borderRadius: '12px',
+              padding: '3px',
+              gap: '2px',
+              alignItems: 'center'
+            }}>
+              <button
+                onClick={() => setLanguage('en')}
+                style={{
+                  background: language === 'en' ? 'var(--primary)' : 'transparent',
+                  color: language === 'en' ? '#FFFFFF' : (darkMode ? '#94A3B8' : '#475569'),
+                  border: 'none',
+                  borderRadius: '9px',
+                  padding: '6px 12px',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLanguage('am')}
+                style={{
+                  background: language === 'am' ? 'var(--primary)' : 'transparent',
+                  color: language === 'am' ? '#FFFFFF' : (darkMode ? '#94A3B8' : '#475569'),
+                  border: 'none',
+                  borderRadius: '9px',
+                  padding: '6px 12px',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                አማ
+              </button>
+            </div>
+
+            {/* Dark/Light Theme Mode Toggle Button */}
             <button
-              onClick={() => setLanguage(l => l === 'en' ? 'am' : 'en')}
+              onClick={() => setDarkMode(!darkMode)}
+              title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               style={{
-                background: '#F8FAFC',
-                border: '1px solid #CBD5E1',
-                color: '#0F172A',
-                padding: '7px 11px',
-                borderRadius: '8px',
+                background: darkMode ? '#1E293B' : '#F1F5F9',
+                border: '1px solid ' + (darkMode ? '#334155' : '#E2E8F0'),
+                color: darkMode ? '#F1F5F9' : '#0F172A',
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
                 cursor: 'pointer',
-                fontSize: '0.78rem',
-                fontWeight: 800,
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                transition: 'all 0.2s'
+                justifyContent: 'center',
+                transition: 'all 0.2s',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = '#E2E8F0'}
-              onMouseLeave={e => e.currentTarget.style.background = '#F8FAFC'}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
-              🌐 {language === 'en' ? 'አማርኛ' : 'EN'}
+              {darkMode ? <Sun size={18} color="#FDE047" /> : <Moon size={18} color="#475569" />}
             </button>
 
             {currentRole === 'ATHLETE' ? (
@@ -285,7 +342,7 @@ export default function App() {
                   className="btn-accent"
                   style={{
                     fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
-                    background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', cursor: 'pointer'
+                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer'
                   }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -303,19 +360,19 @@ export default function App() {
                 <button
                   onClick={() => setRegModalRole('ATHLETE')}
                   className="btn-accent"
-                  style={{ 
+                  style={{
                     fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: 5,
-                    background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', boxShadow: 'none', color: '#FFF', border: 'none', cursor: 'pointer'
+                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', boxShadow: 'none', color: '#FFF', border: 'none', cursor: 'pointer'
                   }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>
                   {language === 'en' ? 'Register as Athlete' : 'አትሌት ይመዝገቡ'}
                 </button>
 
                 <button
                   onClick={handleOpenAuthModal}
                   className="btn-gov-secondary"
-                  style={{ 
+                  style={{
                     fontSize: '0.76rem', padding: '7px 12px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: 4,
                     background: '#FFFFFF', color: '#0F172A', border: '1px solid #CBD5E1', cursor: 'pointer'
                   }}
@@ -323,7 +380,7 @@ export default function App() {
                   onMouseLeave={e => e.currentTarget.style.background = '#FFFFFF'}
                 >
                   {language === 'en' ? 'Club Portal Login' : 'የክለብ መግቢያ'}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
                 </button>
               </>
             )}
@@ -340,6 +397,7 @@ export default function App() {
           language={language}
           publicSubPage={publicSubPage}
           onChangePublicSubPage={setPublicSubPage}
+          darkMode={darkMode}
           onSelectRole={role => {
             if (role === 'CLUB') handleLoginSuccess('CLUB', { club: currentClub });
             else handleLoginSuccess('ATHLETE', { athlete: currentAthlete });

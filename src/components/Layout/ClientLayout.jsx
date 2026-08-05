@@ -40,10 +40,10 @@ export default function ClientLayout({
             title="Updates & Notifications"
             style={{ 
               background: activeSubPage === 'NOTIFICATIONS' ? '#E0F2FE' : '#F1F5F9',
-              border: activeSubPage === 'NOTIFICATIONS' ? '1px solid #0EA5E9' : 'none', 
+              border: activeSubPage === 'NOTIFICATIONS' ? '1px solid var(--primary)' : 'none', 
               padding: '9px 11px', 
               borderRadius: '10px', 
-              color: activeSubPage === 'NOTIFICATIONS' ? '#0284C7' : '#475569', 
+              color: activeSubPage === 'NOTIFICATIONS' ? 'var(--primary-dark)' : '#475569', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
@@ -60,7 +60,7 @@ export default function ClientLayout({
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              background: '#0EA5E9',
+              background: 'var(--primary)',
               border: '2px solid #FFFFFF'
             }} />
           </button>
@@ -104,7 +104,7 @@ export default function ClientLayout({
                 style={{
                   display: 'flex', alignItems: 'center', gap: '8px',
                   padding: '12px 24px', borderRadius: '14px', border: 'none',
-                  background: isActive ? 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)' : '#FFFFFF',
+                  background: isActive ? 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' : '#FFFFFF',
                   color: isActive ? '#FFFFFF' : '#64748B',
                   fontWeight: isActive ? 800 : 700,
                   fontSize: '0.9rem', cursor: 'pointer',

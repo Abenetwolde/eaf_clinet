@@ -12,14 +12,14 @@ function StepBar({ steps, current }) {
             width: '36px', height: '36px', borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 800, fontSize: '0.9rem',
-            background: i < current ? '#0EA5E9' : i === current ? '#0EA5E9' : '#F1F5F9',
+            background: i < current ? 'var(--primary)' : i === current ? 'var(--primary)' : '#F1F5F9',
             color: i <= current ? '#FFFFFF' : '#64748B',
             boxShadow: i === current ? '0 0 0 4px rgba(14, 165, 233, 0.25)' : 'none',
             transition: 'all 0.2s'
           }}>
             {i < current ? <CheckCircle2 size={18} /> : i + 1}
           </div>
-          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: i <= current ? '#0EA5E9' : '#64748B', textAlign: 'center' }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: i <= current ? 'var(--primary)' : '#64748B', textAlign: 'center' }}>
             {s}
           </span>
         </div>
@@ -225,7 +225,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', pb: '12px', marginBottom: '14px' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748B' }}>TRACKING REFERENCE ID</span>
-            <span style={{ fontSize: '1rem', fontWeight: 900, color: '#0EA5E9', fontFamily: 'var(--font-mono)' }}>{refNumber}</span>
+            <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>{refNumber}</span>
           </div>
 
           {isAthleteData && data?.athlete && (
@@ -242,7 +242,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
               />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A' }}>{data.athlete.name}</div>
-                <div style={{ fontSize: '0.88rem', color: '#0284C7', fontWeight: 700, marginTop: '2px' }}>{data.athlete.amharicName}</div>
+                <div style={{ fontSize: '0.88rem', color: 'var(--primary-dark)', fontWeight: 700, marginTop: '2px' }}>{data.athlete.amharicName}</div>
                 <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '6px' }}>
                   Fayda FIN: <strong>{data.athlete.faydaFin}</strong> · Club: <strong>{data.athlete.clubName}</strong>
                 </div>
@@ -271,7 +271,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
           className="btn-accent"
           style={{
             width: '100%', padding: '16px', fontSize: '1.05rem', borderRadius: '14px',
-            background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF',
+            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF',
             border: 'none', fontWeight: 900, cursor: 'pointer'
           }}
           onClick={() => {
@@ -305,7 +305,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
         </div>
         <button
           className="btn-accent"
-          style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '10px' }}
+          style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '10px' }}
           onClick={() => email && password && phone ? setStep(1) : null}>
           Continue to Club Details <ArrowRight size={18} />
         </button>
@@ -348,7 +348,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
         </div>
         <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
           <button className="btn-gov-secondary" style={{ flex: 1, padding: '13px', borderRadius: '12px' }} onClick={() => setStep(0)}>Back</button>
-          <button className="btn-accent" style={{ flex: 2, padding: '13px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+          <button className="btn-accent" style={{ flex: 2, padding: '13px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
             onClick={() => clubName && manager ? setStep(2) : null}>
             Review & Submit <ArrowRight size={18} />
           </button>
@@ -382,7 +382,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
         </p>
         <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
           <button className="btn-gov-secondary" style={{ flex: 1, padding: '13px', borderRadius: '12px' }} onClick={() => setStep(1)}>Back</button>
-          <button className="btn-accent" style={{ flex: 2, padding: '13px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={handleClubSubmit}>
+          <button className="btn-accent" style={{ flex: 2, padding: '13px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={handleClubSubmit}>
             <CheckCircle2 size={18} /> Register Club with EAF
           </button>
         </div>
@@ -421,7 +421,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
               <button
                 type="button"
                 className="btn-accent"
-                style={{ whiteSpace: 'nowrap', padding: '14px 22px', borderRadius: '12px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                style={{ whiteSpace: 'nowrap', padding: '14px 22px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                 onClick={handleInitiateFaydaLookup}
                 disabled={faydaLoading}
               >
@@ -436,7 +436,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
         {otpStep && !faydaResult && (
           <div style={{
             background: '#F0F9FF',
-            border: '2px solid #0EA5E9',
+            border: '2px solid var(--primary)',
             borderRadius: '20px',
             padding: '24px',
             display: 'flex',
@@ -444,12 +444,12 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             gap: '16px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#0EA5E9', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'var(--primary)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Phone size={20} />
               </div>
               <div>
                 <h5 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A' }}>SMS OTP Authentication</h5>
-                <p style={{ fontSize: '0.83rem', color: '#0284C7', fontWeight: 700 }}>
+                <p style={{ fontSize: '0.83rem', color: 'var(--primary-dark)', fontWeight: 700 }}>
                   A 6-digit OTP passcode was sent to your Fayda registered mobile (+251 91 *** *78).
                 </p>
               </div>
@@ -488,7 +488,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
                       width: '52px',
                       height: '60px',
                       borderRadius: '12px',
-                      border: otpCode[idx] ? '2px solid #0EA5E9' : '1px solid #CBD5E1',
+                      border: otpCode[idx] ? '2px solid var(--primary)' : '1px solid #CBD5E1',
                       background: otpCode[idx] ? '#F0F9FF' : '#FFFFFF',
                       textAlign: 'center',
                       fontSize: '1.5rem',
@@ -516,7 +516,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
               <button
                 type="button"
                 className="btn-accent"
-                style={{ flex: 2, padding: '12px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                style={{ flex: 2, padding: '12px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 onClick={handleVerifyOtp}
                 disabled={otpLoading}
               >
@@ -530,7 +530,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
         {faydaResult && (
           <div style={{
             background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)',
-            border: '2px solid #0EA5E9',
+            border: '2px solid var(--primary)',
             borderRadius: '20px',
             padding: '24px',
             boxShadow: '0 8px 24px rgba(14, 165, 233, 0.15)',
@@ -541,7 +541,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             {/* Header Badge */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(14, 165, 233, 0.3)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ShieldCheck size={22} color="#0284C7" />
+                <ShieldCheck size={22} color="var(--primary-dark)" />
                 <span style={{ fontWeight: 900, color: '#0369A1', fontSize: '1rem', letterSpacing: '0.04em' }}>
                   GOVERNMENT FAYDA ID BIOMETRICS VERIFIED
                 </span>
@@ -645,7 +645,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             fontSize: '1rem',
             borderRadius: '14px',
             background: faydaResult
-              ? 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)'
+              ? 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)'
               : '#94A3B8',
             color: '#FFFFFF',
             fontWeight: 800,
@@ -715,12 +715,12 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
                       gap: '8px',
                       fontSize: '0.86rem',
                       fontWeight: 700,
-                      color: isSelected ? '#0284C7' : '#334155',
+                      color: isSelected ? 'var(--primary-dark)' : '#334155',
                       cursor: 'pointer',
                       background: isSelected ? '#E0F2FE' : '#FFFFFF',
                       padding: '8px 12px',
                       borderRadius: '8px',
-                      border: isSelected ? '1px solid #0EA5E9' : '1px solid #E2E8F0',
+                      border: isSelected ? '1px solid var(--primary)' : '1px solid #E2E8F0',
                       transition: 'all 0.15s'
                     }}
                   >
@@ -736,7 +736,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
                         }
                         setPrimaryEvent(currentList.length === 0 ? ['5,000m Long Distance'] : currentList);
                       }}
-                      style={{ width: '16px', height: '16px', accentColor: '#0EA5E9' }}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }}
                     />
                     {d}
                   </label>
@@ -770,7 +770,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
 
           <div style={{ display: 'flex', gap: '12px' }}>
             <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(0)}>Back</button>
-            <button className="btn-accent" style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setStep(2)}>
+            <button className="btn-accent" style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setStep(2)}>
               Continue to Account Credentials <ArrowRight size={18} />
             </button>
           </div>
@@ -806,7 +806,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
           <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(1)}>Back</button>
           <button
             className="btn-accent"
-            style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
             onClick={() => email && password ? setStep(3) : null}
           >
             Review Registration <ArrowRight size={18} />
@@ -838,11 +838,11 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
                 <img src={faydaResult?.photoUrl || '/images/runner_female.png'} alt="Passport Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#E0F2FE', color: '#0284C7', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#E0F2FE', color: 'var(--primary-dark)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
                   <ShieldCheck size={14} /> FAYDA IDENTITY VERIFIED
                 </div>
                 <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0F172A' }}>{faydaResult?.name}</div>
-                <div style={{ fontSize: '0.95rem', color: '#0EA5E9', fontWeight: 700 }}>{faydaResult?.amharic}</div>
+                <div style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 700 }}>{faydaResult?.amharic}</div>
                 <div style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '6px' }}>
                   Fayda FIN: <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>{faydaResult?.fin}</strong>
                 </div>
@@ -883,7 +883,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(2)}>Back</button>
             <button
               className="btn-accent"
-              style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               onClick={handleAthleteSubmit}
             >
               <CheckCircle2 size={18} /> Submit Athlete Registration to EAF
@@ -919,7 +919,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
                 width: '50px', height: '50px', borderRadius: '14px',
                 background: isClub ? '#FEF3C7' : '#E0F2FE',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: isClub ? '#D97706' : '#0284C7'
+                color: isClub ? '#D97706' : 'var(--primary-dark)'
               }}>
                 {isClub ? <Building2 size={26} /> : <UserCheck size={26} />}
               </div>

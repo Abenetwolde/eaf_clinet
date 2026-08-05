@@ -227,7 +227,7 @@ export default function AthleteApplications({ athlete, onNotify }) {
               <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '18px', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '10px', marginBottom: '12px' }}>
                   <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0EA5E9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Application Details</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Application Details</div>
                     <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#64748B', marginTop: '2px' }}>Submitted on {selectedApplication.appliedDate}</div>
                   </div>
                   <span style={{ background: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0', padding: '5px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
@@ -262,7 +262,7 @@ export default function AthleteApplications({ athlete, onNotify }) {
               {/* Real Vector SVG 2D QR Code Container */}
               <div style={{ background: '#F1F5F9', border: '2px dashed #CBD5E1', borderRadius: '20px', padding: '20px', textAlign: 'center', marginBottom: '20px' }}>
                 <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                  <QrCode size={16} color="#0EA5E9" /> Entry QR Code
+                  <QrCode size={16} color="var(--primary)" /> Entry QR Code
                 </div>
                 
                 {/* Real SVG 2D QR Code Matrix */}
@@ -280,7 +280,7 @@ export default function AthleteApplications({ athlete, onNotify }) {
               <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '12px', padding: '12px 16px', display: 'flex', gap: '8px', fontSize: '0.78rem', color: '#1E40AF', lineHeight: 1.4 }}>
                 <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
-                  <strong>Entry Verification:</strong> All entries are cross-referenced with active EAF licenses and Fayda data. For queries regarding your approval, contact <a href="mailto:registrar@eaf.org.et" style={{ color: '#0284C7', fontWeight: 800 }}>registrar@eaf.org.et</a>.
+                  <strong>Entry Verification:</strong> All entries are cross-referenced with active EAF licenses and Fayda data. For queries regarding your approval, contact <a href="mailto:registrar@eaf.org.et" style={{ color: 'var(--primary-dark)', fontWeight: 800 }}>registrar@eaf.org.et</a>.
                 </div>
               </div>
 

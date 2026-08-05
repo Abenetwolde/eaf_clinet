@@ -101,7 +101,7 @@ export default function RecordsVault({ athlete, onNotify }) {
       <div className="gov-card" style={{ background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)', border: 'none', color: '#FFFFFF', marginBottom: '24px', borderRadius: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0EA5E9', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>World Athletics Ranking</div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>World Athletics Ranking</div>
             <div style={{ fontSize: '1.8rem', fontWeight: 900, lineHeight: 1.1 }}>1,248 Performance Points</div>
             <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '6px' }}>
               #4 Nationally · #12 Global 5,000m
@@ -119,7 +119,7 @@ export default function RecordsVault({ athlete, onNotify }) {
       <div className="gov-card" style={{ padding: 0, overflow: 'hidden', borderRadius: '18px' }}>
         <div style={{ padding: '14px 20px', background: '#0F172A', color: '#FFFFFF', fontWeight: 800, fontSize: '0.88rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>Official Verified Personal Bests &amp; Season Bests</span>
-          <span style={{ fontSize: '0.75rem', color: '#0EA5E9' }}>Fayda Cryptographic Audit Active</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>Fayda Cryptographic Audit Active</span>
         </div>
         <div className="table-responsive">
           <table className="gov-table">
@@ -138,7 +138,7 @@ export default function RecordsVault({ athlete, onNotify }) {
               {records.map((r, i) => (
                 <tr key={i}>
                   <td style={{ fontWeight: 800, color: '#0F172A' }}>{r.event}</td>
-                  <td><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#0284C7', fontSize: '1rem' }}>{r.pb}</span></td>
+                  <td><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary-dark)', fontSize: '1rem' }}>{r.pb}</span></td>
                   <td><span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-heading)' }}>{r.sb}</span></td>
                   <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{r.date}</td>
                   <td style={{ fontSize: '0.85rem' }}>{r.venue}</td>
@@ -228,7 +228,7 @@ export default function RecordsVault({ athlete, onNotify }) {
               <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', marginBottom: '14px' }}>
                   <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0EA5E9', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Application Details</div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Application Details</div>
                     <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B', marginTop: '2px' }}>Submitted on 2026-07-15</div>
                   </div>
                   <span style={{ background: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -240,7 +240,7 @@ export default function RecordsVault({ athlete, onNotify }) {
                   <div>
                     <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 700 }}>Selected Disciplines &amp; Status</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                      <span style={{ background: '#0EA5E9', color: '#FFFFFF', fontWeight: 900, padding: '4px 10px', borderRadius: '6px', fontSize: '0.9rem' }}>
+                      <span style={{ background: 'var(--primary)', color: '#FFFFFF', fontWeight: 900, padding: '4px 10px', borderRadius: '6px', fontSize: '0.9rem' }}>
                         {selectedRecordDetail.event}
                       </span>
                       <span style={{ color: '#16A34A', fontWeight: 800, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -254,7 +254,7 @@ export default function RecordsVault({ athlete, onNotify }) {
               {/* QR Code Container */}
               <div style={{ background: '#F1F5F9', border: '2px dashed #CBD5E1', borderRadius: '20px', padding: '20px', textAlign: 'center', marginBottom: '20px' }}>
                 <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#334155', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                  <QrCode size={16} color="#0EA5E9" /> Entry QR Code
+                  <QrCode size={16} color="var(--primary)" /> Entry QR Code
                 </div>
                 
                 {/* SVG 2D QR Code Matrix */}
@@ -285,7 +285,7 @@ export default function RecordsVault({ athlete, onNotify }) {
                       {selectedRecordDetail.splits.map((s, idx) => (
                         <tr key={idx} style={{ borderTop: '1px solid #E2E8F0' }}>
                           <td style={{ padding: '8px 12px', fontWeight: 800, color: '#0F172A' }}>{s.mark}</td>
-                          <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#0284C7' }}>{s.time}</td>
+                          <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary-dark)' }}>{s.time}</td>
                           <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', color: '#475569' }}>{s.diff}</td>
                           <td style={{ padding: '8px 12px', color: '#16A34A', fontWeight: 700 }}>{s.pace}</td>
                         </tr>
@@ -297,7 +297,7 @@ export default function RecordsVault({ athlete, onNotify }) {
 
               {/* Entry Verification Warning Box */}
               <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '14px 16px', fontSize: '0.78rem', color: '#1E40AF', lineHeight: 1.5 }}>
-                <strong>Entry Verification:</strong> All entries are cross-referenced with active EAF licenses and Fayda data. For queries regarding your approval, contact <a href="mailto:registrar@eaf.org.et" style={{ color: '#0284C7', fontWeight: 800 }}>registrar@eaf.org.et</a>.
+                <strong>Entry Verification:</strong> All entries are cross-referenced with active EAF licenses and Fayda data. For queries regarding your approval, contact <a href="mailto:registrar@eaf.org.et" style={{ color: 'var(--primary-dark)', fontWeight: 800 }}>registrar@eaf.org.et</a>.
               </div>
 
             </div>
