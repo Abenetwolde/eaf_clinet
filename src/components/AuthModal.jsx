@@ -80,7 +80,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
         </div>
 
         {/* Role Selector Tabs */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '28px', background: '#F8FAFC', padding: '6px', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+        <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '28px', background: '#F8FAFC', padding: '6px', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
           <button
             type="button"
             onClick={() => {
@@ -206,7 +206,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
               ⚡ One-Click Demo Credentials
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <button
                 type="button"
                 onClick={() => handleApplyPreset('admin@defense-athletics.et', 'CLUB')}

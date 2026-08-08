@@ -389,7 +389,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
       </div>
 
       {/* Grid of metadata card & registration panel */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '24px', marginBottom: '40px' }}>
         
         {/* Localized Metadata Card */}
         <div className="gov-card" style={{ background: '#FFFFFF', display: 'flex', flexDirection: 'column', gap: '20px', borderRadius: '20px' }}>
@@ -558,7 +558,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
               <div className="gov-card" style={{ background: '#FFFFFF', borderRadius: '18px' }}>
                 <h4 style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-heading)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   📜 Technical Rules
@@ -848,10 +848,10 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
       {/* ── INDIVIDUAL ATHLETE MEET REGISTRATION MODAL ── */}
       {showIndividualModal && (
         <div className="modal-backdrop" onClick={() => { setShowIndividualModal(false); setRegistrationPass(null); setIsPendingApproval(false); }} style={{ zIndex: 9999, padding: '24px 16px', overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '0', maxWidth: '1100px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', boxShadow: '0 32px 72px rgba(15,23,42,0.35)' }}>
+          <div className="modal-content modal-bleed" onClick={e => e.stopPropagation()} style={{ padding: '0', maxWidth: '1100px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', boxShadow: '0 32px 72px rgba(15,23,42,0.35)' }}>
             
             {/* Modal Header with Event Banner */}
-            <div style={{ position: 'relative', height: '140px', background: '#0F172A' }}>
+            <div className="modal-bleed-banner" style={{ position: 'relative', height: '140px', background: '#0F172A' }}>
               <img src={getBannerUrl(meet.id)} alt={meet.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0F172A 0%, transparent 100%)' }} />
               
@@ -871,7 +871,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
             </div>
 
             {/* Modal Content Body */}
-            <div style={{ padding: '32px 40px' }}>
+            <div className="modal-bleed-body" style={{ padding: '32px 40px' }}>
               {isPendingApproval ? (
                 /* Application Submitted — Waiting EAF Approval Screen */
                 <div style={{ textAlign: 'center', padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -889,7 +889,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   </p>
                   
                   <div style={{ background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '520px', marginBottom: '28px', textAlign: 'left' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
+                    <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                       <div>
                         <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>TRACKING REFERENCE</span>
                         <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>COMP-ACC-2026-984210</strong>
@@ -936,7 +936,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                    <div className="wrap-on-mobile" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
                       {/* Formal Passport Photo Display */}
                       <div style={{ position: 'relative', width: '100px', height: '130px', borderRadius: '12px', overflow: 'hidden', border: '3px solid #3B82F6', boxShadow: '0 6px 16px rgba(59,130,246,0.2)', background: '#FFF', flexShrink: 0 }}>
                         <img 
@@ -949,7 +949,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                         </span>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px 18px', fontSize: '0.83rem', flex: 1 }}>
+                      <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px 18px', fontSize: '0.83rem', flex: 1 }}>
                         <div>
                           <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>FULL NAME</span>
                           <strong style={{ color: '#0F172A', fontSize: '0.92rem' }}>{faydaNationalIdData.fullName}</strong>
@@ -980,7 +980,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   </div>
 
                   {/* 2-Column Grid: Disciplines Selection + Competition Related Metadata */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                  <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', marginBottom: '24px' }}>
                     
                     {/* Left Column: Disciplines Selection */}
                     <div className="form-group" style={{ marginBottom: 0 }}>

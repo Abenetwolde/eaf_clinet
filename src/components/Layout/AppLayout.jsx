@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Building2, UserCheck, Users, ArrowRightLeft, Trophy,
   Navigation, Activity, LogOut, Home,
   Bell, ChevronRight, Layers, Award, ShieldCheck, Globe,
-  BookOpen
+  BookOpen, Menu, X
 } from 'lucide-react';
 
 // EAF Logo — local file
@@ -22,6 +22,9 @@ export default function AppLayout({
   currentClub, currentAthlete, onSwitchRole, onLogout, children
 }) {
   const isClub = currentRole === 'CLUB';
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const closeMenu = () => setMenuOpen(false);
 
   const clubNavItems = [
     { id: 'OVERVIEW',   label: 'Dashboard',           icon: Home },
@@ -46,8 +49,11 @@ export default function AppLayout({
 
   return (
     <div className="app-container">
+      {/* ── Mobile Sidebar Backdrop ── */}
+      {menuOpen && <div className="sidebar-backdrop" onClick={closeMenu} />}
+
       {/* ── Sidebar ── */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${menuOpen ? 'mobile-open' : ''}`}>
         {/* EAF Brand Header */}
         <div style={{ padding: '20px 18px', borderBottom: '1px solid #2D3A5A', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', flexShrink: 0 }}>
@@ -95,7 +101,7 @@ export default function AppLayout({
             const Icon = item.icon;
             const isActive = activeSubPage === item.id;
             return (
-              <div key={item.id} onClick={() => onChangeSubPage(item.id)}
+              <div key={item.id} onClick={() => { onChangeSubPage(item.id); closeMenu(); }}
                 className={`sidebar-link ${isActive ? 'active' : ''}`}>
                 <Icon size={17} />
                 <span>{item.label}</span>
@@ -125,17 +131,38 @@ export default function AppLayout({
       {/* ── Main Content ── */}
       <div className="main-content">
         <header className="header-bar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            <span style={{ fontWeight: 700 }}>EAF</span>
-            <ChevronRight size={13} />
-            <span style={{ fontWeight: 600 }}>{isClub ? 'Club Portal' : 'Athlete Portal'}</span>
-            <ChevronRight size={13} />
-            <span style={{ color: 'var(--text-heading)', fontWeight: 800 }}>
+          <button
+            onClick={() => setMenuOpen(o => !o)}
+            className="mobile-menu-toggle"
+            aria-label="Toggle menu"
+            style={{
+              background: 'rgba(15, 23, 42, 0.05)',
+              border: '1px solid rgba(15, 23, 42, 0.1)',
+              color: 'var(--text-main)',
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              marginRight: '4px',
+              flexShrink: 0
+            }}
+          >
+            {menuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+
+          <div className="header-breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            <span className="hidden-mobile" style={{ fontWeight: 700 }}>EAF</span>
+            <ChevronRight size={13} className="hidden-mobile" />
+            <span className="hidden-mobile" style={{ fontWeight: 600 }}>{isClub ? 'Club Portal' : 'Athlete Portal'}</span>
+            <ChevronRight size={13} className="hidden-mobile" />
+            <span style={{ color: 'var(--text-heading)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {navItems.find(n => n.id === activeSubPage)?.label}
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
             <div style={{ background: 'var(--primary-light)', padding: '5px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
               <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--primary)' }} />
               Active
@@ -147,7 +174,7 @@ export default function AppLayout({
           </div>
         </header>
 
-        <div style={{ padding: '28px 32px', flex: 1 }}>
+        <div className="main-pad" style={{ padding: '28px 32px', flex: 1 }}>
           {children}
         </div>
       </div>

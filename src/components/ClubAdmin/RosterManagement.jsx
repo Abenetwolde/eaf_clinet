@@ -434,7 +434,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               </div>
 
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div className="form-group">
                   <label className="form-label">Weight (kg)</label>
                   <input type="number" className="form-input" value={newAthleteWeight} onChange={e => setNewAthleteWeight(e.target.value)} placeholder="e.g. 58" />
@@ -531,7 +531,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                       </div>
                     )}
                     <div style={{ flex: 1, minWidth: '200px' }}>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <ul className="stack-on-mobile" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                         {[
                           ['Full Name', faydaVerifiedData.fullName],
                           ['Amharic Name', faydaVerifiedData.amharicName],
@@ -606,7 +606,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               <button onClick={() => setViewingAthlete(null)} className="btn-gov-secondary" style={{ padding: '4px 10px' }}>✕</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+            <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
               <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '8px' }}>BIOMETRIC INFO</div>
                 <div style={{ display: 'grid', gap: '6px', fontSize: '0.9rem' }}>

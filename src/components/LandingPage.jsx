@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen } from 'lucide-react';
+import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ChevronDown, ChevronUp, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 
 /* ─────────────────────────────────────────────
@@ -239,6 +239,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [activeLightboxImg, setActiveLightboxImg] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
+  const [expandedMeetCards, setExpandedMeetCards] = useState({});
 
   // Search/Filter states
   const [searchText, setSearchText] = useState('');
@@ -321,6 +322,10 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     }
   };
 
+  const toggleMeetCard = (cardKey) => {
+    setExpandedMeetCards(prev => ({ ...prev, [cardKey]: !prev[cardKey] }));
+  };
+
   const handleContactSubmit = (e) => {
     e.preventDefault();
     setContactSuccess(true);
@@ -354,6 +359,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     regClosed: language === 'en' ? 'Registration Closed' : 'ምዝገባ ተዘግቷል',
     live: language === 'en' ? 'Live' : 'በቀጥታ ስርጭት',
     upcoming: language === 'en' ? 'Upcoming' : 'መጪ ውድድር',
+    seeMore: language === 'en' ? 'See More' : 'ተጨማሪ ይመልከቱ',
+    seeLess: language === 'en' ? 'See Less' : 'ያንሱ',
 
     newsTitle: language === 'en' ? 'Latest News & Updates' : 'አዳዲስ ዜናዎች',
     competitionsTitle: language === 'en' ? 'Competitions & Championship Hub' : 'የውድድሮች ማዕከል',
@@ -407,6 +414,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       {publicSubPage === 'HOME' && (
         <section 
           id="home" 
+          className="landing-hero"
           style={{
             position: 'relative', 
             minHeight: '520px',
@@ -519,8 +527,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 2. INTEGRATED SEARCH BAR & FILTER WIDGET ── */}
       {(publicSubPage === 'HOME' || publicSubPage === 'COMPETITIONS') && (
-        <div style={{ padding: '0 24px', position: 'relative', zIndex: 10, marginTop: publicSubPage === 'COMPETITIONS' ? '40px' : 0 }}>
+        <div className="landing-search-wrap" style={{ padding: '0 24px', position: 'relative', zIndex: 10, marginTop: publicSubPage === 'COMPETITIONS' ? '40px' : 0 }}>
           <div 
+            className="landing-search-widget"
             style={{
               background: '#FFFFFF',
               border: '1px solid #E2E8F0',
@@ -637,7 +646,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 3. COMPETITIONS HUB WITH SCROLLABLE BANNERS & VIEW MORE BUTTON ── */}
       {(publicSubPage === "HOME" || publicSubPage === "COMPETITIONS") && (
-        <section id="competitions" style={{ background: '#F8FAFC', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+        <section id="competitions" className="landing-section" style={{ background: '#F8FAFC', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: '16px' }}>
               <div>
@@ -675,6 +684,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             ) : (
               <div 
                 ref={compScrollRef}
+                className="landing-scroll-row"
                 style={{ 
                   display: 'flex', 
                   gap: '24px', 
@@ -684,16 +694,18 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 }}
               >
                 {[...sortedMeets, ...sortedMeets, ...sortedMeets].map((meet, idx) => {
+                  const cardKey = `${meet.id}-${idx}`;
+                  const isCardExpanded = !!expandedMeetCards[cardKey];
                   const badgeColor = meet.status === 'REGISTRATION_OPEN' ? '#0EA5E9' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
                   const statusName = meet.status === 'REGISTRATION_OPEN' ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
                   
                   return (
                     <div 
-                      key={`${meet.id}-${idx}`} 
-                      className="hover-lift" 
+                      key={cardKey} 
+                      className={`hover-lift landing-scroll-card${isCardExpanded ? ' meet-card-expanded' : ''}`} 
                       onClick={() => setSelectedMeetId(meet.id)}
                       style={{
-                        minWidth: '360px',
+                        minWidth: 'min(100%, 360px)',
                         maxWidth: '380px',
                         flexShrink: 0,
                         scrollSnapAlign: 'start',
@@ -731,25 +743,50 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 900, marginBottom: '8px', lineHeight: 1.3 }}>
                           {language === 'en' ? meet.title : meet.amharic || meet.title}
                         </h3>
-                        
-                        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
-                            <MapPin size={14} /> {meet.venue}
-                          </span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
-                            <Calendar size={14} /> {meet.dateString}
-                          </span>
+
+                        <div className="meet-card-extra">
+                          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
+                              <MapPin size={14} /> {meet.venue}
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
+                              <Calendar size={14} /> {meet.dateString}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(8px)', color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '8px' }}>
+                              📍 {meet.region}
+                            </span>
+                            
+                            <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              {language === 'en' ? 'View Details' : 'ዝርዝር'} <ChevronRight size={16} />
+                            </span>
+                          </div>
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(8px)', color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '8px' }}>
-                            📍 {meet.region}
-                          </span>
-                          
-                          <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            {language === 'en' ? 'View Details' : 'ዝርዝር'} <ChevronRight size={16} />
-                          </span>
-                        </div>
+                        <button
+                          className="meet-card-toggle-btn"
+                          onClick={(e) => { e.stopPropagation(); toggleMeetCard(cardKey); }}
+                          style={{
+                            marginTop: '14px',
+                            background: 'rgba(255, 255, 255, 0.16)',
+                            backdropFilter: 'blur(8px)',
+                            WebkitBackdropFilter: 'blur(8px)',
+                            border: '1px solid rgba(255, 255, 255, 0.4)',
+                            color: '#FFFFFF',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            padding: '8px 16px',
+                            borderRadius: '999px',
+                            cursor: 'pointer',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          {isCardExpanded ? loc.seeLess : loc.seeMore}
+                          {isCardExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                        </button>
                       </div>
                     </div>
                   );
@@ -789,7 +826,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 4. FEATURED ATHLETES SPOTLIGHT (PLACED ABOVE NEWS SECTION AS REQUESTED!) ── */}
       {(publicSubPage === "HOME" || publicSubPage === "ATHLETES") && (
-        <section id="athletes" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+        <section id="athletes" className="landing-section" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: '16px' }}>
               <div>
@@ -812,18 +849,18 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
             <div 
               ref={athleteScrollRef}
+              className="landing-scroll-row"
               style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
             >
               {[...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => (
                 <div 
                   key={`${athlete.id}-${idx}`} 
-                  className="hover-lift"
+                  className="hover-lift landing-scroll-card"
                   onClick={() => setSelectedAthleteModal(athlete)}
                   style={{
                     position: 'relative', 
-                    minWidth: '380px',
+                    minWidth: 'min(100%, 380px)',
                     maxWidth: '400px',
-                    width: '380px',
                     minHeight: '440px',
                     flexShrink: 0,
                     borderRadius: 24, 
@@ -930,7 +967,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           </div>
 
           {/* Latest News Section */}
-          <section id="news" style={{ background: '#F8FAFC', padding: '60px 24px' }}>
+          <section id="news" className="landing-section" style={{ background: '#F8FAFC', padding: '60px 24px' }}>
             <div style={{ maxWidth: 1240, margin: '0 auto' }}>
               <div style={{ marginBottom: 32 }}>
                 <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>{loc.newsTitle}</h2>
@@ -1012,7 +1049,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 6. ABOUT & FEDERATION GOVERNANCE ── */}
       {publicSubPage === 'HOME' && (
-        <section id="about" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+        <section id="about" className="landing-section" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto', display: 'flex', gap: 48, flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 360px' }}>
               <h2 style={{ color: '#0F172A', fontSize: '2rem', fontWeight: 900, marginBottom: 12 }}>
@@ -1024,7 +1061,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               <p style={{ color: '#475569', lineHeight: 1.8, marginBottom: 28, fontSize: '0.92rem' }}>
                 EAF oversees the licensing of athletes and clubs through Fayda digital IDs, organizes national championships, selects national teams for international competitions, and develops grassroots talent across all Ethiopian regional states.
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
                   { label: 'Founded', value: '1964' },
                   { label: 'Licensed Clubs', value: '48 Clubs' },
@@ -1137,7 +1174,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 8. MEDIA & PHOTO/VIDEO GALLERY COLLECTION (RENDERED ON HOME & MEDIA PAGES) ── */}
       {(publicSubPage === 'HOME' || publicSubPage === 'MEDIA') && (
-        <section id="media" style={{ padding: '60px 24px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+        <section id="media" className="landing-section" style={{ padding: '60px 24px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#E0F2FE', color: '#0284C7', padding: '6px 16px', borderRadius: '30px', fontWeight: 800, fontSize: '0.82rem', marginBottom: '12px' }}>
@@ -1150,7 +1187,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </div>
 
             {/* Asymmetric Dense Mosaic Grid Layout Collection */}
-            <div style={{
+            <div className="media-grid" style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
               gridAutoRows: '240px',
@@ -1219,7 +1256,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       )}
 
       {/* ── 8.5 FAQ SECTION ── */}
-      <section style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+      <section className="landing-section" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0F172A' }}>Frequently Asked Questions</h2>
@@ -1254,8 +1291,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       </section>
 
       {/* ── 8.6 CONTACT FORM SECTION ── */}
-      <section id="contact-form" style={{ background: '#F0F9FF', padding: '60px 24px', borderTop: '1px solid #E0F2FE' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', background: '#FFFFFF', padding: '40px', borderRadius: '24px', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.05)', border: '1px solid #E2E8F0' }}>
+      <section id="contact-form" className="landing-section" style={{ background: '#F0F9FF', padding: '60px 24px', borderTop: '1px solid #E0F2FE' }}>
+        <div className="contact-card" style={{ maxWidth: 800, margin: '0 auto', background: '#FFFFFF', padding: '40px', borderRadius: '24px', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.05)', border: '1px solid #E2E8F0' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>Contact the Federation</h2>
             <p style={{ color: '#64748B', marginTop: '8px', fontSize: '1rem' }}>Get in touch with EAF licensing, event directors or media team.</p>
@@ -1267,7 +1304,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </div>
           ) : (
             <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <input 
                   type="text" 
                   placeholder="Your Full Name"
@@ -1313,7 +1350,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       </section>
 
       {/* ── 9. FOOTER WITH RGB(14, 165, 233) BACKGROUND ── */}
-      <footer style={{ background: 'rgb(14, 165, 233)', color: '#FFFFFF', padding: '60px 24px 30px', borderTop: '4px solid #0284C7' }}>
+      <footer className="landing-footer" style={{ background: 'rgb(14, 165, 233)', color: '#FFFFFF', padding: '60px 24px 30px', borderTop: '4px solid #0284C7' }}>
         <div style={{ maxWidth: 1240, margin: '0 auto' }}>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 40, marginBottom: 48 }}>
@@ -1454,7 +1491,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </div>
 
             {/* Athlete Bio & Stats Table */}
-            <div style={{ background: '#F8FAFC', padding: '20px', borderRadius: '18px', marginBottom: '24px', border: '1px solid #E2E8F0', overflowX: 'auto' }}>
+            <div className="table-responsive" style={{ background: '#F8FAFC', padding: '20px', borderRadius: '18px', marginBottom: '24px', border: '1px solid #E2E8F0' }}>
               <table className="gov-table" style={{ margin: 0 }}>
                 <tbody>
                   <tr><td style={{ width: '40%', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Primary Event</td><td style={{ fontWeight: 800, color: '#0F172A' }}>{selectedAthleteModal.event}</td></tr>

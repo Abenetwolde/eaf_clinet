@@ -13,7 +13,7 @@ export default function ClientLayout({
   return (
     <div style={{ minHeight: '100vh', background: '#F8FAFC', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-sans)' }}>
       {/* Top Navbar */}
-      <header style={{ 
+      <header className="client-header" style={{ 
         background: 'rgba(255, 255, 255, 0.8)', 
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid rgba(0,0,0,0.05)',
@@ -23,17 +23,17 @@ export default function ClientLayout({
         boxShadow: '0 4px 20px rgba(0,0,0,0.03)'
       }}>
         <div 
-          style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', minWidth: 0 }}
           onClick={() => onChangeSubPage('OVERVIEW')}
         >
-          <img src="/images/logo.jpeg" alt="EAF" style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }} />
-          <div>
-            <h1 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A', margin: 0, letterSpacing: '-0.02em' }}>EAF Athlete</h1>
+          <img className="client-brand-img" src="/images/logo.jpeg" alt="EAF" style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
+          <div style={{ minWidth: 0 }}>
+            <h1 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A', margin: 0, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>EAF Athlete</h1>
             <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>Client Portal</div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           {/* Updates Icon Button next to Sign Out */}
           <button 
             onClick={() => onChangeSubPage('NOTIFICATIONS')} 
@@ -67,6 +67,7 @@ export default function ClientLayout({
 
           <button 
             onClick={onLogout} 
+            className="client-signout"
             style={{ 
               background: '#F1F5F9', border: 'none', padding: '8px 14px', borderRadius: '10px', 
               fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: '6px',
@@ -79,6 +80,7 @@ export default function ClientLayout({
             <img 
               src={currentAthlete.photoUrl} 
               alt="Profile" 
+              className="client-avatar"
               style={{ width: '42px', height: '42px', borderRadius: '50%', border: '2px solid var(--primary)', objectFit: 'cover' }} 
             />
             <div style={{ position: 'absolute', bottom: 0, right: 0, width: '12px', height: '12px', background: '#10B981', border: '2px solid #FFF', borderRadius: '50%' }}></div>
@@ -87,7 +89,7 @@ export default function ClientLayout({
       </header>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, padding: '24px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+      <main className="client-main" style={{ flex: 1, padding: '24px', maxWidth: '900px', margin: '0 auto', width: '100%' }}>
         
         {/* Modern Tab Navigation */}
         <div style={{ 

@@ -104,7 +104,7 @@ export default function GeofenceCheckin({ athlete, onUpdateAthlete, onNotify }) 
       </div>
 
       {/* GPS + QR grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+      <div className="events-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
         {/* GPS Check-In Card */}
         <div className="gov-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>

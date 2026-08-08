@@ -114,7 +114,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
       </div>
 
       {/* Tab Nav */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: '#F0F5FA', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
+      <div className="athlete-tabs" style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: '#F0F5FA', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
             style={{
@@ -141,7 +141,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
               </button>
             </div>
             {editingStats ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                 {[
                   ['Weight (kg)', editWeight, setEditWeight],
                   ['Height (cm)', editHeight, setEditHeight],
@@ -279,7 +279,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                   <label className="form-label">Time / Result (e.g. 12:51.44 or 7.98m)</label>
                   <input className="form-input" value={pbTime} onChange={e => setPbTime(e.target.value)} placeholder="12:51.44" required />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Date</label>
                     <input className="form-input" type="date" value={pbDate} onChange={e => setPbDate(e.target.value)} />
@@ -302,7 +302,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
       {/* ── WEIGHT LOG TAB ── */}
       {activeTab === 'weight' && (
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
+          <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
             {/* Add entry */}
             <div className="gov-card">
               <h4 style={{ fontWeight: 800, marginBottom: '16px', fontSize: '1rem' }}>Log Weight</h4>
@@ -397,7 +397,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
             <div className="modal-backdrop" onClick={() => setShowAddTraining(false)}>
               <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '28px', maxWidth: '460px' }}>
                 <h3 style={{ fontWeight: 800, marginBottom: '20px' }}>Log Training Session</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Date</label>
                     <input className="form-input" type="date" value={trainDate} onChange={e => setTrainDate(e.target.value)} />

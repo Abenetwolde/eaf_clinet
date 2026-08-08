@@ -46,7 +46,7 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }) {
       </div>
 
       <form className="gov-card" style={{ background: '#FFFFFF', padding: '28px', borderRadius: '16px' }} onSubmit={handleSave}>
-        
+
         {/* Verification Status Banner */}
         <div style={{ background: '#F0FDF4', border: '1px solid #DCFCE7', borderRadius: '12px', padding: '14px 18px', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <ShieldCheck size={20} color="#15803D" />
@@ -58,70 +58,70 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+        <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
           {/* Read-Only Identity Fields */}
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 700 }}>EAF Athlete ID (Read-only)</label>
-            <input 
-              className="form-input" 
-              type="text" 
-              value={athlete.id} 
-              disabled 
+            <input
+              className="form-input"
+              type="text"
+              value={athlete.id}
+              disabled
               style={{ background: '#F1F5F9', cursor: 'not-allowed', fontWeight: 600 }}
             />
           </div>
 
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 700 }}>Fayda FIN Number (Read-only)</label>
-            <input 
-              className="form-input" 
-              type="text" 
-              value={athlete.faydaFin} 
-              disabled 
+            <input
+              className="form-input"
+              type="text"
+              value={athlete.faydaFin}
+              disabled
               style={{ background: '#F1F5F9', cursor: 'not-allowed', fontWeight: 600 }}
             />
           </div>
 
           <div className="form-group">
             <label className="form-label">Full Name (English)</label>
-            <input 
-              className="form-input" 
-              type="text" 
-              value={name} 
-              disabled 
+            <input
+              className="form-input"
+              type="text"
+              value={name}
+              disabled
               style={{ background: '#F1F5F9', cursor: 'not-allowed' }}
             />
           </div>
 
           <div className="form-group">
             <label className="form-label">Full Name (Amharic)</label>
-            <input 
-              className="form-input" 
-              type="text" 
-              value={amharicName} 
-              disabled 
+            <input
+              className="form-input"
+              type="text"
+              value={amharicName}
+              disabled
               style={{ background: '#F1F5F9', cursor: 'not-allowed' }}
             />
           </div>
 
           <div className="form-group">
             <label className="form-label">Date of Birth (DOB)</label>
-            <input 
-              className="form-input" 
-              type="date" 
-              value={dob} 
-              disabled 
+            <input
+              className="form-input"
+              type="date"
+              value={dob}
+              disabled
               style={{ background: '#F1F5F9', cursor: 'not-allowed' }}
             />
           </div>
 
           <div className="form-group">
             <label className="form-label">Gender</label>
-            <input 
-              className="form-input" 
-              type="text" 
-              value={gender} 
-              disabled 
+            <input
+              className="form-input"
+              type="text"
+              value={gender}
+              disabled
               style={{ background: '#F1F5F9', cursor: 'not-allowed' }}
             />
           </div>
@@ -132,14 +132,14 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }) {
           Editable Athletics &amp; Contact Info
         </h4>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+        <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <MapPin size={14} color="var(--primary)" /> Affiliated Region
             </label>
-            <select 
-              className="form-select" 
-              value={region} 
+            <select
+              className="form-select"
+              value={region}
               onChange={e => setRegion(e.target.value)}
             >
               <option value="Addis Ababa">Addis Ababa</option>
@@ -155,9 +155,9 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }) {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Activity size={14} color="var(--primary)" /> Primary Discipline
             </label>
-            <select 
-              className="form-select" 
-              value={primaryEvent} 
+            <select
+              className="form-select"
+              value={primaryEvent}
               onChange={e => setPrimaryEvent(e.target.value)}
             >
               <option value="100m / 200m Sprint">100m / 200m Sprint</option>
@@ -172,10 +172,10 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }) {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Phone size={14} color="var(--primary)" /> Phone Number
             </label>
-            <input 
-              className="form-input" 
-              type="text" 
-              value={phone} 
+            <input
+              className="form-input"
+              type="text"
+              value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="+251 911 123456"
               required
@@ -186,10 +186,10 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }) {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Mail size={14} color="var(--primary)" /> Email Address
             </label>
-            <input 
-              className="form-input" 
-              type="email" 
-              value={email} 
+            <input
+              className="form-input"
+              type="email"
+              value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="athlete@eaf.org.et"
               required
@@ -197,9 +197,9 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }) {
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          className="btn-gov-primary" 
+        <button
+          type="submit"
+          className="btn-gov-primary"
           style={{ width: '100%', padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
         >
           <Save size={16} /> Save Profile Changes

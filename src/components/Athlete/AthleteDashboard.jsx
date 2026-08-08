@@ -13,7 +13,7 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
   const [activeTab, setActiveTab] = useState('RECORDS'); // 'RECORDS', 'FAYDA', 'RESULTS'
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+    <div className="dash-page" style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
       {/* Athlete Header Profile Banner */}
       <div className="glass-panel" style={{
         padding: '32px',
@@ -35,7 +35,7 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)' }}>
+              <h2 className="dash-heading" style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)' }}>
                 {athlete.name}
               </h2>
               <span className="badge badge-green">
