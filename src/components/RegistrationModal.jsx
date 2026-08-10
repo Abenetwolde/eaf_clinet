@@ -5,7 +5,7 @@ import { MOCK_CLUBS } from '../data/mockData';
 // Step indicator bar
 function StepBar({ steps, current }) {
   return (
-    <div style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
+    <div className="stepbar" style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
       {steps.map((s, i) => (
         <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
           <div style={{
@@ -323,7 +323,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
           <label className="form-label">Club Name (Amharic — የክለቡ ስም)</label>
           <input className="form-input" value={clubAmharic} onChange={e => setClubAmharic(e.target.value)} placeholder="e.g. በቆጂ የሩጫ አካዳሚ" required style={{ padding: '12px 14px' }} />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+        <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div className="form-group">
             <label className="form-label">Regional State</label>
             <select className="form-select" value={region} onChange={e => setRegion(e.target.value)} style={{ padding: '12px 14px' }}>
@@ -359,7 +359,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
     if (step === 2) return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
         <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>Review & Confirm Registration</h4>
-        <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px', overflowX: 'auto' }}>
+        <div className="table-responsive" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px' }}>
           <table className="gov-table">
             <tbody>
               {[
@@ -409,10 +409,10 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
               Fayda FIN Number (12 Digits Auto-Formatted)
             </label>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div className="fin-row" style={{ display: 'flex', gap: '10px' }}>
               <input
                 className="form-input"
-                style={{ flex: 1, padding: '14px 16px', fontSize: '1.05rem', borderRadius: '12px', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', fontWeight: 700 }}
+                style={{ flex: 1, padding: '14px 16px', fontSize: '1.05rem', borderRadius: '12px', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', fontWeight: 700, minWidth: 0 }}
                 value={faydaFin}
                 onChange={handleFinChange}
                 placeholder="e.g. 9840-3920-1124"
@@ -459,11 +459,12 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
               <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', textAlign: 'center', display: 'block', marginBottom: '8px' }}>
                 Enter 6-Digit Passcode (OTP)
               </label>
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', margin: '12px 0' }}>
+              <div className="otp-row" style={{ display: 'flex', gap: '10px', justifyContent: 'center', margin: '12px 0' }}>
                 {[0, 1, 2, 3, 4, 5].map(idx => (
                   <input
                     key={idx}
                     id={`otp-box-${idx}`}
+                    className="otp-box"
                     type="text"
                     maxLength={1}
                     value={otpCode[idx] || ''}
@@ -589,7 +590,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
                 <h5 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0369A1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
                   📋 Personal Identity Data List
                 </h5>
-                <div style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #BAE6FD', overflow: 'hidden' }}>
+                <div className="table-responsive" style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #BAE6FD' }}>
                   <table className="gov-table" style={{ margin: 0 }}>
                     <tbody>
                       {[
@@ -757,7 +758,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
           </div>
 
           {/* Physical & Medical Stats Inputs */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div className="form-group">
               <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Weight (kg)</label>
               <input className="form-input" type="number" value={weight} onChange={e => setWeight(Number(e.target.value))} style={{ padding: '12px 14px', borderRadius: '10px' }} />
@@ -850,7 +851,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             </div>
 
             {/* Maximum Metadata Data Table */}
-            <div style={{ overflowX: 'auto', background: '#FFFFFF', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+            <div className="table-responsive" style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
               <table className="gov-table" style={{ margin: 0 }}>
                 <tbody>
                   {[

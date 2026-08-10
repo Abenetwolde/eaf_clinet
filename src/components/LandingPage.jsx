@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen } from 'lucide-react';
+import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ChevronDown, ChevronUp, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 
 /* ─────────────────────────────────────────────
@@ -199,11 +199,11 @@ const QUICK_LINKS = [
 ];
 
 const TAG_COLORS = {
-  Championship:   { bg: '#E0F2FE', color: '#0369A1' },
-  Marathon:       { bg: '#FEF3C7', color: '#B45309' },
-  'Road Race':    { bg: '#DCFCE7', color: '#15803D' },
-  Training:       { bg: '#F3E8FF', color: '#6B21A8' },
-  'National Team':{ bg: '#FEE2E2', color: '#B91C1C' },
+  Championship: { bg: '#E0F2FE', color: '#0369A1' },
+  Marathon: { bg: '#FEF3C7', color: '#B45309' },
+  'Road Race': { bg: '#DCFCE7', color: '#15803D' },
+  Training: { bg: '#F3E8FF', color: '#6B21A8' },
+  'National Team': { bg: '#FEE2E2', color: '#B91C1C' },
 };
 
 /* ─────────────────────────────────────────────
@@ -239,6 +239,16 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [activeLightboxImg, setActiveLightboxImg] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
+  const [expandedMeetCards, setExpandedMeetCards] = useState({});
+  const [galleryExpanded, setGalleryExpanded] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1440);
+
+  // Track viewport width so the gallery can show a limited initial set on smaller screens
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Search/Filter states
   const [searchText, setSearchText] = useState('');
@@ -321,6 +331,10 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     }
   };
 
+  const toggleMeetCard = (cardKey) => {
+    setExpandedMeetCards(prev => ({ ...prev, [cardKey]: !prev[cardKey] }));
+  };
+
   const handleContactSubmit = (e) => {
     e.preventDefault();
     setContactSuccess(true);
@@ -332,8 +346,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   // Localized string packs
   const loc = {
-    heroTitle: language === 'en' 
-      ? 'EAF Digital Athlete Portal: Verify, Register & Track Live results in Real-time' 
+    heroTitle: language === 'en'
+      ? 'EAF Digital Athlete Portal: Verify, Register & Track Live results in Real-time'
       : 'የኢትዮጵያ አትሌቲክስ ዲጂታል ፖርታል: ይመዝገቡ፣ ያረጋግጡ እና ውጤቶችን በቀጥታ ይከታተሉ',
     heroSubtitle: language === 'en'
       ? 'Welcome to the official digital hub of the Ethiopian Athletics Federation. Verify your Fayda ID, register your club, and access live starter lists and real-time results.'
@@ -348,12 +362,14 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     sortLabel: language === 'en' ? 'Sort Date' : 'ቅደም ተከተል',
     sortUpcoming: language === 'en' ? 'Upcoming First' : 'መጪ ውድድር ይቀድም',
     sortOldest: language === 'en' ? 'Oldest First' : 'ቀደምት ውድድር ይቀድም',
-    
+
     all: language === 'en' ? 'All' : 'ሁሉም',
     regOpen: language === 'en' ? 'Open for Registration' : 'ምዝገባ ክፍት ነው',
     regClosed: language === 'en' ? 'Registration Closed' : 'ምዝገባ ተዘግቷል',
     live: language === 'en' ? 'Live' : 'በቀጥታ ስርጭት',
     upcoming: language === 'en' ? 'Upcoming' : 'መጪ ውድድር',
+    seeMore: language === 'en' ? 'See More' : 'ተጨማሪ ይመልከቱ',
+    seeLess: language === 'en' ? 'See Less' : 'ያንሱ',
 
     newsTitle: language === 'en' ? 'Latest News & Updates' : 'አዳዲስ ዜናዎች',
     competitionsTitle: language === 'en' ? 'Competitions & Championship Hub' : 'የውድድሮች ማዕከል',
@@ -384,10 +400,22 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     return sortByDate === 'UPCOMING_FIRST' ? dA - dB : dB - dA;
   });
 
+  // Responsive gallery: full grid on desktop, limited initial set on tablet/mobile
+  const galleryLimit = viewportWidth > 887
+    ? GALLERY_IMAGES.length
+    : viewportWidth <= 640 ? 4 : 6;
+  const visibleGalleryImages = galleryExpanded ? GALLERY_IMAGES : GALLERY_IMAGES.slice(0, galleryLimit);
+  const showGalleryToggle = GALLERY_IMAGES.length > galleryLimit;
+
+  // Collapse back to the initial set whenever the visible-count breakpoint changes
+  useEffect(() => {
+    setGalleryExpanded(false);
+  }, [galleryLimit]);
+
   if (selectedMeetId) {
     const meetObj = ENRICHED_MEETS.find(m => m.id === selectedMeetId);
     return (
-      <CompetitionDetail 
+      <CompetitionDetail
         meet={meetObj}
         onBack={() => setSelectedMeetId(null)}
         onRegister={onRegister}
@@ -396,24 +424,25 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     );
   }
 
-  const filteredGallery = selectedGalleryTab === 'All' 
-    ? GALLERY_IMAGES 
+  const filteredGallery = selectedGalleryTab === 'All'
+    ? GALLERY_IMAGES
     : GALLERY_IMAGES.filter(img => img.category === selectedGalleryTab);
 
   return (
     <div style={{ background: '#FFFFFF', minHeight: '100vh', overflowX: 'hidden' }}>
-      
+
       {/* ── 1. HERO SECTION WITH VECTOR GRAPHICS ── */}
       {publicSubPage === 'HOME' && (
-        <section 
-          id="home" 
+        <section
+          id="home"
+          className="landing-hero"
           style={{
-            position: 'relative', 
+            position: 'relative',
             minHeight: '520px',
             background: 'linear-gradient(180deg, #F0F9FF 0%, #E0F2FE 40%, #FFFFFF 100%)',
-            display: 'flex', 
+            display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center', 
+            alignItems: 'center',
             justifyContent: 'center',
             padding: '40px 24px 70px',
             margin: '0',
@@ -430,7 +459,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           </div>
 
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '920px', margin: '0 auto' }}>
-            
+
             {/* <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#FFFFFF', border: '1px solid #BAE6FD', padding: '6px 16px', borderRadius: '30px', boxShadow: '0 4px 14px rgba(14,165,233,0.12)', marginBottom: '20px' }}>
               <Sparkles size={16} color="#0EA5E9" />
               <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0284C7', letterSpacing: '0.04em' }}>
@@ -441,8 +470,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             <h1 style={{
               color: '#0F172A',
               fontSize: 'clamp(2.2rem, 5.5vw, 3.8rem)',
-              fontWeight: 900, 
-              lineHeight: 1.15, 
+              fontWeight: 900,
+              lineHeight: 1.15,
               marginBottom: '18px',
               letterSpacing: '-0.025em'
             }}>
@@ -450,10 +479,10 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </h1>
 
             <p style={{
-              color: '#475569', 
+              color: '#475569',
               fontSize: 'clamp(1rem, 2vw, 1.18rem)',
-              maxWidth: '720px', 
-              margin: '0 auto 36px', 
+              maxWidth: '720px',
+              margin: '0 auto 36px',
               lineHeight: 1.6,
               fontWeight: 500
             }}>
@@ -462,7 +491,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px' }}>
               {/* Primary CTA */}
-              <button 
+              <button
                 onClick={() => onRegister('ATHLETE')}
                 className="btn-accent"
                 style={{
@@ -486,7 +515,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </button>
 
               {/* Secondary CTA */}
-              <button 
+              <button
                 onClick={() => {
                   const el = document.getElementById('competitions');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -519,8 +548,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 2. INTEGRATED SEARCH BAR & FILTER WIDGET ── */}
       {(publicSubPage === 'HOME' || publicSubPage === 'COMPETITIONS') && (
-        <div style={{ padding: '0 24px', position: 'relative', zIndex: 10, marginTop: publicSubPage === 'COMPETITIONS' ? '40px' : 0 }}>
-          <div 
+        <div className="landing-search-wrap" style={{ padding: '0 24px', position: 'relative', zIndex: 10, marginTop: publicSubPage === 'COMPETITIONS' ? '40px' : 0 }}>
+          <div
+            className="landing-search-widget"
             style={{
               background: '#FFFFFF',
               border: '1px solid #E2E8F0',
@@ -535,11 +565,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           >
             {/* Free-text Search */}
             <div style={{ position: 'relative', marginBottom: '20px' }}>
-              <Search 
-                size={22} 
-                style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#0EA5E9' }} 
+              <Search
+                size={22}
+                style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#0EA5E9' }}
               />
-              <input 
+              <input
                 type="text"
                 value={searchText}
                 onChange={e => setSearchText(e.target.value)}
@@ -563,12 +593,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
             {/* Filter Widgets Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', alignItems: 'flex-end' }}>
-              
+
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ color: '#475569', fontSize: '0.82rem', fontWeight: 700 }}>{loc.regionLabel}</label>
-                <select 
-                  className="form-select" 
-                  value={regionFilter} 
+                <select
+                  className="form-select"
+                  value={regionFilter}
                   onChange={e => setRegionFilter(e.target.value)}
                   style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#0F172A', borderRadius: '12px', padding: '11px 14px' }}
                 >
@@ -583,9 +613,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ color: '#475569', fontSize: '0.82rem', fontWeight: 700 }}>{loc.statusLabel}</label>
-                <select 
-                  className="form-select" 
-                  value={statusFilter} 
+                <select
+                  className="form-select"
+                  value={statusFilter}
                   onChange={e => setStatusFilter(e.target.value)}
                   style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#0F172A', borderRadius: '12px', padding: '11px 14px' }}
                 >
@@ -599,8 +629,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ color: '#475569', fontSize: '0.82rem', fontWeight: 700 }}>{loc.startDateLabel}</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={startDate}
                   onChange={e => setStartDate(e.target.value)}
                   style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#0F172A', borderRadius: '12px', width: '100%', padding: '11px 14px' }}
@@ -609,8 +639,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ color: '#475569', fontSize: '0.82rem', fontWeight: 700 }}>{loc.endDateLabel}</label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={endDate}
                   onChange={e => setEndDate(e.target.value)}
                   style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#0F172A', borderRadius: '12px', width: '100%', padding: '11px 14px' }}
@@ -619,9 +649,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ color: '#475569', fontSize: '0.82rem', fontWeight: 700 }}>{loc.sortLabel}</label>
-                <select 
-                  className="form-select" 
-                  value={sortByDate} 
+                <select
+                  className="form-select"
+                  value={sortByDate}
                   onChange={e => setSortByDate(e.target.value)}
                   style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#0F172A', borderRadius: '12px', padding: '11px 14px' }}
                 >
@@ -637,7 +667,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 3. COMPETITIONS HUB WITH SCROLLABLE BANNERS & VIEW MORE BUTTON ── */}
       {(publicSubPage === "HOME" || publicSubPage === "COMPETITIONS") && (
-        <section id="competitions" style={{ background: '#F8FAFC', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+        <section id="competitions" className="landing-section" style={{ background: '#F8FAFC', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: '16px' }}>
               <div>
@@ -651,13 +681,13 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
               {/* Scroll Controls for Banners */}
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button 
+                <button
                   onClick={() => handleScrollBanners('left')}
                   style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FFFFFF', border: '1px solid #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
                 >
                   <ChevronLeft size={20} color="#0F172A" />
                 </button>
-                <button 
+                <button
                   onClick={() => handleScrollBanners('right')}
                   style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FFFFFF', border: '1px solid #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
                 >
@@ -673,37 +703,40 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 <h4 style={{ fontWeight: 800 }}>{language === 'en' ? 'No Competitions Found' : 'ምንም ውድድሮች አልተገኙም'}</h4>
               </div>
             ) : (
-              <div 
+              <div
                 ref={compScrollRef}
-                style={{ 
-                  display: 'flex', 
-                  gap: '24px', 
-                  overflowX: 'hidden', 
+                className="landing-scroll-row"
+                style={{
+                  display: 'flex',
+                  gap: '24px',
+                  overflowX: 'hidden',
                   paddingBottom: '16px',
                   cursor: 'grab'
                 }}
               >
                 {[...sortedMeets, ...sortedMeets, ...sortedMeets].map((meet, idx) => {
+                  const cardKey = `${meet.id}-${idx}`;
+                  const isCardExpanded = !!expandedMeetCards[cardKey];
                   const badgeColor = meet.status === 'REGISTRATION_OPEN' ? '#0EA5E9' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
                   const statusName = meet.status === 'REGISTRATION_OPEN' ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
-                  
+
                   return (
-                    <div 
-                      key={`${meet.id}-${idx}`} 
-                      className="hover-lift" 
+                    <div
+                      key={cardKey}
+                      className={`hover-lift landing-scroll-card${isCardExpanded ? ' meet-card-expanded' : ''}`}
                       onClick={() => setSelectedMeetId(meet.id)}
                       style={{
-                        minWidth: '360px',
+                        minWidth: 'min(100%, 360px)',
                         maxWidth: '380px',
                         flexShrink: 0,
                         scrollSnapAlign: 'start',
-                        position: 'relative', 
-                        borderRadius: '24px', 
+                        position: 'relative',
+                        borderRadius: '24px',
                         overflow: 'hidden',
-                        minHeight: '340px', 
-                        display: 'flex', 
+                        minHeight: '340px',
+                        display: 'flex',
                         flexDirection: 'column',
-                        justifyContent: 'flex-end', 
+                        justifyContent: 'flex-end',
                         cursor: 'pointer',
                         boxShadow: '0 12px 28px rgba(15, 23, 42, 0.1)'
                       }}
@@ -714,42 +747,67 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                         backgroundSize: 'cover', backgroundPosition: 'center',
                       }} />
                       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 60%, transparent 100%)' }} />
-                      
+
                       <div style={{ position: 'relative', zIndex: 1, padding: '24px' }}>
                         <span style={{
-                          background: badgeColor, 
+                          background: badgeColor,
                           color: '#FFFFFF',
-                          borderRadius: '8px', 
+                          borderRadius: '8px',
                           padding: '4px 12px',
-                          fontSize: '0.75rem', 
-                          fontWeight: 800, 
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
                           letterSpacing: '0.04em',
-                          marginBottom: '12px', 
+                          marginBottom: '12px',
                           display: 'inline-block',
                         }}>{statusName}</span>
 
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 900, marginBottom: '8px', lineHeight: 1.3 }}>
                           {language === 'en' ? meet.title : meet.amharic || meet.title}
                         </h3>
-                        
-                        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
-                            <MapPin size={14} /> {meet.venue}
-                          </span>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
-                            <Calendar size={14} /> {meet.dateString}
-                          </span>
+
+                        <div className="meet-card-extra">
+                          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
+                              <MapPin size={14} /> {meet.venue}
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
+                              <Calendar size={14} /> {meet.dateString}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(8px)', color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '8px' }}>
+                              📍 {meet.region}
+                            </span>
+
+                            <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              {language === 'en' ? 'View Details' : 'ዝርዝር'} <ChevronRight size={16} />
+                            </span>
+                          </div>
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(8px)', color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '8px' }}>
-                            📍 {meet.region}
-                          </span>
-                          
-                          <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            {language === 'en' ? 'View Details' : 'ዝርዝር'} <ChevronRight size={16} />
-                          </span>
-                        </div>
+                        <button
+                          className="meet-card-toggle-btn"
+                          onClick={(e) => { e.stopPropagation(); toggleMeetCard(cardKey); }}
+                          style={{
+                            marginTop: '14px',
+                            background: 'rgba(255, 255, 255, 0.16)',
+                            backdropFilter: 'blur(8px)',
+                            WebkitBackdropFilter: 'blur(8px)',
+                            border: '1px solid rgba(255, 255, 255, 0.4)',
+                            color: '#FFFFFF',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            padding: '8px 16px',
+                            borderRadius: '999px',
+                            cursor: 'pointer',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                        >
+                          {isCardExpanded ? loc.seeLess : loc.seeMore}
+                          {isCardExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                        </button>
                       </div>
                     </div>
                   );
@@ -760,13 +818,13 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             {/* VIEW MORE COMPETITIONS BUTTON */}
             {publicSubPage === 'HOME' && (
               <div style={{ marginTop: '36px', textAlign: 'center' }}>
-                <button 
-                  className="btn-accent" 
-                  style={{ 
-                    padding: '14px 36px', 
-                    borderRadius: '14px', 
-                    fontSize: '0.98rem', 
-                    fontWeight: 800, 
+                <button
+                  className="btn-accent"
+                  style={{
+                    padding: '14px 36px',
+                    borderRadius: '14px',
+                    fontSize: '0.98rem',
+                    fontWeight: 800,
                     background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
                     color: '#FFF',
                     boxShadow: '0 8px 24px rgba(2, 132, 199, 0.25)',
@@ -789,7 +847,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 4. FEATURED ATHLETES SPOTLIGHT (PLACED ABOVE NEWS SECTION AS REQUESTED!) ── */}
       {(publicSubPage === "HOME" || publicSubPage === "ATHLETES") && (
-        <section id="athletes" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+        <section id="athletes" className="landing-section" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: '16px' }}>
               <div>
@@ -800,7 +858,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </div>
 
               {publicSubPage === 'HOME' && (
-                <button 
+                <button
                   className="btn-gov-secondary"
                   onClick={() => onChangePublicSubPage('ATHLETES')}
                   style={{ borderRadius: '10px', padding: '10px 20px', fontWeight: 800 }}
@@ -810,26 +868,26 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               )}
             </div>
 
-            <div 
+            <div
               ref={athleteScrollRef}
+              className="landing-scroll-row"
               style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
             >
               {[...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => (
-                <div 
-                  key={`${athlete.id}-${idx}`} 
-                  className="hover-lift"
+                <div
+                  key={`${athlete.id}-${idx}`}
+                  className="hover-lift landing-scroll-card"
                   onClick={() => setSelectedAthleteModal(athlete)}
                   style={{
-                    position: 'relative', 
-                    minWidth: '380px',
+                    position: 'relative',
+                    minWidth: 'min(100%, 380px)',
                     maxWidth: '400px',
-                    width: '380px',
                     minHeight: '440px',
                     flexShrink: 0,
-                    borderRadius: 24, 
+                    borderRadius: 24,
                     overflow: 'hidden',
-                    display: 'flex', 
-                    flexDirection: 'column', 
+                    display: 'flex',
+                    flexDirection: 'column',
                     justifyContent: 'flex-end',
                     cursor: 'pointer',
                     boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
@@ -842,7 +900,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     backgroundSize: 'cover', backgroundPosition: 'center top',
                   }} />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.35) 55%, transparent 100%)' }} />
-                  
+
                   {/* Fayda Badge */}
                   <div style={{
                     position: 'absolute', top: 16, right: 16, zIndex: 3,
@@ -864,7 +922,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     <div style={{ color: '#38BDF8', fontSize: '0.85rem', fontWeight: 700, marginBottom: 12 }}>
                       {athlete.amharicName}
                     </div>
-                    
+
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                       <span style={{
                         background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: '#FFF',
@@ -922,7 +980,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 }
               `}</style>
               <span className="ticker-inner">
-                {language === 'en' 
+                {language === 'en'
                   ? 'Ethiopia wins 15 medals at 24th African Athletics Championship · EAF launches athlete licensing with Fayda ID · Addis Ababa Grand Prix entries open ·'
                   : 'ኢትዮጵያ በ24ኛው የአፍሪካ አትሌቲክስ ሻምፒዮና 15 ሜዳሊያዎችን አሸንፋለች · ፌዴሬሽኑ የፋይዳ ባዮሜትሪክ ምዝገባን በይፋ ጀምሯል · የአዲስ አበባ ግራንድ ፕሪ ምዝገባ ተጀምሯል ·'}
               </span>
@@ -930,7 +988,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           </div>
 
           {/* Latest News Section */}
-          <section id="news" style={{ background: '#F8FAFC', padding: '60px 24px' }}>
+          <section id="news" className="landing-section" style={{ background: '#F8FAFC', padding: '60px 24px' }}>
             <div style={{ maxWidth: 1240, margin: '0 auto' }}>
               <div style={{ marginBottom: 32 }}>
                 <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>{loc.newsTitle}</h2>
@@ -1012,7 +1070,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 6. ABOUT & FEDERATION GOVERNANCE ── */}
       {publicSubPage === 'HOME' && (
-        <section id="about" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+        <section id="about" className="landing-section" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto', display: 'flex', gap: 48, flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 360px' }}>
               <h2 style={{ color: '#0F172A', fontSize: '2rem', fontWeight: 900, marginBottom: 12 }}>
@@ -1024,7 +1082,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               <p style={{ color: '#475569', lineHeight: 1.8, marginBottom: 28, fontSize: '0.92rem' }}>
                 EAF oversees the licensing of athletes and clubs through Fayda digital IDs, organizes national championships, selects national teams for international competitions, and develops grassroots talent across all Ethiopian regional states.
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
                   { label: 'Founded', value: '1964' },
                   { label: 'Licensed Clubs', value: '48 Clubs' },
@@ -1104,16 +1162,16 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           <div style={{ overflow: 'hidden', position: 'relative', width: '100%', padding: '10px 0' }}>
             <div className="sponsor-track">
               {[
-                { src: '/images/800px-Adidas_Logo.svg_.png',              alt: 'Adidas',        h: 46 },
+                { src: '/images/800px-Adidas_Logo.svg_.png', alt: 'Adidas', h: 46 },
                 { src: '/images/ETHIO-TELECOM-1200px-logo-1-1024x269.jpg', alt: 'Ethio Telecom', h: 48 },
-                { src: '/images/TeleBirr-Logo-1024x468.png',              alt: 'Telebirr',      h: 46 },
-                { src: '/images/Cocacola-logo.jpg',                       alt: 'Coca-Cola',     h: 52 },
-                { src: '/images/OROMIA-1024x279.jpg',                     alt: 'Oromia Bank',   h: 46 },
-                { src: '/images/800px-Adidas_Logo.svg_.png',              alt: 'Adidas 2',      h: 46 },
+                { src: '/images/TeleBirr-Logo-1024x468.png', alt: 'Telebirr', h: 46 },
+                { src: '/images/Cocacola-logo.jpg', alt: 'Coca-Cola', h: 52 },
+                { src: '/images/OROMIA-1024x279.jpg', alt: 'Oromia Bank', h: 46 },
+                { src: '/images/800px-Adidas_Logo.svg_.png', alt: 'Adidas 2', h: 46 },
                 { src: '/images/ETHIO-TELECOM-1200px-logo-1-1024x269.jpg', alt: 'Ethio Telecom 2', h: 48 },
-                { src: '/images/TeleBirr-Logo-1024x468.png',              alt: 'Telebirr 2',    h: 46 },
-                { src: '/images/Cocacola-logo.jpg',                       alt: 'Coca-Cola 2',   h: 52 },
-                { src: '/images/OROMIA-1024x279.jpg',                     alt: 'Oromia Bank 2', h: 46 },
+                { src: '/images/TeleBirr-Logo-1024x468.png', alt: 'Telebirr 2', h: 46 },
+                { src: '/images/Cocacola-logo.jpg', alt: 'Coca-Cola 2', h: 52 },
+                { src: '/images/OROMIA-1024x279.jpg', alt: 'Oromia Bank 2', h: 46 },
               ].map((s, idx) => (
                 <div key={idx} style={{ background: '#FFFFFF', padding: '12px 28px', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <img
@@ -1137,7 +1195,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 8. MEDIA & PHOTO/VIDEO GALLERY COLLECTION (RENDERED ON HOME & MEDIA PAGES) ── */}
       {(publicSubPage === 'HOME' || publicSubPage === 'MEDIA') && (
-        <section id="media" style={{ padding: '60px 24px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+        <section id="media" className="landing-section" style={{ padding: '60px 24px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#E0F2FE', color: '#0284C7', padding: '6px 16px', borderRadius: '30px', fontWeight: 800, fontSize: '0.82rem', marginBottom: '12px' }}>
@@ -1150,19 +1208,19 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </div>
 
             {/* Asymmetric Dense Mosaic Grid Layout Collection */}
-            <div style={{
+            <div className="media-grid" style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
               gridAutoRows: '240px',
               gridAutoFlow: 'dense',
               gap: '20px'
             }}>
-              {GALLERY_IMAGES.map((item, idx) => {
+              {visibleGalleryImages.map((item, idx) => {
                 const isHero = idx === 0;
                 const isTall = idx === 1 || idx === 6;
                 const isWide = idx === 3 || idx === 8;
                 return (
-                  <div 
+                  <div
                     key={item.id}
                     className="hover-lift media-grid-card"
                     onClick={() => setActiveLightboxImg(item)}
@@ -1178,14 +1236,14 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       minHeight: isTall || isHero ? '480px' : '240px'
                     }}
                   >
-                    <img 
-                      src={item.img} 
-                      alt={item.title} 
+                    <img
+                      src={item.img}
+                      alt={item.title}
                       className="media-card-img"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }}
                     />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.2) 60%, transparent 100%)' }} />
-                    
+
                     {/* Top Badges */}
                     <div style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ background: '#0EA5E9', color: '#FFF', padding: '4px 12px', borderRadius: '14px', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
@@ -1214,12 +1272,38 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 );
               })}
             </div>
+
+            {showGalleryToggle && (
+              <div style={{ marginTop: '36px', textAlign: 'center' }}>
+                <button
+                  onClick={() => setGalleryExpanded(prev => !prev)}
+                  className="btn-accent"
+                  style={{
+                    padding: '12px 32px',
+                    borderRadius: '12px',
+                    fontSize: '0.95rem',
+                    fontWeight: 800,
+                    background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
+                    color: '#FFF',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 8px 24px rgba(2, 132, 199, 0.25)'
+                  }}
+                >
+                  {galleryExpanded ? loc.seeLess : loc.seeMore}
+                  {galleryExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </button>
+              </div>
+            )}
           </div>
         </section>
       )}
 
       {/* ── 8.5 FAQ SECTION ── */}
-      <section style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+      <section className="landing-section" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0F172A' }}>Frequently Asked Questions</h2>
@@ -1232,7 +1316,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               { q: 'When are the results updated?', a: 'Results for live competitions are updated in real-time by the technical committee directly from the venue.' }
             ].map((faq, idx) => (
               <div key={idx} style={{ border: '1px solid #E2E8F0', borderRadius: '16px', background: '#F8FAFC', overflow: 'hidden' }}>
-                <button 
+                <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
                   style={{ width: '100%', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 800, color: '#0F172A', fontSize: '1.05rem' }}
                 >
@@ -1254,30 +1338,30 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       </section>
 
       {/* ── 8.6 CONTACT FORM SECTION ── */}
-      <section id="contact-form" style={{ background: '#F0F9FF', padding: '60px 24px', borderTop: '1px solid #E0F2FE' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', background: '#FFFFFF', padding: '40px', borderRadius: '24px', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.05)', border: '1px solid #E2E8F0' }}>
+      <section id="contact-form" className="landing-section" style={{ background: '#F0F9FF', padding: '60px 24px', borderTop: '1px solid #E0F2FE' }}>
+        <div className="contact-card" style={{ maxWidth: 800, margin: '0 auto', background: '#FFFFFF', padding: '40px', borderRadius: '24px', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.05)', border: '1px solid #E2E8F0' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>Contact the Federation</h2>
             <p style={{ color: '#64748B', marginTop: '8px', fontSize: '1rem' }}>Get in touch with EAF licensing, event directors or media team.</p>
           </div>
-          
+
           {contactSuccess ? (
             <div style={{ background: '#DCFCE7', border: '1px solid #86EFAC', color: '#15803D', borderRadius: '12px', padding: '20px', textAlign: 'center', fontSize: '1rem', fontWeight: 800 }}>
               ✓ Message Sent Successfully! Our team will respond shortly.
             </div>
           ) : (
             <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <input 
-                  type="text" 
+              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <input
+                  type="text"
                   placeholder="Your Full Name"
                   value={contactForm.name}
                   onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
                   required
                   style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem' }}
                 />
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   placeholder="Email Address"
                   value={contactForm.email}
                   onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
@@ -1285,15 +1369,15 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem' }}
                 />
               </div>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Subject / Concern"
                 value={contactForm.subject}
                 onChange={e => setContactForm({ ...contactForm, subject: e.target.value })}
                 required
                 style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem' }}
               />
-              <textarea 
+              <textarea
                 placeholder="Message Details..."
                 rows={4}
                 value={contactForm.message}
@@ -1301,8 +1385,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 required
                 style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem', resize: 'vertical' }}
               />
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 style={{ background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', fontWeight: 900, border: 'none', padding: '16px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(14, 165, 233, 0.25)' }}
               >
                 <Send size={18} /> Send Message
@@ -1313,9 +1397,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       </section>
 
       {/* ── 9. FOOTER WITH RGB(14, 165, 233) BACKGROUND ── */}
-      <footer style={{ background: 'rgb(14, 165, 233)', color: '#FFFFFF', padding: '60px 24px 30px', borderTop: '4px solid #0284C7' }}>
+      <footer className="landing-footer" style={{ background: 'rgb(14, 165, 233)', color: '#FFFFFF', padding: '60px 24px 30px', borderTop: '4px solid #0284C7' }}>
         <div style={{ maxWidth: 1240, margin: '0 auto' }}>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 40, marginBottom: 48 }}>
             {/* Col 1: Logo & Info */}
             <div>
@@ -1347,7 +1431,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   { id: 'youtube', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33 2.78 2.78 0 0 0 1.94 2c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.33 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg> },
                   { id: 'tiktok', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg> }
                 ].map(social => (
-                  <a key={social.id} href="#social" 
+                  <a key={social.id} href="#social"
                     style={{
                       width: '40px', height: '40px', borderRadius: '10px',
                       background: 'rgba(255, 255, 255, 0.2)', color: '#FFF',
@@ -1370,8 +1454,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {QUICK_LINKS.map(([en, am, href]) => (
-                  <a 
-                    key={en} 
+                  <a
+                    key={en}
                     href={href}
                     onClick={(e) => {
                       if (href === '#media') { e.preventDefault(); onChangePublicSubPage('MEDIA'); }
@@ -1424,17 +1508,17 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       {/* ── ATHLETE DETAIL MODAL ── */}
       {selectedAthleteModal && (
         <div className="modal-backdrop" onClick={() => setSelectedAthleteModal(null)} style={{ zIndex: 9999, padding: '24px 16px' }}>
-          <div 
-            className="modal-content" 
+          <div
+            className="modal-content"
             onClick={e => e.stopPropagation()}
             style={{ padding: '40px 44px', maxWidth: '820px', width: '95%', margin: '20px auto', borderRadius: '24px', boxShadow: '0 32px 64px rgba(15, 23, 42, 0.3)' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                <img 
-                  src={selectedAthleteModal.img} 
-                  alt={selectedAthleteModal.name} 
-                  style={{ width: '100px', height: '100px', borderRadius: '20px', objectFit: 'cover', border: '3px solid #0EA5E9', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }} 
+                <img
+                  src={selectedAthleteModal.img}
+                  alt={selectedAthleteModal.name}
+                  style={{ width: '100px', height: '100px', borderRadius: '20px', objectFit: 'cover', border: '3px solid #0EA5E9', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }}
                 />
                 <div>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#DCFCE7', color: '#15803D', padding: '3px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
@@ -1454,7 +1538,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </div>
 
             {/* Athlete Bio & Stats Table */}
-            <div style={{ background: '#F8FAFC', padding: '20px', borderRadius: '18px', marginBottom: '24px', border: '1px solid #E2E8F0', overflowX: 'auto' }}>
+            <div className="table-responsive" style={{ background: '#F8FAFC', padding: '20px', borderRadius: '18px', marginBottom: '24px', border: '1px solid #E2E8F0' }}>
               <table className="gov-table" style={{ margin: 0 }}>
                 <tbody>
                   <tr><td style={{ width: '40%', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Primary Event</td><td style={{ fontWeight: 800, color: '#0F172A' }}>{selectedAthleteModal.event}</td></tr>
@@ -1486,7 +1570,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </div>
             </div>
 
-            <button 
+            <button
               onClick={() => setSelectedAthleteModal(null)}
               className="btn-accent"
               style={{ width: '100%', marginTop: '28px', padding: '14px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}

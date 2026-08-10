@@ -75,7 +75,7 @@ export default function AthleteEvents({ athlete, onUpdateAthlete, onNotify }) {
       )}
 
       {/* Meet cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+      <div className="events-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '20px' }}>
         {meets.map(meet => (
           <div key={meet.id} style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border-card)', background: '#FFFFFF', boxShadow: '0 1px 4px rgba(11,42,66,0.05)', display: 'flex', flexDirection: 'column' }}>
             {/* Image header */}

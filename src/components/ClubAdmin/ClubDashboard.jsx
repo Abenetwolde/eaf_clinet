@@ -19,7 +19,7 @@ export default function ClubDashboard({ club, athletes, transfers, onRenewLicens
   const expiredCount = athletes.filter(a => a.licenseStatus !== 'ACTIVE').length;
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+    <div className="dash-page" style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
       {/* Club Banner Header */}
       <div className="glass-panel" style={{
         padding: '32px',
@@ -46,7 +46,7 @@ export default function ClubDashboard({ club, athletes, transfers, onRenewLicens
 
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h2 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)' }}>
+              <h2 className="dash-heading" style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-main)' }}>
                 {club.name}
               </h2>
               <span className="badge badge-gold">

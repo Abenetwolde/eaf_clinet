@@ -92,7 +92,7 @@ export default function MeetRegistration({ club, athletes, onNotify }) {
 
       {/* ── ENROLL TAB ── */}
       {activeTab === 'enroll' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
           {meets.map(meet => {
             const selected = getSelectedCount(meet.id);
             const enrolled = (meet.enrolledAthletes || []).filter(e => clubAthletes.find(a => a.id === e.athleteId));
@@ -186,7 +186,7 @@ export default function MeetRegistration({ club, athletes, onNotify }) {
       {activeTab === 'results' && (
         <div>
           {/* Meet selector */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '16px', marginBottom: '28px' }}>
             {meets.map(meet => {
               const hasResults = !!(MOCK_EVENT_RESULTS[meet.id]);
               const isSelected = selectedMeet === meet.id;

@@ -162,7 +162,7 @@ export default function AthleteApplications({ athlete, onNotify }) {
       {selectedApplication && (
         <div className="modal-backdrop" onClick={() => setSelectedApplication(null)} style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', zIndex: 9999 }}>
           <div 
-            className="modal-content" 
+            className="modal-content modal-bleed" 
             onClick={e => e.stopPropagation()} 
             style={{ 
               padding: '0', 
@@ -183,7 +183,7 @@ export default function AthleteApplications({ athlete, onNotify }) {
                 alt={selectedApplication.meetTitle} 
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-              <div style={{ 
+              <div className="modal-bleed-banner" style={{ 
                 position: 'absolute', 
                 inset: 0, 
                 background: 'linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.4) 60%, rgba(0, 0, 0, 0.2) 100%)',
@@ -221,7 +221,7 @@ export default function AthleteApplications({ athlete, onNotify }) {
             </div>
 
             {/* Modal Content */}
-            <div style={{ padding: '24px 28px' }}>
+            <div className="modal-bleed-body" style={{ padding: '24px 28px' }}>
               
               {/* Application Details Header Block */}
               <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '18px', marginBottom: '20px' }}>

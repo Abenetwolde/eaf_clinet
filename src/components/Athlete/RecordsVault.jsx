@@ -163,7 +163,7 @@ export default function RecordsVault({ athlete, onNotify }) {
       {selectedRecordDetail && (
         <div className="modal-backdrop" onClick={() => setSelectedRecordDetail(null)} style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', zIndex: 9999 }}>
           <div 
-            className="modal-content" 
+            className="modal-content modal-bleed" 
             onClick={e => e.stopPropagation()} 
             style={{ 
               padding: '0', 
@@ -184,7 +184,7 @@ export default function RecordsVault({ athlete, onNotify }) {
                 alt="Addis Ababa International Grand Prix 2026" 
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
-              <div style={{ 
+              <div className="modal-bleed-banner" style={{ 
                 position: 'absolute', 
                 inset: 0, 
                 background: 'linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.4) 60%, rgba(0, 0, 0, 0.2) 100%)',
@@ -222,7 +222,7 @@ export default function RecordsVault({ athlete, onNotify }) {
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding: '24px 28px' }}>
+            <div className="modal-bleed-body" style={{ padding: '24px 28px' }}>
               
               {/* Application Details Card */}
               <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
@@ -271,7 +271,7 @@ export default function RecordsVault({ athlete, onNotify }) {
               {/* Verified Race Splits */}
               <div style={{ marginBottom: '20px' }}>
                 <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F172A', marginBottom: '10px' }}>Official Race Split Times</h4>
-                <div style={{ border: '1px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden' }}>
+                <div className="table-responsive" style={{ border: '1px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                     <thead>
                       <tr style={{ background: '#F1F5F9', color: '#475569', textAlign: 'left', fontWeight: 800 }}>

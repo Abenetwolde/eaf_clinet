@@ -49,7 +49,7 @@ export default function LiveRaceTracker({ athlete, onNotify }) {
       </div>
 
       {/* Grid: Split Times Table vs Digital Achievement Badges */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+      <div className="events-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
         {/* Table of Live Splits */}
         <div className="gov-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>

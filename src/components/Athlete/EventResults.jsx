@@ -139,6 +139,7 @@ export default function EventResults({ onNotify }) {
                 <div key={di} className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
                   {/* Discipline header */}
                   <div onClick={() => setExpandedDisc(isExpanded ? null : di)}
+                    className="results-acc-head"
                     style={{
                       padding: '14px 20px', cursor: 'pointer',
                       background: isExpanded ? 'var(--primary)' : '#F5FAF6',

@@ -115,7 +115,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
 
       
       {/* Analytics Charts */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', marginBottom: '28px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px', marginBottom: '28px' }}>
         <div className="gov-card">
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', color: 'var(--text-heading)' }}>Performance Points (YTD)</h3>
           <div style={{ height: '240px' }}>
@@ -158,7 +158,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
       </div>
 
       {/* Action Alerts & Overview Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
         {/* Card 1: Regulatory Action Items */}
         <div className="gov-card">
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>

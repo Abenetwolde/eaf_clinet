@@ -14,7 +14,7 @@ export default function NotificationToast({ toast, onClose }) {
   if (!toast) return null;
 
   return (
-    <div style={{
+    <div className="toast-root" style={{
       position: 'fixed',
       bottom: '24px',
       right: '24px',

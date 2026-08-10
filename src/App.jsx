@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Menu, X } from 'lucide-react';
 import LandingPage from './components/LandingPage';
 import AuthModal from './components/AuthModal';
 import RegistrationModal from './components/RegistrationModal';
@@ -33,6 +34,7 @@ export default function App() {
   const [athleteSubPage, setAthleteSubPage] = useState('OVERVIEW');
   const [publicSubPage, setPublicSubPage] = useState('HOME'); // 'HOME' | 'COMPETITIONS' | 'ATHLETES' | 'MEDIA'
   const [language, setLanguage] = useState('en'); // 'en' | 'am'
+  const [landingMenuOpen, setLandingMenuOpen] = useState(false);
 
   const [clubs, setClubs] = useState(MOCK_CLUBS);
   const [athletes, setAthletes] = useState(() => {
@@ -178,13 +180,14 @@ export default function App() {
 
     const handleNavClick = (page) => {
       setPublicSubPage(page);
+      setLandingMenuOpen(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     return (
       <div style={{ background: '#FFFFFF', minHeight: '100vh' }}>
         {/* ── Floating Glassmorphism Header ── */}
-        <header style={{
+        <header className="landing-header" style={{
           background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
@@ -210,7 +213,7 @@ export default function App() {
           {/* Logo + brand */}
           <div 
             style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
-            onClick={() => { setPublicSubPage('HOME'); setSelectedMeet(null); }}
+            onClick={() => { setPublicSubPage('HOME'); setLandingMenuOpen(false); }}
           >
             <div style={{ width: '44px', height: '44px', background: '#FFFFFF', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, border: '1px solid #E2E8F0', padding: '2px' }}>
               <img
@@ -230,7 +233,7 @@ export default function App() {
           </div>
 
           {/* Centre nav links */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          <nav className="landing-nav" style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
             {navLinks.map(link => (
               <button
                 key={link.label}
@@ -252,9 +255,29 @@ export default function App() {
             ))}
           </nav>
 
-          
+          {/* Mobile hamburger */}
+          <button
+            className="landing-menu-btn"
+            onClick={() => setLandingMenuOpen(o => !o)}
+            aria-label="Toggle navigation menu"
+            style={{
+              display: 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              background: '#F8FAFC',
+              border: '1px solid #CBD5E1',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              color: '#0F172A'
+            }}
+          >
+            {landingMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+
           {/* Right Side */}
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div className="landing-actions" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             {/* Language Switcher */}
             <button
               onClick={() => setLanguage(l => l === 'en' ? 'am' : 'en')}
@@ -329,6 +352,114 @@ export default function App() {
             )}
           </div>
         </header>
+
+        {/* ── Mobile dropdown menu ── */}
+        {landingMenuOpen && (
+          <div
+            className="landing-mobile-menu"
+            style={{
+              position: 'sticky',
+              top: '64px',
+              zIndex: 49,
+              background: '#FFFFFF',
+              borderBottom: '1px solid #E2E8F0',
+              boxShadow: '0 12px 32px rgba(0, 0, 0, 0.08)',
+              padding: '8px 16px 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px'
+            }}
+          >
+            {navLinks.map(link => (
+              <button
+                key={link.label}
+                onClick={() => handleNavClick(link.page)}
+                style={{
+                  textAlign: 'left',
+                  background: publicSubPage === link.page ? '#F1F5F9' : 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: publicSubPage === link.page ? '#0EA5E9' : '#334155',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  padding: '12px 14px',
+                  borderRadius: '8px',
+                  fontFamily: 'var(--font-sans)'
+                }}
+              >
+                {link.label}
+              </button>
+            ))}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px', padding: '0 4px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setLanguage(l => l === 'en' ? 'am' : 'en')}
+                style={{
+                  background: '#F8FAFC',
+                  border: '1px solid #CBD5E1',
+                  color: '#0F172A',
+                  padding: '7px 11px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  fontFamily: 'var(--font-sans)'
+                }}
+              >
+                🌐 {language === 'en' ? 'አማርኛ' : 'EN'}
+              </button>
+              {currentRole === 'ATHLETE' ? (
+                <>
+                  <button
+                    onClick={() => { setAthleteSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); setLandingMenuOpen(false); }}
+                    className="btn-accent"
+                    style={{
+                      fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
+                      color: '#FFF', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)'
+                    }}
+                  >
+                    {language === 'en' ? 'My Dashboard' : 'ዳሽቦርድ'}
+                  </button>
+                  <button
+                    onClick={() => { localStorage.removeItem('eaf_currentRole'); setCurrentRole('LANDING'); setLandingMenuOpen(false); }}
+                    style={{
+                      background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '7px 12px',
+                      borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem',
+                      fontWeight: 700, color: '#475569', fontFamily: 'var(--font-sans)'
+                    }}
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => { setRegModalRole('ATHLETE'); setLandingMenuOpen(false); }}
+                    className="btn-accent"
+                    style={{
+                      fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
+                      color: '#FFF', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)'
+                    }}
+                  >
+                    {language === 'en' ? 'Register as Athlete' : 'አትሌት ይመዝገቡ'}
+                  </button>
+                  <button
+                    onClick={() => { handleOpenAuthModal(); setLandingMenuOpen(false); }}
+                    className="btn-gov-secondary"
+                    style={{
+                      fontSize: '0.76rem', padding: '7px 12px', borderRadius: '8px',
+                      background: '#FFFFFF', color: '#0F172A', border: '1px solid #CBD5E1',
+                      cursor: 'pointer', fontFamily: 'var(--font-sans)'
+                    }}
+                  >
+                    {language === 'en' ? 'Club Portal Login' : 'የክለብ መግቢያ'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         <style>{`
           @media (max-width: 768px) {
