@@ -271,6 +271,15 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [openFaq, setOpenFaq] = useState(null);
   const [selectedNews, setSelectedNews] = useState(NEWS[0]);
   const [activeStructure, setActiveStructure] = useState(null);
+  const [galleryExpanded, setGalleryExpanded] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
 
   // Search/Filter states
   const [searchText, setSearchText] = useState('');
