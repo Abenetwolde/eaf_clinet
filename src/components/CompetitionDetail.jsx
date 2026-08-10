@@ -21,22 +21,22 @@ const RealisticQRCode = ({ size = 150 }) => (
     {/* Corner Finder Pattern - Top Left */}
     <rect x="5" y="5" width="26" height="26" rx="4" fill="#0F172A" />
     <rect x="9" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
-    <rect x="13" y="13" width="10" height="10" rx="1.5" fill="#0EA5E9" />
+    <rect x="13" y="13" width="10" height="10" rx="1.5" fill="var(--primary)" />
 
     {/* Corner Finder Pattern - Top Right */}
     <rect x="69" y="5" width="26" height="26" rx="4" fill="#0F172A" />
     <rect x="73" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
-    <rect x="77" y="13" width="10" height="10" rx="1.5" fill="#0EA5E9" />
+    <rect x="77" y="13" width="10" height="10" rx="1.5" fill="var(--primary)" />
 
     {/* Corner Finder Pattern - Bottom Left */}
     <rect x="5" y="69" width="26" height="26" rx="4" fill="#0F172A" />
     <rect x="9" y="73" width="18" height="18" rx="2" fill="#FFFFFF" />
-    <rect x="13" y="77" width="10" height="10" rx="1.5" fill="#0EA5E9" />
+    <rect x="13" y="77" width="10" height="10" rx="1.5" fill="var(--primary)" />
 
     {/* Alignment Pattern Bottom Right */}
     <rect x="73" y="73" width="14" height="14" rx="2" fill="#0F172A" />
     <rect x="76" y="76" width="8" height="8" rx="1" fill="#FFFFFF" />
-    <rect x="78" y="78" width="4" height="4" fill="#0EA5E9" />
+    <rect x="78" y="78" width="4" height="4" fill="var(--primary)" />
 
     {/* Timing & Matrix Pixels */}
     <rect x="36" y="8" width="5" height="5" fill="#0F172A" />
@@ -44,69 +44,69 @@ const RealisticQRCode = ({ size = 150 }) => (
     <rect x="52" y="8" width="5" height="5" fill="#0F172A" />
     <rect x="60" y="8" width="5" height="5" fill="#0F172A" />
 
-    <rect x="36" y="16" width="5" height="5" fill="#0EA5E9" />
+    <rect x="36" y="16" width="5" height="5" fill="var(--primary)" />
     <rect x="48" y="16" width="5" height="5" fill="#0F172A" />
     <rect x="56" y="16" width="5" height="5" fill="#0F172A" />
 
     <rect x="36" y="24" width="5" height="5" fill="#0F172A" />
-    <rect x="44" y="24" width="5" height="5" fill="#0EA5E9" />
+    <rect x="44" y="24" width="5" height="5" fill="var(--primary)" />
     <rect x="52" y="24" width="5" height="5" fill="#0F172A" />
-    <rect x="60" y="24" width="5" height="5" fill="#0EA5E9" />
+    <rect x="60" y="24" width="5" height="5" fill="var(--primary)" />
 
     <rect x="8" y="36" width="5" height="5" fill="#0F172A" />
-    <rect x="16" y="36" width="5" height="5" fill="#0EA5E9" />
+    <rect x="16" y="36" width="5" height="5" fill="var(--primary)" />
     <rect x="24" y="36" width="5" height="5" fill="#0F172A" />
     <rect x="36" y="36" width="5" height="5" fill="#0F172A" />
-    <rect x="44" y="36" width="5" height="5" fill="#0EA5E9" />
+    <rect x="44" y="36" width="5" height="5" fill="var(--primary)" />
     <rect x="56" y="36" width="5" height="5" fill="#0F172A" />
     <rect x="68" y="36" width="5" height="5" fill="#0F172A" />
-    <rect x="76" y="36" width="5" height="5" fill="#0EA5E9" />
+    <rect x="76" y="36" width="5" height="5" fill="var(--primary)" />
     <rect x="84" y="36" width="5" height="5" fill="#0F172A" />
 
-    <rect x="8" y="44" width="5" height="5" fill="#0EA5E9" />
+    <rect x="8" y="44" width="5" height="5" fill="var(--primary)" />
     <rect x="20" y="44" width="5" height="5" fill="#0F172A" />
     <rect x="28" y="44" width="5" height="5" fill="#0F172A" />
     <rect x="40" y="44" width="5" height="5" fill="#0F172A" />
-    <rect x="60" y="44" width="5" height="5" fill="#0EA5E9" />
+    <rect x="60" y="44" width="5" height="5" fill="var(--primary)" />
     <rect x="72" y="44" width="5" height="5" fill="#0F172A" />
     <rect x="88" y="44" width="5" height="5" fill="#0F172A" />
 
     <rect x="8" y="52" width="5" height="5" fill="#0F172A" />
     <rect x="16" y="52" width="5" height="5" fill="#0F172A" />
-    <rect x="24" y="52" width="5" height="5" fill="#0EA5E9" />
+    <rect x="24" y="52" width="5" height="5" fill="var(--primary)" />
     <rect x="36" y="52" width="5" height="5" fill="#0F172A" />
-    <rect x="48" y="52" width="5" height="5" fill="#0EA5E9" />
+    <rect x="48" y="52" width="5" height="5" fill="var(--primary)" />
     <rect x="56" y="52" width="5" height="5" fill="#0F172A" />
     <rect x="68" y="52" width="5" height="5" fill="#0F172A" />
-    <rect x="80" y="52" width="5" height="5" fill="#0EA5E9" />
+    <rect x="80" y="52" width="5" height="5" fill="var(--primary)" />
 
-    <rect x="8" y="60" width="5" height="5" fill="#0EA5E9" />
+    <rect x="8" y="60" width="5" height="5" fill="var(--primary)" />
     <rect x="20" y="60" width="5" height="5" fill="#0F172A" />
-    <rect x="28" y="60" width="5" height="5" fill="#0EA5E9" />
+    <rect x="28" y="60" width="5" height="5" fill="var(--primary)" />
     <rect x="44" y="60" width="5" height="5" fill="#0F172A" />
     <rect x="52" y="60" width="5" height="5" fill="#0F172A" />
-    <rect x="64" y="60" width="5" height="5" fill="#0EA5E9" />
+    <rect x="64" y="60" width="5" height="5" fill="var(--primary)" />
     <rect x="76" y="60" width="5" height="5" fill="#0F172A" />
     <rect x="84" y="60" width="5" height="5" fill="#0F172A" />
 
     <rect x="36" y="68" width="5" height="5" fill="#0F172A" />
-    <rect x="44" y="68" width="5" height="5" fill="#0EA5E9" />
+    <rect x="44" y="68" width="5" height="5" fill="var(--primary)" />
     <rect x="56" y="68" width="5" height="5" fill="#0F172A" />
     <rect x="64" y="68" width="5" height="5" fill="#0F172A" />
 
-    <rect x="36" y="76" width="5" height="5" fill="#0EA5E9" />
+    <rect x="36" y="76" width="5" height="5" fill="var(--primary)" />
     <rect x="48" y="76" width="5" height="5" fill="#0F172A" />
-    <rect x="56" y="76" width="5" height="5" fill="#0EA5E9" />
+    <rect x="56" y="76" width="5" height="5" fill="var(--primary)" />
 
     <rect x="36" y="84" width="5" height="5" fill="#0F172A" />
     <rect x="44" y="84" width="5" height="5" fill="#0F172A" />
-    <rect x="52" y="84" width="5" height="5" fill="#0EA5E9" />
+    <rect x="52" y="84" width="5" height="5" fill="var(--primary)" />
     <rect x="60" y="84" width="5" height="5" fill="#0F172A" />
-    <rect x="68" y="84" width="5" height="5" fill="#0EA5E9" />
+    <rect x="68" y="84" width="5" height="5" fill="var(--primary)" />
 
     {/* Center EAF Emblem circle */}
     <circle cx="50" cy="50" r="9" fill="#FFFFFF" stroke="#0F172A" strokeWidth="1.5" />
-    <circle cx="50" cy="50" r="6" fill="#0EA5E9" />
+    <circle cx="50" cy="50" r="6" fill="var(--primary)" />
   </svg>
 );
 
@@ -454,7 +454,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
         <div 
           className="gov-card" 
           style={{ 
-            background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', 
+            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', 
             color: '#FFFFFF',
             border: 'none', 
             borderRadius: '24px',
@@ -466,7 +466,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
           }}
         >
           <div>
-            <span style={{ background: '#FFFFFF', color: '#0284C7', fontWeight: 900, fontSize: '0.72rem', padding: '4px 12px', borderRadius: '20px', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>
+            <span style={{ background: '#FFFFFF', color: 'var(--primary-dark)', fontWeight: 900, fontSize: '0.72rem', padding: '4px 12px', borderRadius: '20px', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>
               ✦ OFFICIAL EAF REGISTRATION
             </span>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '8px', letterSpacing: '-0.01em' }}>
@@ -487,7 +487,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                 borderRadius: '14px',
                 justifyContent: 'space-between',
                 background: '#FFFFFF',
-                color: '#0284C7',
+                color: 'var(--primary-dark)',
                 fontWeight: 900,
                 boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)',
                 cursor: 'pointer',
@@ -495,9 +495,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
               }}
             >
               <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.98rem' }}>
-                <User size={20} color="#0284C7" /> {t.regIndividual}
+                <User size={20} color="var(--primary-dark)" /> {t.regIndividual}
               </span>
-              <ChevronRight size={18} color="#0284C7" />
+              <ChevronRight size={18} color="var(--primary-dark)" />
             </button>
           </div>
         </div>
@@ -900,7 +900,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                       </div>
                       <div>
                         <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>DISCIPLINES ENROLLED</span>
-                        <strong style={{ color: '#0284C7' }}>{selectedDisciplines.join(', ') || '1,500m'}</strong>
+                        <strong style={{ color: 'var(--primary-dark)' }}>{selectedDisciplines.join(', ') || '1,500m'}</strong>
                       </div>
                       <div>
                         <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>SEED TIME</span>
@@ -913,7 +913,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                     <button 
                       onClick={() => { setShowIndividualModal(false); setIsPendingApproval(false); }}
                       className="btn-accent"
-                      style={{ flex: 1, padding: '14px', borderRadius: '12px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', fontWeight: 900, border: 'none', cursor: 'pointer', justifyContent: 'center' }}
+                      style={{ flex: 1, padding: '14px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', fontWeight: 900, border: 'none', cursor: 'pointer', justifyContent: 'center' }}
                     >
                       Acknowledge &amp; Return to Hub
                     </button>
@@ -953,7 +953,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                         <div>
                           <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>FULL NAME</span>
                           <strong style={{ color: '#0F172A', fontSize: '0.92rem' }}>{faydaNationalIdData.fullName}</strong>
-                          <div style={{ color: '#0284C7', fontSize: '0.76rem', fontWeight: 700 }}>{faydaNationalIdData.amharicName}</div>
+                          <div style={{ color: 'var(--primary-dark)', fontSize: '0.76rem', fontWeight: 700 }}>{faydaNationalIdData.amharicName}</div>
                         </div>
 
                         <div>
@@ -999,12 +999,12 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                                 gap: '12px', 
                                 padding: '12px 16px', 
                                 borderRadius: '12px', 
-                                border: checked ? '2px solid #0EA5E9' : '1px solid #E2E8F0', 
+                                border: checked ? '2px solid var(--primary)' : '1px solid #E2E8F0', 
                                 background: checked ? '#F0F9FF' : '#FFFFFF',
                                 cursor: 'pointer',
                                 fontWeight: 700,
                                 fontSize: '0.9rem',
-                                color: checked ? '#0284C7' : '#334155',
+                                color: checked ? 'var(--primary-dark)' : '#334155',
                                 transition: 'all 0.15s'
                               }}
                             >
@@ -1012,7 +1012,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                                 type="checkbox" 
                                 checked={checked}
                                 onChange={() => handleToggleDiscipline(d)}
-                                style={{ width: '18px', height: '18px', accentColor: '#0EA5E9' }}
+                                style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
                               />
                               {d}
                             </label>
@@ -1049,7 +1049,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   <button 
                     onClick={() => setIsPendingApproval(true)}
                     className="btn-accent" 
-                    style={{ width: '100%', padding: '16px', borderRadius: '14px', fontSize: '1rem', fontWeight: 900, justifyContent: 'center', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', cursor: 'pointer', boxShadow: '0 8px 20px rgba(14, 165, 233, 0.3)' }}
+                    style={{ width: '100%', padding: '16px', borderRadius: '14px', fontSize: '1rem', fontWeight: 900, justifyContent: 'center', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer', boxShadow: '0 8px 20px rgba(14, 165, 233, 0.3)' }}
                   >
                     Submit Individual Entry for Federation Approval
                   </button>

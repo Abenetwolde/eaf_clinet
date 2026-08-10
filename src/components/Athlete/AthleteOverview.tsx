@@ -3,8 +3,16 @@ import {
   ShieldCheck, Navigation, Activity, Award, ArrowRight,
   Weight, TrendingUp, Calendar, Plus, Trash2, Edit3, Save, Trophy
 } from 'lucide-react';
+import type { Athlete } from '../../types';
 
-export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense, onUpdateAthlete }) {
+interface AthleteOverviewProps {
+  athlete: Athlete;
+  onChangeSubPage: (page: string) => void;
+  onPayLicense: (athlete: Athlete) => void;
+  onUpdateAthlete: (athlete: Athlete) => void;
+}
+
+export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense, onUpdateAthlete }: AthleteOverviewProps) {
   const [activeTab, setActiveTab] = useState('overview');
 
   // Weight log entry
@@ -61,7 +69,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
   };
 
   const handleSaveStats = () => {
-    onUpdateAthlete({ ...athlete, weight: parseFloat(editWeight), height: parseFloat(editHeight), restingHR: parseFloat(editHR) });
+    onUpdateAthlete({ ...athlete, weight: parseFloat(editWeight as string), height: parseFloat(editHeight as string), restingHR: parseFloat(editHR as string) });
     setEditingStats(false);
   };
 
@@ -75,38 +83,34 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
   return (
     <div>
       {/* Profile Header */}
-      <div className="gov-card" style={{
-        padding: '24px', marginBottom: '24px',
-        background: 'linear-gradient(135deg, #1A1F2E 0%, #1E2740 100%)',
-        border: 'none', color: '#FFFFFF'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+      <div className="gov-card p-6 mb-6 bg-gradient-to-br from-[#1A1F2E] to-[#1E2740] border-0 text-white">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-[18px]">
             <img src={athlete.photoUrl} alt={athlete.name}
-              style={{ width: '72px', height: '72px', borderRadius: '14px', objectFit: 'cover', border: '2px solid var(--accent)' }} />
+              className="w-[72px] h-[72px] rounded-[14px] object-cover border-2 border-accent" />
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#FFFFFF' }}>{athlete.name}</h2>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h2 className="text-[1.6rem] font-black text-white">{athlete.name}</h2>
                 <span className="badge badge-green"><ShieldCheck size={12} /> Fayda Verified</span>
                 <span className="badge badge-amber">{athlete.ageTier}</span>
               </div>
-              <p style={{ color: '#C8A84B', fontWeight: 700, fontSize: '0.9rem' }}>{athlete.amharicName} — {athlete.clubName}</p>
-              <div style={{ display: 'flex', gap: '14px', marginTop: '6px', fontSize: '0.82rem', color: '#8FA8BC' }}>
-                <span>FIN: <strong style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>{athlete.faydaFin}</strong></span>
+              <p className="text-[#C8A84B] font-bold text-[0.9rem]">{athlete.amharicName} — {athlete.clubName}</p>
+              <div className="flex gap-[14px] mt-1.5 text-[0.82rem] text-[#8FA8BC]">
+                <span>FIN: <strong className="text-white font-mono">{athlete.faydaFin}</strong></span>
                 <span>•</span>
-                <span>Event: <strong style={{ color: '#FFFFFF' }}>{athlete.primaryEvent}</strong></span>
+                <span>Event: <strong className="text-white">{athlete.primaryEvent}</strong></span>
               </div>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div className="text-right">
             {athlete.licenseStatus !== 'ACTIVE' ? (
               <button onClick={() => onPayLicense(athlete)} className="btn-telebirr">
                 Renew License — 500 ETB
               </button>
             ) : (
               <div>
-                <span className="badge badge-green" style={{ padding: '6px 12px' }}>✓ {athlete.licenseNumber}</span>
-                <div style={{ fontSize: '0.75rem', color: '#8FA8BC', marginTop: '4px' }}>Expires: Dec 31, 2026</div>
+                <span className="badge badge-green px-3 py-1.5">✓ {athlete.licenseNumber}</span>
+                <div className="text-[0.75rem] text-[#8FA8BC] mt-1">Expires: Dec 31, 2026</div>
               </div>
             )}
           </div>
@@ -114,16 +118,10 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
       </div>
 
       {/* Tab Nav */}
-      <div className="athlete-tabs" style={{ display: 'flex', gap: '4px', marginBottom: '24px', background: '#F0F5FA', padding: '4px', borderRadius: '12px', width: 'fit-content' }}>
+      <div className="flex gap-1 mb-6 bg-[#F0F5FA] p-1 rounded-xl w-fit">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{
-              padding: '8px 18px', borderRadius: '9px', border: 'none', cursor: 'pointer',
-              fontWeight: 700, fontSize: '0.85rem', transition: 'all 0.15s',
-              background: activeTab === t.id ? 'var(--primary)' : 'transparent',
-              color: activeTab === t.id ? '#FFFFFF' : 'var(--text-muted)',
-              boxShadow: activeTab === t.id ? '0 2px 8px rgba(11,87,142,0.25)' : 'none'
-            }}>
+            className={`px-[18px] py-2 rounded-[9px] border-0 cursor-pointer font-bold text-[0.85rem] transition-all duration-150 ${activeTab === t.id ? 'bg-primary text-white shadow-[0_2px_8px_rgba(11,87,142,0.25)]' : 'bg-transparent text-text-muted shadow-none'}`}>
             {t.label}
           </button>
         ))}
@@ -133,26 +131,26 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
       {activeTab === 'overview' && (
         <div>
           {/* Body Stats */}
-          <div className="gov-card" style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h4 style={{ fontWeight: 800, fontSize: '1rem' }}>Body & Fitness Stats</h4>
-              <button onClick={() => setEditingStats(!editingStats)} className="btn-gov-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>
+          <div className="gov-card mb-5">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-base font-extrabold">Body & Fitness Stats</h4>
+              <button onClick={() => setEditingStats(!editingStats)} className="btn-gov-secondary px-3 py-1.5 text-[0.8rem]">
                 {editingStats ? <><Save size={14} /> Save</> : <><Edit3 size={14} /> Edit</>}
               </button>
             </div>
             {editingStats ? (
-              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                {[
+              <div className="grid grid-cols-3 gap-3">
+                {([
                   ['Weight (kg)', editWeight, setEditWeight],
                   ['Height (cm)', editHeight, setEditHeight],
                   ['Resting HR (bpm)', editHR, setEditHR]
-                ].map(([label, val, setter]) => (
-                  <div key={label} className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.76rem' }}>{label}</label>
+                ] as Array<[string, string | number, React.Dispatch<React.SetStateAction<string | number>>]>).map(([label, val, setter]) => (
+                  <div key={label} className="form-group mb-0">
+                    <label className="form-label text-[0.76rem]">{label}</label>
                     <input className="form-input" type="number" value={val} onChange={e => setter(e.target.value)} />
                   </div>
                 ))}
-                <button className="btn-gov-primary" style={{ alignSelf: 'flex-end', padding: '10px' }} onClick={handleSaveStats}>
+                <button className="btn-gov-primary self-end p-[10px]" onClick={handleSaveStats}>
                   <Save size={14} /> Save Changes
                 </button>
               </div>
@@ -165,7 +163,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                   { label: 'Training Load', value: athlete.trainingLoad ?? '—', color: '#92620A' },
                 ].map(s => (
                   <div key={s.label} className="stat-card">
-                    <div className="stat-value" style={{ color: s.color, fontSize: '1.4rem' }}>{s.value}</div>
+                    <div className="stat-value text-[1.4rem]" style={{ color: s.color }}>{s.value}</div>
                     <div className="stat-label">{s.label}</div>
                   </div>
                 ))}
@@ -174,19 +172,19 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
           </div>
 
           {/* Quick navigation cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
             {[
               { page: 'RECORDS', icon: Award, color: '#7C3AED', title: 'Career Records Vault', desc: 'Full competition history, verified split breakdown, and official achievements.' },
             ].map(c => {
               const Icon = c.icon;
               return (
                 <div key={c.page} className="gov-card" style={{ borderLeft: `4px solid ${c.color}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                  <div className="flex items-center gap-2.5 mb-2.5">
                     <Icon size={20} color={c.color} />
-                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700 }}>{c.title}</h3>
+                    <h3 className="text-[0.95rem] font-bold">{c.title}</h3>
                   </div>
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.5 }}>{c.desc}</p>
-                  <button onClick={() => onChangeSubPage(c.page)} className="btn-gov-secondary" style={{ width: '100%', fontSize: '0.82rem', padding: '8px' }}>
+                  <p className="text-[0.82rem] text-text-muted mb-3.5 leading-normal">{c.desc}</p>
+                  <button onClick={() => onChangeSubPage(c.page)} className="btn-gov-secondary w-full text-[0.82rem] p-2">
                     Open <ArrowRight size={13} />
                   </button>
                 </div>
@@ -199,17 +197,17 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
       {/* ── PERSONAL BESTS TAB ── */}
       {activeTab === 'pbs' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h4 style={{ fontWeight: 800, fontSize: '1.1rem' }}>Personal Bests & Season Bests</h4>
-            <button className="btn-gov-primary" style={{ padding: '8px 14px', fontSize: '0.82rem' }} onClick={() => setShowAddPb(true)}>
+          <div className="flex justify-between items-center mb-5">
+            <h4 className="text-[1.1rem] font-extrabold">Personal Bests & Season Bests</h4>
+            <button className="btn-gov-primary px-3.5 py-2 text-[0.82rem]" onClick={() => setShowAddPb(true)}>
               <Plus size={14} /> Add PB
             </button>
           </div>
 
           {/* PB Table */}
-          <div className="gov-card" style={{ padding: 0, overflow: 'hidden', marginBottom: '24px' }}>
-            <div style={{ padding: '14px 20px', background: 'var(--primary)', color: '#FFFFFF' }}>
-              <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>All-Time Personal Bests</span>
+          <div className="gov-card p-0 overflow-hidden mb-6">
+            <div className="px-5 py-3.5 bg-primary text-white">
+              <span className="text-[0.85rem] font-extrabold">All-Time Personal Bests</span>
             </div>
             <div className="table-responsive">
               <table className="gov-table">
@@ -223,13 +221,13 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                 </thead>
                 <tbody>
                   {(athlete.personalBests || []).length === 0 ? (
-                    <tr><td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>No personal bests recorded yet</td></tr>
+                    <tr><td colSpan={4} className="text-center text-text-muted p-6">No personal bests recorded yet</td></tr>
                   ) : (athlete.personalBests || []).map((pb, i) => (
                     <tr key={i}>
                       <td><strong>{pb.event}</strong></td>
-                      <td><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', fontSize: '1rem' }}>{pb.time}</span></td>
-                      <td style={{ color: 'var(--text-muted)' }}>{pb.date}</td>
-                      <td style={{ color: 'var(--text-muted)' }}>{pb.venue}</td>
+                      <td><span className="font-mono font-extrabold text-primary text-base">{pb.time}</span></td>
+                      <td className="text-text-muted">{pb.date}</td>
+                      <td className="text-text-muted">{pb.venue}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -238,9 +236,9 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
           </div>
 
           {/* Season Bests */}
-          <div className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', background: '#0050A0', color: '#FFFFFF' }}>
-              <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>2026 Season Bests</span>
+          <div className="gov-card p-0 overflow-hidden">
+            <div className="px-5 py-3.5 bg-[#0050A0] text-white">
+              <span className="text-[0.85rem] font-extrabold">2026 Season Bests</span>
             </div>
             <div className="table-responsive">
               <table className="gov-table">
@@ -249,12 +247,12 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                 </thead>
                 <tbody>
                   {(athlete.seasonBests || []).length === 0 ? (
-                    <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>No season bests recorded yet</td></tr>
+                    <tr><td colSpan={3} className="text-center text-text-muted p-6">No season bests recorded yet</td></tr>
                   ) : (athlete.seasonBests || []).map((sb, i) => (
                     <tr key={i}>
                       <td><strong>{sb.event}</strong></td>
-                      <td><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: '#0050A0' }}>{sb.time}</span></td>
-                      <td style={{ color: 'var(--text-muted)' }}>{sb.date}</td>
+                      <td><span className="font-mono font-extrabold text-[#0050A0]">{sb.time}</span></td>
+                      <td className="text-text-muted">{sb.date}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -265,8 +263,8 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
           {/* Add PB Modal */}
           {showAddPb && (
             <div className="modal-backdrop" onClick={() => setShowAddPb(false)}>
-              <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '28px', maxWidth: '440px' }}>
-                <h3 style={{ fontWeight: 800, marginBottom: '20px' }}>Add Personal Best</h3>
+              <div className="modal-content p-7 max-w-[440px]" onClick={e => e.stopPropagation()}>
+                <h3 className="font-extrabold mb-5">Add Personal Best</h3>
                 <div className="form-group">
                   <label className="form-label">Event</label>
                   <select className="form-select" value={pbEvent} onChange={e => setPbEvent(e.target.value)}>
@@ -279,7 +277,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                   <label className="form-label">Time / Result (e.g. 12:51.44 or 7.98m)</label>
                   <input className="form-input" value={pbTime} onChange={e => setPbTime(e.target.value)} placeholder="12:51.44" required />
                 </div>
-                <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="grid grid-cols-2 gap-3">
                   <div className="form-group">
                     <label className="form-label">Date</label>
                     <input className="form-input" type="date" value={pbDate} onChange={e => setPbDate(e.target.value)} />
@@ -289,9 +287,9 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                     <input className="form-input" value={pbVenue} onChange={e => setPbVenue(e.target.value)} placeholder="National Championship" />
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-                  <button className="btn-gov-secondary" style={{ flex: 1 }} onClick={() => setShowAddPb(false)}>Cancel</button>
-                  <button className="btn-gov-primary" style={{ flex: 2 }} onClick={handleAddPb}>Save Personal Best</button>
+                <div className="flex gap-2.5 mt-2">
+                  <button className="btn-gov-secondary flex-1" onClick={() => setShowAddPb(false)}>Cancel</button>
+                  <button className="btn-gov-primary flex-[2]" onClick={handleAddPb}>Save Personal Best</button>
                 </div>
               </div>
             </div>
@@ -302,10 +300,10 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
       {/* ── WEIGHT LOG TAB ── */}
       {activeTab === 'weight' && (
         <div>
-          <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
+          <div className="grid grid-cols-[1fr_2fr] gap-5">
             {/* Add entry */}
             <div className="gov-card">
-              <h4 style={{ fontWeight: 800, marginBottom: '16px', fontSize: '1rem' }}>Log Weight</h4>
+              <h4 className="text-base font-extrabold mb-4">Log Weight</h4>
               <div className="form-group">
                 <label className="form-label">Date</label>
                 <input className="form-input" type="date" value={newWeightDate} onChange={e => setNewWeightDate(e.target.value)} />
@@ -314,15 +312,15 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                 <label className="form-label">Weight (kg)</label>
                 <input className="form-input" type="number" step="0.1" value={newWeight} onChange={e => setNewWeight(e.target.value)} placeholder="e.g. 62.5" />
               </div>
-              <button className="btn-gov-primary" style={{ width: '100%' }} onClick={handleAddWeight}>
+              <button className="btn-gov-primary w-full" onClick={handleAddWeight}>
                 <Plus size={14} /> Log Entry
               </button>
             </div>
 
             {/* History */}
-            <div className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '14px 20px', background: 'var(--primary)', color: '#FFFFFF' }}>
-                <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>Weight History</span>
+            <div className="gov-card p-0 overflow-hidden">
+              <div className="px-5 py-3.5 bg-primary text-white">
+                <span className="text-[0.85rem] font-extrabold">Weight History</span>
               </div>
               <div className="table-responsive">
                 <table className="gov-table">
@@ -331,20 +329,20 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                   </thead>
                   <tbody>
                     {(athlete.weightLog || []).length === 0 ? (
-                      <tr><td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>No entries yet</td></tr>
+                      <tr><td colSpan={3} className="text-center text-text-muted p-6">No entries yet</td></tr>
                     ) : (athlete.weightLog || []).map((entry, i, arr) => {
                       const prev = arr[i + 1];
                       const change = prev ? (entry.kg - prev.kg).toFixed(1) : null;
                       return (
                         <tr key={i}>
                           <td>{entry.date}</td>
-                          <td><strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--primary)' }}>{entry.kg} kg</strong></td>
+                          <td><strong className="font-mono text-primary">{entry.kg} kg</strong></td>
                           <td>
                             {change !== null ? (
-                              <span style={{ color: parseFloat(change) < 0 ? 'var(--primary)' : parseFloat(change) > 0 ? '#CC0000' : 'var(--text-muted)', fontWeight: 700, fontSize: '0.85rem' }}>
+                              <span className="font-bold text-[0.85rem]" style={{ color: parseFloat(change) < 0 ? 'var(--primary)' : parseFloat(change) > 0 ? '#CC0000' : 'var(--text-muted)' }}>
                                 {parseFloat(change) > 0 ? '+' : ''}{change} kg
                               </span>
-                            ) : <span style={{ color: 'var(--text-dim)' }}>—</span>}
+                            ) : <span className="text-text-dim">—</span>}
                           </td>
                         </tr>
                       );
@@ -360,14 +358,14 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
       {/* ── TRAINING LOG TAB ── */}
       {activeTab === 'training' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h4 style={{ fontWeight: 800, fontSize: '1.1rem' }}>Training Log</h4>
-            <button className="btn-gov-primary" style={{ padding: '8px 14px', fontSize: '0.82rem' }} onClick={() => setShowAddTraining(true)}>
+          <div className="flex justify-between items-center mb-5">
+            <h4 className="text-[1.1rem] font-extrabold">Training Log</h4>
+            <button className="btn-gov-primary px-3.5 py-2 text-[0.82rem]" onClick={() => setShowAddTraining(true)}>
               <Plus size={14} /> Log Session
             </button>
           </div>
 
-          <div className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="gov-card p-0 overflow-hidden">
             <div className="table-responsive">
               <table className="gov-table">
                 <thead>
@@ -375,16 +373,16 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                 </thead>
                 <tbody>
                   {(athlete.trainingLog || []).length === 0 ? (
-                    <tr><td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>No training sessions logged</td></tr>
+                    <tr><td colSpan={5} className="text-center text-text-muted p-6">No training sessions logged</td></tr>
                   ) : (athlete.trainingLog || []).map((s, i) => (
                     <tr key={i}>
-                      <td style={{ color: 'var(--text-muted)' }}>{s.date}</td>
+                      <td className="text-text-muted">{s.date}</td>
                       <td>
-                        <span style={{ fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '3px 8px', borderRadius: '5px', fontSize: '0.8rem' }}>{s.type}</span>
+                        <span className="font-bold text-primary bg-primary-light px-2 py-[3px] rounded-[5px] text-[0.8rem]">{s.type}</span>
                       </td>
-                      <td><strong style={{ fontFamily: 'var(--font-mono)' }}>{s.distance} km</strong></td>
-                      <td style={{ color: 'var(--text-muted)' }}>{s.duration}</td>
-                      <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '200px' }}>{s.notes || '—'}</td>
+                      <td><strong className="font-mono">{s.distance} km</strong></td>
+                      <td className="text-text-muted">{s.duration}</td>
+                      <td className="text-[0.82rem] text-text-muted max-w-[200px]">{s.notes || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -395,9 +393,9 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
           {/* Add Training Modal */}
           {showAddTraining && (
             <div className="modal-backdrop" onClick={() => setShowAddTraining(false)}>
-              <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '28px', maxWidth: '460px' }}>
-                <h3 style={{ fontWeight: 800, marginBottom: '20px' }}>Log Training Session</h3>
-                <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="modal-content p-7 max-w-[460px]" onClick={e => e.stopPropagation()}>
+                <h3 className="font-extrabold mb-5">Log Training Session</h3>
+                <div className="grid grid-cols-2 gap-3">
                   <div className="form-group">
                     <label className="form-label">Date</label>
                     <input className="form-input" type="date" value={trainDate} onChange={e => setTrainDate(e.target.value)} />
@@ -419,11 +417,11 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                 </div>
                 <div className="form-group">
                   <label className="form-label">Notes</label>
-                  <textarea className="form-textarea" rows={2} value={trainNotes} onChange={e => setTrainNotes(e.target.value)} placeholder="e.g. 5×1000m at race pace, feeling strong" style={{ resize: 'vertical', width: '100%' }} />
+                  <textarea className="form-textarea resize-y w-full" rows={2} value={trainNotes} onChange={e => setTrainNotes(e.target.value)} placeholder="e.g. 5×1000m at race pace, feeling strong" />
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="btn-gov-secondary" style={{ flex: 1 }} onClick={() => setShowAddTraining(false)}>Cancel</button>
-                  <button className="btn-gov-primary" style={{ flex: 2 }} onClick={handleAddTraining}>Save Session</button>
+                <div className="flex gap-2.5">
+                  <button className="btn-gov-secondary flex-1" onClick={() => setShowAddTraining(false)}>Cancel</button>
+                  <button className="btn-gov-primary flex-[2]" onClick={handleAddTraining}>Save Session</button>
                 </div>
               </div>
             </div>

@@ -1,53 +1,111 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 :root {
-  --primary:           #0B578E;
-  --primary-mid:       #0D6BB5;
-  --primary-light:     #EDF3FA;
-  --primary-dark:      #083B6A;
-  --primary-darker:    #0A4A7A;
-  --primary-border:    #1565A0;
-  --accent:            #4A8FC7;
-  --accent-light:      #F0F5FC;
+  /* ── AppColors Brand System (mirrors mobile Flutter AppColors) ── */
 
-  /* Legacy names — kept for backward compatibility */
-  --eaf-green:         #0B578E;
-  --eaf-green-mid:     #0D6BB5;
-  --eaf-green-light:   #EDF3FA;
-  --eaf-gold:          #4A8FC7;
-  --eaf-gold-light:    #F0F5FC;
-  --eaf-red:           #CC0000;
-  --eaf-red-light:     #FEF2F2;
-  --eaf-dark:          #083B6A;
-  --eaf-navy:          #0A4A7A;
-  --eaf-navy-border:   #1565A0;
-  --eth-green:         #0B578E;
-  --eth-green-light:   #EDF3FA;
-  --eth-amber:         #4A8FC7;
-  --eth-amber-light:   #F0F5FC;
-  --eth-red:           #CC0000;
-  --eth-red-light:     #FEF2F2;
-  --eth-blue:          #0B578E;
-  --eth-blue-light:    #EDF3FA;
-  --olympic-blue:      #0B578E;
-  --olympic-green:     #0B578E;
+  /* Brand / Primary */
+  --primary: #0140A7;
+  /* AppColors.primary      */
+  --primary-dark: #0A4870;
+  /* AppColors.primaryDark  */
+  --primary-light: #DCEBF6;
+  /* AppColors.primaryLight */
+  /* Derived shades for internal use */
+  --primary-mid: #0155CC;
+  --primary-darker: #012E7A;
+  --primary-border: #0A50C2;
 
-  --bg-app:            #FFFFFF;
-  --bg-card:           #FFFFFF;
-  --border-card:       #E2E8F0;
-  --border-focus:      #0B578E;
+  /* Brand / Secondary */
+  --secondary: #E6A500;
+  /* AppColors.secondary      */
+  --secondary-dark: #C98F00;
+  /* AppColors.secondaryDark  */
+  --secondary-light: #FFF3CC;
+  /* AppColors.secondaryLight */
 
-  --text-main:         #0B2A42;
-  --text-heading:      #0B2A42;
-  --text-body:         #1A4768;
-  --text-muted:        #5A7A94;
-  --text-dim:          #8FA8BC;
+  /* Accent (alias secondary for legacy styles) */
+  --accent: #E6A500;
+  --accent-light: #FFF3CC;
+
+  /* Background */
+  --bg-app: #F7F8FA;
+  /* AppColors.backgroundDefault        */
+  --bg-card: #FFFFFF;
+  /* AppColors.backgroundSurface        */
+  --bg-surface-variant: #F1F3F5;
+  /* AppColors.backgroundSurfaceVariant */
+
+  /* Border */
+  --border-card: #D9DEE5;
+  /* AppColors.borderDefault */
+  --border-focus: #0140A7;
+
+  /* Text */
+  --text-main: #1D1D1F;
+  /* AppColors.textPrimary   */
+  --text-heading: #1D1D1F;
+  --text-body: #555B63;
+  /* AppColors.textSecondary */
+  --text-muted: #8B9098;
+  /* AppColors.textTertiary  */
+  --text-dim: #B0B5BB;
+
+  /* Status */
+  --status-success: #2E7D32;
+  /* AppColors.statusSuccess */
+  --status-warning: #F59E0B;
+  /* AppColors.statusWarning */
+  --status-error: #D32F2F;
+  /* AppColors.statusError   */
+  --status-info: #0288D1;
+  /* AppColors.statusInfo    */
+
+  /* Status backgrounds */
+  --status-success-bg: #E8F5E9;
+  /* AppColors.statusSuccessBg */
+  --status-warning-bg: #FFF8E1;
+  /* AppColors.statusWarningBg */
+  --status-error-bg: #FFEBEE;
+  /* AppColors.statusErrorBg   */
+  --status-info-bg: #E1F5FE;
+  /* AppColors.statusInfoBg    */
+
+  /* Legacy aliases — kept so old classes still resolve */
+  --eaf-green: #0140A7;
+  --eaf-green-mid: #0155CC;
+  --eaf-green-light: #DCEBF6;
+  --eaf-gold: #E6A500;
+  --eaf-gold-light: #FFF3CC;
+  --eaf-red: #D32F2F;
+  --eaf-red-light: #FFEBEE;
+  --eaf-dark: #0A4870;
+  --eaf-navy: #012E7A;
+  --eaf-navy-border: #0A50C2;
+  --eth-green: #0140A7;
+  --eth-green-light: #DCEBF6;
+  --eth-amber: #E6A500;
+  --eth-amber-light: #FFF3CC;
+  --eth-red: #D32F2F;
+  --eth-red-light: #FFEBEE;
+  --eth-blue: #0140A7;
+  --eth-blue-light: #DCEBF6;
+  --olympic-blue: #0140A7;
+  --olympic-green: #0140A7;
 
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   background-color: var(--bg-app);
@@ -57,7 +115,12 @@ body {
   min-height: 100vh;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-sans);
   color: var(--text-heading);
   letter-spacing: -0.02em;
@@ -119,12 +182,17 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 0.15s ease;
   margin-bottom: 3px;
 }
-.sidebar-link:hover { background: rgba(255,255,255,0.07); color: #FFFFFF; }
+
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #FFFFFF;
+}
+
 .sidebar-link.active {
   background: var(--primary);
   color: #FFFFFF;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(11,87,142,0.35);
+  box-shadow: 0 4px 12px rgba(11, 87, 142, 0.35);
 }
 
 /* ── Cards ── */
@@ -132,18 +200,21 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-card);
   border: 1px solid var(--border-card);
   border-radius: 14px;
-  box-shadow: 0 1px 4px rgba(11,42,66,0.05);
+  box-shadow: 0 1px 4px rgba(11, 42, 66, 0.05);
   padding: 24px;
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
-.gov-card:hover { box-shadow: 0 4px 16px rgba(11,87,142,0.08); }
+
+.gov-card:hover {
+  box-shadow: 0 4px 16px rgba(11, 87, 142, 0.08);
+}
 
 .glass-panel {
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(11,87,142,0.12);
+  border: 1px solid rgba(11, 87, 142, 0.12);
   border-radius: 18px;
-  box-shadow: 0 4px 24px rgba(11,42,66,0.06);
+  box-shadow: 0 4px 24px rgba(11, 42, 66, 0.06);
 }
 
 /* ── Badges ── */
@@ -158,16 +229,45 @@ h1, h2, h3, h4, h5, h6 {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.badge-primary,
-.badge-green    { background: var(--primary-light); color: var(--primary);  border: 1px solid rgba(11,87,142,0.2); }
-.badge-amber  { background: var(--accent-light);  color: #4A6FA0;           border: 1px solid rgba(74,143,199,0.3); }
-.badge-blue   { background: var(--primary-light);   color: var(--primary);   border: 1px solid rgba(11,87,142,0.2); }
-.badge-red    { background: #FEF2F2;    color: #CC0000;    border: 1px solid rgba(204,0,0,0.2); }
-.badge-gold   { background: var(--accent-light);  color: #3A6F9E;           border: 1px solid rgba(74,143,199,0.4); }
 
-/* ── Buttons ── */
+.badge-primary,
+.badge-green {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(11, 87, 142, 0.2);
+}
+
+.badge-amber {
+  background: var(--accent-light);
+  color: #4A6FA0;
+  border: 1px solid rgba(74, 143, 199, 0.3);
+}
+
+.badge-blue {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(11, 87, 142, 0.2);
+}
+
+.badge-red {
+  background: #FEF2F2;
+  color: #CC0000;
+  border: 1px solid rgba(204, 0, 0, 0.2);
+}
+
+.badge-gold {
+  background: var(--accent-light);
+  color: #3A6F9E;
+  border: 1px solid rgba(74, 143, 199, 0.4);
+}
+
+/* ── Buttons (AppColors brand system) ── */
+
+/* Primary button — AppColors.primary (#0140A7) */
 .btn-gov-primary {
-  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--text-main);
+  /* AppColors.textOnPrimary resolved via contrast */
   color: #FFFFFF;
   font-weight: 700;
   font-size: 0.9rem;
@@ -179,31 +279,45 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 12px rgba(1, 64, 167, 0.3);
 }
-.btn-gov-primary:hover  { background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%); }
-.btn-gov-primary:active { transform: scale(0.98); }
 
+.btn-gov-primary:hover {
+  background: linear-gradient(135deg, var(--primary-mid) 0%, var(--primary) 100%);
+  box-shadow: 0 6px 18px rgba(1, 64, 167, 0.4);
+}
+
+.btn-gov-primary:active {
+  transform: scale(0.98);
+}
+
+/* Outlined / ghost secondary button */
 .btn-gov-secondary {
-  background: #FFFFFF;
+  background: var(--bg-card);
   color: var(--text-body);
   font-weight: 600;
   font-size: 0.9rem;
   padding: 10px 18px;
   border-radius: 8px;
-  border: 1px solid var(--border-card);
+  border: 1.5px solid var(--border-card);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
-.btn-gov-secondary:hover { background: #F1F5F9; }
 
+.btn-gov-secondary:hover {
+  background: var(--bg-surface-variant);
+  border-color: var(--primary);
+}
+
+/* Secondary accent button — AppColors.secondary (#E6A500) */
 .btn-gold,
 .btn-accent {
-  background: linear-gradient(135deg, var(--accent) 0%, #3A6F9E 100%);
+  background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
   color: #FFFFFF;
   font-weight: 800;
   font-size: 0.95rem;
@@ -216,13 +330,21 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   gap: 8px;
   transition: opacity 0.15s ease, transform 0.1s ease;
-  box-shadow: 0 4px 12px rgba(74,143,199,0.35);
+  box-shadow: 0 4px 12px rgba(1, 64, 167, 0.3);
 }
-.btn-accent:hover  { opacity: 0.9; }
-.btn-accent:active { transform: scale(0.98); }
 
+.btn-accent:hover {
+  opacity: 0.9;
+  box-shadow: 0 6px 18px rgba(1, 64, 167, 0.4);
+}
+
+.btn-accent:active {
+  transform: scale(0.98);
+}
+
+/* General .btn-primary — same as .btn-gov-primary */
 .btn-primary {
-  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: #FFFFFF;
   font-weight: 800;
   font-size: 0.95rem;
@@ -235,13 +357,20 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   gap: 8px;
   transition: opacity 0.15s ease, transform 0.1s ease;
-  box-shadow: 0 4px 12px rgba(11,87,142,0.3);
+  box-shadow: 0 4px 12px rgba(1, 64, 167, 0.3);
 }
-.btn-primary:hover  { opacity: 0.9; }
-.btn-primary:active { transform: scale(0.98); }
 
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* Telebirr / payment button — uses primary brand color */
 .btn-telebirr {
-  background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: #FFFFFF;
   font-weight: 700;
   font-size: 0.9rem;
@@ -253,15 +382,31 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.15s ease;
+  transition: opacity 0.15s ease;
+  box-shadow: 0 4px 12px rgba(1, 64, 167, 0.28);
 }
-.btn-telebirr:hover { opacity: 0.9; }
+
+.btn-telebirr:hover {
+  opacity: 0.9;
+}
 
 /* ── Forms ── */
-.form-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
-.form-label { font-size: 0.84rem; font-weight: 700; color: var(--text-heading); }
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-.form-input, .form-select, .form-textarea {
+.form-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
   background: #FFFFFF;
   border: 1px solid #C8D8E5;
   border-radius: 8px;
@@ -272,15 +417,32 @@ h1, h2, h3, h4, h5, h6 {
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.form-input:focus, .form-select:focus, .form-textarea:focus {
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(11,87,142,0.12);
+  box-shadow: 0 0 0 3px rgba(11, 87, 142, 0.12);
 }
-.form-input:disabled { background: #F8FAFC; color: var(--text-muted); cursor: not-allowed; }
+
+.form-input:disabled {
+  background: #F8FAFC;
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
 
 /* ── Tables ── */
-.table-responsive { width: 100%; overflow-x: auto; }
-.gov-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.gov-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
 .gov-table th {
   background: #F0F5FA;
   color: var(--text-muted);
@@ -292,14 +454,22 @@ h1, h2, h3, h4, h5, h6 {
   text-align: left;
   border-bottom: 2px solid #D0E0ED;
 }
-.gov-table td { padding: 14px 16px; border-bottom: 1px solid #EBF0F5; vertical-align: middle; }
-.gov-table tr:hover td { background: #F5FAFE; }
+
+.gov-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #EBF0F5;
+  vertical-align: middle;
+}
+
+.gov-table tr:hover td {
+  background: #F5FAFE;
+}
 
 /* ── Modals ── */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(11,42,66,0.65);
+  background: rgba(11, 42, 66, 0.65);
   backdrop-filter: blur(4px);
   z-index: 100;
   display: flex;
@@ -307,6 +477,7 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   padding: 20px;
 }
+
 .modal-content {
   background: #FFFFFF;
   border-radius: 24px;
@@ -314,7 +485,7 @@ h1, h2, h3, h4, h5, h6 {
   max-width: 1000px;
   max-height: 92vh;
   overflow-y: auto;
-  box-shadow: 0 32px 72px rgba(11,42,66,0.25);
+  box-shadow: 0 32px 72px rgba(11, 42, 66, 0.25);
   border: 1px solid var(--border-card);
 }
 
@@ -328,21 +499,37 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ── Misc ── */
-.hover-lift { transition: transform 0.25s ease, box-shadow 0.25s ease; }
-.hover-lift:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.18); }
+.hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
 
 .laser-line {
   position: absolute;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
   height: 3px;
   background: var(--primary);
   box-shadow: 0 0 8px var(--primary);
   animation: scanAnim 2s ease-in-out infinite;
 }
+
 @keyframes scanAnim {
-  0%   { top: 0%; }
-  50%  { top: 90%; }
-  100% { top: 0%; }
+  0% {
+    top: 0%;
+  }
+
+  50% {
+    top: 90%;
+  }
+
+  100% {
+    top: 0%;
+  }
 }
 
 /* ── Workflow Steps ── */
@@ -356,26 +543,40 @@ h1, h2, h3, h4, h5, h6 {
   background: #FFFFFF;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+
 .workflow-step.active {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(11,87,142,0.10);
+  box-shadow: 0 0 0 3px rgba(11, 87, 142, 0.10);
 }
+
 .workflow-step.completed {
   border-color: #6BA0C8;
   background: var(--primary-light);
 }
+
 .step-number {
-  width: 32px; height: 32px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: #E8F0F5;
   color: var(--text-muted);
   font-weight: 800;
   font-size: 0.85rem;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
-.step-number.active   { background: var(--primary); color: #FFFFFF; }
-.step-number.completed { background: #4A8FC7; color: #FFFFFF; }
+
+.step-number.active {
+  background: var(--primary);
+  color: #FFFFFF;
+}
+
+.step-number.completed {
+  background: #4A8FC7;
+  color: #FFFFFF;
+}
 
 /* ── Athlete Stats Grid ── */
 .stats-grid {
@@ -383,6 +584,7 @@ h1, h2, h3, h4, h5, h6 {
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 14px;
 }
+
 .stat-card {
   background: #FFFFFF;
   border: 1px solid var(--border-card);
@@ -390,12 +592,27 @@ h1, h2, h3, h4, h5, h6 {
   padding: 18px 16px;
   text-align: center;
 }
-.stat-value { font-size: 1.6rem; font-weight: 900; color: var(--primary); font-family: var(--font-mono); }
-.stat-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--primary);
+  font-family: var(--font-mono);
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
 
 /* ── Checkbox style ── */
 input[type="checkbox"] {
-  width: 17px; height: 17px;
+  width: 17px;
+  height: 17px;
   accent-color: var(--primary);
   cursor: pointer;
 }
@@ -404,255 +621,3 @@ input[type="checkbox"] {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #F0F5FA; }
 ::-webkit-scrollbar-thumb { background: #A0C0D5; border-radius: 3px; }
-
-/* ══════════════════════════════════════════════════════
-   Responsive Utilities & Mobile Media Queries
-   Desktop first — base styles preserve existing layout;
-   media queries only adapt spacing, grids, and nav.
-   ══════════════════════════════════════════════════════ */
-
-/* Mobile-only elements are hidden on desktop */
-.mobile-only { display: none !important; }
-.mobile-menu-toggle { display: none; }
-
-/* Navbar mobile dropdown panel (inline row on desktop) */
-.mobile-menu-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* Header breadcrumb truncation (AppLayout) */
-.header-breadcrumb {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-/* Grids / rows that collapse to one column on small screens (see ≤640px block) */
-
-/* ── Landing page helpers (App.jsx header + LandingPage.jsx) ── */
-.landing-header { padding: 0 24px; height: 72px; }
-.landing-nav { display: flex; align-items: center; gap: 2px; }
-.landing-actions { display: flex; gap: 12px; align-items: center; }
-.landing-menu-btn { display: none !important; }
-.landing-section { padding: 60px 24px; }
-.landing-hero { padding: 40px 24px 70px; }
-.landing-search-wrap { padding: 0 24px; }
-.landing-footer { padding: 60px 24px 30px; }
-
-/* Horizontal auto-scroll carousels (competitions / athletes) */
-.landing-scroll-row { scroll-snap-type: x mandatory; }
-.landing-scroll-card { flex-shrink: 0; scroll-snap-align: start; }
-
-/* Media mosaic grid */
-.media-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  grid-auto-rows: 240px;
-  grid-auto-flow: dense;
-  gap: 20px;
-}
-
-/* ── Competition image cards — desktop keeps full details visible ── */
-.meet-card-extra { display: flex; flex-direction: column; }
-.meet-card-toggle-btn { display: none; }
-
-/* ── Dashboards (AthleteDashboard / ClubDashboard) ── */
-.dash-page { padding: 32px 24px; }
-.dash-heading { font-size: 2rem; }
-
-/* ── Registration modal helpers ── */
-.stepbar { display: flex; gap: 12px; margin-bottom: 32px; }
-.otp-row { display: flex; gap: 10px; justify-content: center; margin: 12px 0; }
-.fin-row { display: flex; gap: 10px; align-items: center; }
-
-/* ── ≤ 887px — navbar switches to mobile hamburger mode
-   (prevents desktop nav overflow between 769–887px) ── */
-@media (max-width: 887px) {
-  .mobile-menu-toggle { display: flex; }
-  .mobile-menu-wrap {
-    display: none;
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-    gap: 10px;
-  }
-  .mobile-menu-wrap.open {
-    display: flex;
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 12px;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
-  }
-  .mobile-menu-wrap .session-indicator { width: 100%; }
-  .mobile-menu-wrap .menu-actions { width: 100%; }
-
-  .landing-nav { display: none !important; }
-  .landing-actions { display: none !important; }
-  .landing-menu-btn { display: inline-flex !important; }
-  .landing-mobile-menu { top: 72px !important; }
-
-  /* Competition image cards — collapse extra details behind See More */
-  .meet-card-extra { display: none; }
-  .meet-card-toggle-btn { display: inline-flex; }
-  .meet-card-expanded .meet-card-extra { display: flex; }
-}
-
-/* ── ≤ 768px (phones & tablets) ── */
-@media (max-width: 768px) {
-  .hidden-mobile { display: none !important; }
-  .mobile-only { display: flex !important; }
-
-  /* Spacing */
-  .navbar-inner { padding: 12px 16px !important; }
-  .header-bar { padding: 0 14px; height: 60px; }
-  .main-pad { padding: 18px 16px !important; }
-  .gov-card { padding: 16px; }
-
-  /* AppLayout sidebar → off-canvas drawer */
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 270px;
-    transform: translateX(-100%);
-    transition: transform 0.28s ease;
-    z-index: 60;
-    box-shadow: none;
-  }
-  .sidebar.mobile-open {
-    transform: translateX(0);
-    box-shadow: 16px 0 48px rgba(11, 42, 66, 0.35);
-  }
-  .sidebar-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(11, 42, 66, 0.5);
-    backdrop-filter: blur(2px);
-    z-index: 55;
-  }
-
-  /* Modals — fit small screens, keep scroll inside */
-  .modal-backdrop { padding: 12px; align-items: center; }
-  .modal-content {
-    padding: 26px 20px !important;
-    width: 100% !important;
-    max-height: 90vh !important;
-    overflow-y: auto !important;
-    border-radius: 20px;
-  }
-
-  /* Navbar hamburger + dropdown panel */
-  .mobile-menu-toggle { display: flex; }
-  .mobile-menu-wrap {
-    display: none;
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-    gap: 10px;
-  }
-  .mobile-menu-wrap.open {
-    display: flex;
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 12px;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
-  }
-  .mobile-menu-wrap .session-indicator { width: 100%; }
-  .mobile-menu-wrap .menu-actions { width: 100%; }
-
-  /* Stats grid — smaller tracks */
-  .stats-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
-
-  /* Large inline-padded cards (e.g. landing contact card) */
-  .contact-card { padding: 24px 16px !important; }
-
-  /* ── Landing page ── */
-  .landing-header { padding: 0 14px !important; height: 64px !important; }
-  .landing-nav { display: none !important; }
-  .landing-actions { display: none !important; }
-  .landing-menu-btn { display: inline-flex !important; }
-  .landing-mobile-menu { top: 64px !important; }
-  .landing-section { padding: 40px 16px !important; }
-  .landing-hero { padding: 32px 16px 56px !important; }
-  .landing-search-wrap { padding: 0 12px !important; }
-  .landing-search-widget { padding: 20px 16px !important; }
-  .landing-footer { padding: 40px 16px 24px !important; }
-  .landing-scroll-card { min-width: calc(100vw - 40px) !important; max-width: none !important; width: auto !important; }
-  .landing-section h2 { font-size: 1.5rem !important; }
-  .landing-section h3 { font-size: 1.15rem !important; }
-
-  /* Media mosaic grid — collapse 2x2 spans on phones */
-  .media-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important; grid-auto-rows: 190px !important; gap: 14px !important; }
-  .media-grid-card { grid-column: span 1 !important; grid-row: span 1 !important; min-height: 190px !important; }
-
-  /* ── Dashboards ── */
-  .dash-page { padding: 16px 14px !important; }
-  .dash-heading { font-size: 1.5rem !important; }
-  .glass-panel { padding: 18px !important; }
-
-  /* ── Registration modal ── */
-  .stepbar { gap: 6px !important; margin-bottom: 24px !important; }
-  .stepbar span { font-size: 0.66rem !important; }
-  .otp-row { gap: 6px !important; }
-  .otp-box { width: 44px !important; height: 56px !important; font-size: 1.25rem !important; }
-
-  /* Full-bleed modal headers keep edge-to-edge padding on mobile */
-  .modal-content.modal-bleed { padding: 0 !important; }
-  .modal-bleed-banner { padding: 16px 20px !important; }
-  .modal-bleed-body { padding: 20px 16px !important; }
-
-  /* AthleteOverview tab pills wrap instead of overflowing */
-  .athlete-tabs { width: 100% !important; flex-wrap: wrap !important; }
-  .athlete-tabs button { flex: 1 1 auto; padding: 8px 10px !important; font-size: 0.78rem !important; }
-}
-
-/* ── ≤ 640px — collapse multi-column grids / rows ── */
-@media (max-width: 640px) {
-  .stack-on-mobile { grid-template-columns: 1fr !important; }
-  .stack-on-mobile > * { grid-column: span 1 !important; }
-  .events-grid { grid-template-columns: 1fr !important; }
-  .wrap-on-mobile { flex-wrap: wrap !important; }
-  .results-acc-head { flex-wrap: wrap; }
-  .results-acc-head > div { min-width: 0; }
-  .header-gap-mobile { gap: 10px !important; }
-
-  /* ClientLayout header compacting */
-  .client-header { padding: 10px 14px !important; }
-  .client-main { padding: 16px !important; }
-  .client-avatar { width: 36px !important; height: 36px !important; }
-  .client-signout { padding: 8px 10px !important; }
-
-  /* Notification toast spans the screen safely */
-  .toast-root {
-    left: 16px !important;
-    right: 16px !important;
-    bottom: 16px !important;
-    max-width: none !important;
-  }
-}
-
-/* ── ≤ 400px — extra-tight phones (320px) ── */
-@media (max-width: 400px) {
-  .main-pad { padding: 14px 10px !important; }
-  .client-main { padding: 14px 10px !important; }
-  .gov-card { padding: 16px 12px !important; }
-  .modal-content { padding: 20px 14px !important; }
-
-  .client-header { padding: 8px 10px !important; }
-  .client-brand-img { width: 34px !important; height: 34px !important; }
-
-  .landing-section h2 { font-size: 1.35rem !important; }
-  .landing-scroll-card { min-width: calc(100vw - 32px) !important; }
-  .media-grid { grid-template-columns: 1fr !important; grid-auto-rows: 200px !important; }
-
-  .otp-box { width: 38px !important; height: 52px !important; font-size: 1.15rem !important; }
-  .fin-row { flex-direction: column !important; align-items: stretch !important; }
-  .fin-row .btn-accent { width: 100% !important; justify-content: center; }
-}

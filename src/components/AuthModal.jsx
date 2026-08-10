@@ -45,7 +45,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
         {/* Modal Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px' }}>
           <div>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(14, 165, 233, 0.1)', color: '#0EA5E9', padding: '5px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '10px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(14, 165, 233, 0.1)', color: 'var(--primary)', padding: '5px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '10px' }}>
               <ShieldCheck size={14} />
               EOSCRMS Government Single Sign-On
             </div>
@@ -92,7 +92,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
               borderRadius: '10px',
               border: 'none',
               background: loginRole === 'CLUB' ? '#FFFFFF' : 'transparent',
-              color: loginRole === 'CLUB' ? '#0EA5E9' : '#64748B',
+              color: loginRole === 'CLUB' ? 'var(--primary)' : '#64748B',
               fontWeight: 800,
               fontSize: '0.9rem',
               cursor: 'pointer',
@@ -119,7 +119,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
               borderRadius: '10px',
               border: 'none',
               background: loginRole === 'ATHLETE' ? '#FFFFFF' : 'transparent',
-              color: loginRole === 'ATHLETE' ? '#0EA5E9' : '#64748B',
+              color: loginRole === 'ATHLETE' ? 'var(--primary)' : '#64748B',
               fontWeight: 800,
               fontSize: '0.9rem',
               cursor: 'pointer',
@@ -141,7 +141,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
             {/* Email Input */}
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: 700, color: '#1E293B', marginBottom: '6px' }}>
-                <Mail size={16} color="#0EA5E9" />
+                <Mail size={16} color="var(--primary)" />
                 Registered Email Address
               </label>
               <input 
@@ -158,7 +158,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
             {/* Password Input */}
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: 700, color: '#1E293B', marginBottom: '6px' }}>
-                <Lock size={16} color="#0EA5E9" />
+                <Lock size={16} color="var(--primary)" />
                 Account Password
               </label>
               <input 
@@ -215,7 +215,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
                   borderRadius: '10px',
                   border: '1px solid rgba(14, 165, 233, 0.3)',
                   background: '#F0F9FF',
-                  color: '#0284C7',
+                  color: 'var(--primary-dark)',
                   fontSize: '0.85rem',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -259,7 +259,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
               padding: '16px', 
               fontSize: '1.05rem', 
               borderRadius: '14px',
-              background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
+              background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
               color: '#FFFFFF',
               boxShadow: '0 8px 24px rgba(2, 132, 199, 0.3)',
               cursor: 'pointer',

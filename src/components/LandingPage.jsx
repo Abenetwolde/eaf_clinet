@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ChevronDown, ChevronUp, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
+import { motion } from 'framer-motion';
 
 /* ─────────────────────────────────────────────
    STATIC DATA & GALLERY IMAGES
@@ -182,11 +183,40 @@ const GALLERY_IMAGES = [
 ];
 
 const STRUCTURE_ITEMS = [
-  { icon: <Users size={22} color="#0EA5E9" />, title: 'General Assembly', amharic: 'ጠቅላላ ጉባኤ' },
-  { icon: <Award size={22} color="#0EA5E9" />, title: 'Executive Committee', amharic: 'ስራ አስፈጻሚ' },
-  { icon: <Activity size={22} color="#0EA5E9" />, title: 'Technical Committee', amharic: 'ቴክኒካዊ ኮሚቴ' },
-  { icon: <BookOpen size={22} color="#0EA5E9" />, title: 'Training & Research', amharic: 'ስልጠናና ምርምር' },
+  {
+    icon: <Users size={22} color="var(--primary)" />,
+    title: 'General Assembly',
+    amharic: 'ጠቅላላ ጉባኤ',
+    description: 'The General Assembly is the supreme governing body of the Ethiopian Athletics Federation. It convenes at least once a year and comprises representatives from all affiliated regional federations and member clubs. It is responsible for electing the Executive Committee, approving the budget, and setting strategic policies for athletics development in Ethiopia.',
+    members: '120+ delegates from 11 regional federations',
+    meets: 'Annually (extraordinary sessions as needed)',
+  },
+  {
+    icon: <Award size={22} color="var(--primary)" />,
+    title: 'Executive Committee',
+    amharic: 'ስራ አስፈጻሚ',
+    description: 'The Executive Committee is elected by the General Assembly and handles the day-to-day administration of the federation. It implements General Assembly decisions, manages federation finances, appoints technical staff, and oversees national team selection and international relations with World Athletics (WA) and the African Athletics Confederation (AAC).',
+    members: '11 elected officials: President, VP, Secretary General, Treasurer & 7 members',
+    meets: 'Monthly (at least quarterly)',
+  },
+  {
+    icon: <Activity size={22} color="var(--primary)" />,
+    title: 'Technical Committee',
+    amharic: 'ቴክኒካዊ ኮሚቴ',
+    description: 'The Technical Committee oversees all sporting and competition matters. This includes drafting competition rules aligned with World Athletics standards, accrediting coaches and officials, managing athlete licensing, organizing national championships, and approving the national competition calendar for track, field, road, cross-country, and marathon events.',
+    members: '7 technical experts: Head Coach, Chief Official, Medical Officer & specialists',
+    meets: 'Bi-monthly and before all major national championships',
+  },
+  {
+    icon: <BookOpen size={22} color="var(--primary)" />,
+    title: 'Training & Research',
+    amharic: 'ስልጠናና ምርምር',
+    description: 'The Training & Research Department drives the scientific development of Ethiopian athletics. It designs national coaching education programs, conducts sports science research, provides nutritional and anti-doping guidance, coordinates with universities and sports institutes, and monitors the Long-Term Athlete Development (LTAD) pathway from youth to elite level.',
+    members: 'Department Head, 4 senior coaches, 2 sports scientists, anti-doping officer',
+    meets: 'Weekly (training camps) and quarterly (research reviews)',
+  },
 ];
+
 
 const QUICK_LINKS = [
   ['Home', 'ቅድመ ገፅ', '#home'],
@@ -211,14 +241,14 @@ const TAG_COLORS = {
    ───────────────────────────────────────────── */
 const VectorRunnerDecoration = () => (
   <svg width="340" height="280" viewBox="0 0 340 280" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.15 }}>
-    <path d="M40 240 Q 120 180, 200 220 T 320 160" stroke="#0EA5E9" strokeWidth="6" strokeDasharray="8 8" fill="none" />
+    <path d="M40 240 Q 120 180, 200 220 T 320 160" stroke="var(--primary)" strokeWidth="6" strokeDasharray="8 8" fill="none" />
     <path d="M20 260 Q 100 200, 180 240 T 300 180" stroke="#38BDF8" strokeWidth="4" fill="none" />
     <circle cx="220" cy="80" r="35" fill="url(#grad1)" />
     <polygon points="120,40 140,80 180,90 150,120 160,160 120,140 80,160 90,120 60,90 100,80" fill="none" stroke="#F59E0B" strokeWidth="2" />
     <defs>
       <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#0EA5E9" stopOpacity="0.4" />
-        <stop offset="100%" stopColor="#0284C7" stopOpacity="0.0" />
+        <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.4" />
+        <stop offset="100%" stopColor="var(--primary-dark)" stopOpacity="0.0" />
       </linearGradient>
     </defs>
   </svg>
@@ -226,29 +256,21 @@ const VectorRunnerDecoration = () => (
 
 const VectorTrackLines = () => (
   <svg width="100%" height="100%" viewBox="0 0 800 200" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: 'absolute', inset: 0, opacity: 0.08, pointerEvents: 'none' }}>
-    <path d="M-50 180 C 200 80, 400 220, 850 40" stroke="#0EA5E9" strokeWidth="8" />
-    <path d="M-50 160 C 200 60, 400 200, 850 20" stroke="#0EA5E9" strokeWidth="6" />
+    <path d="M-50 180 C 200 80, 400 220, 850 40" stroke="var(--primary)" strokeWidth="8" />
+    <path d="M-50 160 C 200 60, 400 200, 850 20" stroke="var(--primary)" strokeWidth="6" />
     <path d="M-50 140 C 200 40, 400 180, 850 0" stroke="#F59E0B" strokeWidth="6" />
   </svg>
 );
 
-export default function LandingPage({ onSelectRole, onRegister, language = 'en', publicSubPage = 'HOME', onChangePublicSubPage }) {
+export default function LandingPage({ onSelectRole, onRegister, language = 'en', publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false }) {
   const [selectedMeetId, setSelectedMeetId] = useState(null);
   const [selectedAthleteModal, setSelectedAthleteModal] = useState(null);
   const [selectedGalleryTab, setSelectedGalleryTab] = useState('All');
   const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [activeLightboxImg, setActiveLightboxImg] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
-  const [expandedMeetCards, setExpandedMeetCards] = useState({});
-  const [galleryExpanded, setGalleryExpanded] = useState(false);
-  const [viewportWidth, setViewportWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1440);
-
-  // Track viewport width so the gallery can show a limited initial set on smaller screens
-  useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+  const [selectedNews, setSelectedNews] = useState(NEWS[0]);
+  const [activeStructure, setActiveStructure] = useState(null);
 
   // Search/Filter states
   const [searchText, setSearchText] = useState('');
@@ -257,6 +279,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sortByDate, setSortByDate] = useState('UPCOMING_FIRST');
+  const [compPage, setCompPage] = useState(0);
+  const [showAllComps, setShowAllComps] = useState(false);
 
   // Contact form state
   const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -264,37 +288,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   const bannerScrollRef = useRef(null);
   const athleteScrollRef = useRef(null);
-  const compScrollRef = useRef(null);
 
-  // Auto-scroll competition cards
-  useEffect(() => {
-    const el = compScrollRef.current;
-    if (!el) return;
-    let frame;
-    let paused = false;
-    let speed = 0.85;
-    const onEnter = () => { paused = true; };
-    const onLeave = () => { paused = false; };
-    el.addEventListener('mouseenter', onEnter);
-    el.addEventListener('mouseleave', onLeave);
-    const step = () => {
-      if (!paused && el) {
-        el.scrollLeft += speed;
-        if (el.scrollLeft >= el.scrollWidth / 2) {
-          el.scrollLeft = 0;
-        }
-      }
-      frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-    return () => {
-      cancelAnimationFrame(frame);
-      if (el) {
-        el.removeEventListener('mouseenter', onEnter);
-        el.removeEventListener('mouseleave', onLeave);
-      }
-    };
-  }, []);
+  const CARDS_PER_PAGE = 3;
 
   // Auto-scroll athlete cards
   useEffect(() => {
@@ -331,8 +326,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     }
   };
 
-  const toggleMeetCard = (cardKey) => {
-    setExpandedMeetCards(prev => ({ ...prev, [cardKey]: !prev[cardKey] }));
+  const handleCompPage = (direction, total) => {
+    const maxPage = Math.ceil(total / CARDS_PER_PAGE) - 1;
+    setCompPage(prev => {
+      if (direction === 'left') return Math.max(0, prev - 1);
+      return Math.min(maxPage, prev + 1);
+    });
   };
 
   const handleContactSubmit = (e) => {
@@ -428,18 +427,33 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     ? GALLERY_IMAGES
     : GALLERY_IMAGES.filter(img => img.category === selectedGalleryTab);
 
+  // ── Theme tokens ── premium design tokens that make dark mode pop
+  const t = {
+    bg:          darkMode ? '#090D16' : '#FFFFFF',
+    bgAlt:       darkMode ? '#0F1524' : '#F8FAFC',
+    bgHero:      darkMode ? 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(14, 165, 233, 0.18), rgba(9, 13, 22, 0))' : 'linear-gradient(180deg,#F0F9FF 0%,#E0F2FE 40%,#FFFFFF 100%)',
+    surface:     darkMode ? '#131B2E' : '#FFFFFF',
+    surfaceRaised: darkMode ? '#1E294B' : '#F1F5F9',
+    text:        darkMode ? '#F8FAFC' : '#0F172A',
+    textSub:     darkMode ? '#CBD5E1' : '#475569',
+    textMuted:   darkMode ? '#94A3B8' : '#64748B',
+    textLight:   darkMode ? '#64748B' : '#94A3B8',
+    border:      darkMode ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
+    borderSubtle: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#CBD5E1',
+    inputBg:     darkMode ? '#0A0F1D' : '#F8FAFC',
+  };
+
   return (
-    <div style={{ background: '#FFFFFF', minHeight: '100vh', overflowX: 'hidden' }}>
+    <div style={{ background: t.bg, minHeight: '100vh', overflowX: 'hidden', color: t.text, transition: 'background 0.3s, color 0.3s' }}>
 
       {/* ── 1. HERO SECTION WITH VECTOR GRAPHICS ── */}
       {publicSubPage === 'HOME' && (
         <section
           id="home"
-          className="landing-hero"
           style={{
             position: 'relative',
             minHeight: '520px',
-            background: 'linear-gradient(180deg, #F0F9FF 0%, #E0F2FE 40%, #FFFFFF 100%)',
+            background: t.bgHero,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -461,25 +475,58 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '920px', margin: '0 auto' }}>
 
             {/* <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#FFFFFF', border: '1px solid #BAE6FD', padding: '6px 16px', borderRadius: '30px', boxShadow: '0 4px 14px rgba(14,165,233,0.12)', marginBottom: '20px' }}>
-              <Sparkles size={16} color="#0EA5E9" />
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0284C7', letterSpacing: '0.04em' }}>
+              <Sparkles size={16} color="var(--primary)" />
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary-dark)', letterSpacing: '0.04em' }}>
                 ETHIOPIAN ATHLETICS FEDERATION —  PLATFORM
               </span>
             </div> */}
 
             <h1 style={{
-              color: '#0F172A',
+              color: t.text,
               fontSize: 'clamp(2.2rem, 5.5vw, 3.8rem)',
               fontWeight: 900,
-              lineHeight: 1.15,
+              lineHeight: 1.25,
               marginBottom: '18px',
-              letterSpacing: '-0.025em'
+              letterSpacing: '-0.025em',
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: '0.25em 0.35em'
             }}>
-              {loc.heroTitle}
+              {(language === 'en' ? [
+                { text: 'EAF Digital Athlete Portal:', dir: 'left', color: t.text },
+                { text: 'Verify,', dir: 'right', color: 'var(--primary)' },
+                { text: 'Register &', dir: 'left', color: t.text },
+                { text: 'Track Live results', dir: 'right', color: darkMode ? '#38BDF8' : '#0284C7' },
+                { text: 'in Real-time', dir: 'left', color: '#D97706' },
+              ] : [
+                { text: 'የኢትዮጵያ አትሌቲክስ ዲጂታል ፖርታል:', dir: 'left', color: t.text },
+                { text: 'ይመዝገቡ፣', dir: 'right', color: 'var(--primary)' },
+                { text: 'ያረጋግጡ', dir: 'left', color: t.text },
+                { text: 'እና ውጤቶችን', dir: 'right', color: darkMode ? '#38BDF8' : '#0284C7' },
+                { text: 'በቀጥታ ይከታተሉ', dir: 'left', color: '#D97706' },
+              ]).map((part, index) => (
+                <motion.span
+                  key={index}
+                  initial={{ opacity: 0, x: part.dir === 'left' ? -100 : 100, filter: 'blur(6px)' }}
+                  animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                  transition={{
+                    duration: 0.75,
+                    delay: 0.12 + index * 0.13,
+                    ease: [0.16, 1, 0.3, 1]
+                  }}
+                  style={{
+                    color: part.color,
+                    display: 'inline-block'
+                  }}
+                >
+                  {part.text}
+                </motion.span>
+              ))}
             </h1>
 
             <p style={{
-              color: '#475569',
+              color: t.textSub,
               fontSize: 'clamp(1rem, 2vw, 1.18rem)',
               maxWidth: '720px',
               margin: '0 auto 36px',
@@ -495,7 +542,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 onClick={() => onRegister('ATHLETE')}
                 className="btn-accent"
                 style={{
-                  background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
+                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
                   color: '#FFFFFF',
                   fontWeight: 800,
                   fontSize: '0.98rem',
@@ -521,9 +568,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
                 style={{
-                  background: '#FFFFFF',
-                  border: '1px solid #CBD5E1',
-                  color: '#0F172A',
+                  background: t.surface,
+                  border: '1px solid ' + t.borderSubtle,
+                  color: t.text,
                   fontWeight: 800,
                   fontSize: '0.98rem',
                   padding: '16px 32px',
@@ -535,10 +582,10 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   boxShadow: '0 4px 14px rgba(0, 0, 0, 0.05)',
                   transition: 'all 0.2s'
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.transform = 'none'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = t.bgAlt; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = t.surface; e.currentTarget.style.transform = 'none'; }}
               >
-                <Trophy size={20} color="#0EA5E9" />
+                <Trophy size={20} color="var(--primary)" />
                 {loc.btnSecondary}
               </button>
             </div>
@@ -546,313 +593,323 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         </section>
       )}
 
-      {/* ── 2. INTEGRATED SEARCH BAR & FILTER WIDGET ── */}
-      {(publicSubPage === 'HOME' || publicSubPage === 'COMPETITIONS') && (
-        <div className="landing-search-wrap" style={{ padding: '0 24px', position: 'relative', zIndex: 10, marginTop: publicSubPage === 'COMPETITIONS' ? '40px' : 0 }}>
-          <div
-            className="landing-search-widget"
-            style={{
-              background: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              borderRadius: '24px',
-              boxShadow: '0 20px 40px rgba(15, 23, 42, 0.08)',
-              padding: '28px',
-              width: '100%',
-              maxWidth: '1200px',
-              margin: publicSubPage === 'HOME' ? '-35px auto 40px' : '0 auto 40px',
-              color: '#0F172A',
-            }}
-          >
-            {/* Free-text Search */}
-            <div style={{ position: 'relative', marginBottom: '20px' }}>
-              <Search
-                size={22}
-                style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#0EA5E9' }}
-              />
-              <input
-                type="text"
-                value={searchText}
-                onChange={e => setSearchText(e.target.value)}
-                placeholder={loc.searchPlaceholder}
-                style={{
-                  width: '100%',
-                  background: '#F8FAFC',
-                  border: '1px solid #CBD5E1',
-                  borderRadius: '16px',
-                  padding: '16px 16px 16px 54px',
-                  color: '#0F172A',
-                  fontSize: '1.02rem',
-                  fontWeight: 600,
-                  outline: 'none',
-                  transition: 'all 0.2s ease'
-                }}
-                onFocus={e => e.target.style.borderColor = '#0EA5E9'}
-                onBlur={e => e.target.style.borderColor = '#CBD5E1'}
-              />
-            </div>
-
-            {/* Filter Widgets Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', alignItems: 'flex-end' }}>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ color: '#475569', fontSize: '0.82rem', fontWeight: 700 }}>{loc.regionLabel}</label>
-                <select
-                  className="form-select"
-                  value={regionFilter}
-                  onChange={e => setRegionFilter(e.target.value)}
-                  style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#0F172A', borderRadius: '12px', padding: '11px 14px' }}
-                >
-                  <option value="ALL">{language === 'en' ? 'All Regions' : 'ሁሉም ክልሎች'}</option>
-                  <option value="Addis Ababa">Addis Ababa</option>
-                  <option value="Oromia">Oromia</option>
-                  <option value="Amhara">Amhara</option>
-                  <option value="Sidama">Sidama</option>
-                  <option value="Tigray">Tigray</option>
-                </select>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ color: '#475569', fontSize: '0.82rem', fontWeight: 700 }}>{loc.statusLabel}</label>
-                <select
-                  className="form-select"
-                  value={statusFilter}
-                  onChange={e => setStatusFilter(e.target.value)}
-                  style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#0F172A', borderRadius: '12px', padding: '11px 14px' }}
-                >
-                  <option value="ALL">{loc.all}</option>
-                  <option value="REGISTRATION_OPEN">{loc.regOpen}</option>
-                  <option value="REGISTRATION_CLOSED">{loc.regClosed}</option>
-                  <option value="LIVE">{loc.live}</option>
-                  <option value="UPCOMING">{loc.upcoming}</option>
-                </select>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ color: '#475569', fontSize: '0.82rem', fontWeight: 700 }}>{loc.startDateLabel}</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#0F172A', borderRadius: '12px', width: '100%', padding: '11px 14px' }}
-                />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ color: '#475569', fontSize: '0.82rem', fontWeight: 700 }}>{loc.endDateLabel}</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                  style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#0F172A', borderRadius: '12px', width: '100%', padding: '11px 14px' }}
-                />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" style={{ color: '#475569', fontSize: '0.82rem', fontWeight: 700 }}>{loc.sortLabel}</label>
-                <select
-                  className="form-select"
-                  value={sortByDate}
-                  onChange={e => setSortByDate(e.target.value)}
-                  style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#0F172A', borderRadius: '12px', padding: '11px 14px' }}
-                >
-                  <option value="UPCOMING_FIRST">{loc.sortUpcoming}</option>
-                  <option value="OLDEST_FIRST">{loc.sortOldest}</option>
-                </select>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 3. COMPETITIONS HUB WITH SCROLLABLE BANNERS & VIEW MORE BUTTON ── */}
+      {/* ── 3. COMPETITIONS HUB WITH EMBEDDED SEARCH & FILTERS ── */}
       {(publicSubPage === "HOME" || publicSubPage === "COMPETITIONS") && (
-        <section id="competitions" className="landing-section" style={{ background: '#F8FAFC', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+        <section id="competitions" style={{ background: t.bgAlt, padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: '16px' }}>
               <div>
-                <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A', marginBottom: 4 }}>
+                <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text, marginBottom: 4 }}>
                   {loc.competitionsTitle}
                 </h2>
-                <p style={{ color: '#0EA5E9', fontWeight: 700, fontSize: '0.95rem' }}>
+                <p style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.95rem' }}>
                   {language === 'en' ? 'Active Events, Starter Lists & Schedules' : 'አሁን ያሉ ውድድሮች እና የጊዜ ሰሌዳዎች'}
                 </p>
               </div>
 
-              {/* Scroll Controls for Banners */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {/* View All & Carousel Controls */}
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
-                  onClick={() => handleScrollBanners('left')}
-                  style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FFFFFF', border: '1px solid #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
-                >
-                  <ChevronLeft size={20} color="#0F172A" />
-                </button>
-                <button
-                  onClick={() => handleScrollBanners('right')}
-                  style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FFFFFF', border: '1px solid #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
-                >
-                  <ChevronRight size={20} color="#0F172A" />
-                </button>
-              </div>
-            </div>
-
-            {/* Scrollable Horizontal Banner Cards Container */}
-            {sortedMeets.length === 0 ? (
-              <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '48px', textAlign: 'center', color: '#64748B' }}>
-                <Trophy size={48} style={{ opacity: 0.2, marginBottom: '12px' }} />
-                <h4 style={{ fontWeight: 800 }}>{language === 'en' ? 'No Competitions Found' : 'ምንም ውድድሮች አልተገኙም'}</h4>
-              </div>
-            ) : (
-              <div
-                ref={compScrollRef}
-                className="landing-scroll-row"
-                style={{
-                  display: 'flex',
-                  gap: '24px',
-                  overflowX: 'hidden',
-                  paddingBottom: '16px',
-                  cursor: 'grab'
-                }}
-              >
-                {[...sortedMeets, ...sortedMeets, ...sortedMeets].map((meet, idx) => {
-                  const cardKey = `${meet.id}-${idx}`;
-                  const isCardExpanded = !!expandedMeetCards[cardKey];
-                  const badgeColor = meet.status === 'REGISTRATION_OPEN' ? '#0EA5E9' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
-                  const statusName = meet.status === 'REGISTRATION_OPEN' ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
-
-                  return (
-                    <div
-                      key={cardKey}
-                      className={`hover-lift landing-scroll-card${isCardExpanded ? ' meet-card-expanded' : ''}`}
-                      onClick={() => setSelectedMeetId(meet.id)}
-                      style={{
-                        minWidth: 'min(100%, 360px)',
-                        maxWidth: '380px',
-                        flexShrink: 0,
-                        scrollSnapAlign: 'start',
-                        position: 'relative',
-                        borderRadius: '24px',
-                        overflow: 'hidden',
-                        minHeight: '340px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'flex-end',
-                        cursor: 'pointer',
-                        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.1)'
-                      }}
-                    >
-                      <div style={{
-                        position: 'absolute', inset: 0,
-                        backgroundImage: `url(${meet.img})`,
-                        backgroundSize: 'cover', backgroundPosition: 'center',
-                      }} />
-                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 60%, transparent 100%)' }} />
-
-                      <div style={{ position: 'relative', zIndex: 1, padding: '24px' }}>
-                        <span style={{
-                          background: badgeColor,
-                          color: '#FFFFFF',
-                          borderRadius: '8px',
-                          padding: '4px 12px',
-                          fontSize: '0.75rem',
-                          fontWeight: 800,
-                          letterSpacing: '0.04em',
-                          marginBottom: '12px',
-                          display: 'inline-block',
-                        }}>{statusName}</span>
-
-                        <h3 style={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 900, marginBottom: '8px', lineHeight: 1.3 }}>
-                          {language === 'en' ? meet.title : meet.amharic || meet.title}
-                        </h3>
-
-                        <div className="meet-card-extra">
-                          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
-                              <MapPin size={14} /> {meet.venue}
-                            </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
-                              <Calendar size={14} /> {meet.dateString}
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(8px)', color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '8px' }}>
-                              📍 {meet.region}
-                            </span>
-
-                            <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              {language === 'en' ? 'View Details' : 'ዝርዝር'} <ChevronRight size={16} />
-                            </span>
-                          </div>
-                        </div>
-
-                        <button
-                          className="meet-card-toggle-btn"
-                          onClick={(e) => { e.stopPropagation(); toggleMeetCard(cardKey); }}
-                          style={{
-                            marginTop: '14px',
-                            background: 'rgba(255, 255, 255, 0.16)',
-                            backdropFilter: 'blur(8px)',
-                            WebkitBackdropFilter: 'blur(8px)',
-                            border: '1px solid rgba(255, 255, 255, 0.4)',
-                            color: '#FFFFFF',
-                            fontWeight: 800,
-                            fontSize: '0.78rem',
-                            padding: '8px 16px',
-                            borderRadius: '999px',
-                            cursor: 'pointer',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
-                        >
-                          {isCardExpanded ? loc.seeLess : loc.seeMore}
-                          {isCardExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* VIEW MORE COMPETITIONS BUTTON */}
-            {publicSubPage === 'HOME' && (
-              <div style={{ marginTop: '36px', textAlign: 'center' }}>
-                <button
-                  className="btn-accent"
+                  onClick={() => {
+                    if (!showAllComps) {
+                      setShowAllComps(true);
+                      setCompPage(0);
+                      setTimeout(() => {
+                        const gridEl = document.getElementById('competition-grid');
+                        if (gridEl) {
+                          const y = gridEl.getBoundingClientRect().top + window.scrollY - 100;
+                          window.scrollTo({ top: y, behavior: 'smooth' });
+                        }
+                      }, 100);
+                    } else {
+                      const el = document.getElementById('competitions');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      setShowAllComps(false);
+                      setCompPage(0);
+                    }
+                  }}
                   style={{
-                    padding: '14px 36px',
-                    borderRadius: '14px',
-                    fontSize: '0.98rem',
-                    fontWeight: 800,
-                    background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
-                    color: '#FFF',
-                    boxShadow: '0 8px 24px rgba(2, 132, 199, 0.25)',
+                    background: 'var(--primary)',
+                    color: '#FFFFFF',
                     border: 'none',
+                    borderRadius: '12px',
+                    padding: '10px 18px',
+                    fontSize: '0.88rem',
+                    fontWeight: 700,
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '6px',
+                    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
+                    transition: 'all 0.2s'
                   }}
-                  onClick={() => onChangePublicSubPage('COMPETITIONS')}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
                 >
-                  <Trophy size={18} />
-                  View All Ethiopian Competitions ({ENRICHED_MEETS.length}) →
+                  {language === 'en' ? (showAllComps ? 'View Less' : 'View All Competitions') : (showAllComps ? 'ያነሰ ይመልከቱ' : 'ሁሉንም ውድድሮች ይመልከቱ')} <ChevronRight size={16} />
                 </button>
+
+                {!showAllComps && sortedMeets.length > CARDS_PER_PAGE && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <button
+                      onClick={() => handleCompPage('left', sortedMeets.length)}
+                      disabled={compPage === 0}
+                      style={{
+                        width: '40px', height: '40px', borderRadius: '50%',
+                        background: compPage === 0 ? '#F1F5F9' : '#FFFFFF',
+                        border: '1px solid #CBD5E1',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: compPage === 0 ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                        opacity: compPage === 0 ? 0.45 : 1,
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      <ChevronLeft size={20} color="#0F172A" />
+                    </button>
+                    <button
+                      onClick={() => handleCompPage('right', sortedMeets.length)}
+                      disabled={compPage >= Math.ceil(sortedMeets.length / CARDS_PER_PAGE) - 1}
+                      style={{
+                        width: '40px', height: '40px', borderRadius: '50%',
+                        background: compPage >= Math.ceil(sortedMeets.length / CARDS_PER_PAGE) - 1 ? '#F1F5F9' : 'var(--primary)',
+                        border: '1px solid var(--primary)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: compPage >= Math.ceil(sortedMeets.length / CARDS_PER_PAGE) - 1 ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 2px 8px rgba(1,64,167,0.2)',
+                        opacity: compPage >= Math.ceil(sortedMeets.length / CARDS_PER_PAGE) - 1 ? 0.45 : 1,
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      <ChevronRight size={20} color={compPage >= Math.ceil(sortedMeets.length / CARDS_PER_PAGE) - 1 ? '#0F172A' : '#FFFFFF'} />
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+
+            {/* EMBEDDED SEARCH & FILTER WIDGET INSIDE COMPETITIONS HUB */}
+            <div
+              style={{
+                background: t.surface,
+                border: '1px solid ' + t.border,
+                borderRadius: '20px',
+                boxShadow: '0 12px 32px rgba(15, 23, 42, 0.06)',
+                padding: '24px',
+                marginBottom: '28px',
+                color: t.text,
+              }}
+            >
+              {/* Free-text Search */}
+              <div style={{ position: 'relative', marginBottom: '16px' }}>
+                <Search
+                  size={20}
+                  style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }}
+                />
+                <input
+                  type="text"
+                  value={searchText}
+                  onChange={e => setSearchText(e.target.value)}
+                  placeholder={loc.searchPlaceholder}
+                  style={{
+                    width: '100%',
+                    background: t.inputBg,
+                    border: '1px solid ' + t.borderSubtle,
+                    borderRadius: '14px',
+                    padding: '14px 14px 14px 48px',
+                    color: t.text,
+                    fontSize: '0.98rem',
+                    fontWeight: 600,
+                    outline: 'none',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onFocus={e => e.target.style.borderColor = 'var(--primary)'}
+                  onBlur={e => e.target.style.borderColor = '#CBD5E1'}
+                />
+              </div>
+
+              {/* Filter Widgets Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '14px', alignItems: 'flex-end' }}>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>{loc.regionLabel}</label>
+                  <select
+                    className="form-select"
+                    value={regionFilter}
+                    onChange={e => setRegionFilter(e.target.value)}
+                    style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
+                  >
+                    <option value="ALL">{language === 'en' ? 'All Regions' : 'ሁሉም ክልሎች'}</option>
+                    <option value="Addis Ababa">Addis Ababa</option>
+                    <option value="Oromia">Oromia</option>
+                    <option value="Amhara">Amhara</option>
+                    <option value="Sidama">Sidama</option>
+                    <option value="Tigray">Tigray</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>{loc.statusLabel}</label>
+                  <select
+                    className="form-select"
+                    value={statusFilter}
+                    onChange={e => setStatusFilter(e.target.value)}
+                    style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
+                  >
+                    <option value="ALL">{loc.all}</option>
+                    <option value="REGISTRATION_OPEN">{loc.regOpen}</option>
+                    <option value="REGISTRATION_CLOSED">{loc.regClosed}</option>
+                    <option value="LIVE">{loc.live}</option>
+                    <option value="UPCOMING">{loc.upcoming}</option>
+                  </select>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>{loc.startDateLabel}</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', width: '100%', padding: '10px 12px' }}
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>{loc.endDateLabel}</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={e => setEndDate(e.target.value)}
+                    style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', width: '100%', padding: '10px 12px' }}
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>{loc.sortLabel}</label>
+                  <select
+                    className="form-select"
+                    value={sortByDate}
+                    onChange={e => setSortByDate(e.target.value)}
+                    style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
+                  >
+                    <option value="UPCOMING_FIRST">{loc.sortUpcoming}</option>
+                    <option value="OLDEST_FIRST">{loc.sortOldest}</option>
+                  </select>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Paginated Competition Cards — 3 per page */}
+            {sortedMeets.length === 0 ? (
+              <div style={{ background: t.surface, border: '1px solid ' + t.border, borderRadius: '20px', padding: '48px', textAlign: 'center', color: t.textMuted }}>
+                <Trophy size={48} style={{ opacity: 0.2, marginBottom: '12px' }} />
+                <h4 style={{ fontWeight: 800 }}>{language === 'en' ? 'No Competitions Found' : 'ምንም ውድድሮች አልተገኙም'}</h4>
+              </div>
+            ) : (() => {
+              const totalPages = Math.ceil(sortedMeets.length / CARDS_PER_PAGE);
+              const safePage = Math.min(compPage, totalPages - 1);
+              const visibleMeets = showAllComps ? sortedMeets : sortedMeets.slice(safePage * CARDS_PER_PAGE, safePage * CARDS_PER_PAGE + CARDS_PER_PAGE);
+              return (
+                <div>
+                  <div id="competition-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', paddingBottom: '16px' }}>
+                    {visibleMeets.map((meet, index) => {
+                      const badgeColor = meet.status === 'REGISTRATION_OPEN' ? 'var(--primary)' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
+                      const statusName = meet.status === 'REGISTRATION_OPEN' ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
+                      return (
+                        <motion.div
+                          key={showAllComps ? `all-${meet.id}` : `page-${meet.id}`}
+                          initial={{ opacity: 0, y: 35, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          whileHover={{ y: -8 }}
+                          transition={{ duration: 0.45, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                          onClick={() => setSelectedMeetId(meet.id)}
+                          style={{
+                            position: 'relative',
+                            borderRadius: '24px',
+                            overflow: 'hidden',
+                            minHeight: '340px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'flex-end',
+                            cursor: 'pointer',
+                            boxShadow: '0 16px 36px -10px rgba(15, 23, 42, 0.25)',
+                            border: '1px solid rgba(226, 232, 240, 0.8)'
+                          }}
+                        >
+                          <motion.div
+                            whileHover={{ scale: 1.08 }}
+                            transition={{ duration: 0.6 }}
+                            style={{ position: 'absolute', inset: 0, backgroundImage: `url(${meet.img})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                          />
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 60%, transparent 100%)' }} />
+                          <div style={{ position: 'relative', zIndex: 1, padding: '24px' }}>
+                            <span style={{ background: badgeColor, color: '#FFFFFF', borderRadius: '8px', padding: '4px 12px', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.04em', marginBottom: '12px', display: 'inline-block' }}>
+                              {statusName}
+                            </span>
+                            <h3 style={{ color: '#FFFFFF', fontSize: '1.15rem', fontWeight: 900, marginBottom: '8px', lineHeight: 1.3 }}>
+                              {language === 'en' ? meet.title : meet.amharic || meet.title}
+                            </h3>
+                            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
+                                <MapPin size={14} /> {meet.venue}
+                              </span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
+                                <Calendar size={14} /> {meet.dateString}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '8px' }}>
+                                📍 {meet.region}
+                              </span>
+                              <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                {language === 'en' ? 'View Details' : 'ዝርዝር'} <ChevronRight size={16} />
+                              </span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Page indicator dots */}
+                  {!showAllComps && totalPages > 1 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
+                      {Array.from({ length: totalPages }).map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCompPage(i)}
+                          style={{
+                            width: i === safePage ? '24px' : '8px',
+                            height: '8px',
+                            borderRadius: '4px',
+                            border: 'none',
+                            background: i === safePage ? 'var(--primary)' : '#CBD5E1',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            padding: 0
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+
           </div>
         </section>
       )}
 
       {/* ── 4. FEATURED ATHLETES SPOTLIGHT (PLACED ABOVE NEWS SECTION AS REQUESTED!) ── */}
       {(publicSubPage === "HOME" || publicSubPage === "ATHLETES") && (
-        <section id="athletes" className="landing-section" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+        <section id="athletes" style={{ background: t.bg, padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: '16px' }}>
               <div>
-                <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>{loc.athletesTitle}</h2>
-                <p style={{ color: '#0EA5E9', fontWeight: 700, marginTop: '4px' }}>
+                <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text }}>{loc.athletesTitle}</h2>
+                <p style={{ color: 'var(--primary)', fontWeight: 700, marginTop: '4px' }}>
                   Click on any athlete card to view full  competition profile details
                 </p>
               </div>
@@ -876,11 +933,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               {[...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => (
                 <div
                   key={`${athlete.id}-${idx}`}
-                  className="hover-lift landing-scroll-card"
+                  className="hover-lift"
                   onClick={() => setSelectedAthleteModal(athlete)}
                   style={{
                     position: 'relative',
-                    minWidth: 'min(100%, 380px)',
+                    minWidth: '380px',
                     maxWidth: '400px',
                     minHeight: '440px',
                     flexShrink: 0,
@@ -952,12 +1009,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           <div style={{
             background: '#0F172A', color: '#FFF', height: 44,
             display: 'flex', alignItems: 'center', overflow: 'hidden',
-            borderTop: '2px solid #0EA5E9', borderBottom: '2px solid #0EA5E9',
+            borderTop: '2px solid var(--primary)', borderBottom: '2px solid var(--primary)',
           }}>
             <div style={{
               flexShrink: 0, padding: '0 20px',
               display: 'flex', alignItems: 'center', gap: 8,
-              background: '#0EA5E9', color: '#FFF', height: '100%',
+              background: 'var(--primary)', color: '#FFF', height: '100%',
               fontSize: '0.78rem', fontWeight: 900, letterSpacing: '0.06em',
               whiteSpace: 'nowrap', zIndex: 1,
             }}>
@@ -988,68 +1045,72 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           </div>
 
           {/* Latest News Section */}
-          <section id="news" className="landing-section" style={{ background: '#F8FAFC', padding: '60px 24px' }}>
+          <section id="news" style={{ background: t.bgAlt, padding: '60px 24px' }}>
             <div style={{ maxWidth: 1240, margin: '0 auto' }}>
               <div style={{ marginBottom: 32 }}>
-                <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>{loc.newsTitle}</h2>
-                <p style={{ color: '#0EA5E9', fontWeight: 700, marginTop: '4px' }}>
+                <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text }}>{loc.newsTitle}</h2>
+                <p style={{ color: 'var(--primary)', fontWeight: 700, marginTop: '4px' }}>
                   Official federation announcements, marathon victories & national team updates
                 </p>
               </div>
 
               <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                {/* Featured Main News */}
+                {/* Featured Main News — driven by selectedNews state */}
                 <div style={{
                   flex: '1.5 1 340px',
-                  backgroundImage: `url(${NEWS[0].img})`,
+                  backgroundImage: `url(${selectedNews.img})`,
                   backgroundSize: 'cover', backgroundPosition: 'center',
                   minHeight: 420, borderRadius: 24, overflow: 'hidden',
                   position: 'relative', display: 'flex', flexDirection: 'column',
                   justifyContent: 'flex-end', cursor: 'pointer',
-                  boxShadow: '0 12px 32px rgba(15, 23, 42, 0.1)'
+                  boxShadow: '0 12px 32px rgba(15, 23, 42, 0.1)',
+                  transition: 'all 0.35s ease',
                 }}>
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 55%, transparent 100%)' }} />
                   <div style={{ position: 'relative', zIndex: 1, padding: 32 }}>
                     <span style={{
-                      background: '#0EA5E9', color: '#FFF',
+                      background: 'var(--primary)', color: '#FFF',
                       borderRadius: 8, padding: '4px 12px',
                       fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.06em',
                       marginBottom: 12, display: 'inline-block',
-                    }}>LATEST ANNOUNCEMENT</span>
-                    <div style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: 8, fontWeight: 600 }}>{NEWS[0].date}</div>
+                    }}>{selectedNews.tag || 'LATEST ANNOUNCEMENT'}</span>
+                    <div style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: 8, fontWeight: 600 }}>{selectedNews.date}</div>
                     <h3 style={{ color: '#FFFFFF', fontSize: '1.6rem', fontWeight: 900, marginBottom: 12, lineHeight: 1.3 }}>
-                      {NEWS[0].title}
+                      {selectedNews.title}
                     </h3>
-                    <p style={{ color: '#CBD5E1', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: 16 }}>
-                      {NEWS[0].summary}
-                    </p>
+                    {selectedNews.summary && (
+                      <p style={{ color: '#CBD5E1', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: 16 }}>
+                        {selectedNews.summary}
+                      </p>
+                    )}
                     <span style={{ color: '#38BDF8', fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       {language === 'en' ? 'Read Full Article →' : 'ተጨማሪ ያንብቡ →'}
                     </span>
                   </div>
                 </div>
 
-                {/* Side Stack News Items */}
+                {/* Side Stack — all items except the currently featured one */}
                 <div style={{ flex: '1 1 280px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {NEWS.slice(1).map(item => {
+                  {NEWS.filter(item => item.id !== selectedNews.id).map(item => {
                     const tc = TAG_COLORS[item.tag] || { bg: '#F1F5F9', color: '#475569' };
                     return (
                       <div
                         key={item.id}
+                        onClick={() => setSelectedNews(item)}
                         style={{
-                          display: 'flex', background: '#FFFFFF', borderRadius: 16,
-                          overflow: 'hidden', border: '1px solid #E2E8F0', cursor: 'pointer',
+                          display: 'flex', background: t.surface, borderRadius: 16,
+                          overflow: 'hidden', border: '1px solid ' + t.border, cursor: 'pointer',
                           boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
                           transition: 'all 0.2s',
                         }}
-                        onMouseEnter={e => e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)'}
-                        onMouseLeave={e => e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'}
+                        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(1,64,167,0.12)'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
                       >
                         <img src={item.img} alt={item.title}
                           style={{ width: 90, height: 80, objectFit: 'cover', flexShrink: 0 }} />
                         <div style={{ padding: '10px 14px', flex: 1, minWidth: 0 }}>
-                          <div style={{ color: '#64748B', fontSize: '0.75rem', marginBottom: 4, fontWeight: 600 }}>{item.date}</div>
-                          <div style={{ fontWeight: 800, fontSize: '0.88rem', lineHeight: 1.35, marginBottom: 6, color: '#0F172A' }}>
+                          <div style={{ color: t.textMuted, fontSize: '0.75rem', marginBottom: 4, fontWeight: 600 }}>{item.date}</div>
+                          <div style={{ fontWeight: 800, fontSize: '0.88rem', lineHeight: 1.35, marginBottom: 6, color: t.text }}>
                             {item.title}
                           </div>
                           <span style={{
@@ -1070,16 +1131,16 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 6. ABOUT & FEDERATION GOVERNANCE ── */}
       {publicSubPage === 'HOME' && (
-        <section id="about" className="landing-section" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+        <section id="about" style={{ background: t.bg, padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
           <div style={{ maxWidth: 1240, margin: '0 auto', display: 'flex', gap: 48, flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 360px' }}>
-              <h2 style={{ color: '#0F172A', fontSize: '2rem', fontWeight: 900, marginBottom: 12 }}>
+              <h2 style={{ color: t.text, fontSize: '2rem', fontWeight: 900, marginBottom: 12 }}>
                 {loc.aboutTitle}
               </h2>
-              <p style={{ color: '#334155', lineHeight: 1.8, marginBottom: 18, fontSize: '0.98rem' }}>
+              <p style={{ color: t.textSub, lineHeight: 1.8, marginBottom: 18, fontSize: '0.98rem' }}>
                 The Ethiopian Athletics Federation (EAF) is the national governing body for athletics in Ethiopia, officially recognized by World Athletics (WA) and a member of the African Athletics Confederation (AAC). Founded in 1964, EAF governs all track and field, road, cross-country, and marathon events in Ethiopia.
               </p>
-              <p style={{ color: '#475569', lineHeight: 1.8, marginBottom: 28, fontSize: '0.92rem' }}>
+              <p style={{ color: t.textSub, lineHeight: 1.8, marginBottom: 28, fontSize: '0.92rem' }}>
                 EAF oversees the licensing of athletes and clubs through Fayda digital IDs, organizes national championships, selects national teams for international competitions, and develops grassroots talent across all Ethiopian regional states.
               </p>
               <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
@@ -1090,42 +1151,104 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   { label: 'African Athletics', value: 'Member ✓' },
                 ].map(s => (
                   <div key={s.label} style={{
-                    background: '#F8FAFC', borderRadius: 14,
+                    background: t.bgAlt, borderRadius: 14,
                     padding: '16px 18px', textAlign: 'center',
-                    border: '1px solid #E2E8F0',
-                    borderTop: '3px solid #0EA5E9',
+                    border: '1px solid ' + t.border,
+                    borderTop: '3px solid var(--primary)',
                   }}>
-                    <div style={{ color: '#0F172A', fontSize: '1.1rem', fontWeight: 900 }}>{s.value}</div>
-                    <div style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 700, marginTop: 4 }}>{s.label}</div>
+                    <div style={{ color: t.text, fontSize: '1.1rem', fontWeight: 900 }}>{s.value}</div>
+                    <div style={{ color: t.textMuted, fontSize: '0.78rem', fontWeight: 700, marginTop: 4 }}>{s.label}</div>
                   </div>
                 ))}
               </div>
             </div>
 
             <div style={{ flex: '1 1 320px' }}>
-              <h3 style={{ color: '#0F172A', fontSize: '1.4rem', fontWeight: 900, marginBottom: 24 }}>
+              <h3 style={{ color: t.text, fontSize: '1.4rem', fontWeight: 900, marginBottom: 24 }}>
                 {loc.structureTitle}
               </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {STRUCTURE_ITEMS.map(item => (
-                  <div key={item.title}
-                    style={{
-                      background: '#F8FAFC', border: '1px solid #E2E8F0',
-                      borderRadius: 16, padding: '18px 20px',
-                      display: 'flex', alignItems: 'center', gap: 16,
-                      cursor: 'pointer', transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#F0F9FF'; e.currentTarget.style.borderColor = '#0EA5E9'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
-                  >
-                    {item.icon}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: '#0F172A', fontWeight: 800, fontSize: '0.98rem' }}>{item.title}</div>
-                      <div style={{ color: '#0EA5E9', fontSize: '0.8rem', marginTop: 2, fontWeight: 700 }}>{item.amharic}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {STRUCTURE_ITEMS.map(item => {
+                  const isActive = activeStructure?.title === item.title;
+                  return (
+                    <div key={item.title}>
+                      {/* Header row */}
+                      <div
+                        onClick={() => setActiveStructure(isActive ? null : item)}
+                        style={{
+                          background: isActive 
+                            ? (darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)') 
+                            : t.bgAlt,
+                          border: isActive ? '1px solid var(--primary)' : '1px solid ' + t.border,
+                          borderRadius: isActive ? '14px 14px 0 0' : 14,
+                          padding: '18px 20px',
+                          display: 'flex', alignItems: 'center', gap: 16,
+                          cursor: 'pointer', transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => { 
+                          if (!isActive) { 
+                            e.currentTarget.style.background = darkMode ? 'rgba(14, 165, 233, 0.1)' : '#F0F9FF'; 
+                            e.currentTarget.style.borderColor = 'var(--primary)'; 
+                          } 
+                        }}
+                        onMouseLeave={e => { 
+                          if (!isActive) { 
+                            e.currentTarget.style.background = t.bgAlt; 
+                            e.currentTarget.style.borderColor = t.border; 
+                          } 
+                        }}
+                      >
+                        {item.icon}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ color: t.text, fontWeight: 800, fontSize: '0.98rem' }}>{item.title}</div>
+                          <div style={{ color: 'var(--primary)', fontSize: '0.8rem', marginTop: 2, fontWeight: 700 }}>{item.amharic}</div>
+                        </div>
+                        <ChevronRight
+                          size={18}
+                          color={isActive ? 'var(--primary)' : '#94A3B8'}
+                          style={{ transform: isActive ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', flexShrink: 0 }}
+                        />
+                      </div>
+
+                      {/* Expanded detail panel */}
+                      {isActive && (
+                        <div style={{
+                          background: t.surface,
+                          border: '1px solid var(--primary)',
+                          borderTop: 'none',
+                          borderRadius: '0 0 14px 14px',
+                          padding: '18px 22px 20px',
+                        }}>
+                          <p style={{ color: t.textSub, fontSize: '0.88rem', lineHeight: 1.75, marginBottom: 14 }}>
+                            {item.description}
+                          </p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                              <span style={{ 
+                                background: darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)', 
+                                color: darkMode ? '#38BDF8' : 'var(--primary)', 
+                                borderRadius: 6, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 
+                              }}>
+                                Members
+                              </span>
+                              <span style={{ color: t.textSub, fontSize: '0.85rem', fontWeight: 600 }}>{item.members}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                              <span style={{ 
+                                background: darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)', 
+                                color: darkMode ? '#38BDF8' : 'var(--primary)', 
+                                borderRadius: 6, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 
+                              }}>
+                                Meets
+                              </span>
+                              <span style={{ color: t.textSub, fontSize: '0.85rem', fontWeight: 600 }}>{item.meets}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <ChevronRight size={18} color="#94A3B8" />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1134,12 +1257,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 7. SPONSORS & PARTNERS (IN ORIGINAL OWN COLOR & INFINITE HORIZONTAL MARQUEE SCROLL) ── */}
       {publicSubPage === 'HOME' && (
-        <section style={{ background: '#F8FAFC', padding: '56px 24px', textAlign: 'center', borderTop: '1px solid #E2E8F0', overflow: 'hidden' }}>
+        <section style={{ background: t.bgAlt, padding: '56px 24px', textAlign: 'center', borderTop: '1px solid ' + t.border, overflow: 'hidden' }}>
           <div style={{ maxWidth: 1240, margin: '0 auto', marginBottom: 28 }}>
-            <h3 style={{ color: '#0F172A', fontWeight: 900, fontSize: '1.1rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            <h3 style={{ color: t.text, fontWeight: 900, fontSize: '1.1rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
               {loc.partnersTitle}
             </h3>
-            <p style={{ color: '#64748B', fontSize: '0.88rem', marginTop: 4 }}>Supporting Ethiopian athletics excellence across global arenas</p>
+            <p style={{ color: t.textMuted, fontSize: '0.88rem', marginTop: 4 }}>Supporting Ethiopian athletics excellence across global arenas</p>
           </div>
 
           <style>{`
@@ -1173,7 +1296,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 { src: '/images/Cocacola-logo.jpg', alt: 'Coca-Cola 2', h: 52 },
                 { src: '/images/OROMIA-1024x279.jpg', alt: 'Oromia Bank 2', h: 46 },
               ].map((s, idx) => (
-                <div key={idx} style={{ background: '#FFFFFF', padding: '12px 28px', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div key={idx} style={{ background: t.surface, padding: '12px 28px', borderRadius: '16px', border: '1px solid ' + t.border, boxShadow: '0 4px 12px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', filter: darkMode ? 'brightness(0.9) contrast(1.1)' : 'none' }}>
                   <img
                     src={s.src}
                     alt={s.alt}
@@ -1195,80 +1318,89 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 8. MEDIA & PHOTO/VIDEO GALLERY COLLECTION (RENDERED ON HOME & MEDIA PAGES) ── */}
       {(publicSubPage === 'HOME' || publicSubPage === 'MEDIA') && (
-        <section id="media" className="landing-section" style={{ padding: '60px 24px', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+        <section id="media" style={{ padding: '60px 24px', background: t.bgAlt, borderTop: '1px solid ' + t.border }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#E0F2FE', color: '#0284C7', padding: '6px 16px', borderRadius: '30px', fontWeight: 800, fontSize: '0.82rem', marginBottom: '12px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#E0F2FE', color: 'var(--primary-dark)', padding: '6px 16px', borderRadius: '30px', fontWeight: 800, fontSize: '0.82rem', marginBottom: '12px' }}>
                 <Image size={16} /> EAF OFFICIAL MEDIA COLLECTION
               </div>
-              <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0F172A' }}>High-Resolution Photo &amp; Video Gallery</h2>
-              <p style={{ color: '#64748B', marginTop: '8px', fontSize: '1rem', maxWidth: '600px', margin: '8px auto 0' }}>
+              <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: t.text }}>High-Resolution Photo &amp; Video Gallery</h2>
+              <p style={{ color: t.textMuted, marginTop: '8px', fontSize: '1rem', maxWidth: '600px', margin: '8px auto 0' }}>
                 Explore historic championship moments, marathon victories, send-off ceremonies, and athlete training sessions
               </p>
             </div>
 
-            {/* Asymmetric Dense Mosaic Grid Layout Collection */}
-            <div className="media-grid" style={{
+            {/* Clean Uniform Modern Card Grid Layout */}
+            <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gridAutoRows: '240px',
-              gridAutoFlow: 'dense',
-              gap: '20px'
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '24px'
             }}>
-              {visibleGalleryImages.map((item, idx) => {
-                const isHero = idx === 0;
-                const isTall = idx === 1 || idx === 6;
-                const isWide = idx === 3 || idx === 8;
+              {GALLERY_IMAGES.map((item, idx) => {
                 return (
-                  <div
+                  <motion.div
                     key={item.id}
-                    className="hover-lift media-grid-card"
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    whileHover={{ y: -6 }}
+                    transition={{ duration: 0.4, delay: (idx % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                    className="media-grid-card"
                     onClick={() => setActiveLightboxImg(item)}
                     style={{
-                      position: 'relative',
-                      borderRadius: '24px',
+                      background: t.surface,
+                      borderRadius: '16px',
                       overflow: 'hidden',
-                      gridColumn: isHero ? 'span 2' : isWide ? 'span 2' : 'span 1',
-                      gridRow: isHero ? 'span 2' : isTall ? 'span 2' : 'span 1',
+                      border: '1px solid ' + t.border,
+                      boxShadow: '0 4px 20px -4px rgba(15, 23, 42, 0.06)',
                       cursor: 'pointer',
-                      boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
-                      border: '1px solid #E2E8F0',
-                      minHeight: isTall || isHero ? '480px' : '240px'
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all 0.3s ease'
                     }}
                   >
-                    <img
-                      src={item.img}
-                      alt={item.title}
-                      className="media-card-img"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.2) 60%, transparent 100%)' }} />
-
-                    {/* Top Badges */}
-                    <div style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ background: '#0EA5E9', color: '#FFF', padding: '4px 12px', borderRadius: '14px', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
-                        {item.category}
-                      </span>
-                      {item.type === 'VIDEO' ? (
-                        <span style={{ background: 'rgba(239, 68, 68, 0.9)', color: '#FFF', padding: '4px 10px', borderRadius: '14px', fontSize: '0.7rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          🎥 HD Video
+                    {/* Image Box */}
+                    <div style={{ position: 'relative', height: '220px', width: '100%', overflow: 'hidden', background: '#0F172A' }}>
+                      <motion.img
+                        src={item.img}
+                        alt={item.title}
+                        whileHover={{ scale: 1.08 }}
+                        transition={{ duration: 0.5 }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      {/* Top Badges */}
+                      <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: '8px', zIndex: 2 }}>
+                        <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                          {item.category}
                         </span>
-                      ) : (
-                        <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: '#FFF', padding: '4px 10px', borderRadius: '14px', fontSize: '0.7rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          📸 Photo
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Bottom Content */}
-                    <div style={{ position: 'absolute', bottom: 20, left: 20, right: 20, color: '#FFF', zIndex: 2 }}>
-                      <h4 style={{ fontSize: isHero ? '1.5rem' : '1.1rem', fontWeight: 900, lineHeight: 1.2, marginBottom: '6px' }}>{item.title}</h4>
-                      <div style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                        <span>📍 {item.location}</span>
-                        <span>🗓️ {item.date}</span>
+                        {item.type === 'VIDEO' && (
+                          <span style={{ background: '#EF4444', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Play size={12} fill="#FFF" /> HD Video
+                          </span>
+                        )}
                       </div>
                     </div>
-                  </div>
+
+                    {/* Content Below Image */}
+                    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between' }}>
+                      <div>
+                        <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: t.text, lineHeight: 1.4, marginBottom: '10px' }}>
+                          {item.title}
+                        </h4>
+                        <div style={{ fontSize: '0.82rem', color: t.textMuted, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontWeight: 600 }}>
+                          <span>📍 {item.location}</span>
+                          <span>•</span>
+                          <span>🗓️ {item.date}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid ' + t.border, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          {item.type === 'VIDEO' ? (language === 'en' ? 'Watch Video' : 'ቪዲዮ ይመልከቱ') : (language === 'en' ? 'View Photo' : 'ፎቶ ይመልከቱ')} <ChevronRight size={14} />
+                        </span>
+                      </div>
+                    </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -1303,11 +1435,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       )}
 
       {/* ── 8.5 FAQ SECTION ── */}
-      <section className="landing-section" style={{ background: '#FFFFFF', padding: '60px 24px', borderTop: '1px solid #E2E8F0' }}>
+      <section style={{ background: t.bg, padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: '#0F172A' }}>Frequently Asked Questions</h2>
-            <p style={{ color: '#64748B', marginTop: '8px', fontSize: '1rem' }}>Find answers about registration, Fayda IDs, and club licensing.</p>
+            <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: t.text }}>Frequently Asked Questions</h2>
+            <p style={{ color: t.textMuted, marginTop: '8px', fontSize: '1rem' }}>Find answers about registration, Fayda IDs, and club licensing.</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {[
@@ -1315,19 +1447,19 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               { q: 'Can I register a new club online?', a: 'Yes. Switch to the Club Admin role and follow the club registration workflow. You will need your official club details and manager information.' },
               { q: 'When are the results updated?', a: 'Results for live competitions are updated in real-time by the technical committee directly from the venue.' }
             ].map((faq, idx) => (
-              <div key={idx} style={{ border: '1px solid #E2E8F0', borderRadius: '16px', background: '#F8FAFC', overflow: 'hidden' }}>
+              <div key={idx} style={{ border: '1px solid ' + t.border, borderRadius: '16px', background: t.bgAlt, overflow: 'hidden' }}>
                 <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  style={{ width: '100%', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 800, color: '#0F172A', fontSize: '1.05rem' }}
+                  style={{ width: '100%', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: 500, color: t.text, fontSize: '1.02rem' }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <HelpCircle size={20} color="#0EA5E9" />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 500 }}>
+                    <HelpCircle size={20} color="var(--primary)" />
                     {faq.q}
                   </span>
                   {openFaq === idx ? <Minus size={20} color="#64748B" /> : <Plus size={20} color="#64748B" />}
                 </button>
                 {openFaq === idx && (
-                  <div style={{ padding: '0 20px 20px 52px', color: '#475569', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                  <div style={{ padding: '0 20px 20px 52px', color: t.textSub, fontSize: '0.95rem', lineHeight: 1.6 }}>
                     {faq.a}
                   </div>
                 )}
@@ -1338,11 +1470,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       </section>
 
       {/* ── 8.6 CONTACT FORM SECTION ── */}
-      <section id="contact-form" className="landing-section" style={{ background: '#F0F9FF', padding: '60px 24px', borderTop: '1px solid #E0F2FE' }}>
-        <div className="contact-card" style={{ maxWidth: 800, margin: '0 auto', background: '#FFFFFF', padding: '40px', borderRadius: '24px', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.05)', border: '1px solid #E2E8F0' }}>
+      <section id="contact-form" style={{ background: darkMode ? '#0D1117' : '#F0F9FF', padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', background: t.surface, padding: '40px', borderRadius: '24px', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.05)', border: '1px solid ' + t.border }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: 900, color: '#0F172A' }}>Contact the Federation</h2>
-            <p style={{ color: '#64748B', marginTop: '8px', fontSize: '1rem' }}>Get in touch with EAF licensing, event directors or media team.</p>
+            <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text }}>Contact the Federation</h2>
+            <p style={{ color: t.textMuted, marginTop: '8px', fontSize: '1rem' }}>Get in touch with EAF licensing, event directors or media team.</p>
           </div>
 
           {contactSuccess ? (
@@ -1351,14 +1483,14 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </div>
           ) : (
             <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <input
                   type="text"
                   placeholder="Your Full Name"
                   value={contactForm.name}
                   onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
                   required
-                  style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem' }}
+                  style={{ padding: '14px', borderRadius: '12px', border: '1px solid ' + t.borderSubtle, fontSize: '0.95rem', background: t.inputBg, color: t.text }}
                 />
                 <input
                   type="email"
@@ -1366,7 +1498,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   value={contactForm.email}
                   onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
                   required
-                  style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem' }}
+                  style={{ padding: '14px', borderRadius: '12px', border: '1px solid ' + t.borderSubtle, fontSize: '0.95rem', background: t.inputBg, color: t.text }}
                 />
               </div>
               <input
@@ -1375,7 +1507,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 value={contactForm.subject}
                 onChange={e => setContactForm({ ...contactForm, subject: e.target.value })}
                 required
-                style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem' }}
+                style={{ padding: '14px', borderRadius: '12px', border: '1px solid ' + t.borderSubtle, fontSize: '0.95rem', background: t.inputBg, color: t.text }}
               />
               <textarea
                 placeholder="Message Details..."
@@ -1383,11 +1515,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 value={contactForm.message}
                 onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
                 required
-                style={{ padding: '14px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '0.95rem', resize: 'vertical' }}
+                style={{ padding: '14px', borderRadius: '12px', border: '1px solid ' + t.borderSubtle, fontSize: '0.95rem', resize: 'vertical', background: t.inputBg, color: t.text }}
               />
               <button
                 type="submit"
-                style={{ background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', fontWeight: 900, border: 'none', padding: '16px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(14, 165, 233, 0.25)' }}
+                style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', fontWeight: 900, border: 'none', padding: '16px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '1rem', boxShadow: '0 8px 24px rgba(14, 165, 233, 0.25)' }}
               >
                 <Send size={18} /> Send Message
               </button>
@@ -1396,8 +1528,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         </div>
       </section>
 
-      {/* ── 9. FOOTER WITH RGB(14, 165, 233) BACKGROUND ── */}
-      <footer className="landing-footer" style={{ background: 'rgb(14, 165, 233)', color: '#FFFFFF', padding: '60px 24px 30px', borderTop: '4px solid #0284C7' }}>
+      {/* ── 9. FOOTER — AppColors.primary background ── */}
+      <footer style={{ background: 'linear-gradient(160deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFFFFF', padding: '60px 24px 30px', borderTop: '4px solid rgba(255,255,255,0.15)' }}>
         <div style={{ maxWidth: 1240, margin: '0 auto' }}>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 40, marginBottom: 48 }}>
@@ -1518,7 +1650,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 <img
                   src={selectedAthleteModal.img}
                   alt={selectedAthleteModal.name}
-                  style={{ width: '100px', height: '100px', borderRadius: '20px', objectFit: 'cover', border: '3px solid #0EA5E9', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }}
+                  style={{ width: '100px', height: '100px', borderRadius: '20px', objectFit: 'cover', border: '3px solid var(--primary)', boxShadow: '0 6px 16px rgba(0,0,0,0.15)' }}
                 />
                 <div>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#DCFCE7', color: '#15803D', padding: '3px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
@@ -1527,7 +1659,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F172A', lineHeight: 1.2 }}>
                     {selectedAthleteModal.name}
                   </h3>
-                  <div style={{ fontSize: '1.05rem', color: '#0EA5E9', fontWeight: 800 }}>
+                  <div style={{ fontSize: '1.05rem', color: 'var(--primary)', fontWeight: 800 }}>
                     {selectedAthleteModal.amharicName}
                   </div>
                 </div>
@@ -1538,11 +1670,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </div>
 
             {/* Athlete Bio & Stats Table */}
-            <div className="table-responsive" style={{ background: '#F8FAFC', padding: '20px', borderRadius: '18px', marginBottom: '24px', border: '1px solid #E2E8F0' }}>
+            <div style={{ background: t.bgAlt, padding: '20px', borderRadius: '18px', marginBottom: '24px', border: '1px solid ' + t.border, overflowX: 'auto' }}>
               <table className="gov-table" style={{ margin: 0 }}>
                 <tbody>
                   <tr><td style={{ width: '40%', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Primary Event</td><td style={{ fontWeight: 800, color: '#0F172A' }}>{selectedAthleteModal.event}</td></tr>
-                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Club Affiliation</td><td style={{ fontWeight: 800, color: '#0EA5E9' }}>{selectedAthleteModal.club}</td></tr>
+                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Club Affiliation</td><td style={{ fontWeight: 800, color: 'var(--primary)' }}>{selectedAthleteModal.club}</td></tr>
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Personal Best</td><td style={{ fontWeight: 800, color: '#D97706' }}>{selectedAthleteModal.pb}</td></tr>
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Age Division</td><td style={{ fontWeight: 800, color: '#15803D' }}>{selectedAthleteModal.ageTier}</td></tr>
                 </tbody>
@@ -1551,7 +1683,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
             {/* Athlete Quote */}
             {selectedAthleteModal.quote && (
-              <div style={{ background: '#F0F9FF', borderLeft: '4px solid #0EA5E9', padding: '16px 20px', borderRadius: '12px', fontStyle: 'italic', color: '#0369A1', marginBottom: '24px', fontWeight: 600 }}>
+              <div style={{ background: '#F0F9FF', borderLeft: '4px solid var(--primary)', padding: '16px 20px', borderRadius: '12px', fontStyle: 'italic', color: '#0369A1', marginBottom: '24px', fontWeight: 600 }}>
                 "{selectedAthleteModal.quote}"
               </div>
             )}
@@ -1561,7 +1693,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               <h4 style={{ fontWeight: 900, color: '#0F172A', fontSize: '1.1rem', marginBottom: '12px' }}>Career Honors & Medal Achievements</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {selectedAthleteModal.medals ? selectedAthleteModal.medals.map((m, idx) => (
-                  <div key={idx} style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', padding: '12px 16px', borderRadius: '12px', fontWeight: 800, color: '#0F172A', fontSize: '0.9rem' }}>
+                  <div key={idx} style={{ background: t.surface, border: '1px solid ' + t.border, padding: '12px 16px', borderRadius: '12px', fontWeight: 800, color: t.text, fontSize: '0.9rem' }}>
                     {m}
                   </div>
                 )) : (
@@ -1573,7 +1705,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             <button
               onClick={() => setSelectedAthleteModal(null)}
               className="btn-accent"
-              style={{ width: '100%', marginTop: '28px', padding: '14px', background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
+              style={{ width: '100%', marginTop: '28px', padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}
             >
               Close Profile View
             </button>

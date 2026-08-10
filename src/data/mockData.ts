@@ -1,7 +1,9 @@
 // EOSCRMS — Ethiopian Athletics Federation Registry
 // NOTE: name, dob are fetched from Fayda API — not entered manually
 
-export const MOCK_CLUBS = [
+import type { Club, Athlete, Transfer } from '../types';
+
+export const MOCK_CLUBS: Club[] = [
   {
     id: "CLUB-001",
     name: "Defense Athletics Club (መከላከያ ስፖርት ክለብ)",
@@ -69,59 +71,32 @@ export const MOCK_CLUBS = [
 ];
 
 // Athletes — name/dob sourced from Fayda; all other fields are sports-specific
-export const MOCK_ATHLETES = [
+export const MOCK_ATHLETES: Athlete[] = [
   {
     id: "ATH-2026-001",
-    // From Fayda API:
     name: "Haile Demisse Tadesse",
     amharicName: "ኃይሌ ደሚሴ ታደሰ",
-    dob: "2002-04-12",          // Fayda-sourced
-    gender: "Male",             // Fayda-sourced
-    ageTier: "Senior",          // Auto-calculated
-    // Sports-specific fields:
+    dob: "2002-04-12",
+    gender: "Male",
+    ageTier: "Senior",
     clubId: "CLUB-001",
-    clubName: "Defense Athletics Club",
+    club: "Defense Athletics Club",
     faydaFin: "9840-3920-1124",
     faydaStatus: "VERIFIED",
-    faydaHash: "0x8F92A7C319D04B8E12F54",
     primaryEvent: "5,000m / 10,000m",
     licenseStatus: "ACTIVE",
     licenseNumber: "EAF-LIC-2026-8891",
     licenseExpiry: "2026-12-31",
     photoUrl: "/images/runner_marathon.png",
     checkinStatus: "NOT_CHECKED_IN",
-    qrCodeData: "EACRMS:ATH-2026-001:EXP-1722165000",
-    secondaryDoc: null,
-    // Personal tracking
-    weight: 62,          // kg
-    height: 175,         // cm
-    restingHR: 42,       // bpm
-    trainingLoad: 78,    // arbitrary score
+    weight: 62,
+    height: 175,
     personalBests: [
-      { event: "5,000m",  time: "12:51.44", date: "2025-07-14", venue: "Addis Ababa GP" },
-      { event: "10,000m", time: "26:58.20", date: "2025-04-10", venue: "National Championships" },
-      { event: "3,000m",  time: "7:32.10",  date: "2025-02-08", venue: "Indoor Meeting" }
+      { event: "5,000m",  mark: "12:51.44", date: "2025-07-14", venue: "Addis Ababa GP" },
+      { event: "10,000m", mark: "26:58.20", date: "2025-04-10", venue: "National Championships" },
+      { event: "3,000m",  mark: "7:32.10",  date: "2025-02-08", venue: "Indoor Meeting" }
     ],
-    seasonBests: [
-      { event: "5,000m",  time: "12:54.10", date: "2026-06-20" },
-      { event: "10,000m", time: "27:05.00", date: "2026-05-15" }
-    ],
-    weightLog: [
-      { date: "2026-07-01", kg: 62.5 },
-      { date: "2026-07-08", kg: 62.2 },
-      { date: "2026-07-15", kg: 62.0 },
-      { date: "2026-07-22", kg: 61.8 }
-    ],
-    trainingLog: [
-      { date: "2026-07-28", type: "Long Run",    distance: 24, duration: "1h 42m", notes: "Steady aerobic pace" },
-      { date: "2026-07-25", type: "Track Work",  distance: 12, duration: "45m",    notes: "5×1000m @ race pace" },
-      { date: "2026-07-22", type: "Tempo Run",   distance: 16, duration: "58m",    notes: "Threshold effort" },
-      { date: "2026-07-19", type: "Easy Run",    distance: 10, duration: "50m",    notes: "Recovery" }
-    ],
-    achievements: [
-      { year: "2025", title: "Addis Ababa GP 5000m Gold",   time: "12:51.44" },
-      { year: "2024", title: "National Championship Silver", time: "13:01.20" }
-    ]
+    achievements: ["2025 Addis Ababa GP 5000m Gold", "2024 National Championship Silver"]
   },
   {
     id: "ATH-2026-002",
@@ -131,42 +106,22 @@ export const MOCK_ATHLETES = [
     gender: "Female",
     ageTier: "U20",
     clubId: "CLUB-001",
-    clubName: "Defense Athletics Club",
+    club: "Defense Athletics Club",
     faydaFin: "4412-8809-3321",
     faydaStatus: "VERIFIED",
-    faydaHash: "0x3A1B99C44120D8E99B7F1",
     primaryEvent: "800m / 1,500m",
     licenseStatus: "ACTIVE",
     licenseNumber: "EAF-LIC-2026-9042",
     licenseExpiry: "2026-12-31",
     photoUrl: "/images/runner_female.png",
     checkinStatus: "CALLROOM_PRESENT",
-    qrCodeData: "EACRMS:ATH-2026-002:EXP-1722165200",
-    secondaryDoc: null,
     weight: 52,
     height: 163,
-    restingHR: 46,
-    trainingLoad: 85,
     personalBests: [
-      { event: "800m",   time: "1:57.20", date: "2025-08-20", venue: "African U20 Championships" },
-      { event: "1,500m", time: "4:02.45", date: "2025-09-05", venue: "Hawassa Open" }
+      { event: "800m",   mark: "1:57.20", date: "2025-08-20", venue: "African U20 Championships" },
+      { event: "1,500m", mark: "4:02.45", date: "2025-09-05", venue: "Hawassa Open" }
     ],
-    seasonBests: [
-      { event: "800m",   time: "1:58.05", date: "2026-06-15" },
-      { event: "1,500m", time: "4:03.80", date: "2026-07-01" }
-    ],
-    weightLog: [
-      { date: "2026-07-01", kg: 52.8 },
-      { date: "2026-07-15", kg: 52.5 },
-      { date: "2026-07-22", kg: 52.2 }
-    ],
-    trainingLog: [
-      { date: "2026-07-28", type: "Speed Work", distance: 8,  duration: "38m", notes: "8×400m intervals" },
-      { date: "2026-07-24", type: "Easy Run",   distance: 10, duration: "52m", notes: "Recovery run" }
-    ],
-    achievements: [
-      { year: "2025", title: "African U20 Championship Gold", time: "1:57.20" }
-    ]
+    achievements: ["African U20 Championship Gold 2025"]
   },
   {
     id: "ATH-2026-003",
@@ -176,39 +131,19 @@ export const MOCK_ATHLETES = [
     gender: "Male",
     ageTier: "U18",
     clubId: "CLUB-001",
-    clubName: "Defense Athletics Club",
+    club: "Defense Athletics Club",
     faydaFin: "7102-4911-5582",
-    faydaStatus: "PENDING_AUDIT",
-    faydaHash: "0xPENDING_AUDIT_DOC",
+    faydaStatus: "PENDING",
     primaryEvent: "1,500m / 3,000m Steeplechase",
     licenseStatus: "EXPIRED",
     licenseNumber: "EAF-LIC-2025-4100",
     licenseExpiry: "2025-12-31",
     photoUrl: "/images/runners_training.png",
     checkinStatus: "NOT_CHECKED_IN",
-    qrCodeData: null,
-    secondaryDoc: {
-      type: "Birth Certificate & School Registry",
-      fileName: "Abel_BirthCert_SchoolDoc.pdf",
-      uploadDate: "2026-07-15",
-      status: "FEDERATION_UNDER_REVIEW"
-    },
     weight: 54,
     height: 168,
-    restingHR: 50,
-    trainingLoad: 62,
     personalBests: [
-      { event: "1,500m", time: "3:38.10", date: "2025-11-10", venue: "Addis Youth Games" }
-    ],
-    seasonBests: [
-      { event: "1,500m", time: "3:40.00", date: "2026-05-20" }
-    ],
-    weightLog: [
-      { date: "2026-07-15", kg: 54.0 },
-      { date: "2026-07-22", kg: 54.2 }
-    ],
-    trainingLog: [
-      { date: "2026-07-26", type: "Easy Run", distance: 8, duration: "42m", notes: "Base building" }
+      { event: "1,500m", mark: "3:38.10", date: "2025-11-10", venue: "Addis Youth Games" }
     ],
     achievements: []
   },
@@ -220,41 +155,22 @@ export const MOCK_ATHLETES = [
     gender: "Female",
     ageTier: "Senior",
     clubId: "CLUB-002",
-    clubName: "Oromia Police Sports Club",
+    club: "Oromia Police Sports Club",
     faydaFin: "6021-9983-4112",
     faydaStatus: "VERIFIED",
-    faydaHash: "0x11C87D949A2B4300E192B",
     primaryEvent: "10,000m / Marathon",
     licenseStatus: "ACTIVE",
     licenseNumber: "EAF-LIC-2026-1184",
     licenseExpiry: "2026-12-31",
     photoUrl: "/images/runner_female.png",
     checkinStatus: "GPS_VERIFIED",
-    qrCodeData: "EACRMS:ATH-2026-004:EXP-1722165500",
-    secondaryDoc: null,
     weight: 48,
     height: 160,
-    restingHR: 44,
-    trainingLoad: 91,
     personalBests: [
-      { event: "10,000m", time: "29:42.10", date: "2025-06-05", venue: "Ethiopian Olympic Trial" },
-      { event: "Half Marathon", time: "1:04:30", date: "2025-03-10", venue: "Hawassa Half" }
+      { event: "10,000m", mark: "29:42.10", date: "2025-06-05", venue: "Ethiopian Olympic Trial" },
+      { event: "Half Marathon", mark: "1:04:30", date: "2025-03-10", venue: "Hawassa Half" }
     ],
-    seasonBests: [
-      { event: "10,000m", time: "29:50.00", date: "2026-05-30" }
-    ],
-    weightLog: [
-      { date: "2026-07-01", kg: 48.5 },
-      { date: "2026-07-15", kg: 48.2 },
-      { date: "2026-07-22", kg: 48.0 }
-    ],
-    trainingLog: [
-      { date: "2026-07-28", type: "Long Run",  distance: 30, duration: "2h 5m",  notes: "Marathon prep" },
-      { date: "2026-07-25", type: "Tempo Run", distance: 18, duration: "1h 05m", notes: "LT effort" }
-    ],
-    achievements: [
-      { year: "2025", title: "Ethiopian Olympic Trial Champion", time: "29:42.10" }
-    ]
+    achievements: ["2025 Ethiopian Olympic Trial Champion"]
   },
   {
     id: "ATH-2026-005",
@@ -264,79 +180,60 @@ export const MOCK_ATHLETES = [
     gender: "Male",
     ageTier: "U16",
     clubId: "CLUB-003",
-    clubName: "Sidama Coffee AC",
+    club: "Sidama Coffee AC",
     faydaFin: "3091-7728-1194",
-    faydaStatus: "UNVERIFIED",
-    faydaHash: null,
+    faydaStatus: "PENDING",
     primaryEvent: "800m",
-    licenseStatus: "UNLICENSED",
-    licenseNumber: null,
-    licenseExpiry: null,
+    licenseStatus: "NONE",
+    licenseNumber: undefined,
+    licenseExpiry: undefined,
     photoUrl: "/images/runner_marathon.png",
     checkinStatus: "NOT_CHECKED_IN",
-    qrCodeData: null,
-    secondaryDoc: {
-      type: "Regional School ID Scanned Record",
-      fileName: "Yobiel_SchoolID_Sidama.jpg",
-      uploadDate: "2026-07-20",
-      status: "PENDING_VERIFICATION"
-    },
     weight: 46,
     height: 158,
-    restingHR: 54,
-    trainingLoad: 45,
     personalBests: [
-      { event: "800m", time: "2:04.50", date: "2026-04-15", venue: "Sidama Regional Meet" }
-    ],
-    seasonBests: [
-      { event: "800m", time: "2:04.50", date: "2026-04-15" }
-    ],
-    weightLog: [
-      { date: "2026-07-20", kg: 46.0 }
-    ],
-    trainingLog: [
-      { date: "2026-07-25", type: "Easy Run", distance: 6, duration: "35m", notes: "Youth development session" }
+      { event: "800m", mark: "2:04.50", date: "2026-04-15", venue: "Sidama Regional Meet" }
     ],
     achievements: []
   }
 ];
 
-export const MOCK_TRANSFERS = [
+export const MOCK_TRANSFERS: Transfer[] = [
   {
     id: "TR-2026-081",
     athleteId: "ATH-2026-001",
     athleteName: "Haile Demisse Tadesse",
-    fromClub: "Oromia Police SC",
-    toClub: "Defense Athletics Club",
-    transferFeeEtb: 450000,
-    status: "APPROVED_LOCKED",
-    effectiveDate: "2026-06-01",
-    transferDeadline: "2026-08-15 (Registry Locked)",
-    notes: "Cross-club national elite transfer finalized. Licensing updated."
+    fromClubId: "CLUB-002",
+    fromClubName: "Oromia Police SC",
+    toClubId: "CLUB-001",
+    toClubName: "Defense Athletics Club",
+    status: "APPROVED",
+    requestDate: "2026-06-01",
+    reason: "Cross-club national elite transfer finalized. Licensing updated."
   },
   {
     id: "TR-2026-092",
     athleteId: "ATH-2026-004",
     athleteName: "Sifan Mengistu Wolde",
-    fromClub: "Sidama Coffee AC",
-    toClub: "Oromia Police SC",
-    transferFeeEtb: 620000,
-    status: "APPROVED_LOCKED",
-    effectiveDate: "2026-05-15",
-    transferDeadline: "2026-08-15 (Registry Locked)",
-    notes: "Senior 10k specialist transfer agreement."
+    fromClubId: "CLUB-003",
+    fromClubName: "Sidama Coffee AC",
+    toClubId: "CLUB-002",
+    toClubName: "Oromia Police SC",
+    status: "APPROVED",
+    requestDate: "2026-05-15",
+    reason: "Senior 10k specialist transfer agreement."
   },
   {
     id: "TR-2026-104",
     athleteId: "ATH-2026-003",
     athleteName: "Abel Gemechu Desta",
-    fromClub: "Addis Ababa Youth AC",
-    toClub: "Defense Athletics Club",
-    transferFeeEtb: 150000,
-    status: "PENDING_APPROVAL",
-    effectiveDate: "2026-08-01",
-    transferDeadline: "2026-08-15 (18 Days Remaining)",
-    notes: "Youth development prospect transfer awaiting EAF clearance."
+    fromClubId: "CLUB-005",
+    fromClubName: "Addis Ababa Youth AC",
+    toClubId: "CLUB-001",
+    toClubName: "Defense Athletics Club",
+    status: "PENDING",
+    requestDate: "2026-08-01",
+    reason: "Youth development prospect transfer awaiting EAF clearance."
   }
 ];
 
@@ -352,7 +249,7 @@ export const MOCK_MEETS = [
     totalAthletesEnrolled: 240,
     geofenceCoordinates: { lat: 9.0108, lng: 38.7612, radiusMeters: 500 },
     bannerUrl: "/images/banner_grand_prix.png",
-    enrolledAthletes: []
+    enrolledAthletes: [] as string[]
   },
   {
     id: "MEET-2026-02",
@@ -365,7 +262,7 @@ export const MOCK_MEETS = [
     totalAthletesEnrolled: 310,
     geofenceCoordinates: { lat: 7.0621, lng: 38.4764, radiusMeters: 600 },
     bannerUrl: "/images/banner_youth_games.png",
-    enrolledAthletes: []
+    enrolledAthletes: [] as string[]
   },
   {
     id: "MEET-2026-03",
@@ -378,7 +275,7 @@ export const MOCK_MEETS = [
     totalAthletesEnrolled: 180,
     geofenceCoordinates: { lat: 9.0380, lng: 38.7710, radiusMeters: 800 },
     bannerUrl: "/images/banner_jan_meda.png",
-    enrolledAthletes: []
+    enrolledAthletes: [] as string[]
   }
 ];
 
@@ -439,49 +336,7 @@ export const MOCK_NEWS = [
   }
 ];
 
-export const MOCK_ATHLETE_SPOTLIGHTS = [
-  {
-    id: "SPOT-001",
-    name: "Haile Demisse Tadesse",
-    amharicName: "ኃይሌ ደሚሴ ታደሰ",
-    club: "Defense AC",
-    event: "5,000m / 10,000m",
-    pb: "12:51.44",
-    ageTier: "Senior",
-    quote: "Every training session at altitude brings me closer to the Olympic podium.",
-    photoUrl: "https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?w=600&auto=format&fit=crop&q=80",
-    flag: "🇪🇹",
-    achievement: "2025 Addis Ababa GP Champion"
-  },
-  {
-    id: "SPOT-002",
-    name: "Tigist Bekele Abate",
-    amharicName: "ትዕግስት በቀለ አባተ",
-    club: "Defense AC",
-    event: "800m / 1,500m",
-    pb: "1:57.20",
-    ageTier: "U20",
-    quote: "Breaking the national record was a dream. Now I'm chasing the world.",
-    photoUrl: "https://images.unsplash.com/photo-1554284126-aa88f22d8b74?w=600&auto=format&fit=crop&q=80",
-    flag: "🇪🇹",
-    achievement: "U20 National Record Holder"
-  },
-  {
-    id: "SPOT-003",
-    name: "Sifan Mengistu Wolde",
-    amharicName: "ሲፋን መንግስቱ ወልዴ",
-    club: "Oromia Police SC",
-    event: "10,000m / Marathon",
-    pb: "29:42.10",
-    ageTier: "Senior",
-    quote: "The road to the Olympics runs through every dawn training in Bekoji.",
-    photoUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&auto=format&fit=crop&q=80",
-    flag: "🇪🇹",
-    achievement: "2025 Olympic Trial Champion"
-  }
-];
-
-export const MOCK_EVENT_RESULTS = {
+export const MOCK_EVENT_RESULTS: Record<string, Array<{ discipline: string; results: Array<{ pos: number; athleteName: string; club: string; time: string; pb: boolean; sb: boolean; nat: string; }> }>> = {
   "MEET-2026-01": [
     {
       discipline: "5,000m",

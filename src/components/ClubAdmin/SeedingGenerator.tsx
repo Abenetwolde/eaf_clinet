@@ -1,12 +1,27 @@
 import React, { useState } from 'react';
 import { Sparkles, Layers, CheckCircle2, FileText, ArrowRight, Zap, RefreshCw } from 'lucide-react';
 import { MOCK_ATHLETES } from '../../data/mockData';
+import type { Club } from '../../types';
 
-export default function SeedingGenerator({ club, onNotify }) {
-  const [selectedEvent, setSelectedEvent] = useState('5,000m Final');
-  const [seedingMethod, setSeedingMethod] = useState('SB_PB_HYBRID'); // 'SB_PB_HYBRID' or 'RANDOM'
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [startList, setStartList] = useState([
+interface SeedingGeneratorProps {
+  club: Club;
+  onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
+}
+
+interface StartListItem {
+  laneBib: number;
+  athlete: string;
+  sb: string;
+  pb: string;
+  rankSeed: number;
+  heat: string;
+}
+
+export default function SeedingGenerator({ club, onNotify }: SeedingGeneratorProps) {
+  const [selectedEvent, setSelectedEvent] = useState<string>('5,000m Final');
+  const [seedingMethod, setSeedingMethod] = useState<string>('SB_PB_HYBRID'); // 'SB_PB_HYBRID' or 'RANDOM'
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [startList, setStartList] = useState<StartListItem[]>([
     { laneBib: 1, athlete: 'Haile Demisse (Defense AC)', sb: '12:51.20', pb: '12:49.00', rankSeed: 1, heat: 'Heat 1' },
     { laneBib: 2, athlete: 'Yomif Kejelcha (CBE AC)', sb: '12:53.10', pb: '12:50.10', rankSeed: 2, heat: 'Heat 1' },
     { laneBib: 3, athlete: 'Tilahun Regassa (Oromia AC)', sb: '12:58.40', pb: '12:55.00', rankSeed: 3, heat: 'Heat 1' },
@@ -25,19 +40,12 @@ export default function SeedingGenerator({ club, onNotify }) {
   return (
     <div>
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
+      <div className="flex items-center justify-between flex-wrap gap-[16px] mb-[24px]">
         <div>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-heading)' }}>
+          <h3 className="text-[1.4rem] font-extrabold text-text-heading">
             World Athletics Automated Seeding & Start List Generator
           </h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          <p className="text-[0.85rem] text-text-muted">
             Roster Athletics inspired heat allocation based on Season Best (SB) and Personal Best (PB) rankings
           </p>
         </div>
@@ -53,9 +61,9 @@ export default function SeedingGenerator({ club, onNotify }) {
       </div>
 
       {/* Control Configuration Bar */}
-      <div className="gov-card" style={{ marginBottom: '24px', padding: '20px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-          <div className="form-group" style={{ margin: 0 }}>
+      <div className="gov-card mb-[24px] p-[20px]">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-[16px]">
+          <div className="form-group m-0">
             <label className="form-label">Select Championship Discipline</label>
             <select 
               className="form-select"
@@ -69,7 +77,7 @@ export default function SeedingGenerator({ club, onNotify }) {
             </select>
           </div>
 
-          <div className="form-group" style={{ margin: 0 }}>
+          <div className="form-group m-0">
             <label className="form-label">Seeding Rules Matrix</label>
             <select 
               className="form-select"
@@ -84,16 +92,9 @@ export default function SeedingGenerator({ club, onNotify }) {
       </div>
 
       {/* Generated Start List Grid */}
-      <div className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{
-          background: '#F1F5F9',
-          padding: '16px 20px',
-          borderBottom: '1px solid #E2E8F0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <div style={{ fontWeight: 800, color: 'var(--text-heading)', fontSize: '0.95rem' }}>
+      <div className="gov-card p-0 overflow-hidden">
+        <div className="bg-[#F1F5F9] px-[20px] py-[16px] border-b border-[#E2E8F0] flex items-center justify-between">
+          <div className="font-extrabold text-text-heading text-[0.95rem]">
             Generated Start List: {selectedEvent}
           </div>
           <span className="badge badge-green">Official Lynx .LIF Export Ready</span>
@@ -114,16 +115,16 @@ export default function SeedingGenerator({ club, onNotify }) {
             <tbody>
               {startList.map(item => (
                 <tr key={item.laneBib}>
-                  <td style={{ fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--text-heading)' }}>
+                  <td className="font-extrabold font-mono text-text-heading">
                     #{item.laneBib}
                   </td>
-                  <td style={{ fontWeight: 700, color: 'var(--text-heading)' }}>
+                  <td className="font-bold text-text-heading">
                     {item.athlete}
                   </td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--eth-amber)', fontWeight: 700 }}>
+                  <td className="font-mono text-accent font-bold">
                     {item.sb}
                   </td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                  <td className="font-mono text-text-muted">
                     {item.pb}
                   </td>
                   <td>

@@ -10,45 +10,65 @@ import {
   Filter,
   Edit
 } from 'lucide-react';
+import type { Club, Athlete } from '../../types';
 
-export default function RosterManagement({ athletes, club, onRenewLicense, onAddAthlete, onUpdateAthlete }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterTier, setFilterTier] = useState('ALL');
-  const [filterLicense, setFilterLicense] = useState('ALL');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingAthlete, setEditingAthlete] = useState(null);
+interface RosterManagementProps {
+  athletes: Athlete[];
+  club: Club;
+  onRenewLicense: (athlete: Athlete) => void;
+  onAddAthlete: (athlete: Athlete) => void;
+  onUpdateAthlete: (athlete: Athlete) => void;
+}
+
+interface FaydaVerifiedData {
+  fin: string;
+  fullName: string;
+  amharicName: string;
+  dob: string;
+  computedTier: string;
+  verificationHash: string;
+  photoUrl: string;
+  gender?: string;
+}
+
+export default function RosterManagement({ athletes, club, onRenewLicense, onAddAthlete, onUpdateAthlete }: RosterManagementProps) {
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filterTier, setFilterTier] = useState<string>('ALL');
+  const [filterLicense, setFilterLicense] = useState<string>('ALL');
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [editingAthlete, setEditingAthlete] = useState<Athlete | null>(null);
 
   // Edit Athlete form state
-  const [editName, setEditName] = useState('');
-  const [editAmharic, setEditAmharic] = useState('');
-  const [editEvent, setEditEvent] = useState('');
-  const [editPb, setEditPb] = useState('');
-  const [editPhoto, setEditPhoto] = useState('/images/runner_marathon.png');
+  const [editName, setEditName] = useState<string>('');
+  const [editAmharic, setEditAmharic] = useState<string>('');
+  const [editEvent, setEditEvent] = useState<string>('');
+  const [editPb, setEditPb] = useState<string>('');
+  const [editPhoto, setEditPhoto] = useState<string>('/images/runner_marathon.png');
 
   // New Athlete form state
-  const [newAthleteName, setNewAthleteName] = useState('');
-  const [newAthleteFin, setNewAthleteFin] = useState('');
-  const [newAthleteDob, setNewAthleteDob] = useState('2006-05-14');
-  const [newAthleteEvent, setNewAthleteEvent] = useState('1,500m / 5,000m');
-  const [faydaLookupLoading, setFaydaLookupLoading] = useState(false);
-  const [newAthleteWeight, setNewAthleteWeight] = useState('');
-  const [newAthleteHeight, setNewAthleteHeight] = useState('');
-  const [newAthleteCoach, setNewAthleteCoach] = useState('');
-  const [newAthleteEmergency, setNewAthleteEmergency] = useState('');
-  const [newAthleteMedical, setNewAthleteMedical] = useState('');
+  const [newAthleteName, setNewAthleteName] = useState<string>('');
+  const [newAthleteFin, setNewAthleteFin] = useState<string>('');
+  const [newAthleteDob, setNewAthleteDob] = useState<string>('2006-05-14');
+  const [newAthleteEvent, setNewAthleteEvent] = useState<string>('1,500m / 5,000m');
+  const [faydaLookupLoading, setFaydaLookupLoading] = useState<boolean>(false);
+  const [newAthleteWeight, setNewAthleteWeight] = useState<string>('');
+  const [newAthleteHeight, setNewAthleteHeight] = useState<string>('');
+  const [newAthleteCoach, setNewAthleteCoach] = useState<string>('');
+  const [newAthleteEmergency, setNewAthleteEmergency] = useState<string>('');
+  const [newAthleteMedical, setNewAthleteMedical] = useState<string>('');
   
   // State for view detail modal
-  const [viewingAthlete, setViewingAthlete] = useState(null);
-  const [faydaVerifiedData, setFaydaVerifiedData] = useState(null);
-  const [otpStep, setOtpStep] = useState(false);
-  const [otpValue, setOtpValue] = useState('');
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [passportPhoto, setPassportPhoto] = useState(null);
-  const [passportPhotoUrl, setPassportPhotoUrl] = useState('');
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [registrationSubmitted, setRegistrationSubmitted] = useState(false);
+  const [viewingAthlete, setViewingAthlete] = useState<Athlete | null>(null);
+  const [faydaVerifiedData, setFaydaVerifiedData] = useState<FaydaVerifiedData | null>(null);
+  const [otpStep, setOtpStep] = useState<boolean>(false);
+  const [otpValue, setOtpValue] = useState<string>('');
+  const [otpVerified, setOtpVerified] = useState<boolean>(false);
+  const [passportPhoto, setPassportPhoto] = useState<File | null>(null);
+  const [passportPhotoUrl, setPassportPhotoUrl] = useState<string>('');
+  const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
+  const [registrationSubmitted, setRegistrationSubmitted] = useState<boolean>(false);
 
-  const handleOpenEditModal = (athlete) => {
+  const handleOpenEditModal = (athlete: Athlete) => {
     setEditingAthlete(athlete);
     setEditName(athlete.name);
     setEditAmharic(athlete.amharicName || '');
@@ -57,7 +77,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
     setEditPhoto(athlete.photoUrl);
   };
 
-  const handleSaveEditSubmit = (e) => {
+  const handleSaveEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAthlete || !onUpdateAthlete) return;
 
@@ -109,7 +129,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
     }, 1000);
   };
 
-  const handleCreateAthleteSubmit = (e) => {
+  const handleCreateAthleteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!faydaVerifiedData) return;
 
@@ -154,19 +174,12 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
   return (
     <div>
       {/* Top Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
+      <div className="flex items-center justify-between flex-wrap gap-[16px] mb-[24px]">
         <div>
-          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-heading)' }}>
+          <h3 className="text-[1.4rem] font-extrabold text-text-heading">
             Digital Roster Audits & Licensing Registry
           </h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+          <p className="text-[0.85rem] text-text-muted">
             FR-1.2: Digital roster management, Fayda ID verification hashes, & annual licensing audit
           </p>
         </div>
@@ -181,29 +194,23 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="gov-card" style={{ padding: '16px', marginBottom: '24px' }}>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '12px'
-        }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '10px' }} />
+      <div className="gov-card p-[16px] mb-[24px]">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-[12px]">
+          <div className="relative">
+            <Search size={18} color="var(--text-muted)" className="absolute left-[12px] top-[10px]" />
             <input 
               type="text"
-              className="form-input"
-              style={{ paddingLeft: '38px', width: '100%' }}
+              className="form-input pl-[38px] w-full"
               placeholder="Search name, discipline, Fayda..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="flex items-center gap-[8px]">
             <Filter size={16} color="var(--text-muted)" />
             <select 
-              className="form-select"
-              style={{ width: '100%' }}
+              className="form-select w-full"
               value={filterTier}
               onChange={(e) => setFilterTier(e.target.value)}
             >
@@ -229,7 +236,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
       </div>
 
       {/* Roster Table */}
-      <div className="gov-card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="gov-card p-0 overflow-hidden">
         <div className="table-responsive">
           <table className="gov-table">
             <thead>
@@ -244,31 +251,31 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
             </thead>
             <tbody>
               {filteredAthletes.map(athlete => (
-                <tr key={athlete.id} onClick={() => setViewingAthlete(athlete)} style={{ cursor: 'pointer' }} className="hover-lift">
+                <tr key={athlete.id} onClick={() => setViewingAthlete(athlete)} className="hover-lift cursor-pointer">
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="flex items-center gap-[12px]">
                       <img 
                         src={athlete.photoUrl} 
                         alt={athlete.name}
-                        style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }}
+                        className="w-[38px] h-[38px] rounded-full object-cover"
                       />
                       <div>
-                        <div style={{ fontWeight: 700, color: 'var(--text-heading)' }}>{athlete.name}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>{athlete.amharicName}</div>
+                        <div className="font-bold text-text-heading">{athlete.name}</div>
+                        <div className="text-[0.75rem] text-primary font-semibold">{athlete.amharicName}</div>
                       </div>
                     </div>
                   </td>
 
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div className="flex items-center gap-[6px]">
                       {athlete.faydaStatus === 'VERIFIED' ? (
                         <>
                           <ShieldCheck size={16} color="var(--primary)" />
                           <div>
-                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 700 }}>
+                            <div className="font-mono text-[0.85rem] font-bold">
                               {athlete.faydaFin}
                             </div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>
+                            <div className="text-[0.65rem] text-text-dim">
                               Hash: {athlete.faydaHash.substring(0, 10)}...
                             </div>
                           </div>
@@ -277,8 +284,8 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                         <>
                           <AlertTriangle size={16} color="var(--accent)" />
                           <div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 700 }}>Pending Audit</div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                            <div className="text-[0.8rem] text-accent font-bold">Pending Audit</div>
+                            <div className="text-[0.65rem] text-text-muted">
                               {athlete.secondaryDoc ? athlete.secondaryDoc.type : 'Missing Verification'}
                             </div>
                           </div>
@@ -298,8 +305,8 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                   </td>
 
                   <td>
-                    <div style={{ fontWeight: 600, color: 'var(--text-heading)' }}>{athlete.primaryEvent}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>PB: {athlete.pb}</div>
+                    <div className="font-semibold text-text-heading">{athlete.primaryEvent}</div>
+                    <div className="text-[0.75rem] text-text-muted">PB: {athlete.pb}</div>
                   </td>
 
                   <td>
@@ -322,13 +329,12 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                   </td>
 
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="flex items-center gap-[8px]">
                       
 
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleOpenEditModal(athlete); }}
-                        className="btn-gov-secondary"
-                        style={{ fontSize: '0.75rem', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        className="btn-gov-secondary text-[0.75rem] px-[10px] py-[6px] flex items-center gap-[4px]"
                       >
                         <Edit size={12} />
                         Edit
@@ -345,16 +351,16 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
       {/* Add New Athlete Modal */}
       {showAddModal && (
         <div className="modal-backdrop" onClick={() => { setShowAddModal(false); setOtpStep(false); setOtpVerified(false); setShowConfirmation(false); setRegistrationSubmitted(false); setFaydaVerifiedData(null); }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '36px', maxWidth: '860px', width: '95vw' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-heading)' }}>
+          <div className="modal-content p-[36px] max-w-[860px] w-[95vw]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-[20px]">
+              <h3 className="text-[1.3rem] font-extrabold text-text-heading">
                 Register Athlete via Fayda FIN
               </h3>
-              <button onClick={() => setShowAddModal(false)} className="btn-gov-secondary" style={{ padding: '4px 10px' }}>✕</button>
+              <button onClick={() => setShowAddModal(false)} className="btn-gov-secondary px-[10px] py-[4px]">✕</button>
             </div>
 
             {/* Info note */}
-            <div style={{ background: 'var(--eth-blue-light)', border: '1px solid rgba(0,80,160,0.2)', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '0.8rem', color: 'var(--eth-blue)', fontWeight: 600, lineHeight: 1.5 }}>
+            <div className="bg-primary-light border border-[rgba(0,80,160,0.2)] rounded-[8px] px-[14px] py-[10px] mb-[16px] text-[0.8rem] text-primary font-semibold leading-[1.5]">
               ℹ Name, date of birth, and age division are fetched automatically from the Fayda API. Enter the FIN below.
             </div>
 
@@ -362,11 +368,10 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               {!otpStep && !otpVerified && (
               <div className="form-group">
                 <label className="form-label">Fayda FIN (Auto-formatted: XXXX-XXXX-XXXX)</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="flex gap-[8px]">
                   <input 
                     type="text" 
-                    className="form-input" 
-                    style={{ flex: 1, fontFamily: 'monospace', fontSize: '1.1rem', letterSpacing: '0.1em' }}
+                    className="form-input flex-1 font-mono text-[1.1rem] tracking-[0.1em]"
                     value={newAthleteFin} 
                     onChange={(e) => {
                       let v = e.target.value.replace(/[^0-9]/g,'');
@@ -384,8 +389,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                   <button 
                     type="button" 
                     onClick={() => { if(newAthleteFin.replace(/-/g,'').length===12){ setOtpStep(true); } }}
-                    className="btn-gov-primary" 
-                    style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', padding: '10px 14px' }}
+                    className="btn-gov-primary text-[0.8rem] whitespace-nowrap px-[14px] py-[10px]"
                     disabled={newAthleteFin.replace(/-/g,'').length!==12}
                   >
                     Send OTP
@@ -395,18 +399,17 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               )}
 
               {otpStep && !otpVerified && (
-                <div className="form-group" style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: '12px', padding: '20px' }}>
-                  <div style={{ fontWeight: 800, color: '#15803D', marginBottom: '8px', fontSize: '0.95rem' }}>📱 OTP sent to registered phone</div>
-                  <div style={{ fontSize: '0.82rem', color: '#64748B', marginBottom: '16px' }}>Enter the 6-digit One-Time Password sent to the athlete's Fayda-registered mobile number.</div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="form-group bg-[#F0FDF4] border border-[#86EFAC] rounded-[12px] p-[20px]">
+                  <div className="font-extrabold text-[#15803D] mb-[8px] text-[0.95rem]">📱 OTP sent to registered phone</div>
+                  <div className="text-[0.82rem] text-[#64748B] mb-[16px]">Enter the 6-digit One-Time Password sent to the athlete's Fayda-registered mobile number.</div>
+                  <div className="flex gap-[8px]">
                     <input 
-                      type="text" className="form-input" 
-                      style={{ flex: 1, fontFamily: 'monospace', fontSize: '1.4rem', textAlign: 'center', letterSpacing: '0.3em' }}
+                      type="text" className="form-input flex-1 font-mono text-[1.4rem] text-center tracking-[0.3em]"
                       value={otpValue} 
                       onChange={e => setOtpValue(e.target.value.replace(/[^0-9]/g,'').slice(0,6))}
                       placeholder="_ _ _ _ _ _" maxLength={6}
                     />
-                    <button type="button" className="btn-gov-primary" style={{ padding: '10px 20px' }}
+                    <button type="button" className="btn-gov-primary px-[20px] py-[10px]"
                       onClick={() => {
                         if(otpValue.length === 6) {
                           setOtpVerified(true); setOtpStep(false);
@@ -434,7 +437,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               </div>
 
               
-              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="grid grid-cols-2 gap-[12px]">
                 <div className="form-group">
                   <label className="form-label">Weight (kg)</label>
                   <input type="number" className="form-input" value={newAthleteWeight} onChange={e => setNewAthleteWeight(e.target.value)} placeholder="e.g. 58" />
@@ -462,29 +465,29 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
 
               {/* Fayda Response Result Display */}
               {faydaVerifiedData && otpVerified && !showConfirmation && (
-                <div style={{ background: '#F0FDF4', border: '2px solid #86EFAC', borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <div className="bg-[#F0FDF4] border-2 border-[#86EFAC] rounded-[14px] p-[20px] mb-[20px]">
+                  <div className="flex items-center gap-[10px] mb-[16px]">
                     <ShieldCheck color="#15803D" size={22} />
-                    <span style={{ fontWeight: 800, color: '#15803D', fontSize: '1rem' }}>✅ Fayda Government API — Identity Verified</span>
+                    <span className="font-extrabold text-[#15803D] text-[1rem]">✅ Fayda Government API — Identity Verified</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                  <div className="flex gap-[20px] flex-wrap">
                     {/* Passport Photo upload */}
-                    <div style={{ flexShrink: 0 }}>
-                      <label style={{ display: 'block', fontWeight: 700, fontSize: '0.8rem', color: '#374151', marginBottom: '8px' }}>Passport Photo *</label>
+                    <div className="shrink-0">
+                      <label className="block font-bold text-[0.8rem] text-[#374151] mb-[8px]">Passport Photo *</label>
                       <div 
                         onClick={() => document.getElementById('passportPhotoInput').click()}
-                        style={{ width: '120px', height: '150px', border: '2px dashed #86EFAC', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: '#fff', position: 'relative' }}
+                        className="w-[120px] h-[150px] border-2 border-dashed border-[#86EFAC] rounded-[8px] cursor-pointer flex items-center justify-center overflow-hidden bg-white relative"
                       >
                         {passportPhotoUrl ? (
-                          <img src={passportPhotoUrl} alt="Passport" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={passportPhotoUrl} alt="Passport" className="w-full h-full object-cover" />
                         ) : (
-                          <div style={{ textAlign: 'center', color: '#9CA3AF', fontSize: '0.75rem' }}>
-                            <div style={{ fontSize: '2rem' }}>📷</div>
+                          <div className="text-center text-[#9CA3AF] text-[0.75rem]">
+                            <div className="text-[2rem]">📷</div>
                             <div>Click to upload</div>
                             <div>35mm × 45mm</div>
                           </div>
                         )}
-                        <input id="passportPhotoInput" type="file" accept="image/*" style={{ display: 'none' }}
+                        <input id="passportPhotoInput" type="file" accept="image/*" className="hidden"
                           onChange={e => {
                             const f = e.target.files[0];
                             if(f) { setPassportPhoto(f); setPassportPhotoUrl(URL.createObjectURL(f)); }
@@ -493,9 +496,9 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                       </div>
                     </div>
                     {/* Personal Info List */}
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <div style={{ fontWeight: 700, color: '#374151', marginBottom: '10px', fontSize: '0.85rem' }}>Personal Information (from Fayda API)</div>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div className="flex-1 min-w-[200px]">
+                      <div className="font-bold text-[#374151] mb-[10px] text-[0.85rem]">Personal Information (from Fayda API)</div>
+                      <ul className="list-none p-0 m-0 flex flex-col gap-[8px]">
                         {[
                           ['Full Name (English)', faydaVerifiedData.fullName],
                           ['Full Name (Amharic)', faydaVerifiedData.amharicName],
@@ -506,9 +509,9 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                           ['FIN', faydaVerifiedData.fin],
                           ['Verification Hash', faydaVerifiedData.verificationHash.slice(0,18)+'...'],
                         ].map(([k,v]) => (
-                          <li key={k} style={{ display: 'flex', gap: '8px', fontSize: '0.82rem', borderBottom: '1px solid #D1FAE5', paddingBottom: '6px' }}>
-                            <span style={{ fontWeight: 700, color: '#374151', minWidth: '140px' }}>{k}:</span>
-                            <span style={{ color: '#4B5563' }}>{v}</span>
+                          <li key={k} className="flex gap-[8px] text-[0.82rem] border-b border-[#D1FAE5] pb-[6px]">
+                            <span className="font-bold text-[#374151] min-w-[140px]">{k}:</span>
+                            <span className="text-[#4B5563]">{v}</span>
                           </li>
                         ))}
                       </ul>
@@ -519,19 +522,19 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
 
               {/* Final Confirmation Panel */}
               {showConfirmation && faydaVerifiedData && !registrationSubmitted && (
-                <div style={{ background: '#EFF6FF', border: '2px solid #93C5FD', borderRadius: '14px', padding: '24px', marginBottom: '20px' }}>
-                  <div style={{ fontWeight: 800, color: '#1D4ED8', fontSize: '1.1rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="bg-[#EFF6FF] border-2 border-[#93C5FD] rounded-[14px] p-[24px] mb-[20px]">
+                  <div className="font-extrabold text-[#1D4ED8] text-[1.1rem] mb-[20px] flex items-center gap-[8px]">
                     📋 Final Registration Confirmation — Review All Details
                   </div>
-                  <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                  <div className="flex gap-[24px] flex-wrap">
                     {passportPhotoUrl && (
-                      <div style={{ flexShrink: 0 }}>
-                        <img src={passportPhotoUrl} alt="Passport" style={{ width: '120px', height: '150px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #93C5FD' }} />
-                        <div style={{ fontSize: '0.72rem', textAlign: 'center', color: '#6B7280', marginTop: '4px' }}>Passport Photo</div>
+                      <div className="shrink-0">
+                        <img src={passportPhotoUrl} alt="Passport" className="w-[120px] h-[150px] object-cover rounded-[8px] border-2 border-[#93C5FD]" />
+                        <div className="text-[0.72rem] text-center text-[#6B7280] mt-[4px]">Passport Photo</div>
                       </div>
                     )}
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <ul className="stack-on-mobile" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div className="flex-1 min-w-[200px]">
+                      <ul className="list-none p-0 m-0 grid grid-cols-2 gap-[8px]">
                         {[
                           ['Full Name', faydaVerifiedData.fullName],
                           ['Amharic Name', faydaVerifiedData.amharicName],
@@ -548,9 +551,9 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                           ['Medical Notes', newAthleteMedical || 'None'],
                           ['License Status', 'UNLICENSED (Pending)'],
                         ].map(([k,v]) => (
-                          <li key={k} style={{ fontSize: '0.8rem', borderBottom: '1px solid #BFDBFE', paddingBottom: '6px' }}>
-                            <div style={{ fontWeight: 700, color: '#1E3A8A', fontSize: '0.72rem' }}>{k}</div>
-                            <div style={{ color: '#374151' }}>{v}</div>
+                          <li key={k} className="text-[0.8rem] border-b border-[#BFDBFE] pb-[6px]">
+                            <div className="font-bold text-[#1E3A8A] text-[0.72rem]">{k}</div>
+                            <div className="text-[#374151]">{v}</div>
                           </li>
                         ))}
                       </ul>
@@ -561,10 +564,10 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
 
               {/* After submission — awaiting approval */}
               {registrationSubmitted && (
-                <div style={{ background: '#FFF7ED', border: '2px solid #FCD34D', borderRadius: '14px', padding: '32px', textAlign: 'center', marginBottom: '20px' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '12px' }}>⏳</div>
-                  <div style={{ fontWeight: 900, color: '#92400E', fontSize: '1.4rem', marginBottom: '12px' }}>🎉 Registration Submitted — Awaiting EAF Approval</div>
-                  <div style={{ color: '#78350F', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                <div className="bg-[#FFF7ED] border-2 border-[#FCD34D] rounded-[14px] p-[32px] text-center mb-[20px]">
+                  <div className="text-[3rem] mb-[12px]">⏳</div>
+                  <div className="font-black text-[#92400E] text-[1.4rem] mb-[12px]">🎉 Registration Submitted — Awaiting EAF Approval</div>
+                  <div className="text-[#78350F] text-[0.9rem] leading-[1.6]">
                     Your registration application for <strong>{faydaVerifiedData?.fullName}</strong> has been successfully submitted to the Ethiopian Athletics Federation (EAF) Digital Registry.<br/><br/>
                     📋 <strong>Application Reference:</strong> EAF-{new Date().getFullYear()}-{Math.floor(1000 + Math.random() * 9000)}<br/>
                     ⏱️ <strong>Expected Review Time:</strong> 2–5 business days<br/>
@@ -578,8 +581,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               {!registrationSubmitted && (
                 <button 
                   type="submit" 
-                  className="btn-gov-primary" 
-                  style={{ width: '100%', padding: '14px', fontSize: '1rem', fontWeight: 800 }}
+                  className="btn-gov-primary w-full p-[14px] text-[1rem] font-extrabold"
                   disabled={otpVerified && !faydaVerifiedData}
                 >
                   {showConfirmation ? '✅ Confirm & Submit to EAF Registry' : (!faydaVerifiedData ? 'Complete Fayda Verification First' : 'Review & Confirm Registration')}
@@ -594,22 +596,22 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
       {/* View Athlete Detail Modal */}
       {viewingAthlete && (
         <div className="modal-backdrop" onClick={() => setViewingAthlete(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '36px', maxWidth: '860px', width: '95vw' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <img src={viewingAthlete.photoUrl} alt="Athlete" style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--eth-blue)' }} />
+          <div className="modal-content p-[36px] max-w-[860px] w-[95vw]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-[24px]">
+              <div className="flex items-center gap-[16px]">
+                <img src={viewingAthlete.photoUrl} alt="Athlete" className="w-[64px] h-[64px] rounded-full object-cover border-[3px] border-primary" />
                 <div>
-                  <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-heading)', margin: 0 }}>{viewingAthlete.name}</h3>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>{viewingAthlete.amharicName} | ID: {viewingAthlete.id}</div>
+                  <h3 className="text-[1.4rem] font-extrabold text-text-heading m-0">{viewingAthlete.name}</h3>
+                  <div className="text-[0.9rem] text-text-muted font-semibold">{viewingAthlete.amharicName} | ID: {viewingAthlete.id}</div>
                 </div>
               </div>
-              <button onClick={() => setViewingAthlete(null)} className="btn-gov-secondary" style={{ padding: '4px 10px' }}>✕</button>
+              <button onClick={() => setViewingAthlete(null)} className="btn-gov-secondary px-[10px] py-[4px]">✕</button>
             </div>
 
-            <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-              <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '8px' }}>BIOMETRIC INFO</div>
-                <div style={{ display: 'grid', gap: '6px', fontSize: '0.9rem' }}>
+            <div className="grid grid-cols-2 gap-[20px] mb-[24px]">
+              <div className="bg-[#F8FAFC] p-[16px] rounded-[12px] border border-[#E2E8F0]">
+                <div className="text-[0.8rem] text-text-muted font-bold mb-[8px]">BIOMETRIC INFO</div>
+                <div className="grid gap-[6px] text-[0.9rem]">
                   <div><strong>Fayda FIN:</strong> {viewingAthlete.faydaFin}</div>
                   <div><strong>Status:</strong> {viewingAthlete.faydaStatus}</div>
                   <div><strong>Age Tier:</strong> {viewingAthlete.ageTier}</div>
@@ -617,9 +619,9 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                 </div>
               </div>
 
-              <div style={{ background: '#F8FAFC', padding: '16px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '8px' }}>ATHLETIC INFO</div>
-                <div style={{ display: 'grid', gap: '6px', fontSize: '0.9rem' }}>
+              <div className="bg-[#F8FAFC] p-[16px] rounded-[12px] border border-[#E2E8F0]">
+                <div className="text-[0.8rem] text-text-muted font-bold mb-[8px]">ATHLETIC INFO</div>
+                <div className="grid gap-[6px] text-[0.9rem]">
                   <div><strong>Discipline:</strong> {viewingAthlete.primaryEvent}</div>
                   <div><strong>Personal Best:</strong> {viewingAthlete.pb || 'N/A'}</div>
                   <div><strong>License:</strong> {viewingAthlete.licenseStatus}</div>
@@ -628,7 +630,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               </div>
             </div>
             
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <div className="flex justify-end gap-[12px]">
               <button className="btn-gov-secondary" onClick={() => { setViewingAthlete(null); handleOpenEditModal(viewingAthlete); }}>Edit Profile</button>
               <button className="btn-gov-primary" onClick={() => setViewingAthlete(null)}>Close</button>
             </div>
@@ -639,13 +641,13 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
       {/* Edit Athlete Profile Modal */}
       {editingAthlete && (
         <div className="modal-backdrop" onClick={() => setEditingAthlete(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ padding: '36px', maxWidth: '860px', width: '95vw' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-heading)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="modal-content p-[36px] max-w-[860px] w-[95vw]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-[20px]">
+              <h3 className="text-[1.3rem] font-extrabold text-text-heading flex items-center gap-[8px]">
                 <Edit size={18} color="var(--eth-blue)" />
                 Edit Athlete Profile
               </h3>
-              <button onClick={() => setEditingAthlete(null)} className="btn-gov-secondary" style={{ padding: '4px 10px' }}>✕</button>
+              <button onClick={() => setEditingAthlete(null)} className="btn-gov-secondary px-[10px] py-[4px]">✕</button>
             </div>
 
             <form onSubmit={handleSaveEditSubmit}>
@@ -708,8 +710,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
 
               <button 
                 type="submit" 
-                className="btn-gov-primary" 
-                style={{ width: '100%', padding: '12px', marginTop: '10px' }}
+                className="btn-gov-primary w-full p-[12px] mt-[10px]"
               >
                 Save Profile Changes
               </button>
