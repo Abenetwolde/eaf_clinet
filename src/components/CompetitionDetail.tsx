@@ -110,20 +110,26 @@ const RealisticQRCode = ({ size = 150 }) => (
   </svg>
 );
 
-export default function CompetitionDetail({ meet, onBack, onRegister }) {
-  const [activeTab, setActiveTab] = useState('about');
+interface CompetitionDetailProps {
+  meet: any;
+  onBack: () => void;
+  onRegister: (role: 'CLUB' | 'ATHLETE') => void;
+}
+
+export default function CompetitionDetail({ meet, onBack, onRegister }: CompetitionDetailProps) {
+  const [activeTab, setActiveTab] = useState<string>('about');
 
   // Results Filters
-  const [resultEventFilter, setResultEventFilter] = useState('ALL');
-  const [resultClubFilter, setResultClubFilter] = useState('ALL');
-  const [resultAgeFilter, setResultAgeFilter] = useState('ALL');
-  const [resultGenderFilter, setResultGenderFilter] = useState('ALL');
+  const [resultEventFilter, setResultEventFilter] = useState<string>('ALL');
+  const [resultClubFilter, setResultClubFilter] = useState<string>('ALL');
+  const [resultAgeFilter, setResultAgeFilter] = useState<string>('ALL');
+  const [resultGenderFilter, setResultGenderFilter] = useState<string>('ALL');
 
   // Individual Meet Registration Modal State
-  const [showIndividualModal, setShowIndividualModal] = useState(false);
-  const [selectedDisciplines, setSelectedDisciplines] = useState(meet ? [meet.disciplines[0]] : []);
-  const [registrationPass, setRegistrationPass] = useState(null);
-  const [isPendingApproval, setIsPendingApproval] = useState(false);
+  const [showIndividualModal, setShowIndividualModal] = useState<boolean>(false);
+  const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>(meet ? [meet.disciplines[0]] : []);
+  const [registrationPass, setRegistrationPass] = useState<any>(null);
+  const [isPendingApproval, setIsPendingApproval] = useState<boolean>(false);
 
   if (!meet) return null;
 
@@ -558,7 +564,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister }) {
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
               <div className="gov-card" style={{ background: '#FFFFFF', borderRadius: '18px' }}>
                 <h4 style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-heading)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   📜 Technical Rules
@@ -851,7 +857,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister }) {
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '0', maxWidth: '1100px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', boxShadow: '0 32px 72px rgba(15,23,42,0.35)' }}>
 
             {/* Modal Header with Event Banner */}
-            <div style={{ position: 'relative', height: '140px', background: '#0F172A' }}>
+            <div className="modal-bleed-banner" style={{ position: 'relative', height: '140px', background: '#0F172A' }}>
               <img src={getBannerUrl(meet.id)} alt={meet.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0F172A 0%, transparent 100%)' }} />
 
@@ -871,7 +877,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister }) {
             </div>
 
             {/* Modal Content Body */}
-            <div style={{ padding: '32px 40px' }}>
+            <div className="modal-bleed-body" style={{ padding: '32px 40px' }}>
               {isPendingApproval ? (
                 /* Application Submitted — Waiting EAF Approval Screen */
                 <div style={{ textAlign: 'center', padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -889,7 +895,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister }) {
                   </p>
 
                   <div style={{ background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '520px', marginBottom: '28px', textAlign: 'left' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
+                    <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                       <div>
                         <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>TRACKING REFERENCE</span>
                         <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>COMP-ACC-2026-984210</strong>
@@ -936,7 +942,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister }) {
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                    <div className="wrap-on-mobile" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
                       {/* Formal Passport Photo Display */}
                       <div style={{ position: 'relative', width: '100px', height: '130px', borderRadius: '12px', overflow: 'hidden', border: '3px solid #3B82F6', boxShadow: '0 6px 16px rgba(59,130,246,0.2)', background: '#FFF', flexShrink: 0 }}>
                         <img
@@ -944,12 +950,12 @@ export default function CompetitionDetail({ meet, onBack, onRegister }) {
                           alt="Passport Photo"
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
-                        <span style={{ position: 'absolute', bottom: 0, insetX: 0, background: 'rgba(15,23,42,0.85)', color: '#FFF', fontSize: '0.55rem', fontWeight: 900, textAlign: 'center', padding: '2px 0' }}>
+                        <span style={{ position: 'absolute', bottom: 0, background: 'rgba(15,23,42,0.85)', color: '#FFF', fontSize: '0.55rem', fontWeight: 900, textAlign: 'center', padding: '2px 0' }}>
                           PASSPORT BIOMETRIC
                         </span>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px 18px', fontSize: '0.83rem', flex: 1 }}>
+                      <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px 18px', fontSize: '0.83rem', flex: 1 }}>
                         <div>
                           <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>FULL NAME</span>
                           <strong style={{ color: '#0F172A', fontSize: '0.92rem' }}>{faydaNationalIdData.fullName}</strong>

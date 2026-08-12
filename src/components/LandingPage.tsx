@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2 } from 'lucide-react';
+import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 import { motion } from 'framer-motion';
 
@@ -262,38 +262,55 @@ const VectorTrackLines = () => (
   </svg>
 );
 
-export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false }) {
-  const [selectedMeetId, setSelectedMeetId] = useState(null);
-  const [selectedAthleteModal, setSelectedAthleteModal] = useState(null);
-  const [selectedGalleryTab, setSelectedGalleryTab] = useState('All');
-  const [selectedAlbum, setSelectedAlbum] = useState(null);
-  const [activeLightboxImg, setActiveLightboxImg] = useState(null);
-  const [openFaq, setOpenFaq] = useState(null);
-  const [selectedNews, setSelectedNews] = useState(NEWS[0]);
-  const [activeStructure, setActiveStructure] = useState(null);
+interface LandingPageProps {
+  onSelectRole: (role: string) => void;
+  onRegister: (role: 'CLUB' | 'ATHLETE') => void;
+  publicSubPage?: string;
+  onChangePublicSubPage: (page: string) => void;
+  darkMode?: boolean;
+}
+
+export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false }: LandingPageProps) {
+  const [selectedMeetId, setSelectedMeetId] = useState<string | null>(null);
+  const [selectedAthleteModal, setSelectedAthleteModal] = useState<any>(null);
+  const [selectedGalleryTab, setSelectedGalleryTab] = useState<string>('All');
+  const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
+  const [activeLightboxImg, setActiveLightboxImg] = useState<any>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [selectedNews, setSelectedNews] = useState<any>(NEWS[0]);
+  const [activeStructure, setActiveStructure] = useState<{ title: string; icon: any; amharic: string; description: string; members: string; meets: string } | null>(null);
+  const [galleryExpanded, setGalleryExpanded] = useState<boolean>(false);
+  const [viewportWidth, setViewportWidth] = useState<number>(() => typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
 
   // Search/Filter states
-  const [searchText, setSearchText] = useState('');
-  const [regionFilter, setRegionFilter] = useState('ALL');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [sortByDate, setSortByDate] = useState('UPCOMING_FIRST');
-  const [compPage, setCompPage] = useState(0);
-  const [showAllComps, setShowAllComps] = useState(false);
+  const [searchText, setSearchText] = useState<string>('');
+  const [regionFilter, setRegionFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [sortByDate, setSortByDate] = useState<string>('UPCOMING_FIRST');
+  const [compPage, setCompPage] = useState<number>(0);
+  const [showAllComps, setShowAllComps] = useState<boolean>(false);
 
   // Athletes filter states
-  const [athleteSearchText, setAthleteSearchText] = useState('');
-  const [athleteEventFilter, setAthleteEventFilter] = useState('ALL');
+  const [athleteSearchText, setAthleteSearchText] = useState<string>('');
+  const [athleteEventFilter, setAthleteEventFilter] = useState<string>('ALL');
 
   // News modal state
-  const [selectedNewsModal, setSelectedNewsModal] = useState(null);
+  const [selectedNewsModal, setSelectedNewsModal] = useState<any>(null);
 
   // Contact form state
-  const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
-  const [contactSuccess, setContactSuccess] = useState(false);
+  const [contactForm, setContactForm] = useState<{ name: string; email: string; subject: string; message: string }>({ name: '', email: '', subject: '', message: '' });
+  const [contactSuccess, setContactSuccess] = useState<boolean>(false);
 
-  const bannerScrollRef = useRef(null);
+  const bannerScrollRef = useRef<HTMLDivElement>(null);
   const athleteScrollRef = useRef(null);
 
   const CARDS_PER_PAGE = 3;
@@ -392,6 +409,9 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
     aboutTitle: 'About Ethiopian Athletics Federation',
     structureTitle: 'Federation Governance Structure',
     partnersTitle: 'Official Federation Sponsors & Corporate Partners',
+
+    seeMore: 'See More',
+    seeLess: 'See Less',
   };
 
   const filteredMeets = ENRICHED_MEETS.filter(meet => {
@@ -414,6 +434,18 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
     const dB = new Date(b.date);
     return sortByDate === 'UPCOMING_FIRST' ? dA - dB : dB - dA;
   });
+
+  // Responsive gallery: full grid on desktop, limited initial set on tablet/mobile
+  const galleryLimit = viewportWidth > 887
+    ? GALLERY_IMAGES.length
+    : viewportWidth <= 640 ? 4 : 6;
+  const visibleGalleryImages = galleryExpanded ? GALLERY_IMAGES : GALLERY_IMAGES.slice(0, galleryLimit);
+  const showGalleryToggle = GALLERY_IMAGES.length > galleryLimit;
+
+  // Collapse back to the initial set whenever the visible-count breakpoint changes
+  useEffect(() => {
+    setGalleryExpanded(false);
+  }, [galleryLimit]);
 
   if (selectedMeetId) {
     const meetObj = ENRICHED_MEETS.find(m => m.id === selectedMeetId);
@@ -924,6 +956,7 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
 
             <div
               ref={athleteScrollRef}
+              className="landing-scroll-row"
               style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
             >
               {[...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => (
@@ -935,7 +968,6 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
                     position: 'relative',
                     minWidth: '380px',
                     maxWidth: '400px',
-                    width: '380px',
                     minHeight: '440px',
                     flexShrink: 0,
                     borderRadius: 24,
@@ -1138,7 +1170,7 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
               <p style={{ color: t.textSub, lineHeight: 1.8, marginBottom: 28, fontSize: '0.92rem' }}>
                 EAF oversees the licensing of athletes and clubs through Fayda digital IDs, organizes national championships, selects national teams for international competitions, and develops grassroots talent across all Ethiopian regional states.
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
                   { label: 'Founded', value: '1964' },
                   { label: 'Licensed Clubs', value: '48 Clubs' },
@@ -1399,6 +1431,32 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
                 );
               })}
             </div>
+
+            {showGalleryToggle && (
+              <div style={{ marginTop: '36px', textAlign: 'center' }}>
+                <button
+                  onClick={() => setGalleryExpanded(prev => !prev)}
+                  className="btn-accent"
+                  style={{
+                    padding: '12px 32px',
+                    borderRadius: '12px',
+                    fontSize: '0.95rem',
+                    fontWeight: 800,
+                    background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
+                    color: '#FFF',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 8px 24px rgba(2, 132, 199, 0.25)'
+                  }}
+                >
+                  {galleryExpanded ? loc.seeLess : loc.seeMore}
+                  {galleryExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </button>
+              </div>
+            )}
           </div>
         </section>
       )}

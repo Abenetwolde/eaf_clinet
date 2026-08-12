@@ -163,23 +163,23 @@ export default function GeofenceCheckin({ athlete, onUpdateAthlete, onNotify }: 
             <>
               <div className="relative w-[200px] h-[200px] mx-auto mb-4 bg-white border-[3px] border-primary rounded-[14px] p-3.5 flex items-center justify-center shadow-[0_4px_14px_rgba(11,87,142,0.15)]">
                 <svg width="160" height="160" viewBox="0 0 100 100" fill="none">
-                  <rect width="100" height="100" fill="#FFFFFF"/>
-                  <rect x="10" y="10" width="25" height="25" fill="#0B2A42"/>
-                  <rect x="15" y="15" width="15" height="15" fill="#FFFFFF"/>
-                  <rect x="18" y="18" width="9" height="9" fill="var(--primary)"/>
-                  <rect x="65" y="10" width="25" height="25" fill="#0B2A42"/>
-                  <rect x="70" y="15" width="15" height="15" fill="#FFFFFF"/>
-                  <rect x="73" y="18" width="9" height="9" fill="var(--primary)"/>
-                  <rect x="10" y="65" width="25" height="25" fill="#0B2A42"/>
-                  <rect x="15" y="70" width="15" height="15" fill="#FFFFFF"/>
-                  <rect x="18" y="73" width="9" height="9" fill="var(--primary)"/>
-                  <rect x="42" y="12" width="8" height="8" fill="#0B2A42"/>
-                  <rect x="52" y="24" width="8" height="8" fill="var(--primary)"/>
-                  <rect x="42" y="42" width="16" height="16" fill="#0B2A42"/>
-                  <rect x="68" y="42" width="10" height="10" fill="var(--accent)"/>
-                  <rect x="22" y="45" width="10" height="10" fill="#0B2A42"/>
-                  <rect x="42" y="68" width="12" height="12" fill="var(--primary)"/>
-                  <rect x="65" y="68" width="22" height="22" fill="#0B2A42"/>
+                  <rect width="100" height="100" fill="#FFFFFF" />
+                  <rect x="10" y="10" width="25" height="25" fill="#0B2A42" />
+                  <rect x="15" y="15" width="15" height="15" fill="#FFFFFF" />
+                  <rect x="18" y="18" width="9" height="9" fill="var(--primary)" />
+                  <rect x="65" y="10" width="25" height="25" fill="#0B2A42" />
+                  <rect x="70" y="15" width="15" height="15" fill="#FFFFFF" />
+                  <rect x="73" y="18" width="9" height="9" fill="var(--primary)" />
+                  <rect x="10" y="65" width="25" height="25" fill="#0B2A42" />
+                  <rect x="15" y="70" width="15" height="15" fill="#FFFFFF" />
+                  <rect x="18" y="73" width="9" height="9" fill="var(--primary)" />
+                  <rect x="42" y="12" width="8" height="8" fill="#0B2A42" />
+                  <rect x="52" y="24" width="8" height="8" fill="var(--primary)" />
+                  <rect x="42" y="42" width="16" height="16" fill="#0B2A42" />
+                  <rect x="68" y="42" width="10" height="10" fill="var(--accent)" />
+                  <rect x="22" y="45" width="10" height="10" fill="#0B2A42" />
+                  <rect x="42" y="68" width="12" height="12" fill="var(--primary)" />
+                  <rect x="65" y="68" width="22" height="22" fill="#0B2A42" />
                 </svg>
                 <div className="laser-line" />
               </div>

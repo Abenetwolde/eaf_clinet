@@ -48,7 +48,7 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
         {!receipt ? (
           <div>
             {/* Amount Banner */}
-            <div style={{
+            <div className="wrap-on-mobile" style={{
               background: '#F8FAFC',
               border: '1px solid rgba(203, 213, 225, 0.8)',
               borderRadius: '16px',
@@ -56,7 +56,8 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
               marginBottom: '24px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              gap: '12px'
             }}>
               <div>
                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)' }}>PAYMENT ITEM</div>
@@ -79,7 +80,7 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
             {/* Select Gateway */}
             <div className="form-group">
               <label className="form-label">Select Certified Payment Provider</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
                 <button
                   type="button"
                   onClick={() => setGateway('TELEBIRR')}

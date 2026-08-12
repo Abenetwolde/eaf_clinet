@@ -138,9 +138,9 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
             <label className="form-label flex items-center gap-1">
               <MapPin size={14} color="var(--primary)" /> Affiliated Region
             </label>
-            <select 
-              className="form-select" 
-              value={region} 
+            <select
+              className="form-select"
+              value={region}
               onChange={e => setRegion(e.target.value)}
             >
               <option value="Addis Ababa">Addis Ababa</option>
@@ -156,9 +156,9 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
             <label className="form-label flex items-center gap-1">
               <Activity size={14} color="var(--primary)" /> Primary Discipline
             </label>
-            <select 
-              className="form-select" 
-              value={primaryEvent} 
+            <select
+              className="form-select"
+              value={primaryEvent}
               onChange={e => setPrimaryEvent(e.target.value)}
             >
               <option value="100m / 200m Sprint">100m / 200m Sprint</option>
@@ -173,10 +173,10 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
             <label className="form-label flex items-center gap-1">
               <Phone size={14} color="var(--primary)" /> Phone Number
             </label>
-            <input 
-              className="form-input" 
-              type="text" 
-              value={phone} 
+            <input
+              className="form-input"
+              type="text"
+              value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="+251 911 123456"
               required
@@ -187,10 +187,10 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
             <label className="form-label flex items-center gap-1">
               <Mail size={14} color="var(--primary)" /> Email Address
             </label>
-            <input 
-              className="form-input" 
-              type="email" 
-              value={email} 
+            <input
+              className="form-input"
+              type="email"
+              value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="athlete@eaf.org.et"
               required
