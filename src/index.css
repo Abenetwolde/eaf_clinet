@@ -1,9 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
-
 :root {
   /* ── AppColors Brand System (mirrors mobile Flutter AppColors) ── */
 
@@ -656,6 +655,255 @@ html.dark,
   --text-landing-sub: #94A3B8;
   --border-landing: rgba(255, 255, 255, 0.07);
   --border-landing-subtle: rgba(255, 255, 255, 0.05);
+
+  /* Override app-level tokens for dark mode */
+  --bg-app: #080C14;
+  --bg-card: #121829;
+  --bg-surface-variant: #1A223B;
+  --border-card: rgba(255, 255, 255, 0.08);
+  --text-main: #F1F5F9;
+  --text-heading: #F1F5F9;
+  --text-body: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-dim: #64748B;
+  --primary-light: rgba(1, 64, 167, 0.18);
+  --accent-light: rgba(230, 165, 0, 0.15);
+  --status-success-bg: rgba(46, 125, 50, 0.15);
+  --status-warning-bg: rgba(245, 158, 11, 0.12);
+  --status-error-bg: rgba(211, 47, 47, 0.12);
+  --status-info-bg: rgba(2, 136, 209, 0.12);
+}
+
+.dark body,
+.dark #root {
+  background-color: var(--bg-app) !important;
+  color: var(--text-body) !important;
+}
+
+/* Dark mode section backgrounds */
+.dark section {
+  background-color: var(--bg-landing) !important;
+  border-color: var(--border-landing) !important;
+}
+
+.dark section#home {
+  background: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(14, 165, 233, 0.15), rgba(8, 12, 20, 0)) !important;
+}
+
+.dark section#competitions,
+.dark section#news,
+.dark section#media {
+  background-color: var(--bg-landing-alt) !important;
+}
+
+.dark section#contact-form {
+  background-color: var(--bg-landing) !important;
+}
+
+/* Headings & Text */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: var(--text-heading) !important;
+}
+
+.dark p, .dark span, .dark label, .dark div {
+  color: inherit;
+}
+
+/* ── Cards & Containers ── */
+.dark .gov-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+}
+
+.dark .glass-panel {
+  background: rgba(18, 24, 41, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .stat-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+}
+
+.dark .workflow-step {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+}
+
+.dark .workflow-step.completed {
+  background: var(--primary-light) !important;
+}
+
+.dark .header-bar {
+  background: #0D1220 !important;
+  border-bottom-color: var(--primary) !important;
+}
+
+.dark .modal-content {
+  background: #0F1624 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-main) !important;
+}
+
+/* ── Form Controls ── */
+.dark .form-input,
+.dark .form-select,
+.dark .form-textarea {
+  background: #0D1220 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: var(--text-main) !important;
+}
+
+.dark .form-input:focus,
+.dark .form-select:focus,
+.dark .form-textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(1, 64, 167, 0.25) !important;
+}
+
+.dark .form-input:disabled {
+  background: #0A0F1A !important;
+  color: var(--text-muted) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .form-label {
+  color: var(--text-heading) !important;
+}
+
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="date"],
+.dark input[type="number"],
+.dark input[type="password"],
+.dark select,
+.dark textarea {
+  background-color: #0D1220 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: var(--text-main) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* ── Tables ── */
+.dark .gov-table th {
+  background: #0A0F1A !important;
+  color: var(--text-muted) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .gov-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-body) !important;
+}
+
+.dark .gov-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* ── Buttons ── */
+.dark .btn-gov-secondary {
+  background: #1A223B !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-body) !important;
+}
+
+.dark .btn-gov-secondary:hover {
+  background: #1E2A48 !important;
+  border-color: var(--primary) !important;
+}
+
+/* ── Tab Switchers (bg-[#F0F5FA] wrappers) ── */
+.dark .tab-bar,
+.dark [class*="bg-\\[\\#F0F5FA\\]"] {
+  background: #0D1220 !important;
+}
+
+/* ── Meet Cards in ClubAdmin ── */
+.dark .meet-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-card) !important;
+}
+
+/* ── Roster modal labels ── */
+.dark .roster-label-unchecked {
+  background: #0D1220 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── Inline alert & info boxes ── */
+.dark .alert-amber,
+.dark [class*="bg-accent-light"] {
+  background: rgba(230, 165, 0, 0.12) !important;
+  border-color: rgba(230, 165, 0, 0.2) !important;
+}
+
+.dark .alert-primary,
+.dark [class*="bg-primary-light"] {
+  background: rgba(1, 64, 167, 0.15) !important;
+  border-color: rgba(1, 64, 167, 0.25) !important;
+}
+
+/* ── Media grid ── */
+.dark .media-grid-card,
+.dark div[style*="background: #FFFFFF"],
+.dark div[style*="background: '#FFFFFF'"],
+.dark div[style*="background: #F8FAFC"],
+.dark div[style*="background: '#F8FAFC'"] {
+  background-color: var(--surface-landing) !important;
+  border-color: var(--border-landing) !important;
+  color: var(--text-landing) !important;
+}
+
+/* ── Specific elements fix in dark mode ── */
+.dark div[style*="color: #0F172A"],
+.dark h2[style*="color: #0F172A"],
+.dark h3[style*="color: #0F172A"],
+.dark h4[style*="color: #0F172A"] {
+  color: var(--text-landing) !important;
+}
+
+.dark p[style*="color: #475569"],
+.dark p[style*="color: #64748B"],
+.dark div[style*="color: #64748B"],
+.dark span[style*="color: #64748B"] {
+  color: var(--text-landing-sub) !important;
+}
+
+/* ── Scrollbar ── */
+.dark ::-webkit-scrollbar-track {
+  background: #0A0F1A;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #2A3A5A;
+}
+
+:root {
+  --bg-landing: #FFFFFF;
+  --bg-landing-alt: #F8FAFC;
+  --surface-landing: #FFFFFF;
+  --surface-raised-landing: #F1F5F9;
+  --text-landing: #0F172A;
+  --text-landing-sub: #475569;
+  --border-landing: #E2E8F0;
+  --border-landing-subtle: #CBD5E1;
+}
+
+html.dark,
+.dark {
+  color-scheme: dark;
+  --bg-landing: #080C14;
+  --bg-landing-alt: #0D1220;
+  --surface-landing: #121829;
+  --surface-raised-landing: #1A223B;
+  --text-landing: #F8FAFC;
+  --text-landing-sub: #94A3B8;
+  --border-landing: rgba(255, 255, 255, 0.07);
+  --border-landing-subtle: rgba(255, 255, 255, 0.05);
 }
 
 .dark body,
@@ -740,4 +988,45 @@ html.dark,
 .dark div[style*="color: #64748B"],
 .dark span[style*="color: #64748B"] {
   color: var(--text-landing-sub) !important;
+}
+
+/* ── Hardcoded Tailwind Class Overrides for Dark Mode ── */
+/* Re-map hardcoded hex text classes to our variables */
+.dark .text-\[\#0F172A\],
+.dark .text-\[\#1D1D1F\],
+.dark .text-\[\#334155\],
+.dark .text-\[\#374151\],
+.dark .text-\[\#1E3A8A\],
+.dark .text-\[\#1D4ED8\] {
+  color: var(--text-heading) !important;
+}
+
+.dark .text-\[\#64748B\],
+.dark .text-\[\#475569\],
+.dark .text-\[\#4B5563\],
+.dark .text-\[\#8FA8BC\],
+.dark .text-\[\#6B7280\],
+.dark .text-\[\#555B63\],
+.dark .text-\[\#9CA3AF\] {
+  color: var(--text-muted) !important;
+}
+
+/* Status colors fix */
+.dark .text-\[\#15803D\],
+.dark .text-\[\#166534\],
+.dark .text-\[\#16A34A\] {
+  color: var(--status-success) !important;
+}
+
+.dark .text-\[\#92400E\],
+.dark .text-\[\#78350F\] {
+  color: var(--status-warning) !important;
+}
+
+/* Hardcoded background overrides */
+.dark .bg-\[\#F0F5FA\],
+.dark .bg-\[\#F1F5F9\],
+.dark .bg-\[\#F8FAFC\],
+.dark .bg-\[\#F8FAF8\] {
+  background-color: var(--bg-surface-variant) !important;
 }

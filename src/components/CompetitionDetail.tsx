@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Trophy, Calendar, MapPin, Phone, Mail, Award, Users, Filter, 
+import {
+  Trophy, Calendar, MapPin, Phone, Mail, Award, Users, Filter,
   CheckCircle2, User, Building, Clock, ChevronRight, ShieldCheck, X, Download, Printer, Check
 } from 'lucide-react';
 import { MOCK_ATHLETES, MOCK_EVENT_RESULTS, MOCK_CLUBS } from '../data/mockData';
@@ -17,7 +17,7 @@ const getBannerUrl = (meetId) => {
 const RealisticQRCode = ({ size = 150 }) => (
   <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ borderRadius: '8px', background: '#FFFFFF', padding: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
     <rect width="100" height="100" fill="#FFFFFF" />
-    
+
     {/* Corner Finder Pattern - Top Left */}
     <rect x="5" y="5" width="26" height="26" rx="4" fill="#0F172A" />
     <rect x="9" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
@@ -110,9 +110,9 @@ const RealisticQRCode = ({ size = 150 }) => (
   </svg>
 );
 
-export default function CompetitionDetail({ meet, onBack, onRegister, language = 'en' }) {
+export default function CompetitionDetail({ meet, onBack, onRegister }) {
   const [activeTab, setActiveTab] = useState('about');
-  
+
   // Results Filters
   const [resultEventFilter, setResultEventFilter] = useState('ALL');
   const [resultClubFilter, setResultClubFilter] = useState('ALL');
@@ -129,26 +129,26 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
   // Localized texts
   const t = {
-    back: language === 'en' ? '← Back to Competitions' : '← ወደ ውድድሮች ይመለሱ',
-    regClosed: language === 'en' ? 'Registration Closed' : 'ምዝገባ ተዘግቷል',
-    regOpen: language === 'en' ? 'Open for Registration' : 'ምዝገባ ክፍት ነው',
-    upcoming: language === 'en' ? 'Upcoming' : 'መጪ ውድድር',
-    live: language === 'en' ? 'LIVE EVENT' : 'የቀጥታ ስርጭት',
-    organizer: language === 'en' ? 'Organizer' : 'አዘጋጅ',
-    venue: language === 'en' ? 'Venue & Address' : 'ቦታ እና አድራሻ',
-    contact: language === 'en' ? 'Contact Details' : 'የእውቂያ መረጃ',
-    deadline: language === 'en' ? 'Registration Deadline' : 'የምዝገባ ማብቂያ ቀን',
-    regIndividual: language === 'en' ? 'Register as Individual Athlete' : 'እንደ ግል አትሌት ይመዝገቡ',
-    regClub: language === 'en' ? 'Register as Club / Team' : 'እንደ ክለብ/ቡድን ይመዝገቡ',
-    actionTitle: language === 'en' ? 'Registration Action Panel' : 'የምዝገባ ፓነል',
-    verified: language === 'en' ? 'EAF Verified' : 'የተረጋገጠ አትሌት',
-    recordStatus: language === 'en' ? 'Record Status' : 'የሪከርድ ደረጃ',
-    
+    back: '← Back to Competitions',
+    regClosed: 'Registration Closed',
+    regOpen: 'Open for Registration',
+    upcoming: 'Upcoming',
+    live: 'LIVE EVENT',
+    organizer: 'Organizer',
+    venue: 'Venue & Address',
+    contact: 'Contact Details',
+    deadline: 'Registration Deadline',
+    regIndividual: 'Register as Individual Athlete',
+    regClub: 'Register as Club / Team',
+    actionTitle: 'Registration Action Panel',
+    verified: 'EAF Verified',
+    recordStatus: 'Record Status',
+
     // Tabs
-    tabAbout: language === 'en' ? 'About Event' : 'ስለ ውድድሩ',
-    tabEvents: language === 'en' ? 'Events & Categories' : 'የውድድር አይነቶች',
-    tabStarters: language === 'en' ? 'Starter Lists' : 'የተወዳዳሪዎች ዝርዝር',
-    tabResults: language === 'en' ? 'Live Results & Participants' : 'የቀጥታ ውጤቶች',
+    tabAbout: 'About Event',
+    tabEvents: 'Events & Categories',
+    tabStarters: 'Starter Lists',
+    tabResults: 'Live Results & Participants',
   };
 
   // Ethiopian Fayda National ID Mock Profile Data
@@ -193,22 +193,22 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
   // Mock static info for About Tab based on Meet
   const aboutInfo = {
-    overview: meet.id === 'MEET-2026-01' 
+    overview: meet.id === 'MEET-2026-01'
       ? 'The Addis Ababa International Grand Prix is the pinnacle track and field event in Ethiopia, gathering world-class runners, local elite athletes, and international competitors. Sanctioned by EAF and accredited under regional development programs.'
       : meet.id === 'MEET-2026-02'
-      ? 'The National Youth Olympic Games (U18/U20) serves as the primary talent identification platform in Ethiopia. The championship aims to discover the next generation of distance runners to represent Ethiopia in international youth competitions.'
-      : 'The Jan Meda Cross-Country trials hold deep historical significance as the ultimate selection criteria for the Ethiopian National Team representing the nation in the World Athletics Cross Country Championships.',
+        ? 'The National Youth Olympic Games (U18/U20) serves as the primary talent identification platform in Ethiopia. The championship aims to discover the next generation of distance runners to represent Ethiopia in international youth competitions.'
+        : 'The Jan Meda Cross-Country trials hold deep historical significance as the ultimate selection criteria for the Ethiopian National Team representing the nation in the World Athletics Cross Country Championships.',
     rules: 'All participants must comply with World Athletics Technical Rules and EAF local statutes. Athletes must hold an active EAF Athlete License for the 2026 season. Doping control will be carried out in accordance with WADA guidelines.',
     standards: meet.id === 'MEET-2026-01'
       ? '5,000m Men: Under 13:45.00 | 10,000m Women: Under 32:30.00 | 800m Men: Under 1:48.00. Standards must be achieved in EAF-certified events.'
       : meet.id === 'MEET-2026-02'
-      ? 'Open to athletes aged U18 (born 2009-2010) and U20 (born 2007-2008). Must be affiliated with an EAF-registered regional club or academy.'
-      : 'Open entry for registered club teams (max 6 runners per category). Top 4 finishers automatically qualify for selection pools.',
+        ? 'Open to athletes aged U18 (born 2009-2010) and U20 (born 2007-2008). Must be affiliated with an EAF-registered regional club or academy.'
+        : 'Open entry for registered club teams (max 6 runners per category). Top 4 finishers automatically qualify for selection pools.',
     prizes: meet.id === 'MEET-2026-01'
       ? 'Gold: 100,000 ETB | Silver: 60,000 ETB | Bronze: 40,000 ETB. A special record-breaking bonus of 150,000 ETB is awarded for breaking national records.'
       : meet.id === 'MEET-2026-02'
-      ? 'EAF youth development grants: 30,000 ETB for top finishers. Training gear packages provided by Adidas Ethiopia for top 6 finalists.'
-      : 'National team training camp selection for top 6. Cash prizes up to 50,000 ETB for club delegations.'
+        ? 'EAF youth development grants: 30,000 ETB for top finishers. Training gear packages provided by Adidas Ethiopia for top 6 finalists.'
+        : 'National team training camp selection for top 6. Cash prizes up to 50,000 ETB for club delegations.'
   };
 
   // Generate sub-events for Events Tab
@@ -252,12 +252,12 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
   // Fetch Results if available
   const rawResults = MOCK_EVENT_RESULTS[meet.id] || [];
-  
+
   const resultsData = [];
   rawResults.forEach(disciplineBlock => {
     disciplineBlock.results.forEach(res => {
       const matchingAthlete = MOCK_ATHLETES.find(a => a.name === res.athleteName);
-      
+
       let gender = disciplineBlock.discipline.toLowerCase().includes('women') ? 'Women' : 'Men';
       if (matchingAthlete) {
         gender = matchingAthlete.gender;
@@ -300,9 +300,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
-      
+
       {/* Back button */}
-      <button 
+      <button
         onClick={onBack}
         style={{
           background: 'none',
@@ -324,7 +324,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
       </button>
 
       {/* ── A. COMPETITION HEADER & BANNER ── */}
-      <div 
+      <div
         style={{
           position: 'relative',
           borderRadius: '24px',
@@ -337,7 +337,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
           marginBottom: '32px'
         }}
       >
-        <div 
+        <div
           style={{
             position: 'absolute',
             inset: 0,
@@ -346,20 +346,20 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
             backgroundPosition: 'center',
           }}
         />
-        <div 
+        <div
           style={{
             position: 'absolute',
             inset: 0,
             background: 'linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.6) 60%, transparent 100%)'
           }}
         />
-        
+
         {/* Banner Content */}
         <div style={{ position: 'relative', zIndex: 2, padding: '32px', color: '#FFFFFF' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
-            <span 
-              className="badge" 
-              style={{ 
+            <span
+              className="badge"
+              style={{
                 background: meet.status === 'REGISTRATION_OPEN' ? '#0E7490' : meet.status === 'LIVE' ? '#DC2626' : '#B45309',
                 color: '#FFFFFF',
                 borderRadius: '8px',
@@ -371,8 +371,8 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
             >
               {meet.status === 'REGISTRATION_OPEN' ? t.regOpen : meet.status === 'LIVE' ? t.live : t.upcoming}
             </span>
-            <span 
-              className="badge badge-gold" 
+            <span
+              className="badge badge-gold"
               style={{ border: '1px solid rgba(200, 168, 75, 0.4)', borderRadius: '8px', padding: '6px 14px', color: '#FFE082' }}
             >
               ★ EAF Grade A Event
@@ -390,7 +390,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
       {/* Grid of metadata card & registration panel */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
-        
+
         {/* Localized Metadata Card */}
         <div className="gov-card" style={{ background: '#FFFFFF', display: 'flex', flexDirection: 'column', gap: '20px', borderRadius: '20px' }}>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-heading)', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
@@ -417,7 +417,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
               <div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t.deadline}</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#DC2626', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  August 05, 2026 
+                  August 05, 2026
                   <span className="badge badge-red" style={{ padding: '2px 6px', fontSize: '0.65rem' }}>Urgent</span>
                 </div>
               </div>
@@ -451,12 +451,12 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
         </div>
 
         {/* Registration Action Panel */}
-        <div 
-          className="gov-card" 
-          style={{ 
-            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', 
+        <div
+          className="gov-card"
+          style={{
+            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
             color: '#FFFFFF',
-            border: 'none', 
+            border: 'none',
             borderRadius: '24px',
             display: 'flex',
             flexDirection: 'column',
@@ -478,7 +478,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button 
+            <button
               onClick={() => setShowIndividualModal(true)}
               className="btn-accent"
               style={{
@@ -504,10 +504,10 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
       </div>
 
       {/* ── B. TABBED INFORMATION ARCHITECTURE ── */}
-      <div 
-        style={{ 
-          display: 'flex', 
-          borderBottom: '2px solid #E2E8F0', 
+      <div
+        style={{
+          display: 'flex',
+          borderBottom: '2px solid #E2E8F0',
           marginBottom: '28px',
           overflowX: 'auto',
           gap: '8px'
@@ -545,7 +545,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
       {/* Tab Content */}
       <div style={{ minHeight: '300px' }}>
-        
+
         {/* 1. About Tab */}
         {activeTab === 'about' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -652,14 +652,14 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{st.name}</span>
                           {st.verified && (
-                            <span 
-                              title={t.verified} 
-                              style={{ 
-                                display: 'inline-flex', 
-                                alignItems: 'center', 
-                                background: '#DCFCE7', 
-                                color: '#15803D', 
-                                borderRadius: '50%', 
+                            <span
+                              title={t.verified}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                background: '#DCFCE7',
+                                color: '#15803D',
+                                borderRadius: '50%',
                                 padding: '2px'
                               }}
                             >
@@ -701,12 +701,12 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
               </div>
             ) : (
               <div>
-                <div 
-                  className="gov-card" 
-                  style={{ 
-                    background: '#F8FAFC', 
-                    borderRadius: '18px', 
-                    marginBottom: '20px', 
+                <div
+                  className="gov-card"
+                  style={{
+                    background: '#F8FAFC',
+                    borderRadius: '18px',
+                    marginBottom: '20px',
                     padding: '20px',
                     border: '1px solid #E2E8F0'
                   }}
@@ -719,9 +719,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Event Type</label>
-                      <select 
-                        className="form-select" 
-                        value={resultEventFilter} 
+                      <select
+                        className="form-select"
+                        value={resultEventFilter}
                         onChange={e => setResultEventFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
@@ -732,9 +732,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Club / Delegation</label>
-                      <select 
-                        className="form-select" 
-                        value={resultClubFilter} 
+                      <select
+                        className="form-select"
+                        value={resultClubFilter}
                         onChange={e => setResultClubFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
@@ -745,9 +745,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Gender</label>
-                      <select 
-                        className="form-select" 
-                        value={resultGenderFilter} 
+                      <select
+                        className="form-select"
+                        value={resultGenderFilter}
                         onChange={e => setResultGenderFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
@@ -759,9 +759,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Age Category</label>
-                      <select 
-                        className="form-select" 
-                        value={resultAgeFilter} 
+                      <select
+                        className="form-select"
+                        value={resultAgeFilter}
                         onChange={e => setResultAgeFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
@@ -804,14 +804,14 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{r.name}</span>
                                   {r.verified && (
-                                    <span 
-                                      title={t.verified} 
-                                      style={{ 
-                                        display: 'inline-flex', 
-                                        alignItems: 'center', 
-                                        background: '#DCFCE7', 
-                                        color: '#15803D', 
-                                        borderRadius: '50%', 
+                                    <span
+                                      title={t.verified}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        background: '#DCFCE7',
+                                        color: '#15803D',
+                                        borderRadius: '50%',
                                         padding: '2px'
                                       }}
                                     >
@@ -849,13 +849,13 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
       {showIndividualModal && (
         <div className="modal-backdrop" onClick={() => { setShowIndividualModal(false); setRegistrationPass(null); setIsPendingApproval(false); }} style={{ zIndex: 9999, padding: '24px 16px', overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '0', maxWidth: '1100px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', boxShadow: '0 32px 72px rgba(15,23,42,0.35)' }}>
-            
+
             {/* Modal Header with Event Banner */}
             <div style={{ position: 'relative', height: '140px', background: '#0F172A' }}>
               <img src={getBannerUrl(meet.id)} alt={meet.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0F172A 0%, transparent 100%)' }} />
-              
-              <button 
+
+              <button
                 onClick={() => { setShowIndividualModal(false); setRegistrationPass(null); setIsPendingApproval(false); }}
                 style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
               >
@@ -887,7 +887,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   <p style={{ color: '#64748B', fontSize: '0.95rem', maxWidth: '580px', lineHeight: 1.6, marginBottom: '24px' }}>
                     Your entry application for <strong>{meet.title}</strong> has been logged. EAF Technical Marshals are reviewing your seed times, club delegation, and Fayda biometric verification.
                   </p>
-                  
+
                   <div style={{ background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '520px', marginBottom: '28px', textAlign: 'left' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                       <div>
@@ -910,7 +910,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   </div>
 
                   <div style={{ display: 'flex', gap: '14px', width: '100%', maxWidth: '420px' }}>
-                    <button 
+                    <button
                       onClick={() => { setShowIndividualModal(false); setIsPendingApproval(false); }}
                       className="btn-accent"
                       style={{ flex: 1, padding: '14px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', fontWeight: 900, border: 'none', cursor: 'pointer', justifyContent: 'center' }}
@@ -939,9 +939,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                     <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
                       {/* Formal Passport Photo Display */}
                       <div style={{ position: 'relative', width: '100px', height: '130px', borderRadius: '12px', overflow: 'hidden', border: '3px solid #3B82F6', boxShadow: '0 6px 16px rgba(59,130,246,0.2)', background: '#FFF', flexShrink: 0 }}>
-                        <img 
-                          src={faydaNationalIdData.photoUrl} 
-                          alt="Passport Photo" 
+                        <img
+                          src={faydaNationalIdData.photoUrl}
+                          alt="Passport Photo"
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                         <span style={{ position: 'absolute', bottom: 0, insetX: 0, background: 'rgba(15,23,42,0.85)', color: '#FFF', fontSize: '0.55rem', fontWeight: 900, textAlign: 'center', padding: '2px 0' }}>
@@ -981,7 +981,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
                   {/* 2-Column Grid: Disciplines Selection + Competition Related Metadata */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', marginBottom: '24px' }}>
-                    
+
                     {/* Left Column: Disciplines Selection */}
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', marginBottom: '10px', display: 'block' }}>
@@ -991,15 +991,15 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                         {meet.disciplines.map(d => {
                           const checked = selectedDisciplines.includes(d);
                           return (
-                            <label 
-                              key={d} 
-                              style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '12px', 
-                                padding: '12px 16px', 
-                                borderRadius: '12px', 
-                                border: checked ? '2px solid var(--primary)' : '1px solid #E2E8F0', 
+                            <label
+                              key={d}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                border: checked ? '2px solid var(--primary)' : '1px solid #E2E8F0',
                                 background: checked ? '#F0F9FF' : '#FFFFFF',
                                 cursor: 'pointer',
                                 fontWeight: 700,
@@ -1008,8 +1008,8 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                                 transition: 'all 0.15s'
                               }}
                             >
-                              <input 
-                                type="checkbox" 
+                              <input
+                                type="checkbox"
                                 checked={checked}
                                 onChange={() => handleToggleDiscipline(d)}
                                 style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
@@ -1046,9 +1046,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   </div>
 
                   {/* Submit Enrollment Button */}
-                  <button 
+                  <button
                     onClick={() => setIsPendingApproval(true)}
-                    className="btn-accent" 
+                    className="btn-accent"
                     style={{ width: '100%', padding: '16px', borderRadius: '14px', fontSize: '1rem', fontWeight: 900, justifyContent: 'center', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer', boxShadow: '0 8px 20px rgba(14, 165, 233, 0.3)' }}
                   >
                     Submit Individual Entry for Federation Approval

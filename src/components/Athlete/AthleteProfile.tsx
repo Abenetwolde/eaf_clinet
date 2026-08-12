@@ -52,14 +52,14 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
         </p>
       </div>
 
-      <form className="gov-card bg-white p-7 rounded-[16px]" onSubmit={handleSave}>
+      <form className="gov-card p-7 rounded-[16px]" onSubmit={handleSave}>
         
         {/* Verification Status Banner */}
-        <div className="bg-[#F0FDF4] border border-[#DCFCE7] rounded-xl px-[18px] py-3.5 mb-6 flex items-center gap-2.5">
+        <div className="bg-[var(--status-success-bg)] border border-[rgba(46,125,50,0.2)] rounded-xl px-[18px] py-3.5 mb-6 flex items-center gap-2.5">
           <ShieldCheck size={20} color="#15803D" />
           <div>
-            <div className="font-bold text-[0.88rem] text-[#166534]">Fayda Verified Profile</div>
-            <div className="text-[0.78rem] text-[#15803D] mt-0.5">
+            <div className="font-bold text-[0.88rem] text-[#166534] dark:text-emerald-400">Fayda Verified Profile</div>
+            <div className="text-[0.78rem] text-[#15803D] dark:text-emerald-500 mt-0.5">
               Your Name, DOB, and Gender are securely linked with your Fayda National ID (FIN: {athlete.faydaFin}) and cannot be edited.
             </div>
           </div>
@@ -70,7 +70,7 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
           <div className="form-group">
             <label className="form-label font-bold">EAF Athlete ID (Read-only)</label>
             <input 
-              className="form-input bg-[#F1F5F9] cursor-not-allowed font-semibold" 
+              className="form-input bg-[var(--bg-surface-variant)] cursor-not-allowed font-semibold" 
               type="text" 
               value={athlete.id} 
               disabled 
@@ -80,7 +80,7 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
           <div className="form-group">
             <label className="form-label font-bold">Fayda FIN Number (Read-only)</label>
             <input 
-              className="form-input bg-[#F1F5F9] cursor-not-allowed font-semibold" 
+              className="form-input bg-[var(--bg-surface-variant)] cursor-not-allowed font-semibold" 
               type="text" 
               value={athlete.faydaFin} 
               disabled 
@@ -90,7 +90,7 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
           <div className="form-group">
             <label className="form-label">Full Name (English)</label>
             <input 
-              className="form-input bg-[#F1F5F9] cursor-not-allowed" 
+              className="form-input bg-[var(--bg-surface-variant)] cursor-not-allowed" 
               type="text" 
               value={name} 
               disabled 
@@ -100,7 +100,7 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
           <div className="form-group">
             <label className="form-label">Full Name (Amharic)</label>
             <input 
-              className="form-input bg-[#F1F5F9] cursor-not-allowed" 
+              className="form-input bg-[var(--bg-surface-variant)] cursor-not-allowed" 
               type="text" 
               value={amharicName} 
               disabled 
@@ -110,7 +110,7 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
           <div className="form-group">
             <label className="form-label">Date of Birth (DOB)</label>
             <input 
-              className="form-input bg-[#F1F5F9] cursor-not-allowed" 
+              className="form-input bg-[var(--bg-surface-variant)] cursor-not-allowed" 
               type="date" 
               value={dob} 
               disabled 
@@ -120,7 +120,7 @@ export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: A
           <div className="form-group">
             <label className="form-label">Gender</label>
             <input 
-              className="form-input bg-[#F1F5F9] cursor-not-allowed" 
+              className="form-input bg-[var(--bg-surface-variant)] cursor-not-allowed" 
               type="text" 
               value={gender} 
               disabled 

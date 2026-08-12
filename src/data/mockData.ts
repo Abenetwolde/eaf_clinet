@@ -336,6 +336,24 @@ export const MOCK_NEWS = [
   }
 ];
 
+export const MEET_META: Record<string, { title: string; date: string; venue: string }> = {
+  "MEET-2026-01": {
+    title: "Addis Ababa International Grand Prix 2026",
+    date: "August 12–14, 2026",
+    venue: "Addis Ababa National Stadium"
+  },
+  "MEET-2026-02": {
+    title: "Ethiopian National Youth Olympic Games U18/U20",
+    date: "September 5–8, 2026",
+    venue: "Hawassa International Stadium"
+  },
+  "MEET-2026-03": {
+    title: "Jan Meda National Cross-Country Trials",
+    date: "October 20, 2026",
+    venue: "Jan Meda Race Course, Addis Ababa"
+  }
+};
+
 export const MOCK_EVENT_RESULTS: Record<string, Array<{ discipline: string; results: Array<{ pos: number; athleteName: string; club: string; time: string; pb: boolean; sb: boolean; nat: string; }> }>> = {
   "MEET-2026-01": [
     {

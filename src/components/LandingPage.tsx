@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen } from 'lucide-react';
+import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2 } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 import { motion } from 'framer-motion';
 
@@ -262,7 +262,7 @@ const VectorTrackLines = () => (
   </svg>
 );
 
-export default function LandingPage({ onSelectRole, onRegister, language = 'en', publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false }) {
+export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false }) {
   const [selectedMeetId, setSelectedMeetId] = useState(null);
   const [selectedAthleteModal, setSelectedAthleteModal] = useState(null);
   const [selectedGalleryTab, setSelectedGalleryTab] = useState('All');
@@ -281,6 +281,13 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [sortByDate, setSortByDate] = useState('UPCOMING_FIRST');
   const [compPage, setCompPage] = useState(0);
   const [showAllComps, setShowAllComps] = useState(false);
+
+  // Athletes filter states
+  const [athleteSearchText, setAthleteSearchText] = useState('');
+  const [athleteEventFilter, setAthleteEventFilter] = useState('ALL');
+
+  // News modal state
+  const [selectedNewsModal, setSelectedNewsModal] = useState(null);
 
   // Contact form state
   const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -343,37 +350,48 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     }, 4000);
   };
 
+  // Filter athletes
+  const filteredAthletes = ATHLETES.filter(athlete => {
+    if (athleteSearchText) {
+      const q = athleteSearchText.toLowerCase();
+      const matchName = athlete.name.toLowerCase().includes(q) || (athlete.amharicName && athlete.amharicName.includes(q));
+      const matchClub = athlete.club.toLowerCase().includes(q);
+      if (!matchName && !matchClub) return false;
+    }
+    if (athleteEventFilter !== 'ALL' && athlete.event !== athleteEventFilter) return false;
+    return true;
+  });
+
+  // Get unique events from athletes
+  const uniqueEvents = Array.from(new Set(ATHLETES.map(a => a.event)));
+
   // Localized string packs
   const loc = {
-    heroTitle: language === 'en'
-      ? 'EAF Digital Athlete Portal: Verify, Register & Track Live results in Real-time'
-      : 'የኢትዮጵያ አትሌቲክስ ዲጂታል ፖርታል: ይመዝገቡ፣ ያረጋግጡ እና ውጤቶችን በቀጥታ ይከታተሉ',
-    heroSubtitle: language === 'en'
-      ? 'Welcome to the official digital hub of the Ethiopian Athletics Federation. Verify your Fayda ID, register your club, and access live starter lists and real-time results.'
-      : 'ወደ የኢትዮጵያ አትሌቲክስ ፌዴሬሽን ይፋዊ የዲጂታል መድረክ እንኳን በደህና መጡ። የፋይዳ ብሔራዊ መታወቂያዎን ያረጋግጡ፣ ክለብዎን ይመዝግቡ እና የቀጥታ ውድድር ውጤቶችን ያግኙ።',
-    btnPrimary: language === 'en' ? 'Register / Verify EAF ID' : 'የኢፌአ መታወቂያ ይመዝገቡ/ያረጋግጡ',
-    btnSecondary: language === 'en' ? 'Explore Competitions & Live Results' : 'ውድድሮች እና የቀጥታ ውጤቶችን ያስሱ',
-    searchPlaceholder: language === 'en' ? 'Search by competition, athlete, or event...' : 'በውድድር ስም፣ አትሌት ወይም ስፖርት አይነት ይፈልጉ...',
-    regionLabel: language === 'en' ? 'Region / State' : 'ክልል / መገኛ',
-    statusLabel: language === 'en' ? 'Status' : 'የውድድር ሁኔታ',
-    startDateLabel: language === 'en' ? 'Start Date' : 'የመጀመሪያ ቀን',
-    endDateLabel: language === 'en' ? 'End Date' : 'የመጨረሻ ቀን',
-    sortLabel: language === 'en' ? 'Sort Date' : 'ቅደም ተከተል',
-    sortUpcoming: language === 'en' ? 'Upcoming First' : 'መጪ ውድድር ይቀድም',
-    sortOldest: language === 'en' ? 'Oldest First' : 'ቀደምት ውድድር ይቀድም',
+    heroTitle: 'EAF Digital Athlete Portal: Verify, Register & Track Live results in Real-time',
+    heroSubtitle: 'Welcome to the official digital hub of the Ethiopian Athletics Federation. Verify your Fayda ID, register your club, and access live starter lists and real-time results.',
+    btnPrimary: 'Register / Verify EAF ID',
+    btnSecondary: 'Explore Competitions & Live Results',
+    searchPlaceholder: 'Search by competition, athlete, or event...',
+    regionLabel: 'Region / State',
+    statusLabel: 'Status',
+    startDateLabel: 'Start Date',
+    endDateLabel: 'End Date',
+    sortLabel: 'Sort Date',
+    sortUpcoming: 'Upcoming First',
+    sortOldest: 'Oldest First',
 
-    all: language === 'en' ? 'All' : 'ሁሉም',
-    regOpen: language === 'en' ? 'Open for Registration' : 'ምዝገባ ክፍት ነው',
-    regClosed: language === 'en' ? 'Registration Closed' : 'ምዝገባ ተዘግቷል',
-    live: language === 'en' ? 'Live' : 'በቀጥታ ስርጭት',
-    upcoming: language === 'en' ? 'Upcoming' : 'መጪ ውድድር',
+    all: 'All',
+    regOpen: 'Open for Registration',
+    regClosed: 'Registration Closed',
+    live: 'Live',
+    upcoming: 'Upcoming',
 
-    newsTitle: language === 'en' ? 'Latest News & Updates' : 'አዳዲስ ዜናዎች',
-    competitionsTitle: language === 'en' ? 'Competitions & Championship Hub' : 'የውድድሮች ማዕከል',
-    athletesTitle: language === 'en' ? 'Featured Ethiopian Athletics Stars' : 'የኢትዮጵያ አትሌቲክስ ኮከቦች',
-    aboutTitle: language === 'en' ? 'About Ethiopian Athletics Federation' : 'ስለ ኢትዮጵያ አትሌቲክስ ፌዴሬሽን',
-    structureTitle: language === 'en' ? 'Federation Governance Structure' : 'የፌዴሬሽኑ መዋቅር',
-    partnersTitle: language === 'en' ? 'Official Federation Sponsors & Corporate Partners' : 'ስፖንሰሮች እና አጋሮች',
+    newsTitle: 'Latest News & Updates',
+    competitionsTitle: 'Competitions & Championship Hub',
+    athletesTitle: 'Featured Ethiopian Athletics Stars',
+    aboutTitle: 'About Ethiopian Athletics Federation',
+    structureTitle: 'Federation Governance Structure',
+    partnersTitle: 'Official Federation Sponsors & Corporate Partners',
   };
 
   const filteredMeets = ENRICHED_MEETS.filter(meet => {
@@ -404,7 +422,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         meet={meetObj}
         onBack={() => setSelectedMeetId(null)}
         onRegister={onRegister}
-        language={language}
       />
     );
   }
@@ -415,18 +432,18 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   // ── Theme tokens ── premium design tokens that make dark mode pop
   const t = {
-    bg:          darkMode ? '#090D16' : '#FFFFFF',
-    bgAlt:       darkMode ? '#0F1524' : '#F8FAFC',
-    bgHero:      darkMode ? 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(14, 165, 233, 0.18), rgba(9, 13, 22, 0))' : 'linear-gradient(180deg,#F0F9FF 0%,#E0F2FE 40%,#FFFFFF 100%)',
-    surface:     darkMode ? '#131B2E' : '#FFFFFF',
+    bg: darkMode ? '#090D16' : '#FFFFFF',
+    bgAlt: darkMode ? '#0F1524' : '#F8FAFC',
+    bgHero: darkMode ? 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(14, 165, 233, 0.18), rgba(9, 13, 22, 0))' : 'linear-gradient(180deg,#F0F9FF 0%,#E0F2FE 40%,#FFFFFF 100%)',
+    surface: darkMode ? '#131B2E' : '#FFFFFF',
     surfaceRaised: darkMode ? '#1E294B' : '#F1F5F9',
-    text:        darkMode ? '#F8FAFC' : '#0F172A',
-    textSub:     darkMode ? '#CBD5E1' : '#475569',
-    textMuted:   darkMode ? '#94A3B8' : '#64748B',
-    textLight:   darkMode ? '#64748B' : '#94A3B8',
-    border:      darkMode ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
+    text: darkMode ? '#F8FAFC' : '#0F172A',
+    textSub: darkMode ? '#CBD5E1' : '#475569',
+    textMuted: darkMode ? '#94A3B8' : '#64748B',
+    textLight: darkMode ? '#64748B' : '#94A3B8',
+    border: darkMode ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
     borderSubtle: darkMode ? 'rgba(255, 255, 255, 0.05)' : '#CBD5E1',
-    inputBg:     darkMode ? '#0A0F1D' : '#F8FAFC',
+    inputBg: darkMode ? '#0A0F1D' : '#F8FAFC',
   };
 
   return (
@@ -479,19 +496,13 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               justifyContent: 'center',
               gap: '0.25em 0.35em'
             }}>
-              {(language === 'en' ? [
+              {[
                 { text: 'EAF Digital Athlete Portal:', dir: 'left', color: t.text },
                 { text: 'Verify,', dir: 'right', color: 'var(--primary)' },
                 { text: 'Register &', dir: 'left', color: t.text },
                 { text: 'Track Live results', dir: 'right', color: darkMode ? '#38BDF8' : '#0284C7' },
                 { text: 'in Real-time', dir: 'left', color: '#D97706' },
-              ] : [
-                { text: 'የኢትዮጵያ አትሌቲክስ ዲጂታል ፖርታል:', dir: 'left', color: t.text },
-                { text: 'ይመዝገቡ፣', dir: 'right', color: 'var(--primary)' },
-                { text: 'ያረጋግጡ', dir: 'left', color: t.text },
-                { text: 'እና ውጤቶችን', dir: 'right', color: darkMode ? '#38BDF8' : '#0284C7' },
-                { text: 'በቀጥታ ይከታተሉ', dir: 'left', color: '#D97706' },
-              ]).map((part, index) => (
+              ].map((part, index) => (
                 <motion.span
                   key={index}
                   initial={{ opacity: 0, x: part.dir === 'left' ? -100 : 100, filter: 'blur(6px)' }}
@@ -589,7 +600,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   {loc.competitionsTitle}
                 </h2>
                 <p style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.95rem' }}>
-                  {language === 'en' ? 'Active Events, Starter Lists & Schedules' : 'አሁን ያሉ ውድድሮች እና የጊዜ ሰሌዳዎች'}
+                  Active Events, Starter Lists & Schedules
                 </p>
               </div>
 
@@ -632,7 +643,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
                 >
-                  {language === 'en' ? (showAllComps ? 'View Less' : 'View All Competitions') : (showAllComps ? 'ያነሰ ይመልከቱ' : 'ሁሉንም ውድድሮች ይመልከቱ')} <ChevronRight size={16} />
+                  {showAllComps ? 'View Less' : 'View All Competitions'} <ChevronRight size={16} />
                 </button>
 
                 {!showAllComps && sortedMeets.length > CARDS_PER_PAGE && (
@@ -725,7 +736,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     onChange={e => setRegionFilter(e.target.value)}
                     style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
                   >
-                    <option value="ALL">{language === 'en' ? 'All Regions' : 'ሁሉም ክልሎች'}</option>
+                    <option value="ALL">All Regions</option>
                     <option value="Addis Ababa">Addis Ababa</option>
                     <option value="Oromia">Oromia</option>
                     <option value="Amhara">Amhara</option>
@@ -790,7 +801,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             {sortedMeets.length === 0 ? (
               <div style={{ background: t.surface, border: '1px solid ' + t.border, borderRadius: '20px', padding: '48px', textAlign: 'center', color: t.textMuted }}>
                 <Trophy size={48} style={{ opacity: 0.2, marginBottom: '12px' }} />
-                <h4 style={{ fontWeight: 800 }}>{language === 'en' ? 'No Competitions Found' : 'ምንም ውድድሮች አልተገኙም'}</h4>
+                <h4 style={{ fontWeight: 800 }}>No Competitions Found</h4>
               </div>
             ) : (() => {
               const totalPages = Math.ceil(sortedMeets.length / CARDS_PER_PAGE);
@@ -834,7 +845,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                               {statusName}
                             </span>
                             <h3 style={{ color: '#FFFFFF', fontSize: '1.15rem', fontWeight: 900, marginBottom: '8px', lineHeight: 1.3 }}>
-                              {language === 'en' ? meet.title : meet.amharic || meet.title}
+                              {meet.title}
                             </h3>
                             <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
                               <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
@@ -849,7 +860,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                                 📍 {meet.region}
                               </span>
                               <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                {language === 'en' ? 'View Details' : 'ዝርዝር'} <ChevronRight size={16} />
+                                View Details <ChevronRight size={16} />
                               </span>
                             </div>
                           </div>
@@ -1005,7 +1016,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               whiteSpace: 'nowrap', zIndex: 1,
             }}>
               <span>🔴</span>
-              {language === 'en' ? 'LIVE EAF TICKER' : 'የቀጥታ ዜና'}
+              LIVE EAF TICKER
             </div>
             <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
               <style>{`
@@ -1023,9 +1034,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 }
               `}</style>
               <span className="ticker-inner">
-                {language === 'en'
-                  ? 'Ethiopia wins 15 medals at 24th African Athletics Championship · EAF launches athlete licensing with Fayda ID · Addis Ababa Grand Prix entries open ·'
-                  : 'ኢትዮጵያ በ24ኛው የአፍሪካ አትሌቲክስ ሻምፒዮና 15 ሜዳሊያዎችን አሸንፋለች · ፌዴሬሽኑ የፋይዳ ባዮሜትሪክ ምዝገባን በይፋ ጀምሯል · የአዲስ አበባ ግራንድ ፕሪ ምዝገባ ተጀምሯል ·'}
+                Ethiopia wins 15 medals at 24th African Athletics Championship · EAF launches athlete licensing with Fayda ID · Addis Ababa Grand Prix entries open ·
               </span>
             </div>
           </div>
@@ -1070,7 +1079,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       </p>
                     )}
                     <span style={{ color: '#38BDF8', fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      {language === 'en' ? 'Read Full Article →' : 'ተጨማሪ ያንብቡ →'}
+                      Read Full Article →
                     </span>
                   </div>
                 </div>
@@ -1162,8 +1171,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       <div
                         onClick={() => setActiveStructure(isActive ? null : item)}
                         style={{
-                          background: isActive 
-                            ? (darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)') 
+                          background: isActive
+                            ? (darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)')
                             : t.bgAlt,
                           border: isActive ? '1px solid var(--primary)' : '1px solid ' + t.border,
                           borderRadius: isActive ? '14px 14px 0 0' : 14,
@@ -1171,17 +1180,17 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                           display: 'flex', alignItems: 'center', gap: 16,
                           cursor: 'pointer', transition: 'all 0.2s',
                         }}
-                        onMouseEnter={e => { 
-                          if (!isActive) { 
-                            e.currentTarget.style.background = darkMode ? 'rgba(14, 165, 233, 0.1)' : '#F0F9FF'; 
-                            e.currentTarget.style.borderColor = 'var(--primary)'; 
-                          } 
+                        onMouseEnter={e => {
+                          if (!isActive) {
+                            e.currentTarget.style.background = darkMode ? 'rgba(14, 165, 233, 0.1)' : '#F0F9FF';
+                            e.currentTarget.style.borderColor = 'var(--primary)';
+                          }
                         }}
-                        onMouseLeave={e => { 
-                          if (!isActive) { 
-                            e.currentTarget.style.background = t.bgAlt; 
-                            e.currentTarget.style.borderColor = t.border; 
-                          } 
+                        onMouseLeave={e => {
+                          if (!isActive) {
+                            e.currentTarget.style.background = t.bgAlt;
+                            e.currentTarget.style.borderColor = t.border;
+                          }
                         }}
                       >
                         {item.icon}
@@ -1210,20 +1219,20 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                           </p>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                              <span style={{ 
-                                background: darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)', 
-                                color: darkMode ? '#38BDF8' : 'var(--primary)', 
-                                borderRadius: 6, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 
+                              <span style={{
+                                background: darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)',
+                                color: darkMode ? '#38BDF8' : 'var(--primary)',
+                                borderRadius: 6, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0
                               }}>
                                 Members
                               </span>
                               <span style={{ color: t.textSub, fontSize: '0.85rem', fontWeight: 600 }}>{item.members}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                              <span style={{ 
-                                background: darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)', 
-                                color: darkMode ? '#38BDF8' : 'var(--primary)', 
-                                borderRadius: 6, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 
+                              <span style={{
+                                background: darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)',
+                                color: darkMode ? '#38BDF8' : 'var(--primary)',
+                                borderRadius: 6, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0
                               }}>
                                 Meets
                               </span>
@@ -1382,7 +1391,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
                       <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid ' + t.border, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          {item.type === 'VIDEO' ? (language === 'en' ? 'Watch Video' : 'ቪዲዮ ይመልከቱ') : (language === 'en' ? 'View Photo' : 'ፎቶ ይመልከቱ')} <ChevronRight size={14} />
+                          {item.type === 'VIDEO' ? 'Watch Video' : 'View Photo'} <ChevronRight size={14} />
                         </span>
                       </div>
                     </div>

@@ -2,7 +2,7 @@ import React from 'react';
 import {
   Building2, UserCheck, Users, ArrowRightLeft, Trophy,
   Navigation, Activity, LogOut, Home,
-  Bell, ChevronRight, Award, Globe, BookOpen
+  Bell, ChevronRight, Award, Globe, BookOpen, Sun, Moon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Club, Athlete } from '../../types';
@@ -25,12 +25,15 @@ interface AppLayoutProps {
   currentAthlete: Athlete;
   onSwitchRole: (role: string) => void;
   onLogout: () => void;
+  darkMode?: boolean;
+  onToggleDarkMode?: () => void;
   children: React.ReactNode;
 }
 
 export default function AppLayout({
   currentRole, activeSubPage, onChangeSubPage,
-  currentClub, currentAthlete, onSwitchRole, onLogout, children
+  currentClub, currentAthlete, onSwitchRole, onLogout,
+  darkMode, onToggleDarkMode, children
 }: AppLayoutProps) {
   const isClub = currentRole === 'CLUB';
 
@@ -173,6 +176,18 @@ export default function AppLayout({
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
               Active
             </div>
+            
+            {onToggleDarkMode && (
+              <button
+                onClick={onToggleDarkMode}
+                className="w-[34px] h-[34px] rounded-full border-none flex items-center justify-center cursor-pointer transition-colors
+                  bg-[var(--bg-surface-variant)] text-[var(--text-muted)] hover:text-[var(--text-heading)]"
+                title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+            )}
+
             <div className="relative cursor-pointer">
               <Bell size={19} color="var(--text-muted)" />
               <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />

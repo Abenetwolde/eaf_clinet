@@ -23,7 +23,7 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
   return (
     <div className="max-w-[1280px] mx-auto px-6 py-8">
       {/* Athlete Header Profile Banner */}
-      <div className="glass-panel p-8 mb-7 bg-gradient-to-br from-white to-[#F0FDF4] border-2 border-[rgba(0,168,89,0.3)] flex items-center justify-between flex-wrap gap-5">
+      <div className="glass-panel p-8 mb-7 bg-[var(--bg-card)] border-2 border-[rgba(0,168,89,0.25)] flex items-center justify-between flex-wrap gap-5">
         <div className="flex items-center gap-5">
           <img 
             src={athlete.photoUrl} 
