@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { ShieldCheck, ArrowRight, X, Mail, Lock, Sparkles, Building2, UserCheck, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, ArrowRight, X, Mail, Lock, Building2, UserCheck } from 'lucide-react';
 import { MOCK_CLUBS, MOCK_ATHLETES } from '../data/mockData';
+import { useI18n } from '../i18n';
 
 export default function AuthModal({ onClose, onLoginSuccess }) {
+  const { t } = useI18n();
   const [loginRole, setLoginRole] = useState('CLUB'); // 'CLUB' | 'ATHLETE'
   const [email, setEmail] = useState('admin@defense-athletics.et');
   const [password, setPassword] = useState('••••••••');
@@ -47,13 +49,13 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(14, 165, 233, 0.1)', color: 'var(--primary)', padding: '5px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '10px' }}>
               <ShieldCheck size={14} />
-              EOSCRMS Government Single Sign-On
+              {t('auth.ssoBadge')}
             </div>
             <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-              EAF Portal Authentication
+              {t('auth.title')}
             </h3>
             <p style={{ fontSize: '0.9rem', color: '#64748B', marginTop: '6px' }}>
-              Sign in to manage club rosters, event registrations, and athlete  licenses
+              {t('auth.subtitle')}
             </p>
           </div>
           <button 
@@ -105,7 +107,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
             }}
           >
             <Building2 size={18} />
-            Club Administrator Portal
+            {t('auth.clubPortal')}
           </button>
 
           <button
@@ -132,7 +134,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
             }}
           >
             <UserCheck size={18} />
-            Athlete Portal Access
+            {t('auth.athletePortal')}
           </button>
         </div>
 
@@ -142,14 +144,14 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: 700, color: '#1E293B', marginBottom: '6px' }}>
                 <Mail size={16} color="var(--primary)" />
-                Registered Email Address
+                {t('auth.emailLabel')}
               </label>
               <input 
                 type="email"
                 className="form-input"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. admin@defense-athletics.et"
+                placeholder={t('auth.emailPlaceholder')}
                 required
                 style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }}
               />
@@ -159,14 +161,14 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', fontWeight: 700, color: '#1E293B', marginBottom: '6px' }}>
                 <Lock size={16} color="var(--primary)" />
-                Account Password
+                {t('auth.passwordLabel')}
               </label>
               <input 
                 type="password"
                 className="form-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your account password"
+                placeholder={t('auth.passwordPlaceholder')}
                 required
                 style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }}
               />
@@ -189,8 +191,8 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
           }}>
             <ShieldCheck size={22} style={{ flexShrink: 0 }} />
             <div>
-              <div style={{ fontWeight: 800, color: '#0F172A', marginBottom: '2px' }}>Fayda FIN  SSO Protected</div>
-              <div style={{ fontSize: '0.78rem', color: '#475569' }}>Proclamation No. 1284/2023 Compliant — National Digital ID Verification Active</div>
+              <div style={{ fontWeight: 800, color: '#0F172A', marginBottom: '2px' }}>{t('auth.faydaSsoTitle')}</div>
+              <div style={{ fontSize: '0.78rem', color: '#475569' }}>{t('auth.faydaSsoSub')}</div>
             </div>
           </div>
 
@@ -203,7 +205,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
             marginBottom: '28px'
           }}>
             <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748B', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              ⚡ One-Click Demo Credentials
+              ⚡ {t('auth.demoCredentials')}
             </div>
 
             <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -225,7 +227,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
                 }}
               >
                 <Building2 size={16} />
-                Club Admin Demo
+                {t('auth.clubDemo')}
               </button>
 
               <button
@@ -246,7 +248,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
                 }}
               >
                 <UserCheck size={16} />
-                Athlete Demo
+                {t('auth.athleteDemo')}
               </button>
             </div>
           </div>
@@ -271,7 +273,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
               gap: '10px'
             }}
           >
-            Sign In to {loginRole === 'CLUB' ? 'Club Management Portal' : 'Athlete Portal'}
+            {t('auth.signInTo', { portal: t(loginRole === 'CLUB' ? 'auth.clubManagementPortal' : 'auth.athletePortal') })}
             <ArrowRight size={20} />
           </button>
         </form>

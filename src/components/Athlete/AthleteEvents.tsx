@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Trophy, Calendar, MapPin, CheckCircle2, X, ShieldCheck, AlertTriangle, Users } from 'lucide-react';
 import { MOCK_MEETS } from '../../data/mockData';
+import { useAppSelector } from '../../store/hooks';
 import type { Athlete } from '../../types';
 
 interface AthleteEventsProps {
-  athlete: Athlete;
   onUpdateAthlete: (athlete: Athlete) => void;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export default function AthleteEvents({ athlete, onUpdateAthlete, onNotify }: AthleteEventsProps) {
+export default function AthleteEvents({ onUpdateAthlete, onNotify }: AthleteEventsProps) {
+  const athlete = useAppSelector((state) => state.auth.athlete);
   const [meets, setMeets] = useState(MOCK_MEETS.map(m => ({ ...m, athleteEnrolled: false, enrolledDiscipline: null })));
   const [enrollModal, setEnrollModal] = useState<{ [key: string]: any } | null>(null); // { meet }
   const [selectedDisc, setSelectedDisc] = useState('');
@@ -26,7 +27,7 @@ export default function AthleteEvents({ athlete, onUpdateAthlete, onNotify }: At
         : m
     ));
 
-    // 2. Persist to athlete profile (localStorage)
+    // 2. Persist to athlete profile (Redux -> localStorage via athletesSlice)
     const newApplication = {
       meetId: enrollModal.id,
       meetTitle: enrollModal.title,

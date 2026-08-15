@@ -10,14 +10,14 @@ import {
   Filter,
   Edit
 } from 'lucide-react';
-import type { Club, Athlete } from '../../types';
+import { useI18n } from '../../i18n';
+import { useAppSelector } from '../../store/hooks';
+import type { Athlete } from '../../types';
 
 interface RosterManagementProps {
-  athletes: Athlete[];
-  club: Club;
   onRenewLicense: (athlete: Athlete) => void;
   onAddAthlete: (athlete: Athlete) => void;
-  onUpdateAthlete: (athlete: Athlete) => void;
+  onUpdateAthlete?: (athlete: Athlete) => void;
 }
 
 interface FaydaVerifiedData {
@@ -31,7 +31,10 @@ interface FaydaVerifiedData {
   gender?: string;
 }
 
-export default function RosterManagement({ athletes, club, onRenewLicense, onAddAthlete, onUpdateAthlete }: RosterManagementProps) {
+export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdateAthlete }: RosterManagementProps) {
+  const { t } = useI18n();
+  const athletes = useAppSelector((state) => state.athletes);
+  const club = useAppSelector((state) => state.auth.club);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterTier, setFilterTier] = useState<string>('ALL');
   const [filterLicense, setFilterLicense] = useState<string>('ALL');
@@ -133,7 +136,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
     e.preventDefault();
     if (!faydaVerifiedData) return;
 
-    const createdAthlete = {
+    const createdAthlete: Athlete = {
       id: `ATH-2026-${Math.floor(100 + Math.random() * 900)}`,
       // From Fayda API — not entered manually:
       name: faydaVerifiedData.fullName,
@@ -154,7 +157,10 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
       photoUrl: "/images/runner_marathon.png",
       checkinStatus: "NOT_CHECKED_IN",
       secondaryDoc: null,
-      weight: newAthleteWeight, height: newAthleteHeight, restingHR: null, trainingLoad: 0,
+      weight: newAthleteWeight ? Number(newAthleteWeight) : undefined,
+      height: newAthleteHeight ? Number(newAthleteHeight) : undefined,
+      restingHR: undefined,
+      trainingLoad: "0",
       coach: newAthleteCoach, emergencyContact: newAthleteEmergency, medicalConditions: newAthleteMedical,
       personalBests: [], seasonBests: [], weightLog: [], trainingLog: [], achievements: []
     };
@@ -177,10 +183,10 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
       <div className="flex items-center justify-between flex-wrap gap-[16px] mb-[24px]">
         <div>
           <h3 className="text-[1.4rem] font-extrabold text-text-heading">
-            Digital Roster Audits & Licensing Registry
+            {t('club.rosterAuditsTitle')}
           </h3>
           <p className="text-[0.85rem] text-text-muted">
-            FR-1.2: Digital roster management, Fayda ID verification hashes, & annual licensing audit
+            {t('club.rosterAuditsSub')}
           </p>
         </div>
 
@@ -189,7 +195,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
           className="btn-gov-primary"
         >
           <UserPlus size={16} />
-          Register Athlete via Fayda FIN
+          {t('club.registerViaFayda')}
         </button>
       </div>
 
@@ -201,7 +207,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
             <input 
               type="text"
               className="form-input pl-[38px] w-full"
-              placeholder="Search name, discipline, Fayda..."
+              placeholder={t('club.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -214,11 +220,11 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               value={filterTier}
               onChange={(e) => setFilterTier(e.target.value)}
             >
-              <option value="ALL">All Age Tiers</option>
-              <option value="Senior">Senior Tiers</option>
-              <option value="U20">U20 Division</option>
-              <option value="U18">U18 Division</option>
-              <option value="U16">U16 Youth Division</option>
+              <option value="ALL">{t('club.allAgeTiers')}</option>
+              <option value="Senior">{t('club.seniorTiers')}</option>
+              <option value="U20">{t('club.u20Division')}</option>
+              <option value="U18">{t('club.u18Division')}</option>
+              <option value="U16">{t('club.u16Youth')}</option>
             </select>
           </div>
 
@@ -227,10 +233,10 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
             value={filterLicense}
             onChange={(e) => setFilterLicense(e.target.value)}
           >
-            <option value="ALL">All License Statuses</option>
-            <option value="ACTIVE">Active Licenses</option>
-            <option value="EXPIRED">Expired Licenses</option>
-            <option value="UNLICENSED">Unlicensed</option>
+            <option value="ALL">{t('club.allLicenseStatuses')}</option>
+            <option value="ACTIVE">{t('club.activeLicenses')}</option>
+            <option value="EXPIRED">{t('club.expiredLicenses')}</option>
+            <option value="UNLICENSED">{t('club.unlicensed')}</option>
           </select>
         </div>
       </div>
@@ -241,12 +247,12 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
           <table className="gov-table">
             <thead>
               <tr>
-                <th>Athlete Name</th>
-                <th>Fayda National ID</th>
-                <th>Age Division</th>
-                <th>Primary Discipline</th>
-                <th>Federation License</th>
-                <th>Action</th>
+                <th>{t('club.athleteNameCol')}</th>
+                <th>{t('club.faydaNationalIdCol')}</th>
+                <th>{t('club.ageDivisionCol')}</th>
+                <th>{t('club.primaryDisciplineCol')}</th>
+                <th>{t('club.federationLicenseCol')}</th>
+                <th>{t('club.actionCol')}</th>
               </tr>
             </thead>
             <tbody>
@@ -276,7 +282,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                               {athlete.faydaFin}
                             </div>
                             <div className="text-[0.65rem] text-text-dim">
-                              Hash: {athlete.faydaHash.substring(0, 10)}...
+                              {t('club.hashPrefix', { hash: athlete.faydaHash.substring(0, 10) + '...' })}
                             </div>
                           </div>
                         </>
@@ -284,9 +290,9 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                         <>
                           <AlertTriangle size={16} color="var(--accent)" />
                           <div>
-                            <div className="text-[0.8rem] text-accent font-bold">Pending Audit</div>
+                            <div className="text-[0.8rem] text-accent font-bold">{t('club.pendingAudit')}</div>
                             <div className="text-[0.65rem] text-text-muted">
-                              {athlete.secondaryDoc ? athlete.secondaryDoc.type : 'Missing Verification'}
+                              {athlete.secondaryDoc ? athlete.secondaryDoc.type : t('club.missingVerification')}
                             </div>
                           </div>
                         </>
@@ -300,30 +306,30 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                       athlete.ageTier === 'U20' ? 'badge-green' :
                       athlete.ageTier === 'U18' ? 'badge-amber' : 'badge-green'
                     }`}>
-                      {athlete.ageTier} Tier
+                      {t('club.tierBadge', { tier: athlete.ageTier })}
                     </span>
                   </td>
 
                   <td>
                     <div className="font-semibold text-text-heading">{athlete.primaryEvent}</div>
-                    <div className="text-[0.75rem] text-text-muted">PB: {athlete.pb}</div>
+                    <div className="text-[0.75rem] text-text-muted">{t('club.pbPrefix', { pb: athlete.pb })}</div>
                   </td>
 
                   <td>
                     {athlete.licenseStatus === 'ACTIVE' ? (
                       <span className="badge badge-green">
                         <CheckCircle2 size={12} />
-                        Active ({athlete.licenseNumber})
+                        {t('club.activeLicense', { number: athlete.licenseNumber })}
                       </span>
                     ) : athlete.licenseStatus === 'EXPIRED' ? (
                       <span className="badge badge-amber">
                         <Clock size={12} />
-                        Expired Dec 2025
+                        {t('club.expiredDec2025')}
                       </span>
                     ) : (
                       <span className="badge badge-red">
                         <AlertTriangle size={12} />
-                        Unlicensed
+                        {t('club.unlicensed')}
                       </span>
                     )}
                   </td>
@@ -337,7 +343,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                         className="btn-gov-secondary text-[0.75rem] px-[10px] py-[6px] flex items-center gap-[4px]"
                       >
                         <Edit size={12} />
-                        Edit
+                        {t('club.editBtn')}
                       </button>
                     </div>
                   </td>
@@ -354,20 +360,20 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
           <div className="modal-content p-[36px] max-w-[860px] w-[95vw]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-[20px]">
               <h3 className="text-[1.3rem] font-extrabold text-text-heading">
-                Register Athlete via Fayda FIN
+                {t('club.registerViaFaydaTitle')}
               </h3>
               <button onClick={() => setShowAddModal(false)} className="btn-gov-secondary px-[10px] py-[4px]">✕</button>
             </div>
 
             {/* Info note */}
             <div className="bg-primary-light border border-[rgba(0,80,160,0.2)] rounded-[8px] px-[14px] py-[10px] mb-[16px] text-[0.8rem] text-primary font-semibold leading-[1.5]">
-              ℹ Name, date of birth, and age division are fetched automatically from the Fayda API. Enter the FIN below.
+              {t('club.faydaInfoNote')}
             </div>
 
             <form onSubmit={(e) => { e.preventDefault(); if(!showConfirmation) { setShowConfirmation(true); } else { setRegistrationSubmitted(true); } }}>
               {!otpStep && !otpVerified && (
               <div className="form-group">
-                <label className="form-label">Fayda FIN (Auto-formatted: XXXX-XXXX-XXXX)</label>
+                <label className="form-label">{t('club.faydaFinLabel')}</label>
                 <div className="flex gap-[8px]">
                   <input 
                     type="text" 
@@ -392,7 +398,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                     className="btn-gov-primary text-[0.8rem] whitespace-nowrap px-[14px] py-[10px]"
                     disabled={newAthleteFin.replace(/-/g,'').length!==12}
                   >
-                    Send OTP
+                    {t('club.sendOtp')}
                   </button>
                 </div>
               </div>
@@ -400,8 +406,8 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
 
               {otpStep && !otpVerified && (
                 <div className="form-group bg-[#F0FDF4] border border-[#86EFAC] rounded-[12px] p-[20px]">
-                  <div className="font-extrabold text-[#15803D] mb-[8px] text-[0.95rem]">📱 OTP sent to registered phone</div>
-                  <div className="text-[0.82rem] text-[#64748B] mb-[16px]">Enter the 6-digit One-Time Password sent to the athlete's Fayda-registered mobile number.</div>
+                  <div className="font-extrabold text-[#15803D] mb-[8px] text-[0.95rem]">{t('club.otpSentTitle')}</div>
+                  <div className="text-[0.82rem] text-[#64748B] mb-[16px]">{t('club.otpSentSub')}</div>
                   <div className="flex gap-[8px]">
                     <input 
                       type="text" className="form-input flex-1 font-mono text-[1.4rem] text-center tracking-[0.3em]"
@@ -416,51 +422,51 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                           handleSimulateFaydaLookup();
                         }
                       }}
-                    >Verify OTP</button>
+                    >{t('club.verifyOtp')}</button>
                   </div>
                 </div>
               )}
 
               <div className="form-group">
-                <label className="form-label">Primary Athletic Event</label>
+                <label className="form-label">{t('club.primaryEventLabel')}</label>
                 <select 
                   className="form-select"
                   value={newAthleteEvent}
                   onChange={(e) => setNewAthleteEvent(e.target.value)}
                 >
-                  <option value="100m Sprint / 200m">100m / 200m Sprint</option>
-                  <option value="800m / 1,500m">800m / 1,500m Middle Distance</option>
-                  <option value="5,000m / 10,000m">5,000m / 10,000m Long Distance</option>
-                  <option value="3,000m Steeplechase">3,000m Steeplechase</option>
-                  <option value="Marathon / Half-Marathon">Marathon / Road Races</option>
+                  <option value="100m Sprint / 200m">{t('club.eventSprint')}</option>
+                  <option value="800m / 1,500m">{t('club.eventMiddleDistance')}</option>
+                  <option value="5,000m / 10,000m">{t('club.eventLongDistance')}</option>
+                  <option value="3,000m Steeplechase">{t('club.eventSteeplechase')}</option>
+                  <option value="Marathon / Half-Marathon">{t('club.eventMarathon')}</option>
                 </select>
               </div>
 
               
-              <div className="grid grid-cols-2 gap-[12px]">
+              <div className="stack-on-mobile grid grid-cols-2 gap-[12px]">
                 <div className="form-group">
-                  <label className="form-label">Weight (kg)</label>
-                  <input type="number" className="form-input" value={newAthleteWeight} onChange={e => setNewAthleteWeight(e.target.value)} placeholder="e.g. 58" />
+                  <label className="form-label">{t('club.weightLabel')}</label>
+                  <input type="number" className="form-input" value={newAthleteWeight} onChange={e => setNewAthleteWeight(e.target.value)} placeholder={t('club.weightKgPlaceholder')} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Height (cm)</label>
-                  <input type="number" className="form-input" value={newAthleteHeight} onChange={e => setNewAthleteHeight(e.target.value)} placeholder="e.g. 170" />
+                  <label className="form-label">{t('club.heightLabel')}</label>
+                  <input type="number" className="form-input" value={newAthleteHeight} onChange={e => setNewAthleteHeight(e.target.value)} placeholder={t('club.heightCmPlaceholder')} />
                 </div>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Primary Coach</label>
-                <input type="text" className="form-input" value={newAthleteCoach} onChange={e => setNewAthleteCoach(e.target.value)} placeholder="Coach Name" />
+                <label className="form-label">{t('club.primaryCoachLabel')}</label>
+                <input type="text" className="form-input" value={newAthleteCoach} onChange={e => setNewAthleteCoach(e.target.value)} placeholder={t('club.coachPlaceholder')} />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Emergency Contact Phone</label>
-                <input type="text" className="form-input" value={newAthleteEmergency} onChange={e => setNewAthleteEmergency(e.target.value)} placeholder="+251 91 123 4567" />
+                <label className="form-label">{t('club.emergencyContactLabel')}</label>
+                <input type="text" className="form-input" value={newAthleteEmergency} onChange={e => setNewAthleteEmergency(e.target.value)} placeholder={t('club.emergencyPhonePlaceholder')} />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Medical Conditions / Allergies</label>
-                <input type="text" className="form-input" value={newAthleteMedical} onChange={e => setNewAthleteMedical(e.target.value)} placeholder="None" />
+                <label className="form-label">{t('club.medicalConditionsLabel')}</label>
+                <input type="text" className="form-input" value={newAthleteMedical} onChange={e => setNewAthleteMedical(e.target.value)} placeholder={t('club.nonePlaceholder')} />
               </div>
 
               {/* Fayda Response Result Display */}
@@ -468,12 +474,12 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                 <div className="bg-[#F0FDF4] border-2 border-[#86EFAC] rounded-[14px] p-[20px] mb-[20px]">
                   <div className="flex items-center gap-[10px] mb-[16px]">
                     <ShieldCheck color="#15803D" size={22} />
-                    <span className="font-extrabold text-[#15803D] text-[1rem]">✅ Fayda Government API — Identity Verified</span>
+                    <span className="font-extrabold text-[#15803D] text-[1rem]">{t('club.faydaIdentityVerified')}</span>
                   </div>
                   <div className="flex gap-[20px] flex-wrap">
                     {/* Passport Photo upload */}
                     <div className="shrink-0">
-                      <label className="block font-bold text-[0.8rem] text-[#374151] mb-[8px]">Passport Photo *</label>
+                      <label className="block font-bold text-[0.8rem] text-[#374151] mb-[8px]">{t('club.passportPhotoLabel')}</label>
                       <div 
                         onClick={() => document.getElementById('passportPhotoInput').click()}
                         className="w-[120px] h-[150px] border-2 border-dashed border-[#86EFAC] rounded-[8px] cursor-pointer flex items-center justify-center overflow-hidden bg-white relative"
@@ -483,8 +489,8 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                         ) : (
                           <div className="text-center text-[#9CA3AF] text-[0.75rem]">
                             <div className="text-[2rem]">📷</div>
-                            <div>Click to upload</div>
-                            <div>35mm × 45mm</div>
+                            <div>{t('club.clickToUpload')}</div>
+                            <div>{t('club.passportDimensions')}</div>
                           </div>
                         )}
                         <input id="passportPhotoInput" type="file" accept="image/*" className="hidden"
@@ -497,17 +503,17 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                     </div>
                     {/* Personal Info List */}
                     <div className="flex-1 min-w-[200px]">
-                      <div className="font-bold text-[#374151] mb-[10px] text-[0.85rem]">Personal Information (from Fayda API)</div>
+                      <div className="font-bold text-[#374151] mb-[10px] text-[0.85rem]">{t('club.personalInfoTitle')}</div>
                       <ul className="list-none p-0 m-0 flex flex-col gap-[8px]">
                         {[
-                          ['Full Name (English)', faydaVerifiedData.fullName],
-                          ['Full Name (Amharic)', faydaVerifiedData.amharicName],
-                          ['Date of Birth', faydaVerifiedData.dob],
-                          ['Age Division', faydaVerifiedData.computedTier],
-                          ['Gender', 'Male'],
-                          ['Region', 'Oromia Region'],
-                          ['FIN', faydaVerifiedData.fin],
-                          ['Verification Hash', faydaVerifiedData.verificationHash.slice(0,18)+'...'],
+                          [t('club.fullNameEnglish'), faydaVerifiedData.fullName],
+                          [t('club.fullNameAmharic'), faydaVerifiedData.amharicName],
+                          [t('club.dateOfBirthLabel'), faydaVerifiedData.dob],
+                          [t('club.ageDivisionLabel'), faydaVerifiedData.computedTier],
+                          [t('club.genderLabel'), 'Male'],
+                          [t('club.regionLabel'), 'Oromia Region'],
+                          [t('club.finLabel'), faydaVerifiedData.fin],
+                          [t('club.verificationHashLabel'), faydaVerifiedData.verificationHash.slice(0,18)+'...'],
                         ].map(([k,v]) => (
                           <li key={k} className="flex gap-[8px] text-[0.82rem] border-b border-[#D1FAE5] pb-[6px]">
                             <span className="font-bold text-[#374151] min-w-[140px]">{k}:</span>
@@ -524,32 +530,32 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               {showConfirmation && faydaVerifiedData && !registrationSubmitted && (
                 <div className="bg-[#EFF6FF] border-2 border-[#93C5FD] rounded-[14px] p-[24px] mb-[20px]">
                   <div className="font-extrabold text-[#1D4ED8] text-[1.1rem] mb-[20px] flex items-center gap-[8px]">
-                    📋 Final Registration Confirmation — Review All Details
+                    {t('club.finalConfirmationTitle')}
                   </div>
                   <div className="flex gap-[24px] flex-wrap">
                     {passportPhotoUrl && (
                       <div className="shrink-0">
                         <img src={passportPhotoUrl} alt="Passport" className="w-[120px] h-[150px] object-cover rounded-[8px] border-2 border-[#93C5FD]" />
-                        <div className="text-[0.72rem] text-center text-[#6B7280] mt-[4px]">Passport Photo</div>
+                        <div className="text-[0.72rem] text-center text-[#6B7280] mt-[4px]">{t('club.passportPhotoCaption')}</div>
                       </div>
                     )}
                     <div className="flex-1 min-w-[200px]">
-                      <ul className="list-none p-0 m-0 grid grid-cols-2 gap-[8px]">
+                      <ul className="stack-on-mobile list-none p-0 m-0 grid grid-cols-2 gap-[8px]">
                         {[
-                          ['Full Name', faydaVerifiedData.fullName],
-                          ['Amharic Name', faydaVerifiedData.amharicName],
-                          ['Date of Birth', faydaVerifiedData.dob],
-                          ['Age Division', faydaVerifiedData.computedTier],
-                          ['Gender', 'Male'],
-                          ['FIN', faydaVerifiedData.fin],
-                          ['Club', 'Bekoji AC'],
-                          ['Primary Event', newAthleteEvent],
-                          ['Weight', newAthleteWeight ? newAthleteWeight + ' kg' : 'N/A'],
-                          ['Height', newAthleteHeight ? newAthleteHeight + ' cm' : 'N/A'],
-                          ['Coach', newAthleteCoach || 'N/A'],
-                          ['Emergency Contact', newAthleteEmergency || 'N/A'],
-                          ['Medical Notes', newAthleteMedical || 'None'],
-                          ['License Status', 'UNLICENSED (Pending)'],
+                          [t('club.fullNameShort'), faydaVerifiedData.fullName],
+                          [t('club.amharicNameShort'), faydaVerifiedData.amharicName],
+                          [t('club.dateOfBirthLabel'), faydaVerifiedData.dob],
+                          [t('club.ageDivisionLabel'), faydaVerifiedData.computedTier],
+                          [t('club.genderLabel'), 'Male'],
+                          [t('club.finLabel'), faydaVerifiedData.fin],
+                          [t('club.clubLabel'), 'Bekoji AC'],
+                          [t('club.primaryEventLabel'), newAthleteEvent],
+                          [t('club.weightLabel'), newAthleteWeight ? t('club.kgValue', { value: newAthleteWeight }) : t('club.nA')],
+                          [t('club.heightLabel'), newAthleteHeight ? t('club.cmValue', { value: newAthleteHeight }) : t('club.nA')],
+                          [t('club.primaryCoachLabel'), newAthleteCoach || t('club.nA')],
+                          [t('club.emergencyContactLabel'), newAthleteEmergency || t('club.nA')],
+                          [t('club.medicalNotes'), newAthleteMedical || t('club.nonePlaceholder')],
+                          [t('club.licenseStatusLabel'), t('club.unlicensedPending')],
                         ].map(([k,v]) => (
                           <li key={k} className="text-[0.8rem] border-b border-[#BFDBFE] pb-[6px]">
                             <div className="font-bold text-[#1E3A8A] text-[0.72rem]">{k}</div>
@@ -566,14 +572,14 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               {registrationSubmitted && (
                 <div className="bg-[#FFF7ED] border-2 border-[#FCD34D] rounded-[14px] p-[32px] text-center mb-[20px]">
                   <div className="text-[3rem] mb-[12px]">⏳</div>
-                  <div className="font-black text-[#92400E] text-[1.4rem] mb-[12px]">🎉 Registration Submitted — Awaiting EAF Approval</div>
+                  <div className="font-black text-[#92400E] text-[1.4rem] mb-[12px]">{t('club.regSubmittedTitle')}</div>
                   <div className="text-[#78350F] text-[0.9rem] leading-[1.6]">
-                    Your registration application for <strong>{faydaVerifiedData?.fullName}</strong> has been successfully submitted to the Ethiopian Athletics Federation (EAF) Digital Registry.<br/><br/>
-                    📋 <strong>Application Reference:</strong> EAF-{new Date().getFullYear()}-{Math.floor(1000 + Math.random() * 9000)}<br/>
-                    ⏱️ <strong>Expected Review Time:</strong> 2–5 business days<br/>
-                    📱 <strong>Notification:</strong> SMS &amp; email will be sent to the registered Fayda mobile number<br/>
-                    🔒 <strong>Status:</strong> Pending biometric cross-verification<br/><br/>
-                    You will be notified once the athlete's Fayda identity is cleared and the EAF license is issued.
+                    {t('club.regSubmittedLead', { name: faydaVerifiedData?.fullName })}<br/><br/>
+                    {t('club.regSubmittedRef', { ref: `EAF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}` })}<br/>
+                    {t('club.regSubmittedTime')}<br/>
+                    {t('club.regSubmittedNotif')}<br/>
+                    {t('club.regSubmittedStatus')}<br/><br/>
+                    {t('club.regSubmittedClose')}
                   </div>
                 </div>
               )}
@@ -584,7 +590,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                   className="btn-gov-primary w-full p-[14px] text-[1rem] font-extrabold"
                   disabled={otpVerified && !faydaVerifiedData}
                 >
-                  {showConfirmation ? '✅ Confirm & Submit to EAF Registry' : (!faydaVerifiedData ? 'Complete Fayda Verification First' : 'Review & Confirm Registration')}
+                  {showConfirmation ? t('club.confirmSubmitBtn') : (!faydaVerifiedData ? t('club.completeFaydaFirst') : t('club.reviewConfirmBtn'))}
                 </button>
               )}
             </form>
@@ -608,31 +614,31 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               <button onClick={() => setViewingAthlete(null)} className="btn-gov-secondary px-[10px] py-[4px]">✕</button>
             </div>
 
-            <div className="grid grid-cols-2 gap-[20px] mb-[24px]">
+            <div className="stack-on-mobile grid grid-cols-2 gap-[20px] mb-[24px]">
               <div className="bg-[#F8FAFC] p-[16px] rounded-[12px] border border-[#E2E8F0]">
-                <div className="text-[0.8rem] text-text-muted font-bold mb-[8px]">BIOMETRIC INFO</div>
+                <div className="text-[0.8rem] text-text-muted font-bold mb-[8px]">{t('club.biometricInfo')}</div>
                 <div className="grid gap-[6px] text-[0.9rem]">
-                  <div><strong>Fayda FIN:</strong> {viewingAthlete.faydaFin}</div>
-                  <div><strong>Status:</strong> {viewingAthlete.faydaStatus}</div>
-                  <div><strong>Age Tier:</strong> {viewingAthlete.ageTier}</div>
-                  <div><strong>Height/Weight:</strong> {viewingAthlete.height || '-'} cm / {viewingAthlete.weight || '-'} kg</div>
+                  <div><strong>{t('club.faydaFinKey')}</strong> {viewingAthlete.faydaFin}</div>
+                  <div><strong>{t('club.statusKey')}</strong> {viewingAthlete.faydaStatus}</div>
+                  <div><strong>{t('club.ageTierKey')}</strong> {viewingAthlete.ageTier}</div>
+                  <div><strong>{t('club.heightWeightKey')}</strong> {t('club.heightWeightValue', { height: viewingAthlete.height || '-', weight: viewingAthlete.weight || '-' })}</div>
                 </div>
               </div>
 
               <div className="bg-[#F8FAFC] p-[16px] rounded-[12px] border border-[#E2E8F0]">
-                <div className="text-[0.8rem] text-text-muted font-bold mb-[8px]">ATHLETIC INFO</div>
+                <div className="text-[0.8rem] text-text-muted font-bold mb-[8px]">{t('club.athleticInfo')}</div>
                 <div className="grid gap-[6px] text-[0.9rem]">
-                  <div><strong>Discipline:</strong> {viewingAthlete.primaryEvent}</div>
-                  <div><strong>Personal Best:</strong> {viewingAthlete.pb || 'N/A'}</div>
-                  <div><strong>License:</strong> {viewingAthlete.licenseStatus}</div>
-                  <div><strong>Coach:</strong> {viewingAthlete.coach || 'Unassigned'}</div>
+                  <div><strong>{t('club.disciplineKey')}</strong> {viewingAthlete.primaryEvent}</div>
+                  <div><strong>{t('club.personalBestKey')}</strong> {viewingAthlete.pb || t('club.nA')}</div>
+                  <div><strong>{t('club.licenseKey')}</strong> {viewingAthlete.licenseStatus}</div>
+                  <div><strong>{t('club.coachKey')}</strong> {viewingAthlete.coach || t('club.unassigned')}</div>
                 </div>
               </div>
             </div>
             
             <div className="flex justify-end gap-[12px]">
-              <button className="btn-gov-secondary" onClick={() => { setViewingAthlete(null); handleOpenEditModal(viewingAthlete); }}>Edit Profile</button>
-              <button className="btn-gov-primary" onClick={() => setViewingAthlete(null)}>Close</button>
+              <button className="btn-gov-secondary" onClick={() => { setViewingAthlete(null); handleOpenEditModal(viewingAthlete); }}>{t('club.editProfileBtn')}</button>
+              <button className="btn-gov-primary" onClick={() => setViewingAthlete(null)}>{t('club.closeBtn')}</button>
             </div>
           </div>
         </div>
@@ -645,14 +651,14 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
             <div className="flex items-center justify-between mb-[20px]">
               <h3 className="text-[1.3rem] font-extrabold text-text-heading flex items-center gap-[8px]">
                 <Edit size={18} color="var(--eth-blue)" />
-                Edit Athlete Profile
+                {t('club.editAthleteProfileTitle')}
               </h3>
               <button onClick={() => setEditingAthlete(null)} className="btn-gov-secondary px-[10px] py-[4px]">✕</button>
             </div>
 
             <form onSubmit={handleSaveEditSubmit}>
               <div className="form-group">
-                <label className="form-label">Athlete Full Name (English)</label>
+                <label className="form-label">{t('club.fullNameEnglishLabel')}</label>
                 <input 
                   type="text" 
                   className="form-input" 
@@ -663,7 +669,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               </div>
 
               <div className="form-group">
-                <label className="form-label">Amharic Name (የአትሌቱ ሙሉ ስም)</label>
+                <label className="form-label">{t('club.amharicNameLabel')}</label>
                 <input 
                   type="text" 
                   className="form-input" 
@@ -674,7 +680,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               </div>
 
               <div className="form-group">
-                <label className="form-label">Primary Event / Discipline</label>
+                <label className="form-label">{t('club.primaryEventDisciplineLabel')}</label>
                 <input 
                   type="text" 
                   className="form-input" 
@@ -685,7 +691,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               </div>
 
               <div className="form-group">
-                <label className="form-label">Personal Best (PB)</label>
+                <label className="form-label">{t('club.personalBestPbLabel')}</label>
                 <input 
                   type="text" 
                   className="form-input" 
@@ -696,15 +702,15 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               </div>
 
               <div className="form-group">
-                <label className="form-label">Athlete Photo Asset</label>
+                <label className="form-label">{t('club.athletePhotoAssetLabel')}</label>
                 <select 
                   className="form-select"
                   value={editPhoto}
                   onChange={(e) => setEditPhoto(e.target.value)}
                 >
-                  <option value="/images/runner_marathon.png">Marathon Finisher Photo (Ethiopian male athlete)</option>
-                  <option value="/images/runner_female.png">Track Runner Photo (Ethiopian female athlete)</option>
-                  <option value="/images/runners_training.png">High Altitude Altitude Training Squad</option>
+                  <option value="/images/runner_marathon.png">{t('club.marathonPhotoOption')}</option>
+                  <option value="/images/runner_female.png">{t('club.trackRunnerPhotoOption')}</option>
+                  <option value="/images/runners_training.png">{t('club.trainingSquadPhotoOption')}</option>
                 </select>
               </div>
 
@@ -712,7 +718,7 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                 type="submit" 
                 className="btn-gov-primary w-full p-[12px] mt-[10px]"
               >
-                Save Profile Changes
+                {t('club.saveProfileBtn')}
               </button>
             </form>
           </div>

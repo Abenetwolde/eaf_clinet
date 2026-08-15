@@ -5,7 +5,8 @@ import {
   Bell, ChevronRight, Award, Globe, BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Club, Athlete } from '../../types';
+import { useAppSelector } from '../../store/hooks';
+import { LanguageSelector } from '../../i18n';
 
 function EAFLogo({ size = 36 }: { size?: number }) {
   return (
@@ -18,20 +19,19 @@ function EAFLogo({ size = 36 }: { size?: number }) {
 }
 
 interface AppLayoutProps {
-  currentRole: 'CLUB' | 'ATHLETE';
   activeSubPage: string;
   onChangeSubPage: (page: string) => void;
-  currentClub: Club;
-  currentAthlete: Athlete;
   onSwitchRole: (role: string) => void;
   onLogout: () => void;
   children: React.ReactNode;
 }
 
 export default function AppLayout({
-  currentRole, activeSubPage, onChangeSubPage,
-  currentClub, currentAthlete, onSwitchRole, onLogout, children
+  activeSubPage, onChangeSubPage, onSwitchRole, onLogout, children
 }: AppLayoutProps) {
+  const currentRole = useAppSelector((state) => state.auth.role);
+  const currentClub = useAppSelector((state) => state.auth.club);
+  const currentAthlete = useAppSelector((state) => state.auth.athlete);
   const isClub = currentRole === 'CLUB';
 
   const clubNavItems = [
@@ -169,6 +169,7 @@ export default function AppLayout({
           </div>
 
           <div className="flex items-center gap-3.5">
+            <LanguageSelector />
             <div className="bg-primary-light px-3 py-1.5 rounded-2xl text-[0.75rem] font-bold text-primary flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
               Active

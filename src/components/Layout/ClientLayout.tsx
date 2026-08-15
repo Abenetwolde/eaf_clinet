@@ -1,19 +1,20 @@
 import React from 'react';
 import { Home, UserCheck, Bell, BookOpen, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Athlete } from '../../types';
+import { useAppSelector } from '../../store/hooks';
+import { LanguageSelector } from '../../i18n';
 
 interface ClientLayoutProps {
   activeSubPage: string;
   onChangeSubPage: (page: string) => void;
-  currentAthlete: Athlete;
   onLogout: () => void;
   children: React.ReactNode;
 }
 
 export default function ClientLayout({
-  activeSubPage, onChangeSubPage, currentAthlete, onLogout, children
+  activeSubPage, onChangeSubPage, onLogout, children
 }: ClientLayoutProps) {
+  const currentAthlete = useAppSelector((state) => state.auth.athlete);
   const tabs = [
     { id: 'OVERVIEW', label: 'Home', icon: Home },
     { id: 'APPLIED', label: 'My Events', icon: BookOpen },
@@ -41,6 +42,7 @@ export default function ClientLayout({
         </div>
 
         <div className="flex items-center gap-3">
+          <LanguageSelector />
           {/* Notifications button */}
           <motion.button
             whileHover={{ scale: 1.05 }}

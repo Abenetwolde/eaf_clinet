@@ -24,42 +24,31 @@ import AthleteNotifications from './components/Athlete/AthleteNotifications';
 import PaymentModal from './components/PaymentModal';
 import NotificationToast from './components/NotificationToast';
 
-import { MOCK_CLUBS, MOCK_ATHLETES, MOCK_TRANSFERS } from './data/mockData';
 import { Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useI18n, LanguageSelector } from './i18n';
+
+import { useAppDispatch, useAppSelector } from './store/hooks';
+import { setRole, setClub, setAthlete, logout } from './store/slices/authSlice';
+import { addAthlete, updateAthlete, setAthletes } from './store/slices/athleteSlice';
+import { addClub, addTransfer } from './store/slices/clubSlice';
 
 import type { Role, Club, Athlete, Transfer, Toast, PaymentData, PaymentReceipt, AuthModalConfig, LoginData } from './types';
 
 export default function App() {
-  // Use localStorage for persistence
-  const [currentRole, setCurrentRole] = useState<Role>(() =>
-    (localStorage.getItem('eaf_currentRole') as Role) || 'LANDING'
-  );
+  // Redux: auth session + shared data registries
+  const dispatch = useAppDispatch();
+  const currentRole = useAppSelector((state) => state.auth.role);
+  const currentClub = useAppSelector((state) => state.auth.club);
+  const currentAthlete = useAppSelector((state) => state.auth.athlete);
+  const athletes = useAppSelector((state) => state.athletes);
+
+  // Local UI state
   const [clubSubPage, setClubSubPage] = useState('OVERVIEW');
   const [athleteSubPage, setAthleteSubPage] = useState('OVERVIEW');
   const [publicSubPage, setPublicSubPage] = useState('HOME');
-  const [language, setLanguage] = useState<'en' | 'am'>('en');
+  const { language, setLanguage, t } = useI18n();
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('eaf_darkMode') === 'true');
-
-  const [clubs, setClubs] = useState<Club[]>(MOCK_CLUBS);
-  const [athletes, setAthletes] = useState<Athlete[]>(() => {
-    const saved = localStorage.getItem('eaf_athletes');
-    return saved ? JSON.parse(saved) : MOCK_ATHLETES;
-  });
-  const [transfers, setTransfers] = useState<Transfer[]>(MOCK_TRANSFERS);
-
-  const [currentClub, setCurrentClub] = useState<Club>(MOCK_CLUBS[0]);
-  const [currentAthlete, setCurrentAthlete] = useState<Athlete>(() => {
-    const savedId = localStorage.getItem('eaf_currentAthleteId');
-    if (savedId) {
-      const pool: Athlete[] = localStorage.getItem('eaf_athletes')
-        ? JSON.parse(localStorage.getItem('eaf_athletes')!)
-        : MOCK_ATHLETES;
-      const found = pool.find((a) => a.id === savedId);
-      if (found) return found;
-    }
-    return MOCK_ATHLETES[0];
-  });
 
   // Persist athletes data
   useEffect(() => {
@@ -67,7 +56,7 @@ export default function App() {
     if (currentAthlete) {
       const updatedAthlete = athletes.find((a) => a.id === currentAthlete.id);
       if (updatedAthlete && JSON.stringify(updatedAthlete) !== JSON.stringify(currentAthlete)) {
-        setCurrentAthlete(updatedAthlete);
+        dispatch(setAthlete(updatedAthlete));
       }
     }
   }, [athletes]);
@@ -102,13 +91,13 @@ export default function App() {
   const handleLoginSuccess = (role: 'CLUB' | 'ATHLETE', data: LoginData) => {
     setAuthModalConfig(null);
     if (role === 'CLUB') {
-      if (data.club) setCurrentClub(data.club);
-      setCurrentRole('CLUB');
+      if (data.club) dispatch(setClub(data.club));
+      dispatch(setRole('CLUB'));
       setClubSubPage('OVERVIEW');
       handleNotify(`Welcome back, ${data.club?.shortName || 'Club Admin'}!`, 'success');
     } else {
-      if (data.athlete) setCurrentAthlete(data.athlete);
-      setCurrentRole('ATHLETE');
+      if (data.athlete) dispatch(setAthlete(data.athlete));
+      dispatch(setRole('ATHLETE'));
       setAthleteSubPage('OVERVIEW');
       handleNotify(`Welcome, ${data.athlete?.name || 'Athlete'}!`, 'success');
     }
@@ -118,42 +107,42 @@ export default function App() {
     setRegModalRole(null);
     if (role === 'CLUB') {
       const newClub = data.club!;
-      setClubs((prev) => [newClub, ...prev]);
-      setCurrentClub(newClub);
-      setCurrentRole('CLUB');
+      dispatch(addClub(newClub));
+      dispatch(setClub(newClub));
+      dispatch(setRole('CLUB'));
       setClubSubPage('OVERVIEW');
       handleNotify(`Club "${newClub.shortName}" registered and logged in!`, 'success');
     } else {
       const newAthlete = data.athlete!;
-      setAthletes((prev) => [newAthlete, ...prev]);
-      setCurrentAthlete(newAthlete);
-      setCurrentRole('ATHLETE');
+      dispatch(addAthlete(newAthlete));
+      dispatch(setAthlete(newAthlete));
+      dispatch(setRole('ATHLETE'));
       setAthleteSubPage('OVERVIEW');
       handleNotify(`Athlete "${newAthlete.name}" registered successfully!`, 'success');
     }
   };
 
   const handleSwitchRoleDirectly = (targetRole: string) => {
-    if (targetRole === 'LANDING') { setCurrentRole('LANDING'); return; }
-    setCurrentRole(targetRole as Role);
+    if (targetRole === 'LANDING') { dispatch(setRole('LANDING')); return; }
+    dispatch(setRole(targetRole as Role));
     if (targetRole === 'CLUB') setClubSubPage('OVERVIEW');
     else setAthleteSubPage('OVERVIEW');
     handleNotify(`Switched to ${targetRole === 'CLUB' ? 'Club Admin' : 'Athlete'} Portal`, 'info');
   };
 
   const handleAddAthlete = (newAthlete: Athlete) => {
-    setAthletes((prev) => [newAthlete, ...prev]);
+    dispatch(addAthlete(newAthlete));
     handleNotify(`Athlete "${newAthlete.name}" added to roster.`, 'success');
   };
 
   const handleAddClub = (newClub: Club) => {
-    setClubs((prev) => [newClub, ...prev]);
+    dispatch(addClub(newClub));
     handleNotify(`Club "${newClub.name}" registered!`, 'success');
   };
 
   const handleUpdateAthlete = (updated: Athlete) => {
-    setAthletes((prev) => prev.map((a) => a.id === updated.id ? updated : a));
-    setCurrentAthlete(updated);
+    dispatch(updateAthlete(updated));
+    dispatch(setAthlete(updated));
     handleNotify('Profile data saved to local storage.', 'success');
   };
 
@@ -172,25 +161,25 @@ export default function App() {
       const updater = (a: Athlete) => a.id === paymentData.athleteId
         ? { ...a, licenseStatus: 'ACTIVE' as const, licenseNumber: licNo, licenseExpiry: '2026-12-31' }
         : a;
-      setAthletes((prev) => prev.map(updater));
-      if (currentAthlete.id === paymentData.athleteId) setCurrentAthlete(updater(currentAthlete));
+      dispatch(setAthletes(athletes.map(updater)));
+      if (currentAthlete.id === paymentData.athleteId) dispatch(setAthlete(updater(currentAthlete)));
     }
     handleNotify(`Payment via ${receipt.gateway} complete! Receipt: ${receipt.receiptNo}`, 'success');
     setPaymentData(null);
   };
 
   const handleInitiateTransfer = (newTransfer: Transfer) => {
-    setTransfers((prev) => [newTransfer, ...prev]);
+    dispatch(addTransfer(newTransfer));
     handleNotify(`Transfer for ${newTransfer.athleteName} submitted to EAF Registry.`, 'success');
   };
 
   // ── LANDING PAGE ──
   if (currentRole === 'LANDING' || (currentRole === 'ATHLETE' && publicSubPage !== 'DASHBOARD')) {
     const navLinks = [
-      { label: language === 'en' ? 'Home' : 'ዋና ገጽ', page: 'HOME' },
-      { label: language === 'en' ? 'Competitions' : 'ውድድሮች', page: 'COMPETITIONS' },
-      { label: language === 'en' ? 'Athletes' : 'አትሌቶች', page: 'ATHLETES' },
-      { label: language === 'en' ? 'Media' : 'ሚዲያ', page: 'MEDIA' },
+      { label: t('nav.home'), page: 'HOME' },
+      { label: t('nav.competitions'), page: 'COMPETITIONS' },
+      { label: t('nav.athletes'), page: 'ATHLETES' },
+      { label: t('nav.media'), page: 'MEDIA' },
     ];
 
     const handleNavClick = (page: string) => {
@@ -263,25 +252,8 @@ export default function App() {
           {/* Right Side */}
           <div className="flex gap-3 items-center">
 
-            {/* Modern Segmented Language Switcher */}
-            <div className={`flex rounded-xl p-0.5 gap-0.5 items-center border
-              ${darkMode ? 'bg-[#1E293B] border-[#334155]' : 'bg-[#F1F5F9] border-[#E2E8F0]'}`}
-            >
-              {(['en', 'am'] as const).map((lang) => (
-                <motion.button
-                  key={lang}
-                  onClick={() => setLanguage(lang)}
-                  whileTap={{ scale: 0.95 }}
-                  className={`border-0 rounded-[9px] px-3 py-1.5 text-[0.78rem] font-black cursor-pointer transition-all duration-200
-                    ${language === lang
-                      ? 'bg-primary text-white'
-                      : `bg-transparent ${darkMode ? 'text-[#94A3B8]' : 'text-[#475569]'}`
-                    }`}
-                >
-                  {lang === 'en' ? 'EN' : 'አማ'}
-                </motion.button>
-              ))}
-            </div>
+            {/* 4-Language Switcher */}
+            <LanguageSelector variant={darkMode ? 'dark' : 'default'} />
 
             {/* Dark/Light Theme Toggle */}
             <motion.button
@@ -308,10 +280,10 @@ export default function App() {
                   style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF' }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                  {language === 'en' ? 'My Dashboard' : 'ዳሽቦርድ'}
+                  {t('nav.myDashboard')}
                 </motion.button>
                 <button
-                  onClick={() => { localStorage.removeItem('eaf_currentRole'); setCurrentRole('LANDING'); }}
+                  onClick={() => { localStorage.removeItem('eaf_currentRole'); dispatch(logout()); }}
                   className={`px-3 py-1.5 rounded-lg cursor-pointer text-[0.78rem] font-bold border
                     ${darkMode ? 'bg-[#1E293B] border-[#334155] text-[#94A3B8]' : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]'}`}
                 >
@@ -328,7 +300,7 @@ export default function App() {
                   style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>
-                  {language === 'en' ? 'Register as Athlete' : 'አትሌት ይመዝገቡ'}
+                  {t('nav.registerAsAthlete')}
                 </motion.button>
 
                 <motion.button
@@ -338,7 +310,7 @@ export default function App() {
                   className="text-[0.76rem] px-3 py-1.5 rounded-xl inline-flex items-center gap-1 cursor-pointer font-bold"
                   style={{ background: '#FFFFFF', color: '#0F172A', border: '1px solid #CBD5E1' }}
                 >
-                  {language === 'en' ? 'Club Portal Login' : 'የክለብ መግቢያ'}
+                  {t('nav.clubPortalLogin')}
                   <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
                 </motion.button>
               </>
@@ -398,41 +370,32 @@ export default function App() {
   if (currentRole === 'CLUB') {
     return (
       <AppLayout
-        currentRole={currentRole}
         activeSubPage={clubSubPage}
         onChangeSubPage={setClubSubPage}
-        currentClub={currentClub}
-        currentAthlete={currentAthlete}
         onSwitchRole={handleSwitchRoleDirectly}
-        onLogout={() => {
-          localStorage.removeItem('eaf_currentRole');
-          setCurrentRole('LANDING');
-        }}
+        onLogout={() => dispatch(logout())}
       >
         {clubSubPage === 'OVERVIEW' && (
           <ClubOverview
-            club={currentClub} athletes={athletes} transfers={transfers}
             onChangeSubPage={setClubSubPage} onNotify={handleNotify} onAddClub={handleAddClub}
           />
         )}
         {clubSubPage === 'ROSTER' && (
           <RosterManagement
-            athletes={athletes} club={currentClub}
             onRenewLicense={handleInitiateLicensePayment}
             onAddAthlete={handleAddAthlete} onUpdateAthlete={handleUpdateAthlete}
           />
         )}
         {clubSubPage === 'MEETS' && (
           <MeetRegistration
-            club={currentClub} athletes={athletes} onNotify={handleNotify}
+            onNotify={handleNotify}
           />
         )}
         {clubSubPage === 'SEEDING' && (
-          <SeedingGenerator club={currentClub} onNotify={handleNotify} />
+          <SeedingGenerator onNotify={handleNotify} />
         )}
         {clubSubPage === 'TRANSFERS' && (
           <TransferRegistry
-            transfers={transfers} currentClub={currentClub}
             onInitiateTransfer={handleInitiateTransfer}
           />
         )}
@@ -446,34 +409,29 @@ export default function App() {
       <ClientLayout
         activeSubPage={athleteSubPage}
         onChangeSubPage={setAthleteSubPage}
-        currentAthlete={currentAthlete}
-        onLogout={() => {
-          localStorage.removeItem('eaf_currentRole');
-          setCurrentRole('LANDING');
-        }}
+        onLogout={() => dispatch(logout())}
       >
         {athleteSubPage === 'OVERVIEW' && (
           <AthleteOverview
-            athlete={currentAthlete}
             onChangeSubPage={setAthleteSubPage}
             onPayLicense={handleInitiateLicensePayment}
             onUpdateAthlete={handleUpdateAthlete}
           />
         )}
         {athleteSubPage === 'APPLIED' && (
-          <AthleteApplications athlete={currentAthlete} onNotify={handleNotify} />
+          <AthleteApplications onNotify={handleNotify} />
         )}
         {athleteSubPage === 'PROFILE' && (
-          <AthleteProfile athlete={currentAthlete} onUpdateAthlete={handleUpdateAthlete} onNotify={handleNotify} />
+          <AthleteProfile onUpdateAthlete={handleUpdateAthlete} onNotify={handleNotify} />
         )}
         {athleteSubPage === 'NOTIFICATIONS' && (
-          <AthleteNotifications athlete={currentAthlete} onNotify={handleNotify} />
+          <AthleteNotifications onNotify={handleNotify} />
         )}
         {athleteSubPage === 'EVENTS' && (
-          <AthleteEvents athlete={currentAthlete} onUpdateAthlete={handleUpdateAthlete} onNotify={handleNotify} />
+          <AthleteEvents onUpdateAthlete={handleUpdateAthlete} onNotify={handleNotify} />
         )}
         {athleteSubPage === 'CHECKIN' && (
-          <GeofenceCheckin athlete={currentAthlete} onUpdateAthlete={handleUpdateAthlete} onNotify={handleNotify} />
+          <GeofenceCheckin onUpdateAthlete={handleUpdateAthlete} onNotify={handleNotify} />
         )}
         {athleteSubPage === 'RACES' && (
           <LiveRaceTracker athlete={currentAthlete} onNotify={handleNotify} />

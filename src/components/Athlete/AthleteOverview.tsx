@@ -4,15 +4,16 @@ import {
   Weight, TrendingUp, Calendar, Plus, Trash2, Edit3, Save, Trophy
 } from 'lucide-react';
 import type { Athlete } from '../../types';
+import { useAppSelector } from '../../store/hooks';
 
 interface AthleteOverviewProps {
-  athlete: Athlete;
   onChangeSubPage: (page: string) => void;
   onPayLicense: (athlete: Athlete) => void;
   onUpdateAthlete: (athlete: Athlete) => void;
 }
 
-export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense, onUpdateAthlete }: AthleteOverviewProps) {
+export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdateAthlete }: AthleteOverviewProps) {
+  const athlete = useAppSelector((state) => state.auth.athlete);
   const [activeTab, setActiveTab] = useState('overview');
 
   // Weight log entry
@@ -175,6 +176,10 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
           <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-4">
             {[
               { page: 'RECORDS', icon: Award, color: '#7C3AED', title: 'Career Records Vault', desc: 'Full competition history, verified split breakdown, and official achievements.' },
+              { page: 'EVENTS', icon: Calendar, color: '#0EA5E9', title: 'Competitions & Events', desc: 'Browse upcoming competitions, view starter lists, and apply to register.' },
+              { page: 'CHECKIN', icon: Navigation, color: '#F59E0B', title: 'Venue Check-In', desc: 'GPS geofence check-in on race day with Fayda-linked identity verification.' },
+              { page: 'RACES', icon: Activity, color: '#EF4444', title: 'Live Race Tracker', desc: 'Real-time split times and World Athletics digital achievement badges.' },
+              { page: 'RESULTS', icon: Trophy, color: '#10B981', title: 'Event Results', desc: 'Published official results across all EAF competitions.' },
             ].map(c => {
               const Icon = c.icon;
               return (

@@ -97,7 +97,7 @@
   --olympic-blue: #0140A7;
   --olympic-green: #0140A7;
 
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Noto Sans Ethiopic', 'Nyala', 'Ebrima', 'Kefa', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
@@ -621,3 +621,374 @@ input[type="checkbox"] {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: #F0F5FA; }
 ::-webkit-scrollbar-thumb { background: #A0C0D5; border-radius: 3px; }
+/* Mobile-only elements are hidden on desktop */
+.mobile-only { display: none !important; }
+.mobile-menu-toggle { display: none; }
+
+/* Navbar mobile dropdown panel (inline row on desktop) */
+.mobile-menu-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Header breadcrumb truncation (AppLayout) */
+.header-breadcrumb {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Grids / rows that collapse to one column on small screens (see ≤640px block) */
+
+/* ── Landing page helpers (App.jsx header + LandingPage.jsx) ── */
+.landing-header { padding: 0 24px; height: 72px; }
+.landing-nav { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; justify-content: center; }
+.landing-actions { display: flex; gap: 12px; align-items: center; }
+.landing-menu-btn { display: none !important; }
+.landing-section { padding: 60px 24px; }
+.landing-hero { padding: 40px 24px 70px; }
+.landing-search-wrap { padding: 0 24px; }
+.landing-footer { padding: 60px 24px 30px; }
+
+/* Horizontal auto-scroll carousels (competitions / athletes) */
+.landing-scroll-row {
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.landing-scroll-row::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
+}
+.landing-scroll-row.is-dragging {
+  cursor: grabbing !important;
+  scroll-snap-type: none !important;
+  scroll-behavior: auto !important;
+  user-select: none;
+}
+.landing-scroll-row.is-dragging * {
+  user-select: none;
+  pointer-events: none;
+}
+
+.landing-scroll-card {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  min-width: 340px;
+  max-width: 380px;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease;
+}
+.landing-scroll-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.22) !important;
+}
+
+.comp-card-bg-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.landing-scroll-card:hover .comp-card-bg-img {
+  transform: scale(1.06);
+}
+
+@keyframes livePulse {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+.status-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #FFFFFF;
+  display: inline-block;
+  margin-right: 6px;
+  animation: livePulse 1.6s infinite ease-in-out;
+  vertical-align: middle;
+}
+
+.carousel-nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #0F172A;
+}
+.carousel-nav-btn:hover {
+  background: #0EA5E9;
+  border-color: #0EA5E9;
+  color: #FFFFFF !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3);
+}
+.carousel-nav-btn:hover svg {
+  stroke: #FFFFFF !important;
+}
+.carousel-nav-btn:active {
+  transform: scale(0.92);
+}
+
+.carousel-dot {
+  height: 8px;
+  border-radius: 4px;
+  background: #CBD5E1;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+.carousel-dot.active {
+  width: 28px;
+  background: #0EA5E9;
+}
+.carousel-dot:not(.active) {
+  width: 8px;
+}
+.carousel-dot:not(.active):hover {
+  background: #94A3B8;
+}
+
+/* Media mosaic grid */
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-auto-rows: 240px;
+  grid-auto-flow: dense;
+  gap: 20px;
+}
+
+/* ── Competition image cards — desktop keeps full details visible ── */
+.meet-card-extra { display: flex; flex-direction: column; }
+.meet-card-toggle-btn { display: none; }
+
+/* ── Dashboards (AthleteDashboard / ClubDashboard) ── */
+.dash-page { padding: 32px 24px; }
+.dash-heading { font-size: 2rem; }
+
+/* ── Registration modal helpers ── */
+.stepbar { display: flex; gap: 12px; margin-bottom: 32px; }
+.otp-row { display: flex; gap: 10px; justify-content: center; margin: 12px 0; }
+.fin-row { display: flex; gap: 10px; align-items: center; }
+
+/* ── ≤ 1024px (tablet screens) ── */
+@media (max-width: 1024px) {
+  .landing-scroll-card {
+    min-width: 310px !important;
+    max-width: 330px !important;
+  }
+}
+
+/* ── ≤ 887px — navbar switches to mobile hamburger mode & collapse extra details behind See More ── */
+@media (max-width: 887px) {
+  .mobile-menu-toggle { display: flex; }
+  .mobile-menu-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+  .mobile-menu-wrap.open {
+    display: flex;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  }
+  .mobile-menu-wrap .session-indicator { width: 100%; }
+  .mobile-menu-wrap .menu-actions { width: 100%; }
+
+  .landing-nav { display: none !important; }
+  .landing-actions { display: none !important; }
+  .landing-menu-btn { display: inline-flex !important; }
+  .landing-mobile-menu { top: 72px !important; }
+
+  /* Competition image cards — collapse extra details behind See More */
+  .meet-card-extra { display: none; }
+  .meet-card-toggle-btn { display: inline-flex; }
+  .meet-card-expanded .meet-card-extra { display: flex; }
+
+  .landing-scroll-card {
+    min-width: 300px !important;
+    max-width: 320px !important;
+  }
+}
+
+/* ── ≤ 640px (phones & small screens) ── */
+@media (max-width: 640px) {
+  .landing-scroll-card {
+    min-width: calc(100vw - 64px) !important;
+    max-width: 340px !important;
+    min-height: 320px !important;
+  }
+}
+
+/* ── ≤ 768px (phones & tablets) ── */
+@media (max-width: 768px) {
+  .hidden-mobile { display: none !important; }
+  .mobile-only { display: flex !important; }
+
+  /* Spacing */
+  .navbar-inner { padding: 12px 16px !important; }
+  .header-bar { padding: 0 14px; height: 60px; }
+  .main-pad { padding: 18px 16px !important; }
+  .gov-card { padding: 16px; }
+
+  /* AppLayout sidebar → off-canvas drawer */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 270px;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    z-index: 60;
+    box-shadow: none;
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+    box-shadow: 16px 0 48px rgba(11, 42, 66, 0.35);
+  }
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 42, 66, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 55;
+  }
+
+  /* Modals — fit small screens, keep scroll inside */
+  .modal-backdrop { padding: 12px; align-items: center; }
+  .modal-content {
+    padding: 26px 20px !important;
+    width: 100% !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    border-radius: 20px;
+  }
+
+  /* Navbar hamburger + dropdown panel */
+  .mobile-menu-toggle { display: flex; }
+  .mobile-menu-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+  .mobile-menu-wrap.open {
+    display: flex;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  }
+  .mobile-menu-wrap .session-indicator { width: 100%; }
+  .mobile-menu-wrap .menu-actions { width: 100%; }
+
+  /* Stats grid — smaller tracks */
+  .stats-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+
+  /* Large inline-padded cards (e.g. landing contact card) */
+  .contact-card { padding: 24px 16px !important; }
+
+  /* ── Landing page ── */
+  .landing-header { padding: 0 14px !important; height: 64px !important; }
+  .landing-nav { display: none !important; }
+  .landing-actions { display: none !important; }
+  .landing-menu-btn { display: inline-flex !important; }
+  .landing-mobile-menu { top: 64px !important; }
+  .landing-section { padding: 40px 16px !important; }
+  .landing-hero { padding: 32px 16px 56px !important; }
+  .landing-search-wrap { padding: 0 12px !important; }
+  .landing-search-widget { padding: 20px 16px !important; }
+  .landing-footer { padding: 40px 16px 24px !important; }
+  .landing-scroll-card { min-width: calc(100vw - 40px) !important; max-width: none !important; width: auto !important; }
+  .landing-section h2 { font-size: 1.5rem !important; }
+  .landing-section h3 { font-size: 1.15rem !important; }
+
+  /* Media mosaic grid — collapse 2x2 spans on phones */
+  .media-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important; grid-auto-rows: 190px !important; gap: 14px !important; }
+  .media-grid-card { grid-column: span 1 !important; grid-row: span 1 !important; min-height: 190px !important; }
+
+  /* ── Dashboards ── */
+  .dash-page { padding: 16px 14px !important; }
+  .dash-heading { font-size: 1.5rem !important; }
+  .glass-panel { padding: 18px !important; }
+
+  /* ── Registration modal ── */
+  .stepbar { gap: 6px !important; margin-bottom: 24px !important; }
+  .stepbar span { font-size: 0.66rem !important; }
+  .otp-row { gap: 6px !important; }
+  .otp-box { width: 44px !important; height: 56px !important; font-size: 1.25rem !important; }
+
+  /* Full-bleed modal headers keep edge-to-edge padding on mobile */
+  .modal-content.modal-bleed { padding: 0 !important; }
+  .modal-bleed-banner { padding: 16px 20px !important; }
+  .modal-bleed-body { padding: 20px 16px !important; }
+
+  /* AthleteOverview tab pills wrap instead of overflowing */
+  .athlete-tabs { width: 100% !important; flex-wrap: wrap !important; }
+  .athlete-tabs button { flex: 1 1 auto; padding: 8px 10px !important; font-size: 0.78rem !important; }
+}
+
+/* ── ≤ 640px — collapse multi-column grids / rows ── */
+@media (max-width: 640px) {
+  .stack-on-mobile { grid-template-columns: 1fr !important; }
+  .stack-on-mobile > * { grid-column: span 1 !important; }
+  .events-grid { grid-template-columns: 1fr !important; }
+  .wrap-on-mobile { flex-wrap: wrap !important; }
+  .results-acc-head { flex-wrap: wrap; }
+  .results-acc-head > div { min-width: 0; }
+  .header-gap-mobile { gap: 10px !important; }
+
+  /* ClientLayout header compacting */
+  .client-header { padding: 10px 14px !important; }
+  .client-main { padding: 16px !important; }
+  .client-avatar { width: 36px !important; height: 36px !important; }
+  .client-signout { padding: 8px 10px !important; }
+
+  /* Notification toast spans the screen safely */
+  .toast-root {
+    left: 16px !important;
+    right: 16px !important;
+    bottom: 16px !important;
+    max-width: none !important;
+  }
+}
+
+/* ── ≤ 400px — extra-tight phones (320px) ── */
+@media (max-width: 400px) {
+  .main-pad { padding: 14px 10px !important; }
+  .client-main { padding: 14px 10px !important; }
+  .gov-card { padding: 16px 12px !important; }
+  .modal-content { padding: 20px 14px !important; }
+
+  .client-header { padding: 8px 10px !important; }
+  .client-brand-img { width: 34px !important; height: 34px !important; }
+
+  .landing-section h2 { font-size: 1.35rem !important; }
+  .landing-scroll-card { min-width: calc(100vw - 32px) !important; }
+  .media-grid { grid-template-columns: 1fr !important; grid-auto-rows: 200px !important; }
+
+  .otp-box { width: 38px !important; height: 52px !important; font-size: 1.15rem !important; }
+  .fin-row { flex-direction: column !important; align-items: stretch !important; }
+  .fin-row .btn-accent { width: 100% !important; justify-content: center; }
+}

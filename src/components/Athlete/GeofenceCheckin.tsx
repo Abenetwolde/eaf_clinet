@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Navigation, QrCode, MapPin, RefreshCw, CheckCircle2, Clock, Calendar } from 'lucide-react';
 import { MOCK_MEETS } from '../../data/mockData';
+import { useAppSelector } from '../../store/hooks';
 import type { Athlete } from '../../types';
 
 interface GeofenceCheckinProps {
-  athlete: Athlete;
   onUpdateAthlete: (athlete: Athlete) => void;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export default function GeofenceCheckin({ athlete, onUpdateAthlete, onNotify }: GeofenceCheckinProps) {
+export default function GeofenceCheckin({ onUpdateAthlete, onNotify }: GeofenceCheckinProps) {
+  const athlete = useAppSelector((state) => state.auth.athlete);
   const [selectedMeet, setSelectedMeet] = useState(MOCK_MEETS[0]);
   const [isLocating, setIsLocating] = useState(false);
   const [checkinSuccess, setCheckinSuccess] = useState(athlete.checkinStatus === 'CHECKED_IN');

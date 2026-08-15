@@ -146,8 +146,6 @@ export default function ClubDashboard({ club, athletes, transfers, onRenewLicens
       {/* Active Tab View */}
       {activeTab === 'ROSTER' && (
         <RosterManagement 
-          athletes={athletes}
-          club={club}
           onRenewLicense={onRenewLicense}
           onAddAthlete={onAddAthlete}
         />
@@ -155,16 +153,12 @@ export default function ClubDashboard({ club, athletes, transfers, onRenewLicens
 
       {activeTab === 'TRANSFERS' && (
         <TransferRegistry 
-          transfers={transfers}
-          currentClub={club}
           onInitiateTransfer={onInitiateTransfer}
         />
       )}
 
       {activeTab === 'MEETS' && (
         <MeetRegistration 
-          club={club}
-          athletes={athletes}
           onNotify={onNotify}
         />
       )}

@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { Calendar, MapPin, AlertCircle, Clock, X, QrCode, FileCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { MOCK_MEETS } from '../../data/mockData';
-import type { Athlete } from '../../types';
+import { useAppSelector } from '../../store/hooks';
 
 interface AthleteApplicationsProps {
-  athlete: Athlete;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -27,7 +26,8 @@ function EAFQrCode({ code = "EAF-MEET-202-2026-243", size = 150 }: { code?: stri
   );
 }
 
-export default function AthleteApplications({ athlete, onNotify }: AthleteApplicationsProps) {
+export default function AthleteApplications({ onNotify }: AthleteApplicationsProps) {
+  const athlete = useAppSelector((state) => state.auth.athlete);
   const [selectedApplication, setSelectedApplication] = useState<ApplicationDetail | null>(null);
 
   // Fallback default applications for display if none are in state

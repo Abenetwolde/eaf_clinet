@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Sparkles, Layers, CheckCircle2, FileText, ArrowRight, Zap, RefreshCw } from 'lucide-react';
 import { MOCK_ATHLETES } from '../../data/mockData';
-import type { Club } from '../../types';
+import { useI18n } from '../../i18n';
+import { useAppSelector } from '../../store/hooks';
 
 interface SeedingGeneratorProps {
-  club: Club;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -17,7 +17,9 @@ interface StartListItem {
   heat: string;
 }
 
-export default function SeedingGenerator({ club, onNotify }: SeedingGeneratorProps) {
+export default function SeedingGenerator({ onNotify }: SeedingGeneratorProps) {
+  const { t } = useI18n();
+  const club = useAppSelector((state) => state.auth.club);
   const [selectedEvent, setSelectedEvent] = useState<string>('5,000m Final');
   const [seedingMethod, setSeedingMethod] = useState<string>('SB_PB_HYBRID'); // 'SB_PB_HYBRID' or 'RANDOM'
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -33,7 +35,7 @@ export default function SeedingGenerator({ club, onNotify }: SeedingGeneratorPro
     setIsGenerating(true);
     setTimeout(() => {
       setIsGenerating(false);
-      onNotify(`Automated World Athletics seeding matrix calculated for ${selectedEvent}!`, 'success');
+      onNotify(t('toast.seedingCalculated', { event: selectedEvent }), 'success');
     }, 1000);
   };
 
@@ -43,10 +45,10 @@ export default function SeedingGenerator({ club, onNotify }: SeedingGeneratorPro
       <div className="flex items-center justify-between flex-wrap gap-[16px] mb-[24px]">
         <div>
           <h3 className="text-[1.4rem] font-extrabold text-text-heading">
-            World Athletics Automated Seeding & Start List Generator
+            {t('club.seedingTitle')}
           </h3>
           <p className="text-[0.85rem] text-text-muted">
-            Roster Athletics inspired heat allocation based on Season Best (SB) and Personal Best (PB) rankings
+            {t('club.seedingSub')}
           </p>
         </div>
 
@@ -56,7 +58,7 @@ export default function SeedingGenerator({ club, onNotify }: SeedingGeneratorPro
           disabled={isGenerating}
         >
           {isGenerating ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
-          Recalculate Heat & Lane Seeding
+          {t('club.recalcSeeding')}
         </button>
       </div>
 
@@ -64,7 +66,7 @@ export default function SeedingGenerator({ club, onNotify }: SeedingGeneratorPro
       <div className="gov-card mb-[24px] p-[20px]">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-[16px]">
           <div className="form-group m-0">
-            <label className="form-label">Select Championship Discipline</label>
+            <label className="form-label">{t('club.selectDiscipline')}</label>
             <select 
               className="form-select"
               value={selectedEvent}
@@ -78,7 +80,7 @@ export default function SeedingGenerator({ club, onNotify }: SeedingGeneratorPro
           </div>
 
           <div className="form-group m-0">
-            <label className="form-label">Seeding Rules Matrix</label>
+            <label className="form-label">{t('club.seedingRulesMatrix')}</label>
             <select 
               className="form-select"
               value={seedingMethod}
@@ -95,21 +97,21 @@ export default function SeedingGenerator({ club, onNotify }: SeedingGeneratorPro
       <div className="gov-card p-0 overflow-hidden">
         <div className="bg-[#F1F5F9] px-[20px] py-[16px] border-b border-[#E2E8F0] flex items-center justify-between">
           <div className="font-extrabold text-text-heading text-[0.95rem]">
-            Generated Start List: {selectedEvent}
+            {t('club.generatedStartList', { event: selectedEvent })}
           </div>
-          <span className="badge badge-green">Official Lynx .LIF Export Ready</span>
+          <span className="badge badge-green">{t('club.lynxReady')}</span>
         </div>
 
         <div className="table-responsive">
           <table className="gov-table">
             <thead>
               <tr>
-                <th>Hip / Lane Bib</th>
-                <th>Athlete Name & Club</th>
-                <th>Season Best (SB)</th>
-                <th>Personal Best (PB)</th>
-                <th>Seeding Rank</th>
-                <th>Heat Assignment</th>
+                <th>{t('club.hipLaneBib')}</th>
+                <th>{t('club.athleteNameClub')}</th>
+                <th>{t('club.seasonBest')}</th>
+                <th>{t('club.personalBest')}</th>
+                <th>{t('club.seedingRank')}</th>
+                <th>{t('club.heatAssignment')}</th>
               </tr>
             </thead>
             <tbody>
@@ -129,7 +131,7 @@ export default function SeedingGenerator({ club, onNotify }: SeedingGeneratorPro
                   </td>
                   <td>
                     <span className="badge badge-blue">
-                      Seed #{item.rankSeed}
+                      {t('club.seed', { seed: item.rankSeed })}
                     </span>
                   </td>
                   <td>

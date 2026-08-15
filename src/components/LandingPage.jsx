@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ChevronDown, ChevronUp, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen } from 'lucide-react';
+import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, CheckCircle, X, Send, Play, Image, ShieldCheck, ChevronLeft, ChevronDown, ChevronUp, HelpCircle, Plus, Minus } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 import { motion } from 'framer-motion';
+import { useI18n } from '../i18n';
 
 /* ─────────────────────────────────────────────
    STATIC DATA & GALLERY IMAGES
@@ -263,6 +264,7 @@ const VectorTrackLines = () => (
 );
 
 export default function LandingPage({ onSelectRole, onRegister, language = 'en', publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false }) {
+  const { t: tr } = useI18n();
   const [selectedMeetId, setSelectedMeetId] = useState(null);
   const [selectedAthleteModal, setSelectedAthleteModal] = useState(null);
   const [selectedGalleryTab, setSelectedGalleryTab] = useState('All');
@@ -273,6 +275,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [activeStructure, setActiveStructure] = useState(null);
   const [galleryExpanded, setGalleryExpanded] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [expandedMeetCards, setExpandedMeetCards] = useState({});
 
   useEffect(() => {
     const handleResize = () => setViewportWidth(window.innerWidth);
@@ -288,8 +291,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sortByDate, setSortByDate] = useState('UPCOMING_FIRST');
-  const [compPage, setCompPage] = useState(0);
-  const [showAllComps, setShowAllComps] = useState(false);
 
   // Contact form state
   const [contactForm, setContactForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -297,8 +298,95 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   const bannerScrollRef = useRef(null);
   const athleteScrollRef = useRef(null);
+  const compScrollRef = useRef(null);
 
-  const CARDS_PER_PAGE = 3;
+  const [isDraggingComp, setIsDraggingComp] = useState(false);
+  const [activeCompIndex, setActiveCompIndex] = useState(0);
+  const compDragStartX = useRef(0);
+  const compDragScrollLeft = useRef(0);
+  const compHasDragged = useRef(false);
+  const isDraggingCompRef = useRef(false);
+
+  useEffect(() => {
+    isDraggingCompRef.current = isDraggingComp;
+  }, [isDraggingComp]);
+
+  const handleCompMouseDown = (e) => {
+    const el = compScrollRef.current;
+    if (!el) return;
+    setIsDraggingComp(true);
+    compHasDragged.current = false;
+    compDragStartX.current = e.pageX - el.offsetLeft;
+    compDragScrollLeft.current = el.scrollLeft;
+  };
+
+  const handleCompMouseMove = (e) => {
+    if (!isDraggingCompRef.current) return;
+    const el = compScrollRef.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - compDragStartX.current) * 1.5;
+    if (Math.abs(walk) > 6) {
+      compHasDragged.current = true;
+    }
+    el.scrollLeft = compDragScrollLeft.current - walk;
+  };
+
+  const handleCompMouseUp = () => {
+    setIsDraggingComp(false);
+  };
+
+  const isManualScrollingRef = useRef(false);
+  const manualScrollTimeoutRef = useRef(null);
+
+  const triggerManualScrollPause = () => {
+    isManualScrollingRef.current = true;
+    if (manualScrollTimeoutRef.current) clearTimeout(manualScrollTimeoutRef.current);
+    manualScrollTimeoutRef.current = setTimeout(() => {
+      isManualScrollingRef.current = false;
+    }, 2500);
+  };
+
+  // Auto-scroll competition cards
+  useEffect(() => {
+    const el = compScrollRef.current;
+    if (!el) return;
+    let frame;
+    let paused = false;
+    let speed = 0.75;
+    const onEnter = () => { paused = true; };
+    const onLeave = () => { paused = false; };
+    const onTouchStart = () => { paused = true; };
+    const onTouchEnd = () => {
+      setTimeout(() => { paused = false; }, 2000);
+    };
+
+    el.addEventListener('mouseenter', onEnter);
+    el.addEventListener('mouseleave', onLeave);
+    el.addEventListener('touchstart', onTouchStart, { passive: true });
+    el.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    const step = () => {
+      if (!paused && !isDraggingCompRef.current && !isManualScrollingRef.current && el) {
+        el.scrollLeft += speed;
+        if (el.scrollLeft >= el.scrollWidth / 2) {
+          el.scrollLeft = 0;
+        }
+      }
+      frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(frame);
+      if (el) {
+        el.removeEventListener('mouseenter', onEnter);
+        el.removeEventListener('mouseleave', onLeave);
+        el.removeEventListener('touchstart', onTouchStart);
+        el.removeEventListener('touchend', onTouchEnd);
+      }
+    };
+  }, []);
 
   // Auto-scroll athlete cards
   useEffect(() => {
@@ -329,18 +417,60 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   }, []);
 
   const handleScrollBanners = (direction) => {
-    if (bannerScrollRef.current) {
-      const scrollAmount = direction === 'left' ? -380 : 380;
-      bannerScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    const el = compScrollRef.current || bannerScrollRef.current;
+    if (!el) return;
+
+    triggerManualScrollPause();
+
+    const cards = el.querySelectorAll('.landing-scroll-card');
+    if (!cards || cards.length === 0) return;
+
+    const containerLeft = el.scrollLeft;
+    let targetCard = null;
+
+    if (direction === 'right') {
+      for (let i = 0; i < cards.length; i++) {
+        const cardLeft = cards[i].offsetLeft - el.offsetLeft;
+        if (cardLeft > containerLeft + 15) {
+          targetCard = cards[i];
+          break;
+        }
+      }
+      if (!targetCard) {
+        targetCard = cards[0];
+      }
+    } else {
+      for (let i = cards.length - 1; i >= 0; i--) {
+        const cardLeft = cards[i].offsetLeft - el.offsetLeft;
+        if (cardLeft < containerLeft - 15) {
+          targetCard = cards[i];
+          break;
+        }
+      }
+      if (!targetCard) {
+        targetCard = cards[cards.length - 1];
+      }
+    }
+
+    if (targetCard) {
+      const targetLeft = targetCard.offsetLeft - el.offsetLeft;
+      el.scrollTo({ left: targetLeft, behavior: 'smooth' });
     }
   };
 
-  const handleCompPage = (direction, total) => {
-    const maxPage = Math.ceil(total / CARDS_PER_PAGE) - 1;
-    setCompPage(prev => {
-      if (direction === 'left') return Math.max(0, prev - 1);
-      return Math.min(maxPage, prev + 1);
-    });
+  const scrollToCompIndex = (index) => {
+    const el = compScrollRef.current || bannerScrollRef.current;
+    if (!el) return;
+    triggerManualScrollPause();
+    const cards = el.querySelectorAll('.landing-scroll-card');
+    if (cards && cards[index]) {
+      const targetLeft = cards[index].offsetLeft - el.offsetLeft;
+      el.scrollTo({ left: targetLeft, behavior: 'smooth' });
+    }
+  };
+
+  const toggleMeetCard = (cardKey) => {
+    setExpandedMeetCards(prev => ({ ...prev, [cardKey]: !prev[cardKey] }));
   };
 
   const handleContactSubmit = (e) => {
@@ -354,37 +484,33 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   // Localized string packs
   const loc = {
-    heroTitle: language === 'en'
-      ? 'EAF Digital Athlete Portal: Verify, Register & Track Live results in Real-time'
-      : 'የኢትዮጵያ አትሌቲክስ ዲጂታል ፖርታል: ይመዝገቡ፣ ያረጋግጡ እና ውጤቶችን በቀጥታ ይከታተሉ',
-    heroSubtitle: language === 'en'
-      ? 'Welcome to the official digital hub of the Ethiopian Athletics Federation. Verify your Fayda ID, register your club, and access live starter lists and real-time results.'
-      : 'ወደ የኢትዮጵያ አትሌቲክስ ፌዴሬሽን ይፋዊ የዲጂታል መድረክ እንኳን በደህና መጡ። የፋይዳ ብሔራዊ መታወቂያዎን ያረጋግጡ፣ ክለብዎን ይመዝግቡ እና የቀጥታ ውድድር ውጤቶችን ያግኙ።',
-    btnPrimary: language === 'en' ? 'Register / Verify EAF ID' : 'የኢፌአ መታወቂያ ይመዝገቡ/ያረጋግጡ',
-    btnSecondary: language === 'en' ? 'Explore Competitions & Live Results' : 'ውድድሮች እና የቀጥታ ውጤቶችን ያስሱ',
-    searchPlaceholder: language === 'en' ? 'Search by competition, athlete, or event...' : 'በውድድር ስም፣ አትሌት ወይም ስፖርት አይነት ይፈልጉ...',
-    regionLabel: language === 'en' ? 'Region / State' : 'ክልል / መገኛ',
-    statusLabel: language === 'en' ? 'Status' : 'የውድድር ሁኔታ',
-    startDateLabel: language === 'en' ? 'Start Date' : 'የመጀመሪያ ቀን',
-    endDateLabel: language === 'en' ? 'End Date' : 'የመጨረሻ ቀን',
-    sortLabel: language === 'en' ? 'Sort Date' : 'ቅደም ተከተል',
-    sortUpcoming: language === 'en' ? 'Upcoming First' : 'መጪ ውድድር ይቀድም',
-    sortOldest: language === 'en' ? 'Oldest First' : 'ቀደምት ውድድር ይቀድም',
+    heroTitle: tr('home.heroTitle'),
+    heroSubtitle: tr('home.heroSubtitle'),
+    btnPrimary: tr('home.btnRegister'),
+    btnSecondary: tr('home.btnExplore'),
+    searchPlaceholder: tr('home.searchPlaceholder'),
+    regionLabel: tr('common.region'),
+    statusLabel: tr('common.status'),
+    startDateLabel: tr('home.startDate'),
+    endDateLabel: tr('home.endDate'),
+    sortLabel: tr('home.sortDate'),
+    sortUpcoming: tr('home.upcomingFirst'),
+    sortOldest: tr('home.oldestFirst'),
 
-    all: language === 'en' ? 'All' : 'ሁሉም',
-    regOpen: language === 'en' ? 'Open for Registration' : 'ምዝገባ ክፍት ነው',
-    regClosed: language === 'en' ? 'Registration Closed' : 'ምዝገባ ተዘግቷል',
-    live: language === 'en' ? 'Live' : 'በቀጥታ ስርጭት',
-    upcoming: language === 'en' ? 'Upcoming' : 'መጪ ውድድር',
-    seeMore: language === 'en' ? 'See More' : 'ተጨማሪ ይመልከቱ',
-    seeLess: language === 'en' ? 'See Less' : 'ያንሱ',
+    all: tr('common.all'),
+    regOpen: tr('home.regOpen'),
+    regClosed: tr('home.regClosed'),
+    live: tr('common.live'),
+    upcoming: tr('common.upcoming'),
+    seeMore: tr('common.seeMore'),
+    seeLess: tr('common.seeLess'),
 
-    newsTitle: language === 'en' ? 'Latest News & Updates' : 'አዳዲስ ዜናዎች',
-    competitionsTitle: language === 'en' ? 'Competitions & Championship Hub' : 'የውድድሮች ማዕከል',
-    athletesTitle: language === 'en' ? 'Featured Ethiopian Athletics Stars' : 'የኢትዮጵያ አትሌቲክስ ኮከቦች',
-    aboutTitle: language === 'en' ? 'About Ethiopian Athletics Federation' : 'ስለ ኢትዮጵያ አትሌቲክስ ፌዴሬሽን',
-    structureTitle: language === 'en' ? 'Federation Governance Structure' : 'የፌዴሬሽኑ መዋቅር',
-    partnersTitle: language === 'en' ? 'Official Federation Sponsors & Corporate Partners' : 'ስፖንሰሮች እና አጋሮች',
+    newsTitle: tr('home.newsTitle'),
+    competitionsTitle: tr('home.competitionsTitle'),
+    athletesTitle: tr('home.athletesTitle'),
+    aboutTitle: tr('home.aboutTitle'),
+    structureTitle: tr('home.structureTitle'),
+    partnersTitle: tr('home.partnersTitle'),
   };
 
   const filteredMeets = ENRICHED_MEETS.filter(meet => {
@@ -431,10 +557,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       />
     );
   }
-
-  const filteredGallery = selectedGalleryTab === 'All'
-    ? GALLERY_IMAGES
-    : GALLERY_IMAGES.filter(img => img.category === selectedGalleryTab);
 
   // ── Theme tokens ── premium design tokens that make dark mode pop
   const t = {
@@ -483,13 +605,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '920px', margin: '0 auto' }}>
 
-            {/* <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#FFFFFF', border: '1px solid #BAE6FD', padding: '6px 16px', borderRadius: '30px', boxShadow: '0 4px 14px rgba(14,165,233,0.12)', marginBottom: '20px' }}>
-              <Sparkles size={16} color="var(--primary)" />
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary-dark)', letterSpacing: '0.04em' }}>
-                ETHIOPIAN ATHLETICS FEDERATION —  PLATFORM
-              </span>
-            </div> */}
-
             <h1 style={{
               color: t.text,
               fontSize: 'clamp(2.2rem, 5.5vw, 3.8rem)',
@@ -502,36 +617,28 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               justifyContent: 'center',
               gap: '0.25em 0.35em'
             }}>
-              {(language === 'en' ? [
-                { text: 'EAF Digital Athlete Portal:', dir: 'left', color: t.text },
-                { text: 'Verify,', dir: 'right', color: 'var(--primary)' },
-                { text: 'Register &', dir: 'left', color: t.text },
-                { text: 'Track Live results', dir: 'right', color: darkMode ? '#38BDF8' : '#0284C7' },
-                { text: 'in Real-time', dir: 'left', color: '#D97706' },
-              ] : [
-                { text: 'የኢትዮጵያ አትሌቲክስ ዲጂታል ፖርታል:', dir: 'left', color: t.text },
-                { text: 'ይመዝገቡ፣', dir: 'right', color: 'var(--primary)' },
-                { text: 'ያረጋግጡ', dir: 'left', color: t.text },
-                { text: 'እና ውጤቶችን', dir: 'right', color: darkMode ? '#38BDF8' : '#0284C7' },
-                { text: 'በቀጥታ ይከታተሉ', dir: 'left', color: '#D97706' },
-              ]).map((part, index) => (
-                <motion.span
-                  key={index}
-                  initial={{ opacity: 0, x: part.dir === 'left' ? -100 : 100, filter: 'blur(6px)' }}
-                  animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                  transition={{
-                    duration: 0.75,
-                    delay: 0.12 + index * 0.13,
-                    ease: [0.16, 1, 0.3, 1]
-                  }}
-                  style={{
-                    color: part.color,
-                    display: 'inline-block'
-                  }}
-                >
-                  {part.text}
-                </motion.span>
-              ))}
+              {(() => {
+                const heroWords = tr('home.heroTitle').split(' ');
+                const heroColors = [t.text, 'var(--primary)', t.text, darkMode ? '#38BDF8' : '#0284C7', '#D97706'];
+                return heroWords.map((word, index) => (
+                  <motion.span
+                    key={index}
+                    initial={{ opacity: 0, x: index % 2 === 0 ? -100 : 100, filter: 'blur(6px)' }}
+                    animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                    transition={{
+                      duration: 0.75,
+                      delay: 0.12 + index * 0.13,
+                      ease: [0.16, 1, 0.3, 1]
+                    }}
+                    style={{
+                      color: heroColors[index % heroColors.length],
+                      display: 'inline-block'
+                    }}
+                  >
+                    {word}
+                  </motion.span>
+                ));
+              })()}
             </h1>
 
             <p style={{
@@ -602,98 +709,53 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         </section>
       )}
 
-      {/* ── 3. COMPETITIONS HUB WITH EMBEDDED SEARCH & FILTERS ── */}
+      {/* ── 3. COMPETITIONS HUB WITH EMBEDDED SEARCH & FILTERS + AUTO-SCROLL CAROUSEL ── */}
       {(publicSubPage === "HOME" || publicSubPage === "COMPETITIONS") && (
         <section id="competitions" style={{ background: t.bgAlt, padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text, marginBottom: 4 }}>
                   {loc.competitionsTitle}
                 </h2>
                 <p style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.95rem' }}>
-                  {language === 'en' ? 'Active Events, Starter Lists & Schedules' : 'አሁን ያሉ ውድድሮች እና የጊዜ ሰሌዳዎች'}
+                  {tr('home.competitionsSub')}
                 </p>
               </div>
 
-              {/* View All & Carousel Controls */}
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => {
-                    if (!showAllComps) {
-                      setShowAllComps(true);
-                      setCompPage(0);
-                      setTimeout(() => {
-                        const gridEl = document.getElementById('competition-grid');
-                        if (gridEl) {
-                          const y = gridEl.getBoundingClientRect().top + window.scrollY - 100;
-                          window.scrollTo({ top: y, behavior: 'smooth' });
-                        }
-                      }, 100);
-                    } else {
-                      const el = document.getElementById('competitions');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                      setShowAllComps(false);
-                      setCompPage(0);
-                    }
-                  }}
-                  style={{
-                    background: 'var(--primary)',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '10px 18px',
-                    fontSize: '0.88rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-                >
-                  {language === 'en' ? (showAllComps ? 'View Less' : 'View All Competitions') : (showAllComps ? 'ያነሰ ይመልከቱ' : 'ሁሉንም ውድድሮች ይመልከቱ')} <ChevronRight size={16} />
-                </button>
-
-                {!showAllComps && sortedMeets.length > CARDS_PER_PAGE && (
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button
-                      onClick={() => handleCompPage('left', sortedMeets.length)}
-                      disabled={compPage === 0}
-                      style={{
-                        width: '40px', height: '40px', borderRadius: '50%',
-                        background: compPage === 0 ? '#F1F5F9' : '#FFFFFF',
-                        border: '1px solid #CBD5E1',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: compPage === 0 ? 'not-allowed' : 'pointer',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                        opacity: compPage === 0 ? 0.45 : 1,
-                        transition: 'all 0.15s'
-                      }}
-                    >
-                      <ChevronLeft size={20} color="#0F172A" />
-                    </button>
-                    <button
-                      onClick={() => handleCompPage('right', sortedMeets.length)}
-                      disabled={compPage >= Math.ceil(sortedMeets.length / CARDS_PER_PAGE) - 1}
-                      style={{
-                        width: '40px', height: '40px', borderRadius: '50%',
-                        background: compPage >= Math.ceil(sortedMeets.length / CARDS_PER_PAGE) - 1 ? '#F1F5F9' : 'var(--primary)',
-                        border: '1px solid var(--primary)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: compPage >= Math.ceil(sortedMeets.length / CARDS_PER_PAGE) - 1 ? 'not-allowed' : 'pointer',
-                        boxShadow: '0 2px 8px rgba(1,64,167,0.2)',
-                        opacity: compPage >= Math.ceil(sortedMeets.length / CARDS_PER_PAGE) - 1 ? 0.45 : 1,
-                        transition: 'all 0.15s'
-                      }}
-                    >
-                      <ChevronRight size={20} color={compPage >= Math.ceil(sortedMeets.length / CARDS_PER_PAGE) - 1 ? '#0F172A' : '#FFFFFF'} />
-                    </button>
+              {/* Carousel Navigation & Progress Dots */}
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                {sortedMeets.length > 1 && (
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }} aria-label="Carousel pagination">
+                    {sortedMeets.map((_, dotIdx) => (
+                      <button
+                        key={dotIdx}
+                        onClick={() => scrollToCompIndex(dotIdx)}
+                        className={`carousel-dot${activeCompIndex % sortedMeets.length === dotIdx ? ' active' : ''}`}
+                        aria-label={`Go to slide ${dotIdx + 1}`}
+                      />
+                    ))}
                   </div>
                 )}
+
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    onClick={() => handleScrollBanners('left')}
+                    className="carousel-nav-btn"
+                    aria-label="Previous competitions"
+                    title="Previous"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={() => handleScrollBanners('right')}
+                    className="carousel-nav-btn"
+                    aria-label="Next competitions"
+                    title="Next"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -748,7 +810,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     onChange={e => setRegionFilter(e.target.value)}
                     style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
                   >
-                    <option value="ALL">{language === 'en' ? 'All Regions' : 'ሁሉም ክልሎች'}</option>
+                    <option value="ALL">{tr('home.allRegions')}</option>
                     <option value="Addis Ababa">Addis Ababa</option>
                     <option value="Oromia">Oromia</option>
                     <option value="Amhara">Amhara</option>
@@ -809,104 +871,211 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </div>
             </div>
 
-            {/* Paginated Competition Cards — 3 per page */}
+            {/* Scrollable Horizontal Carousel of Competition Banner Cards */}
             {sortedMeets.length === 0 ? (
               <div style={{ background: t.surface, border: '1px solid ' + t.border, borderRadius: '20px', padding: '48px', textAlign: 'center', color: t.textMuted }}>
                 <Trophy size={48} style={{ opacity: 0.2, marginBottom: '12px' }} />
-                <h4 style={{ fontWeight: 800 }}>{language === 'en' ? 'No Competitions Found' : 'ምንም ውድድሮች አልተገኙም'}</h4>
+                <h4 style={{ fontWeight: 800 }}>{tr('home.noCompetitions')}</h4>
               </div>
-            ) : (() => {
-              const totalPages = Math.ceil(sortedMeets.length / CARDS_PER_PAGE);
-              const safePage = Math.min(compPage, totalPages - 1);
-              const visibleMeets = showAllComps ? sortedMeets : sortedMeets.slice(safePage * CARDS_PER_PAGE, safePage * CARDS_PER_PAGE + CARDS_PER_PAGE);
-              return (
-                <div>
-                  <div id="competition-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', paddingBottom: '16px' }}>
-                    {visibleMeets.map((meet, index) => {
-                      const badgeColor = meet.status === 'REGISTRATION_OPEN' ? 'var(--primary)' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
-                      const statusName = meet.status === 'REGISTRATION_OPEN' ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
-                      return (
-                        <motion.div
-                          key={showAllComps ? `all-${meet.id}` : `page-${meet.id}`}
-                          initial={{ opacity: 0, y: 35, scale: 0.96 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          whileHover={{ y: -8 }}
-                          transition={{ duration: 0.45, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                          onClick={() => setSelectedMeetId(meet.id)}
+            ) : (
+              <div
+                tabIndex={0}
+                aria-label="Competitions and Championship Hub Carousel"
+                ref={(el) => {
+                  compScrollRef.current = el;
+                  bannerScrollRef.current = el;
+                }}
+                className={`landing-scroll-row${isDraggingComp ? ' is-dragging' : ''}`}
+                onMouseDown={handleCompMouseDown}
+                onMouseMove={handleCompMouseMove}
+                onMouseUp={handleCompMouseUp}
+                onMouseLeave={handleCompMouseUp}
+                onScroll={() => {
+                  const el = compScrollRef.current;
+                  if (el && sortedMeets.length > 0) {
+                    const cards = el.querySelectorAll('.landing-scroll-card');
+                    if (cards.length > 0) {
+                      const containerLeft = el.scrollLeft;
+                      let closestIdx = 0;
+                      let minDiff = Infinity;
+                      cards.forEach((card, i) => {
+                        const diff = Math.abs((card.offsetLeft - el.offsetLeft) - containerLeft);
+                        if (diff < minDiff) {
+                          minDiff = diff;
+                          closestIdx = i;
+                        }
+                      });
+                      setActiveCompIndex(closestIdx % sortedMeets.length);
+                    }
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowLeft') handleScrollBanners('left');
+                  if (e.key === 'ArrowRight') handleScrollBanners('right');
+                }}
+                style={{
+                  display: 'flex',
+                  gap: '24px',
+                  overflowX: 'auto',
+                  paddingBottom: '20px',
+                  paddingTop: '8px',
+                  outline: 'none',
+                  cursor: isDraggingComp ? 'grabbing' : 'grab'
+                }}
+              >
+                {[...sortedMeets, ...sortedMeets, ...sortedMeets].map((meet, idx) => {
+                  const cardKey = `${meet.id}-${idx}`;
+                  const isCardExpanded = !!expandedMeetCards[cardKey];
+                  const badgeColor = meet.status === 'REGISTRATION_OPEN' ? 'var(--primary)' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
+                  const statusName = meet.status === 'REGISTRATION_OPEN' ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
+
+                  return (
+                    <div
+                      key={cardKey}
+                      className={`landing-scroll-card${isCardExpanded ? ' meet-card-expanded' : ''}`}
+                      onClick={() => {
+                        if (compHasDragged.current) {
+                          compHasDragged.current = false;
+                          return;
+                        }
+                        setSelectedMeetId(meet.id);
+                      }}
+                      style={{
+                        minWidth: 'min(100%, 360px)',
+                        maxWidth: '380px',
+                        flexShrink: 0,
+                        scrollSnapAlign: 'start',
+                        position: 'relative',
+                        borderRadius: '24px',
+                        overflow: 'hidden',
+                        minHeight: '360px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        cursor: 'pointer',
+                        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.1)',
+                        border: '1px solid rgba(226, 232, 240, 0.8)'
+                      }}
+                    >
+                      <div className="comp-card-bg-img" style={{ backgroundImage: `url(${meet.img})` }} />
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(to top, rgba(15,23,42,0.96) 0%, rgba(15,23,42,0.65) 50%, rgba(15,23,42,0.15) 100%)'
+                      }} />
+
+                      <div style={{ position: 'relative', zIndex: 1, padding: '24px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                          <span style={{
+                            background: badgeColor,
+                            color: '#FFFFFF',
+                            borderRadius: '8px',
+                            padding: '4px 12px',
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            letterSpacing: '0.04em',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            boxShadow: meet.status === 'LIVE' ? '0 0 12px rgba(239, 68, 68, 0.5)' : 'none'
+                          }}>
+                            {meet.status === 'LIVE' && <span className="status-pulse-dot" />}
+                            {statusName}
+                          </span>
+
+                          <span style={{
+                            background: 'rgba(255, 255, 255, 0.18)',
+                            backdropFilter: 'blur(8px)',
+                            WebkitBackdropFilter: 'blur(8px)',
+                            color: '#FFFFFF',
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(255, 255, 255, 0.25)'
+                          }}>
+                            📍 {meet.region}
+                          </span>
+                        </div>
+
+                        <h3 style={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 900, marginBottom: '12px', lineHeight: 1.35, letterSpacing: '-0.01em' }}>
+                          {language === 'am' ? meet.amharic || meet.title : meet.title}
+                        </h3>
+
+                        <div className="meet-card-extra">
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
+                              <MapPin size={14} style={{ flexShrink: 0 }} />
+                              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{meet.venue}</span>
+                            </span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
+                              <Calendar size={14} style={{ flexShrink: 0 }} />
+                              <span>{meet.dateString}</span>
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.15)', paddingTop: '12px' }}>
+                            <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'gap 0.2s ease' }}>
+                              {tr('home.viewDetails')} <ChevronRight size={16} />
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          className="meet-card-toggle-btn"
+                          onClick={(e) => { e.stopPropagation(); toggleMeetCard(cardKey); }}
                           style={{
-                            position: 'relative',
-                            borderRadius: '24px',
-                            overflow: 'hidden',
-                            minHeight: '340px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'flex-end',
+                            marginTop: '14px',
+                            background: 'rgba(255, 255, 255, 0.16)',
+                            backdropFilter: 'blur(8px)',
+                            WebkitBackdropFilter: 'blur(8px)',
+                            border: '1px solid rgba(255, 255, 255, 0.4)',
+                            color: '#FFFFFF',
+                            fontWeight: 800,
+                            fontSize: '0.78rem',
+                            padding: '8px 16px',
+                            borderRadius: '999px',
                             cursor: 'pointer',
-                            boxShadow: '0 16px 36px -10px rgba(15, 23, 42, 0.25)',
-                            border: '1px solid rgba(226, 232, 240, 0.8)'
+                            alignItems: 'center',
+                            gap: '6px'
                           }}
                         >
-                          <motion.div
-                            whileHover={{ scale: 1.08 }}
-                            transition={{ duration: 0.6 }}
-                            style={{ position: 'absolute', inset: 0, backgroundImage: `url(${meet.img})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
-                          />
-                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 60%, transparent 100%)' }} />
-                          <div style={{ position: 'relative', zIndex: 1, padding: '24px' }}>
-                            <span style={{ background: badgeColor, color: '#FFFFFF', borderRadius: '8px', padding: '4px 12px', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.04em', marginBottom: '12px', display: 'inline-block' }}>
-                              {statusName}
-                            </span>
-                            <h3 style={{ color: '#FFFFFF', fontSize: '1.15rem', fontWeight: 900, marginBottom: '8px', lineHeight: 1.3 }}>
-                              {language === 'en' ? meet.title : meet.amharic || meet.title}
-                            </h3>
-                            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
-                                <MapPin size={14} /> {meet.venue}
-                              </span>
-                              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
-                                <Calendar size={14} /> {meet.dateString}
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: '#FFFFFF', fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '8px' }}>
-                                📍 {meet.region}
-                              </span>
-                              <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                {language === 'en' ? 'View Details' : 'ዝርዝር'} <ChevronRight size={16} />
-                              </span>
-                            </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Page indicator dots */}
-                  {!showAllComps && totalPages > 1 && (
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
-                      {Array.from({ length: totalPages }).map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setCompPage(i)}
-                          style={{
-                            width: i === safePage ? '24px' : '8px',
-                            height: '8px',
-                            borderRadius: '4px',
-                            border: 'none',
-                            background: i === safePage ? 'var(--primary)' : '#CBD5E1',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            padding: 0
-                          }}
-                        />
-                      ))}
+                          {isCardExpanded ? loc.seeLess : loc.seeMore}
+                          {isCardExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              );
-            })()}
+                  );
+                })}
+              </div>
+            )}
 
-
+            {/* VIEW MORE COMPETITIONS BUTTON */}
+            {publicSubPage === 'HOME' && (
+              <div style={{ marginTop: '36px', textAlign: 'center' }}>
+                <button
+                  className="btn-accent"
+                  style={{
+                    padding: '14px 36px',
+                    borderRadius: '14px',
+                    fontSize: '0.98rem',
+                    fontWeight: 800,
+                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                    color: '#FFF',
+                    boxShadow: '0 8px 24px rgba(2, 132, 199, 0.25)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.25s ease'
+                  }}
+                  onClick={() => onChangePublicSubPage('COMPETITIONS')}
+                >
+                  <Trophy size={18} />
+                  {tr('home.viewAllCompetitions')} ({ENRICHED_MEETS.length}) →
+                </button>
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -946,7 +1115,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   onClick={() => setSelectedAthleteModal(athlete)}
                   style={{
                     position: 'relative',
-                    minWidth: '380px',
+                    minWidth: 'min(100%, 380px)',
                     maxWidth: '400px',
                     minHeight: '440px',
                     flexShrink: 0,
@@ -1028,7 +1197,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               whiteSpace: 'nowrap', zIndex: 1,
             }}>
               <span>🔴</span>
-              {language === 'en' ? 'LIVE EAF TICKER' : 'የቀጥታ ዜና'}
+              {tr('home.liveTicker')}
             </div>
             <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
               <style>{`
@@ -1046,9 +1215,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 }
               `}</style>
               <span className="ticker-inner">
-                {language === 'en'
-                  ? 'Ethiopia wins 15 medals at 24th African Athletics Championship · EAF launches athlete licensing with Fayda ID · Addis Ababa Grand Prix entries open ·'
-                  : 'ኢትዮጵያ በ24ኛው የአፍሪካ አትሌቲክስ ሻምፒዮና 15 ሜዳሊያዎችን አሸንፋለች · ፌዴሬሽኑ የፋይዳ ባዮሜትሪክ ምዝገባን በይፋ ጀምሯል · የአዲስ አበባ ግራንድ ፕሪ ምዝገባ ተጀምሯል ·'}
+                {tr('home.tickerText')}
               </span>
             </div>
           </div>
@@ -1059,7 +1226,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               <div style={{ marginBottom: 32 }}>
                 <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text }}>{loc.newsTitle}</h2>
                 <p style={{ color: 'var(--primary)', fontWeight: 700, marginTop: '4px' }}>
-                  Official federation announcements, marathon victories & national team updates
+                  {tr('home.newsSub')}
                 </p>
               </div>
 
@@ -1082,7 +1249,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       borderRadius: 8, padding: '4px 12px',
                       fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.06em',
                       marginBottom: 12, display: 'inline-block',
-                    }}>{selectedNews.tag || 'LATEST ANNOUNCEMENT'}</span>
+                    }}>{selectedNews.tag || tr('home.latestAnnouncement')}</span>
                     <div style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: 8, fontWeight: 600 }}>{selectedNews.date}</div>
                     <h3 style={{ color: '#FFFFFF', fontSize: '1.6rem', fontWeight: 900, marginBottom: 12, lineHeight: 1.3 }}>
                       {selectedNews.title}
@@ -1093,7 +1260,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       </p>
                     )}
                     <span style={{ color: '#38BDF8', fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      {language === 'en' ? 'Read Full Article →' : 'ተጨማሪ ያንብቡ →'}
+                      {tr('home.readFullArticle')} →
                     </span>
                   </div>
                 </div>
@@ -1325,7 +1492,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         </section>
       )}
 
-      {/* ── 8. MEDIA & PHOTO/VIDEO GALLERY COLLECTION (RENDERED ON HOME & MEDIA PAGES) ── */}
+      {/* ── 8. MEDIA & PHOTO/VIDEO GALLERY COLLECTION — RESPONSIVE MOSAIC GRID ── */}
       {(publicSubPage === 'HOME' || publicSubPage === 'MEDIA') && (
         <section id="media" style={{ padding: '60px 24px', background: t.bgAlt, borderTop: '1px solid ' + t.border }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
@@ -1339,13 +1506,18 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </p>
             </div>
 
-            {/* Clean Uniform Modern Card Grid Layout */}
-            <div style={{
+            {/* Asymmetric Dense Mosaic Grid Layout Collection */}
+            <div className="media-grid" style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-              gap: '24px'
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gridAutoRows: '240px',
+              gridAutoFlow: 'dense',
+              gap: '20px'
             }}>
-              {GALLERY_IMAGES.map((item, idx) => {
+              {visibleGalleryImages.map((item, idx) => {
+                const isHero = idx === 0;
+                const isTall = idx === 1 || idx === 6;
+                const isWide = idx === 3 || idx === 8;
                 return (
                   <motion.div
                     key={item.id}
@@ -1354,59 +1526,52 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     viewport={{ once: true }}
                     whileHover={{ y: -6 }}
                     transition={{ duration: 0.4, delay: (idx % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                    className="media-grid-card"
+                    className="hover-lift media-grid-card"
                     onClick={() => setActiveLightboxImg(item)}
                     style={{
-                      background: t.surface,
-                      borderRadius: '16px',
+                      position: 'relative',
+                      borderRadius: '24px',
                       overflow: 'hidden',
-                      border: '1px solid ' + t.border,
-                      boxShadow: '0 4px 20px -4px rgba(15, 23, 42, 0.06)',
+                      gridColumn: isHero ? 'span 2' : isWide ? 'span 2' : 'span 1',
+                      gridRow: isHero ? 'span 2' : isTall ? 'span 2' : 'span 1',
                       cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      transition: 'all 0.3s ease'
+                      boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
+                      border: '1px solid #E2E8F0',
+                      minHeight: isTall || isHero ? '480px' : '240px'
                     }}
                   >
-                    {/* Image Box */}
-                    <div style={{ position: 'relative', height: '220px', width: '100%', overflow: 'hidden', background: '#0F172A' }}>
-                      <motion.img
-                        src={item.img}
-                        alt={item.title}
-                        whileHover={{ scale: 1.08 }}
-                        transition={{ duration: 0.5 }}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                      {/* Top Badges */}
-                      <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: '8px', zIndex: 2 }}>
-                        <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
-                          {item.category}
+                    <motion.img
+                      src={item.img}
+                      alt={item.title}
+                      className="media-card-img"
+                      whileHover={{ scale: 1.08 }}
+                      transition={{ duration: 0.5 }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.2) 60%, transparent 100%)' }} />
+
+                    {/* Top Badges */}
+                    <div style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ background: 'var(--primary)', color: '#FFF', padding: '4px 12px', borderRadius: '14px', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                        {item.category}
+                      </span>
+                      {item.type === 'VIDEO' ? (
+                        <span style={{ background: 'rgba(239, 68, 68, 0.9)', color: '#FFF', padding: '4px 10px', borderRadius: '14px', fontSize: '0.7rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Play size={12} fill="#FFF" /> HD Video
                         </span>
-                        {item.type === 'VIDEO' && (
-                          <span style={{ background: '#EF4444', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Play size={12} fill="#FFF" /> HD Video
-                          </span>
-                        )}
-                      </div>
+                      ) : (
+                        <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: '#FFF', padding: '4px 10px', borderRadius: '14px', fontSize: '0.7rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          📸 Photo
+                        </span>
+                      )}
                     </div>
 
-                    {/* Content Below Image */}
-                    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flexGrow: 1, justifyContent: 'space-between' }}>
-                      <div>
-                        <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: t.text, lineHeight: 1.4, marginBottom: '10px' }}>
-                          {item.title}
-                        </h4>
-                        <div style={{ fontSize: '0.82rem', color: t.textMuted, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontWeight: 600 }}>
-                          <span>📍 {item.location}</span>
-                          <span>•</span>
-                          <span>🗓️ {item.date}</span>
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid ' + t.border, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          {item.type === 'VIDEO' ? (language === 'en' ? 'Watch Video' : 'ቪዲዮ ይመልከቱ') : (language === 'en' ? 'View Photo' : 'ፎቶ ይመልከቱ')} <ChevronRight size={14} />
-                        </span>
+                    {/* Bottom Content */}
+                    <div style={{ position: 'absolute', bottom: 20, left: 20, right: 20, color: '#FFF', zIndex: 2 }}>
+                      <h4 style={{ fontSize: isHero ? '1.5rem' : '1.1rem', fontWeight: 900, lineHeight: 1.2, marginBottom: '6px' }}>{item.title}</h4>
+                      <div style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        <span>📍 {item.location}</span>
+                        <span>🗓️ {item.date}</span>
                       </div>
                     </div>
                   </motion.div>
@@ -1424,7 +1589,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     borderRadius: '12px',
                     fontSize: '0.95rem',
                     fontWeight: 800,
-                    background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)',
+                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
                     color: '#FFF',
                     border: 'none',
                     cursor: 'pointer',
@@ -1492,7 +1657,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </div>
           ) : (
             <form onSubmit={handleContactSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <input
                   type="text"
                   placeholder="Your Full Name"
