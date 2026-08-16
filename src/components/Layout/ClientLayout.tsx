@@ -8,13 +8,14 @@ interface ClientLayoutProps {
   onChangeSubPage: (page: string) => void;
   currentAthlete: Athlete;
   onLogout: () => void;
+  onGoHome?: () => void;
   darkMode?: boolean;
   onToggleDarkMode?: () => void;
   children: React.ReactNode;
 }
 
 export default function ClientLayout({
-  activeSubPage, onChangeSubPage, currentAthlete, onLogout,
+  activeSubPage, onChangeSubPage, currentAthlete, onLogout, onGoHome,
   darkMode, onToggleDarkMode, children
 }: ClientLayoutProps) {
   const tabs = [
@@ -74,26 +75,46 @@ export default function ClientLayout({
             <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary border-2 border-white" />
           </motion.button>
 
+          {/* Go to Landing / Home */}
+          {onGoHome && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onGoHome}
+              title="Go to Public Home Page"
+              className={`${darkMode ? 'bg-[#1A223B] text-[#94A3B8] hover:bg-[#1E2A48]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} border-0 p-2.5 rounded-xl flex items-center justify-center cursor-pointer transition-colors`}
+            >
+              <Home size={18} />
+            </motion.button>
+          )}
+
           {/* Sign Out */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onLogout}
+            title="Sign Out"
             className={`${darkMode ? 'bg-[#1A223B] text-[#94A3B8] hover:bg-[#1E2A48]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} border-0 px-3.5 py-2 rounded-xl text-[0.8rem] font-bold flex items-center gap-1.5 cursor-pointer transition-colors`}
           >
             <LogOut size={14} />
             <span className="hidden-mobile">Sign Out</span>
           </motion.button>
 
-          {/* Avatar */}
-          <div className="relative">
+          {/* Avatar - Clickable to go to Profile */}
+          <motion.div
+            className="relative cursor-pointer"
+            onClick={() => onChangeSubPage('PROFILE')}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="View Profile"
+          >
             <img
               src={currentAthlete.photoUrl}
               alt="Profile"
               className="w-10 h-10 rounded-full border-2 border-primary object-cover"
             />
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full" />
-          </div>
+          </motion.div>
         </div>
       </motion.header>
 

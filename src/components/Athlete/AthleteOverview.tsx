@@ -76,11 +76,11 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
   };
 
   const tabs = [
-    { id: 'overview',      label: 'Overview' },
-    { id: 'competitions',  label: 'Competition History' },
-    { id: 'pbs',           label: 'Personal Bests' },
-    { id: 'weight',        label: 'Weight Log' },
-    { id: 'training',      label: 'Training Log' },
+    { id: 'overview', label: 'Overview' },
+    { id: 'competitions', label: 'Competition History' },
+    { id: 'pbs', label: 'Personal Bests' },
+    { id: 'weight', label: 'Weight Log' },
+    { id: 'training', label: 'Training Log' },
   ];
 
   // ── Build competition history for this athlete ──
@@ -127,22 +127,23 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
   return (
     <div>
       {/* Profile Header */}
-      <div className="gov-card p-6 mb-6 bg-gradient-to-br from-[#1A1F2E] to-[#1E2740] border-0 text-white">
+      <div className="gov-card p-6 mb-6 bg-white dark:bg-[#121829] border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-[18px]">
+          <div className="flex items-center gap-4">
             <img src={athlete.photoUrl} alt={athlete.name}
-              className="w-[72px] h-[72px] rounded-[14px] object-cover border-2 border-accent" />
+              className="w-16 h-16 rounded-2xl object-cover border-2 border-primary shadow-sm" />
             <div>
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h2 className="text-[1.6rem] font-black text-white">{athlete.name}</h2>
                 <span className="badge badge-green"><ShieldCheck size={12} /> Fayda Verified</span>
-                <span className="badge badge-amber">{athlete.ageTier}</span>
+                <span className="badge badge-amber">{athlete.ageTier} Tier</span>
               </div>
-              <p className="text-[#C8A84B] font-bold text-[0.9rem]">{athlete.amharicName} — {athlete.clubName}</p>
-              <div className="flex gap-[14px] mt-1.5 text-[0.82rem] text-[#8FA8BC]">
-                <span>FIN: <strong className="text-white font-mono">{athlete.faydaFin}</strong></span>
+              <h2 className="text-[1.1rem] font-bold text-[#0F172A] dark:text-white leading-tight mb-0.5">{athlete.name}</h2>
+              <div className="text-[1.05rem] font-bold text-primary dark:text-[#38BDF8] leading-tight mb-1.5">{athlete.amharicName}</div>
+              <p className="text-[0.85rem] text-slate-600 dark:text-slate-400 font-semibold mb-1">{athlete.clubName}</p>
+              <div className="flex gap-3 text-[0.82rem] text-slate-500 dark:text-slate-400 flex-wrap">
+                <span>FIN: <strong className="text-[#0F172A] dark:text-white font-mono text-[0.88rem]">{athlete.faydaFin}</strong></span>
                 <span>•</span>
-                <span>Event: <strong className="text-white">{athlete.primaryEvent}</strong></span>
+                <span>Event: <strong className="text-primary font-bold">{athlete.primaryEvent}</strong></span>
               </div>
             </div>
           </div>
@@ -244,12 +245,12 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
           {/* Summary stats */}
           <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4 mb-6">
             {[
-              { label: 'Races Run',    value: totalRaces,                icon: Flag,   color: 'var(--primary)' },
-              { label: 'Medals',       value: medalCount,                icon: Medal,  color: '#C8A84B' },
-              { label: '🥇 Gold',      value: goldCount,                 icon: Trophy, color: '#C8A84B' },
-              { label: '🥈 Silver',    value: silverCount,               icon: Trophy, color: '#A8B8C8' },
-              { label: '🥉 Bronze',    value: bronzeCount,               icon: Trophy, color: '#C87040' },
-              { label: 'Best Finish',  value: bestPos ? `#${bestPos}` : '—', icon: TrendingUp, color: 'var(--primary)' },
+              { label: 'Races Run', value: totalRaces, icon: Flag, color: 'var(--primary)' },
+              { label: 'Medals', value: medalCount, icon: Medal, color: '#C8A84B' },
+              { label: '🥇 Gold', value: goldCount, icon: Trophy, color: '#C8A84B' },
+              { label: '🥈 Silver', value: silverCount, icon: Trophy, color: '#A8B8C8' },
+              { label: '🥉 Bronze', value: bronzeCount, icon: Trophy, color: '#C87040' },
+              { label: 'Best Finish', value: bestPos ? `#${bestPos}` : '—', icon: TrendingUp, color: 'var(--primary)' },
             ].map(s => {
               const Icon = s.icon;
               return (
@@ -284,8 +285,8 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                       <div>
                         <div className="text-white font-extrabold text-[0.95rem]">{meta.title}</div>
                         <div className="flex items-center gap-3 mt-1 text-[0.78rem] text-[#8FA8BC]">
-                          <span className="flex items-center gap-1"><Calendar size={11}/> {meta.date}</span>
-                          <span className="flex items-center gap-1"><MapPin size={11}/> {meta.venue}</span>
+                          <span className="flex items-center gap-1"><Calendar size={11} /> {meta.date}</span>
+                          <span className="flex items-center gap-1"><MapPin size={11} /> {meta.venue}</span>
                         </div>
                       </div>
                       <span className="badge badge-amber text-[0.68rem]">
@@ -317,14 +318,13 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                                   fontWeight: 900, fontSize: '0.8rem',
                                   color: r.pos === 1 ? '#C8A84B' : r.pos === 2 ? '#A8B8C8' : r.pos === 3 ? '#C87040' : 'var(--text-muted)'
                                 }}>
-                                  {r.pos <= 3 ? ['🥇','🥈','🥉'][r.pos - 1] : r.pos}
+                                  {r.pos <= 3 ? ['🥇', '🥈', '🥉'][r.pos - 1] : r.pos}
                                 </div>
                               </td>
                               <td><strong className="text-[0.9rem]">{r.discipline}</strong></td>
                               <td>
-                                <span className={`font-mono font-extrabold text-[1rem] ${
-                                  r.pos === 1 ? 'text-[#C8A84B]' : 'text-primary'
-                                }`}>{r.time}</span>
+                                <span className={`font-mono font-extrabold text-[1rem] ${r.pos === 1 ? 'text-[#C8A84B]' : 'text-primary'
+                                  }`}>{r.time}</span>
                               </td>
                               <td className="text-text-muted text-[0.82rem]">
                                 {r.pos} / {r.totalAthletes}
@@ -421,7 +421,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                 <div className="form-group">
                   <label className="form-label">Event</label>
                   <select className="form-select" value={pbEvent} onChange={e => setPbEvent(e.target.value)}>
-                    {['100m','200m','400m','800m','1,500m','3,000m','5,000m','10,000m','Half Marathon','Marathon','3,000m Steeplechase','110m Hurdles','Long Jump','Triple Jump','High Jump','Shot Put','Discus','Javelin'].map(ev => (
+                    {['100m', '200m', '400m', '800m', '1,500m', '3,000m', '5,000m', '10,000m', 'Half Marathon', 'Marathon', '3,000m Steeplechase', '110m Hurdles', 'Long Jump', 'Triple Jump', 'High Jump', 'Shot Put', 'Discus', 'Javelin'].map(ev => (
                       <option key={ev}>{ev}</option>
                     ))}
                   </select>
@@ -556,7 +556,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                   <div className="form-group">
                     <label className="form-label">Session Type</label>
                     <select className="form-select" value={trainType} onChange={e => setTrainType(e.target.value)}>
-                      {['Easy Run','Long Run','Tempo Run','Track Work','Speed Work','Fartlek','Hill Repeats','Recovery Run','Cross Training','Strength & Conditioning'].map(t => <option key={t}>{t}</option>)}
+                      {['Easy Run', 'Long Run', 'Tempo Run', 'Track Work', 'Speed Work', 'Fartlek', 'Hill Repeats', 'Recovery Run', 'Cross Training', 'Strength & Conditioning'].map(t => <option key={t}>{t}</option>)}
                     </select>
                   </div>
                   <div className="form-group">

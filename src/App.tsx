@@ -85,6 +85,16 @@ export default function App() {
     }
   }, [currentRole, currentAthlete]);
 
+  // Listen for registration modal trigger from AuthModal
+  useEffect(() => {
+    const handleOpenRegistration = (e: any) => {
+      setAuthModalConfig(null); // Close auth modal
+      setRegModalRole(e.detail.role); // Open registration modal
+    };
+    window.addEventListener('openRegistrationModal', handleOpenRegistration);
+    return () => window.removeEventListener('openRegistrationModal', handleOpenRegistration);
+  }, []);
+
   const [authModalConfig, setAuthModalConfig] = useState<any>(null);
   const [regModalRole, setRegModalRole] = useState<'CLUB' | 'ATHLETE' | null>(null);
   const [paymentData, setPaymentData] = useState<any>(null);
@@ -109,17 +119,17 @@ export default function App() {
     }
   };
 
-  const handleRegisterSuccess = (role: string, data: any) => {
+  const handleRegisterSuccess = (registrationData: { type: 'CLUB' | 'ATHLETE'; payload: Record<string, any> }) => {
     setRegModalRole(null);
-    if (role === 'CLUB') {
-      const newClub = data.club;
+    if (registrationData.type === 'CLUB') {
+      const newClub = registrationData.payload.club;
       setClubs((prev: any) => [newClub, ...prev]);
       setCurrentClub(newClub);
       setCurrentRole('CLUB');
       setClubSubPage('OVERVIEW');
       handleNotify(`Club "${newClub.shortName}" registered and logged in!`, 'success');
     } else {
-      const newAthlete = data.athlete;
+      const newAthlete = registrationData.payload.athlete;
       setAthletes((prev: any) => [newAthlete, ...prev]);
       setCurrentAthlete(newAthlete);
       setCurrentRole('ATHLETE');
@@ -128,9 +138,17 @@ export default function App() {
     }
   };
 
-  const handleSwitchRoleDirectly = (targetRole: Role) => {
-    if (targetRole === 'LANDING') { setCurrentRole('LANDING'); return; }
-    setCurrentRole(targetRole);
+  const [navNonce, setNavNonce] = useState(0);
+
+  const handleSwitchRoleDirectly = (targetRole: string) => {
+    if (targetRole === 'LANDING' || targetRole === 'HOME') {
+      setPublicSubPage('HOME');
+      setNavNonce(prev => prev + 1);
+      window.scrollTo(0, 0);
+      setTimeout(() => window.scrollTo(0, 0), 50);
+      return;
+    }
+    setCurrentRole(targetRole as Role);
     if (targetRole === 'CLUB') setClubSubPage('OVERVIEW');
     else setAthleteSubPage('OVERVIEW');
     handleNotify(`Switched to ${targetRole === 'CLUB' ? 'Club Admin' : 'Athlete'} Portal`, 'info');
@@ -190,7 +208,12 @@ export default function App() {
 
     const handleNavClick = (page: string) => {
       setPublicSubPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setNavNonce(prev => prev + 1);
+      // Immediate scroll to top
+      window.scrollTo(0, 0);
+      // Also scroll after a delay to override any browser behavior
+      setTimeout(() => window.scrollTo(0, 0), 50);
+      setTimeout(() => window.scrollTo(0, 0), 150);
     };
 
     return (
@@ -220,7 +243,7 @@ export default function App() {
         }}>
           <div
             style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
-            onClick={() => setPublicSubPage('HOME')}
+            onClick={() => handleNavClick('HOME')}
           >
             <div style={{ width: '44px', height: '44px', background: '#FFFFFF', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, border: '1px solid #E2E8F0', padding: '2px' }}>
               <img
@@ -286,17 +309,30 @@ export default function App() {
 
             {currentRole === 'ATHLETE' ? (
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button
-                  onClick={() => { setAthleteSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); }}
-                  className="btn-accent"
-                  style={{
-                    fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
-                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer'
-                  }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                  My Dashboard
-                </button>
+                {publicSubPage === 'DASHBOARD' ? (
+                  <button
+                    onClick={() => handleNavClick('HOME')}
+                    style={{
+                      fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
+                      background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0', cursor: 'pointer', fontWeight: 700
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    Back to Home
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setAthleteSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); }}
+                    className="btn-accent"
+                    style={{
+                      fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
+                      background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer'
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    My Dashboard
+                  </button>
+                )}
                 <button
                   onClick={() => { localStorage.removeItem('eaf_currentRole'); setCurrentRole('LANDING'); }}
                   style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '7px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}
@@ -346,6 +382,10 @@ export default function App() {
           publicSubPage={publicSubPage}
           onChangePublicSubPage={setPublicSubPage}
           darkMode={darkMode}
+          currentRole={currentRole}
+          currentAthlete={currentAthlete}
+          onLoginSuccess={handleLoginSuccess}
+          navNonce={navNonce}
           onSelectRole={(role: string) => {
             if (role === 'CLUB') handleLoginSuccess('CLUB', { club: currentClub });
             else handleLoginSuccess('ATHLETE', { athlete: currentAthlete });
@@ -440,6 +480,7 @@ export default function App() {
           localStorage.removeItem('eaf_currentRole');
           setCurrentRole('LANDING');
         }}
+        onGoHome={() => handleSwitchRoleDirectly('LANDING')}
       >
         {athleteSubPage === 'OVERVIEW' && (
           <AthleteOverview

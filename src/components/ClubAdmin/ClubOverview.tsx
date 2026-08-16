@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2 } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import React from 'react';
+import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import type { Club, Athlete, Transfer } from '../../types';
 
 interface ClubOverviewProps {
@@ -12,19 +12,11 @@ interface ClubOverviewProps {
   onAddClub: (club: Club) => void;
 }
 
-export default function ClubOverview({ club, athletes, transfers, onChangeSubPage, onNotify, onAddClub }: ClubOverviewProps) {
+export default function ClubOverview({ club, athletes, transfers, onChangeSubPage, onNotify }: ClubOverviewProps) {
   const verifiedCount = athletes.filter(a => a.faydaStatus === 'VERIFIED').length;
   const activeLicenseCount = athletes.filter(a => a.licenseStatus === 'ACTIVE').length;
   const expiredCount = athletes.filter(a => a.licenseStatus !== 'ACTIVE').length;
 
-  const [showClubModal, setShowClubModal] = useState<boolean>(false);
-  const [clubName, setClubName] = useState<string>('');
-  const [clubAmharic, setClubAmharic] = useState<string>('');
-  const [region, setRegion] = useState<string>('Oromia Region');
-  const [manager, setManager] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
-  const [logo, setLogo] = useState<string>('🏃‍♂️');
 
   
   const performanceData = [
@@ -129,7 +121,10 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip className="rounded-[8px] !border-0 shadow-[0_4px_12px_rgba(0,0,0,0.1)]" />
+                <Tooltip
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  wrapperStyle={{ outline: 'none' }}
+                />
                 <Line type="monotone" dataKey="points" stroke="var(--primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--primary)' }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -147,15 +142,17 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(0)}%)`}
                   labelLine={false}
-                  className="text-[0.75rem] font-semibold"
                 >
                   {eventsData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip className="rounded-[8px] !border-0 shadow-[0_4px_12px_rgba(0,0,0,0.1)]" />
+                <Tooltip
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  wrapperStyle={{ outline: 'none' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -236,6 +233,6 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         </div>
       </div>
 
-          </div>
+      </div>
   );
 }

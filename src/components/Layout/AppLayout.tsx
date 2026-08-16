@@ -138,7 +138,7 @@ export default function AppLayout({
         {/* Footer */}
         <div className="p-3.5 border-t border-[#2D3A5A] flex flex-col gap-2">
           <button
-            onClick={() => onSwitchRole('LANDING')}
+            onClick={() => onSwitchRole('HOME')}
             className="btn-gov-secondary w-full text-[0.78rem] px-3 py-2 flex items-center justify-center gap-1.5"
           >
             <Globe size={13} /> Go to Home Page

@@ -1,26 +1,230 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /* ─────────────────────────────────────────────
    STATIC DATA & GALLERY IMAGES
    ───────────────────────────────────────────── */
-const NEWS = [
+export interface NewsItem {
+  id: number;
+  date: string;
+  title: string;
+  amharicTitle?: string;
+  summary: string;
+  tag: string;
+  img: string;
+  featured?: boolean;
+  author: string;
+  readTime: string;
+  location: string;
+  paragraphs: string[];
+  quote?: {
+    text: string;
+    author: string;
+  };
+  stats?: { label: string; value: string }[];
+  gallery?: string[];
+}
+
+export interface GalleryCapture {
+  id: number;
+  img: string;
+  title: string;
+  caption: string;
+  photographer?: string;
+  time?: string;
+}
+
+export interface GalleryItem {
+  id: number;
+  title: string;
+  category: string;
+  img: string;
+  location: string;
+  date: string;
+  type: 'PHOTO' | 'VIDEO';
+  description: string;
+  captures: GalleryCapture[];
+}
+
+const NEWS: NewsItem[] = [
   {
     id: 1,
     date: 'May 18, 2026',
     title: 'Ethiopia Finishes 24th African Championship with 15 Medals',
-    summary: 'Ethiopia collected 7 gold, 4 silver, and 4 bronze medals at the 24th African Athletics Championship hosted in Accra, Ghana.',
+    amharicTitle: 'ኢትዮጵያ 24ኛውን የአፍሪካ አትሌቲክስ ሻምፒዮና በ15 ሜዳሊያዎች አጠናቀቀች',
+    summary: 'Ethiopia collected 7 gold, 4 silver, and 4 bronze medals at the 24th African Athletics Championship hosted in Accra, Ghana, topping the distance running charts.',
     tag: 'Championship',
     img: '/images/d1.jpg',
     featured: true,
+    author: 'EAF Media Unit / Solomon Desta',
+    readTime: '4 min read',
+    location: 'Accra, Ghana',
+    paragraphs: [
+      'The Ethiopian National Athletics Team delivered a historic performance at the 24th African Senior Athletics Championships concluded at the Accra International Stadium, securing a remarkable haul of 7 Gold, 4 Silver, and 4 Bronze medals across four grueling days of elite continental competition.',
+      'Led by dominant tactical masterclasses in the men’s 10,000m and women’s 5,000m, Ethiopian distance runners swept both podiums while showing impressive breakthroughs in middle-distance and steeplechase disciplines. The young sensation Haile Demisse clinched gold in the 5,000m with an electrifying final lap sprint of 53.2 seconds, holding off formidable East African rivals.',
+      'In the women’s 10,000m, Sifan Mengistu Wolde set a new championship record with a commanding solo run from 6,000 meters out, crossing the line in 30:52.14 amidst thunderous applause from the stadium crowd and the vibrant Ethiopian diaspora delegation.',
+      'The Ethiopian Athletics Federation President lauded the athletes, declaring this championship a definitive confirmation of the federation’s long-term talent development pipeline as Ethiopia prepares for the upcoming World Athletics Championships.'
+    ],
+    quote: {
+      text: 'Our athletes demonstrated unmatched tactical maturity, national pride, and resilience under high humidity. The future of Ethiopian athletics is stronger than ever.',
+      author: 'Derartu Tulu, EAF Executive Leadership'
+    },
+    stats: [
+      { label: 'Gold Medals', value: '7' },
+      { label: 'Silver Medals', value: '4' },
+      { label: 'Bronze Medals', value: '4' },
+      { label: 'Total Medals', value: '15' },
+      { label: 'Continental Rank', value: '#1 (Distance)' }
+    ],
+    gallery: ['/images/d1.jpg', '/images/d5.jpg', '/images/a2.jpg']
   },
-  { id: 2, date: 'Apr 26, 2026', title: 'Ethiopian Heroes Dominate London Marathon', tag: 'Marathon', img: '/images/d2.jpeg' },
-  { id: 3, date: 'Apr 26, 2026', title: '4th Ethiopia Tamirt 10KM Won by Nibret Kinde & Birtukan Mola', tag: 'Road Race', img: '/images/d3.jpeg' },
-  { id: 4, date: 'Apr 26, 2026', title: '10-Day Athletics Judging Training Completed', tag: 'Training', img: '/images/d4.jpg' },
-  { id: 5, date: 'May 10, 2026', title: 'Ethiopian Delegation Departs for African Championships', tag: 'Championship', img: '/images/d5.jpg' },
-  { id: 6, date: 'May 10, 2026', title: 'National Team Official Send-Off Ceremony Held', tag: 'National Team', img: '/images/a1.jpg' },
+  {
+    id: 2,
+    date: 'Apr 26, 2026',
+    title: 'Ethiopian Heroes Dominate London Marathon',
+    amharicTitle: 'የኢትዮጵያ ጀግኖች የለንደን ማራቶንን በበላይነት አጠናቀቁ',
+    summary: 'Ethiopian elite marathoners showcased breathtaking endurance along the Thames, capturing both men’s and women’s podium crowns in world-class times.',
+    tag: 'Marathon',
+    img: '/images/d2.jpeg',
+    author: 'EAF International Desk / London',
+    readTime: '3 min read',
+    location: 'London, United Kingdom',
+    paragraphs: [
+      'Ethiopian distance masters wrote another glorious chapter in distance running history at the prestigious London Marathon, dominating a world-class field from Blackheath to The Mall in front of hundreds of thousands of spectators.',
+      'In the women’s elite race, Tigst Assefa unleashed a blistering surge after passing the 35km mark near Embankment, breaking away from the defending champion and crossing the finish line in a spectacular course-record pace.',
+      'The men’s division was equally thrilling, with Ethiopian athletes controlling the rhythm through 30km before an explosive dual sprint towards Buckingham Palace sealed a 1-2 finish for Ethiopia.',
+      'EAF Technical Director noted that the rigorous altitude preparation in Entoto and Sululta was instrumental in sustaining peak cardiovascular power through the cool, breezy London conditions.'
+    ],
+    quote: {
+      text: 'Every kilometer we train in the hills of Bekoji and Sululta is for this exact moment—bringing glory to the green, yellow, and red flag.',
+      author: 'Tigst Assefa, Marathon Champion'
+    },
+    stats: [
+      { label: 'Women Winning Time', value: '2:14:18' },
+      { label: 'Men Winning Time', value: '2:03:42' },
+      { label: 'Top-5 Ethiopian Finishers', value: '4 Athletes' },
+      { label: 'Spectator Crowd', value: '800,000+' }
+    ],
+    gallery: ['/images/d2.jpeg', '/images/runner_marathon.png', '/images/a1.jpg']
+  },
+  {
+    id: 3,
+    date: 'Apr 26, 2026',
+    title: '4th Ethiopia Tamirt 10KM Won by Nibret Kinde & Birtukan Mola',
+    amharicTitle: '4ኛው የኢትዮጵያ ታምርት 10 ኪሜ በንብረት ኪንዴ እና ብርቱካን ሞላ አሸናፊነት ተጠናቀቀ',
+    summary: 'More than 20,000 participants and national club elites raced through the heart of the capital in a vibrant celebration of athletics and national unity.',
+    tag: 'Road Race',
+    img: '/images/d3.jpeg',
+    author: 'EAF Road Race Committee',
+    readTime: '3 min read',
+    location: 'Meskel Square, Addis Ababa',
+    paragraphs: [
+      'The 4th edition of the annual Ethiopia Tamirt 10-Kilometer Road Race electrified Addis Ababa as over 20,000 elite and mass participants lined up at the historic Meskel Square on Sunday morning.',
+      'Nibret Kinde produced an exceptional tactical performance, pulling clear of the elite men’s pack at the 7km uphill stretch towards Mexico Square and crossing the tape in 28:14 at an altitude of 2,355 meters.',
+      'In the women’s contest, Birtukan Mola delivered a stunning kick over the final 500 meters to secure first place in 31:48, setting a new course benchmark for high-altitude 10k road circuits in Ethiopia.',
+      'Federation officials commended the flawless electronic chip timing, Fayda athlete verification integration, and enthusiastic turnout from youth development academies across all regional states.'
+    ],
+    quote: {
+      text: 'Running alongside thousands of fellow Ethiopians at Meskel Square gives you unmatched energy. It proves grassroots athletics is thriving across our country.',
+      author: 'Nibret Kinde, Men’s 10K Winner'
+    },
+    stats: [
+      { label: 'Registered Runners', value: '22,400+' },
+      { label: 'Men Record', value: '28:14.2' },
+      { label: 'Women Record', value: '31:48.0' },
+      { label: 'Participating Clubs', value: '34 Clubs' }
+    ],
+    gallery: ['/images/d3.jpeg', '/images/runners_training.png', '/images/banner_grand_prix.png']
+  },
+  {
+    id: 4,
+    date: 'Apr 26, 2026',
+    title: '10-Day Athletics Judging Training Completed',
+    amharicTitle: 'የ10 ቀናት የአትሌቲክስ ዳኝነት እና ቴክኒካል ስልጠና በስኬት ተጠናቀቀ',
+    summary: 'Sixty technical officials from 11 regional states completed advanced World Athletics Level-1 and Level-2 technical judging, officiating, and photo-finish certification.',
+    tag: 'Training',
+    img: '/images/d4.jpg',
+    author: 'EAF Technical & Education Department',
+    readTime: '3 min read',
+    location: 'EAF Headquarters & National Stadium',
+    paragraphs: [
+      'The Ethiopian Athletics Federation successfully concluded an intensive 10-day Technical Officials and Judging Certification Seminar at the EAF Headquarters and Addis Ababa National Stadium.',
+      'The comprehensive curriculum covered modern electronic timing systems, false start detection sensors, wind gauge calibration, track umpire coordination, and strict anti-doping protocol enforcement.',
+      'Facilitated by certified World Athletics international technical delegates, the seminar awarded 60 officials with national level badges, significantly expanding Ethiopia’s officiating capacity ahead of the international calendar.',
+      'EAF Technical Committee affirmed that digitalizing meet operations and licensing officials through the central EAF Portal will ensure maximum integrity and international standard alignment in all domestic meets.'
+    ],
+    quote: {
+      text: 'World-class athletes require world-class officiating. Modern electronic timing and trained technical referees guarantee fair and accurate results for every competitor.',
+      author: 'Technical Committee Chairperson'
+    },
+    stats: [
+      { label: 'Certified Officials', value: '60 Judges' },
+      { label: 'Regional States', value: '11 Regions' },
+      { label: 'Course Duration', value: '80 Hours' },
+      { label: 'Standard', value: 'World Athletics L1/L2' }
+    ],
+    gallery: ['/images/d4.jpg', '/images/d5.jpg', '/images/logo.jpeg']
+  },
+  {
+    id: 5,
+    date: 'May 10, 2026',
+    title: 'Ethiopian Delegation Departs for African Championships',
+    amharicTitle: 'የኢትዮጵያ ብሔራዊ ልዑክ ለአፍሪካ ሻምፒዮና ጉዞ ጀመረ',
+    summary: 'A 42-member contingent of elite athletes, coaches, physiotherapists, and team physicians departed Addis Ababa with high expectations and thorough preparation.',
+    tag: 'Championship',
+    img: '/images/d5.jpg',
+    author: 'EAF National Teams Secretariat',
+    readTime: '2 min read',
+    location: 'Bole International Airport',
+    paragraphs: [
+      'The official Ethiopian delegation composed of 32 elite track and field athletes and 10 technical support staff departed from Bole International Airport for the 24th African Athletics Championships in Accra, Ghana.',
+      'The squad underwent an intensive six-week residential high-altitude training camp in Sululta and the Ethiopian Youth Sport Academy, focusing on tactical speed surges, humid conditions acclimation, and team relay transitions.',
+      'Speaking before departure, National Team Head Coach expressed strong confidence in the blend of Olympic veteran leaders and emerging U20 youth champions who earned their national vests through the recent national trials.',
+      'Supporters, family members, and federation leadership gathered at the departure lounge to offer their prayers, blessings, and words of national encouragement.'
+    ],
+    quote: {
+      text: 'We go to Accra not just to participate, but to uphold Ethiopia’s proud legacy as the beacon of African distance running excellence.',
+      author: 'National Team Head Coach'
+    },
+    stats: [
+      { label: 'Delegation Size', value: '42 Members' },
+      { label: 'Athletes', value: '32 Competitors' },
+      { label: 'Disciplines', value: '14 Events' },
+      { label: 'Target Medals', value: '12+ Medals' }
+    ],
+    gallery: ['/images/d5.jpg', '/images/a2.jpg', '/images/runners_training.png']
+  },
+  {
+    id: 6,
+    date: 'May 10, 2026',
+    title: 'National Team Official Send-Off Ceremony Held',
+    amharicTitle: 'ለብሔራዊ ቡድኑ ይፋዊ የሽኝት እና የክብር ስነ-ስርዓት ተካሄደ',
+    summary: 'Government dignitaries, athletics legends, and corporate sponsors gathered to honor the national athletics contingent and hand over the sacred national flag.',
+    tag: 'National Team',
+    img: '/images/a1.jpg',
+    author: 'EAF Communications Office',
+    readTime: '3 min read',
+    location: 'Skylight Hotel, Addis Ababa',
+    paragraphs: [
+      'In a grand and dignified ceremony held at the Ethiopian Skylight Hotel ballroom, the Ethiopian Athletics Federation, Ministry of Culture & Sports, and key corporate partners hosted the official send-off gala for the national athletics squad.',
+      'The event commenced with the ceremonial handover of the Ethiopian national tricolor by government ministers to the team captain, symbolizing the hopes and unity of over 120 million citizens.',
+      'Athletics legends including double Olympic champion Derartu Tulu and Haile Gebrselassie delivered impassioned speeches, sharing wisdom on mental composure, tactical endurance, and honoring the legacy of Abebe Bikila.',
+      'Major federation partners, including Ethiopian Airlines, Ethio Telecom, and Commercial Bank of Ethiopia, announced enhanced performance bonuses and reward packages for medal-winning performances.'
+    ],
+    quote: {
+      text: 'Wearing the Ethiopian uniform is the ultimate privilege. Carry the national flag with pride, integrity, and uncompromising dedication on the track.',
+      author: 'EAF Executive Committee'
+    },
+    stats: [
+      { label: 'Distinguished Guests', value: '350+ Attendees' },
+      { label: 'Corporate Sponsors', value: '6 Partners' },
+      { label: 'Athletes Honored', value: '32 Athletes' },
+      { label: 'Flag Ceremony', value: 'Official Handover' }
+    ],
+    gallery: ['/images/a1.jpg', '/images/d5.jpg', '/images/d4.jpg']
+  }
 ];
 
 const ENRICHED_MEETS = [
@@ -169,17 +373,160 @@ const ATHLETES = [
   }
 ];
 
-const GALLERY_IMAGES = [
-  { id: 1, title: 'African Championships 2026 Medal Ceremony', category: 'Championships', img: '/images/d1.jpg', location: 'Accra Stadium', date: 'May 2026', type: 'PHOTO' },
-  { id: 2, title: 'London Marathon Ethiopian Elite Champions', category: 'Marathons', img: '/images/d2.jpeg', location: 'London, UK', date: 'April 2026', type: 'VIDEO' },
-  { id: 3, title: '4th Ethiopia Tamirt 10KM Start Line', category: 'Track & Field', img: '/images/d3.jpeg', location: 'Addis Ababa', date: 'April 2026', type: 'PHOTO' },
-  { id: 4, title: 'Technical Athletics Officials & Judging Seminar', category: 'Ceremonies', img: '/images/d4.jpg', location: 'EAF HQ', date: 'April 2026', type: 'PHOTO' },
-  { id: 5, title: 'National Team Delegation Send-Off Ceremony', category: 'Ceremonies', img: '/images/d5.jpg', location: 'Skylight Hotel', date: 'May 2026', type: 'VIDEO' },
-  { id: 6, title: 'Tigst Assefa Berlin World Record Moment', category: 'Marathons', img: '/images/a1.jpg', location: 'Berlin, Germany', date: 'September 2023', type: 'PHOTO' },
-  { id: 7, title: 'Selemon Barega Olympic Gold Victory Lap', category: 'Championships', img: '/images/a2.jpg', location: 'Tokyo Olympic Stadium', date: 'August 2021', type: 'VIDEO' },
-  { id: 8, title: 'High Altitude Endurance Training in Sululta', category: 'Track & Field', img: '/images/runners_training.png', location: 'Sululta, Ethiopia', date: 'June 2026', type: 'PHOTO' },
-  { id: 9, title: 'Addis Ababa International Grand Prix Warmup', category: 'Championships', img: '/images/banner_grand_prix.png', location: 'National Stadium', date: 'August 2026', type: 'PHOTO' },
-  { id: 10, title: 'Jan Meda National Cross-Country Olympic Trials', category: 'Track & Field', img: '/images/banner_jan_meda.png', location: 'Jan Meda Course', date: 'October 2026', type: 'VIDEO' }
+const GALLERY_IMAGES: GalleryItem[] = [
+  {
+    id: 1,
+    title: 'African Championships 2026 Medal Ceremony',
+    category: 'Championships',
+    img: '/images/d1.jpg',
+    location: 'Accra Stadium, Ghana',
+    date: 'May 2026',
+    type: 'PHOTO',
+    description: 'Historic podium sweep and gold medal ceremony celebrating Ethiopian distance dominance at the 24th African Athletics Championships in Accra.',
+    captures: [
+      { id: 101, img: '/images/d1.jpg', title: 'Podium Gold Medal Presentation', caption: 'Ethiopian medalists stand tall on the podium receiving gold medals as the national anthem resonates across Accra Stadium.', photographer: 'EAF Media Unit' },
+      { id: 102, img: '/images/d5.jpg', title: 'National Delegation Flag Celebration', caption: 'Coaches and teammates celebrate together trackside draped in the Ethiopian flag after the medal sweep.', photographer: 'EAF Media / Ghana Press' },
+      { id: 103, img: '/images/d4.jpg', title: 'EAF Presidential Stand', caption: 'EAF executive committee members applauding from the presidential pavilion at Accra Stadium.', photographer: 'AAC Official' }
+    ]
+  },
+  {
+    id: 2,
+    title: 'London Marathon Ethiopian Elite Champions',
+    category: 'Marathons',
+    img: '/images/d2.jpeg',
+    location: 'London, UK',
+    date: 'April 2026',
+    type: 'VIDEO',
+    description: 'Breathtaking moments from the London Marathon through iconic landmarks and Thames river bridges.',
+    captures: [
+      { id: 201, img: '/images/d2.jpeg', title: 'Lead Breakaway at River Thames', caption: 'Ethiopian elite pack dictating a blistering world-record pace along the Victoria Embankment.', photographer: 'London Marathon Press / Getty' },
+      { id: 202, img: '/images/runner_marathon.png', title: 'Tower Bridge 20K Split', caption: 'Crossing Tower Bridge amid roaring applause from thousands of Ethiopian diaspora supporters.', photographer: 'EAF International Desk' },
+      { id: 203, img: '/images/d3.jpeg', title: 'Sprint Finish at The Mall', caption: 'Sprinting toward the finish line in front of Buckingham Palace to claim the elite crown.', photographer: 'London Marathon Media' },
+      { id: 204, img: '/images/runner_female.png', title: 'Women\'s Champion — Post-Race Finish', caption: 'Ethiopian women\'s champion draped in the national flag celebrating with fans along the boulevard.', photographer: 'EAF Press' }
+    ]
+  },
+  {
+    id: 3,
+    title: '4th Ethiopia Tamirt 10KM Start Line',
+    category: 'Track & Field',
+    img: '/images/d3.jpeg',
+    location: 'Meskel Square, Addis Ababa',
+    date: 'April 2026',
+    type: 'PHOTO',
+    description: 'A sea of 22,000+ runners filling Meskel Square in the annual Ethiopia Tamirt festival of athletics.',
+    captures: [
+      { id: 301, img: '/images/d3.jpeg', title: 'Mass Start at Meskel Square', caption: 'Over 20,000 runners charge forward across Meskel Square in a vibrant sea of green, yellow, and red.', photographer: 'EAF Photography / Dawit K.' },
+      { id: 302, img: '/images/runners_training.png', title: 'Elite Leaders Surge at 5KM', caption: 'Nibret Kinde and Birtukan Mola pacing the elite field along Menelik II Avenue.', photographer: 'EAF Media Unit' },
+      { id: 303, img: '/images/runner_marathon.png', title: 'Uphill Push to Mexico Square', caption: 'Runners tackling the steep capital altitude climb with grit and determination.', photographer: 'Addis Ababa Sports Bureau' },
+      { id: 304, img: '/images/runner_female.png', title: 'Women\'s Tamirt 10KM Champions', caption: 'Women\'s race winner crossing the tape at the Addis Ababa National Stadium finish line.', photographer: 'EAF Press' }
+    ]
+  },
+  {
+    id: 4,
+    title: 'Technical Athletics Officials & Judging Seminar',
+    category: 'Ceremonies',
+    img: '/images/d4.jpg',
+    location: 'EAF HQ, Addis Ababa',
+    date: 'April 2026',
+    type: 'PHOTO',
+    description: 'Classroom and track workshops training 60 officials in electronic timing, photo-finish and World Athletics rules.',
+    captures: [
+      { id: 401, img: '/images/d4.jpg', title: 'Judging Seminar Classroom', caption: 'Sixty regional technical officials studying modern electronic timing and World Athletics officiating protocols.', photographer: 'EAF Technical Desk' },
+      { id: 402, img: '/images/d5.jpg', title: 'Officials Practical Track Session', caption: 'Hands-on practical training with photo-finish cameras at the National Stadium.', photographer: 'EAF IT Dept' },
+      { id: 403, img: '/images/logo.jpeg', title: 'Graduation & Certificate Handover', caption: 'Officials proudly receiving their World Athletics accredited certification diplomas.', photographer: 'EAF Media Unit' }
+    ]
+  },
+  {
+    id: 5,
+    title: 'National Team Delegation Send-Off Ceremony',
+    category: 'Ceremonies',
+    img: '/images/d5.jpg',
+    location: 'Skylight Hotel, Addis Ababa',
+    date: 'May 2026',
+    type: 'VIDEO',
+    description: 'Official national banquet and flag handover ceremony honoring the athletes representing Ethiopia abroad.',
+    captures: [
+      { id: 501, img: '/images/d5.jpg', title: 'Ceremonial Flag Handover', caption: 'Government ministers and EAF President hand over the sacred Ethiopian flag to team captain.', photographer: 'EAF Communications' },
+      { id: 502, img: '/images/d4.jpg', title: 'Keynote Address by Legends', caption: 'Olympic champions sharing wisdom and inspiring words of encouragement with the national squad.', photographer: 'Skylight Media' },
+      { id: 503, img: '/images/a1.jpg', title: 'Official Squad Portrait', caption: 'The complete Ethiopian delegation of 42 athletes and coaches in their national tracksuits.', photographer: 'EAF Official Photo' }
+    ]
+  },
+  {
+    id: 6,
+    title: 'Tigst Assefa Berlin World Record Moment',
+    category: 'Marathons',
+    img: '/images/a1.jpg',
+    location: 'Berlin, Germany',
+    date: 'September 2023',
+    type: 'PHOTO',
+    description: 'The monumental 2:11:53 world record that redefined women\'s marathon history forever.',
+    captures: [
+      { id: 601, img: '/images/a1.jpg', title: 'Brandenburg Gate Finish — 2:11:53', caption: 'Tigst Assefa crossing the line under the iconic Brandenburg Gate, shattering the world record by over two minutes.', photographer: 'Berlin Marathon / SCC Events' },
+      { id: 602, img: '/images/runner_female.png', title: 'Flawless 30KM Pacing Rhythm', caption: 'Maintaining an astonishing 3:07 per kilometer pace through the tree-lined streets of Berlin.', photographer: 'World Athletics' },
+      { id: 603, img: '/images/d2.jpeg', title: 'Post-Race Press Celebration', caption: 'Assefa pointing in triumph to the official Seiko timing board displaying the new 2:11:53 world mark.', photographer: 'Getty Images / Sport' },
+      { id: 604, img: '/images/runner_marathon.png', title: 'Global Press Conference', caption: 'Tigst Assefa addressing international sports correspondents draped in the Ethiopian flag.', photographer: 'EAF Media International' }
+    ]
+  },
+  {
+    id: 7,
+    title: 'Selemon Barega Olympic Gold Victory Lap',
+    category: 'Championships',
+    img: '/images/a2.jpg',
+    location: 'Tokyo Olympic Stadium',
+    date: 'August 2021',
+    type: 'VIDEO',
+    description: 'Electrifying 10,000m Olympic gold sprint and celebratory lap at the Tokyo Olympic Stadium.',
+    captures: [
+      { id: 701, img: '/images/a2.jpg', title: 'Tears of Joy on the Victory Lap', caption: 'Selemon Barega draped in the green, yellow, and red flag celebrating his dramatic 10,000m Olympic triumph.', photographer: 'IOC Media / Olympic Games' },
+      { id: 702, img: '/images/athlete_haile.jpeg', title: 'Mentors & Coaching Staff Embrace', caption: 'Emotional embrace trackside with veteran Ethiopian coaching legends and technical advisors.', photographer: 'EAF Media Unit' },
+      { id: 703, img: '/images/d1.jpg', title: 'Olympic Stadium Post-Race Ceremony', caption: 'Barega receiving his gold medal at the Tokyo Olympic podium ceremony.', photographer: 'World Athletics Photo' }
+    ]
+  },
+  {
+    id: 8,
+    title: 'High Altitude Endurance Training in Sululta',
+    category: 'Track & Field',
+    img: '/images/runners_training.png',
+    location: 'Sululta, Ethiopia',
+    date: 'June 2026',
+    type: 'PHOTO',
+    description: 'Dawn endurance runs and hill strides at 2,800m altitude through the legendary eucalyptus trails of Sululta.',
+    captures: [
+      { id: 801, img: '/images/runners_training.png', title: 'Dawn Long Run through Eucalyptus Forest', caption: 'Elite athletes completing a 32km progression run at 2,800m altitude in misty Sululta dawn conditions.', photographer: 'EAF Training Camp Photo' },
+      { id: 802, img: '/images/runner_marathon.png', title: 'Hill Repeat Intervals', caption: 'Power strides and hill sprints developing neuromuscular cadence and uphill power.', photographer: 'National Team Coach Desk' },
+      { id: 803, img: '/images/runner_female.png', title: 'Hydration & Recovery Monitoring', caption: 'Sports science and medical staff recording heart rate recovery and hydration metrics post-interval session.', photographer: 'EAF Sports Science Lab' }
+    ]
+  },
+  {
+    id: 9,
+    title: 'Addis Ababa International Grand Prix Warmup',
+    category: 'Championships',
+    img: '/images/banner_grand_prix.png',
+    location: 'Addis Ababa National Stadium',
+    date: 'August 2026',
+    type: 'PHOTO',
+    description: 'Intense warmup drills, starting block practice, and stadium preparations for the International Grand Prix.',
+    captures: [
+      { id: 901, img: '/images/banner_grand_prix.png', title: 'Starting Block Explosive Drills', caption: 'Sprinters fine-tuning reaction times and drive phase mechanics on the brand-new Mondo track surface.', photographer: 'EAF Grand Prix Media' },
+      { id: 902, img: '/images/runners_training.png', title: 'Distance Athletes Warmup Strides', caption: '1,500m and 800m contenders pacing their rhythm under the gaze of federation scouts.', photographer: 'EAF Photography' },
+      { id: 903, img: '/images/d1.jpg', title: 'Packed Grandstands at Kickoff', caption: 'Passionate Ethiopian athletics fans packing the historic stadium stands in full national colors.', photographer: 'Addis Stadium Media' }
+    ]
+  },
+  {
+    id: 10,
+    title: 'Jan Meda National Cross-Country Olympic Trials',
+    category: 'Track & Field',
+    img: '/images/banner_jan_meda.png',
+    location: 'Jan Meda Course, Addis Ababa',
+    date: 'October 2026',
+    type: 'VIDEO',
+    description: 'High-stakes Olympic trials through the legendary mud, ditches, and uphill loops of Jan Meda.',
+    captures: [
+      { id: 1001, img: '/images/banner_jan_meda.png', title: 'Senior Men 10KM Uphill Charge', caption: 'Over 150 elite runners from 35 clubs storming up the iconic Jan Meda hill in the opening loop.', photographer: 'EAF Cross-Country Media' },
+      { id: 1002, img: '/images/banner_youth_games.png', title: 'U20 Junior Division — Youth Prospects', caption: 'Young prospects battling through natural water ditches and rugged cross-country terrain at Jan Meda.', photographer: 'EAF Youth Academy' },
+      { id: 1003, img: '/images/runners_training.png', title: 'Senior Women 10KM Lead Pack', caption: 'World-ranked marathon and 10k stars matching stride-for-stride along the outer Jan Meda circuit.', photographer: 'EAF Official' }
+    ]
+  }
 ];
 
 const STRUCTURE_ITEMS = [
@@ -268,19 +615,46 @@ interface LandingPageProps {
   publicSubPage?: string;
   onChangePublicSubPage: (page: string) => void;
   darkMode?: boolean;
+  currentRole?: 'LANDING' | 'CLUB' | 'ATHLETE';
+  currentAthlete?: any;
+  onLoginSuccess?: (role: string, data: any) => void;
+  navNonce?: number;
 }
 
-export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false }: LandingPageProps) {
+export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false, currentRole = 'LANDING', currentAthlete, onLoginSuccess, navNonce }: LandingPageProps) {
   const [selectedMeetId, setSelectedMeetId] = useState<string | null>(null);
   const [selectedAthleteModal, setSelectedAthleteModal] = useState<any>(null);
   const [selectedGalleryTab, setSelectedGalleryTab] = useState<string>('All');
   const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
-  const [activeLightboxImg, setActiveLightboxImg] = useState<any>(null);
+  const [activeLightboxImg, setActiveLightboxImg] = useState<GalleryItem | null>(null);
+  const [activeCaptureIndex, setActiveCaptureIndex] = useState<number>(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [selectedNews, setSelectedNews] = useState<any>(NEWS[0]);
+  const [selectedNews, setSelectedNews] = useState<NewsItem>(NEWS[0]);
   const [activeStructure, setActiveStructure] = useState<{ title: string; icon: any; amharic: string; description: string; members: string; meets: string } | null>(null);
   const [galleryExpanded, setGalleryExpanded] = useState<boolean>(false);
   const [viewportWidth, setViewportWidth] = useState<number>(() => typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  // News modal state
+  const [selectedNewsModal, setSelectedNewsModal] = useState<NewsItem | null>(null);
+  const [newsShareCopied, setNewsShareCopied] = useState<boolean>(false);
+
+  const filmstripRef = useRef<HTMLDivElement>(null);
+
+  // Reset selected competition and scroll to top when publicSubPage or navNonce changes
+  useEffect(() => {
+    setSelectedMeetId(null);
+    if (publicSubPage === 'HOME') {
+      // Immediate scroll
+      window.scrollTo(0, 0);
+      // Also scroll after a short delay to override any other scroll behavior
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+      }, 50);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+      }, 150);
+    }
+  }, [publicSubPage, navNonce]);
 
   useEffect(() => {
     const handleResize = () => setViewportWidth(window.innerWidth);
@@ -288,6 +662,79 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Keyboard navigation for Lightbox and News Modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (activeLightboxImg) {
+        if (e.key === 'Escape') {
+          setActiveLightboxImg(null);
+        } else if (e.key === 'ArrowRight') {
+          setActiveCaptureIndex(prev => {
+            const captures = activeLightboxImg.captures || [];
+            return prev < captures.length - 1 ? prev + 1 : prev;
+          });
+        } else if (e.key === 'ArrowLeft') {
+          setActiveCaptureIndex(prev => (prev > 0 ? prev - 1 : 0));
+        }
+      } else if (selectedNewsModal) {
+        if (e.key === 'Escape') {
+          setSelectedNewsModal(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeLightboxImg, selectedNewsModal]);
+
+  // Scroll active thumbnail into view when capture changes
+  useEffect(() => {
+    if (filmstripRef.current && activeLightboxImg) {
+      const activeEl = filmstripRef.current.children[activeCaptureIndex] as HTMLElement;
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [activeCaptureIndex, activeLightboxImg]);
+
+  const handleScrollFilmstrip = (direction: 'left' | 'right') => {
+    if (filmstripRef.current) {
+      const amount = direction === 'left' ? -240 : 240;
+      filmstripRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
+
+  const handleShareNews = (item: NewsItem) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(`${window.location.origin}#news - ${item.title}`);
+    }
+    setNewsShareCopied(true);
+    setTimeout(() => setNewsShareCopied(false), 2500);
+  };
+
+  const handleNextArticle = () => {
+    if (!selectedNewsModal) return;
+    const currentIndex = NEWS.findIndex(n => n.id === selectedNewsModal.id);
+    const nextIndex = (currentIndex + 1) % NEWS.length;
+    setSelectedNewsModal(NEWS[nextIndex]);
+  };
+
+  const handlePrevArticle = () => {
+    if (!selectedNewsModal) return;
+    const currentIndex = NEWS.findIndex(n => n.id === selectedNewsModal.id);
+    const prevIndex = (currentIndex - 1 + NEWS.length) % NEWS.length;
+    setSelectedNewsModal(NEWS[prevIndex]);
+  };
+
+  // Switch album in lightbox
+  const handleSwitchLightboxAlbum = (direction: 'prev' | 'next') => {
+    if (!activeLightboxImg) return;
+    const currentIdx = GALLERY_IMAGES.findIndex(g => g.id === activeLightboxImg.id);
+    const targetIdx = direction === 'next'
+      ? (currentIdx + 1) % GALLERY_IMAGES.length
+      : (currentIdx - 1 + GALLERY_IMAGES.length) % GALLERY_IMAGES.length;
+    setActiveLightboxImg(GALLERY_IMAGES[targetIdx]);
+    setActiveCaptureIndex(0);
+  };
 
   // Search/Filter states
   const [searchText, setSearchText] = useState<string>('');
@@ -302,9 +749,6 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
   // Athletes filter states
   const [athleteSearchText, setAthleteSearchText] = useState<string>('');
   const [athleteEventFilter, setAthleteEventFilter] = useState<string>('ALL');
-
-  // News modal state
-  const [selectedNewsModal, setSelectedNewsModal] = useState<any>(null);
 
   // Contact form state
   const [contactForm, setContactForm] = useState<{ name: string; email: string; subject: string; message: string }>({ name: '', email: '', subject: '', message: '' });
@@ -432,7 +876,7 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
   const sortedMeets = [...filteredMeets].sort((a, b) => {
     const dA = new Date(a.date);
     const dB = new Date(b.date);
-    return sortByDate === 'UPCOMING_FIRST' ? dA - dB : dB - dA;
+    return sortByDate === 'UPCOMING_FIRST' ? dA.getTime() - dB.getTime() : dB.getTime() - dA.getTime();
   });
 
   // Responsive gallery: full grid on desktop, limited initial set on tablet/mobile
@@ -454,6 +898,9 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
         meet={meetObj}
         onBack={() => setSelectedMeetId(null)}
         onRegister={onRegister}
+        currentRole={currentRole}
+        currentAthlete={currentAthlete}
+        onLoginSuccess={onLoginSuccess}
       />
     );
   }
@@ -1083,36 +1530,87 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
 
               <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
                 {/* Featured Main News — driven by selectedNews state */}
-                <div style={{
-                  flex: '1.5 1 340px',
-                  backgroundImage: `url(${selectedNews.img})`,
-                  backgroundSize: 'cover', backgroundPosition: 'center',
-                  minHeight: 420, borderRadius: 24, overflow: 'hidden',
-                  position: 'relative', display: 'flex', flexDirection: 'column',
-                  justifyContent: 'flex-end', cursor: 'pointer',
-                  boxShadow: '0 12px 32px rgba(15, 23, 42, 0.1)',
-                  transition: 'all 0.35s ease',
-                }}>
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.4) 55%, transparent 100%)' }} />
+                <div
+                  onClick={() => setSelectedNewsModal(selectedNews)}
+                  style={{
+                    flex: '1.5 1 340px',
+                    backgroundImage: `url(${selectedNews.img})`,
+                    backgroundSize: 'cover', backgroundPosition: 'center',
+                    minHeight: 420, borderRadius: 24, overflow: 'hidden',
+                    position: 'relative', display: 'flex', flexDirection: 'column',
+                    justifyContent: 'flex-end', cursor: 'pointer',
+                    boxShadow: '0 12px 32px rgba(15, 23, 42, 0.1)',
+                    transition: 'all 0.35s ease',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(1, 64, 167, 0.2)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 12px 32px rgba(15, 23, 42, 0.1)';
+                  }}
+                >
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.45) 55%, transparent 100%)' }} />
                   <div style={{ position: 'relative', zIndex: 1, padding: 32 }}>
-                    <span style={{
-                      background: 'var(--primary)', color: '#FFF',
-                      borderRadius: 8, padding: '4px 12px',
-                      fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.06em',
-                      marginBottom: 12, display: 'inline-block',
-                    }}>{selectedNews.tag || 'LATEST ANNOUNCEMENT'}</span>
-                    <div style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: 8, fontWeight: 600 }}>{selectedNews.date}</div>
-                    <h3 style={{ color: '#FFFFFF', fontSize: '1.6rem', fontWeight: 900, marginBottom: 12, lineHeight: 1.3 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+                      <span style={{
+                        background: 'var(--primary)', color: '#FFF',
+                        borderRadius: 8, padding: '4px 12px',
+                        fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.06em',
+                        display: 'inline-block',
+                      }}>{selectedNews.tag || 'LATEST ANNOUNCEMENT'}</span>
+                      <span style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(6px)', color: '#F1F5F9', borderRadius: 8, padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700 }}>
+                        ⏱️ {selectedNews.readTime || '3 min read'}
+                      </span>
+                    </div>
+
+                    <div style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: 8, fontWeight: 600 }}>
+                      🗓️ {selectedNews.date} · 📍 {selectedNews.location || 'Addis Ababa'}
+                    </div>
+
+                    <h3 style={{ color: '#FFFFFF', fontSize: '1.6rem', fontWeight: 900, marginBottom: 10, lineHeight: 1.3 }}>
                       {selectedNews.title}
                     </h3>
+                    {selectedNews.amharicTitle && (
+                      <div style={{ color: '#FDE047', fontSize: '0.98rem', fontWeight: 700, marginBottom: 12 }}>
+                        {selectedNews.amharicTitle}
+                      </div>
+                    )}
                     {selectedNews.summary && (
-                      <p style={{ color: '#CBD5E1', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: 16 }}>
+                      <p style={{ color: '#CBD5E1', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: 20, maxWidth: '640px' }}>
                         {selectedNews.summary}
                       </p>
                     )}
-                    <span style={{ color: '#38BDF8', fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      Read Full Article →
-                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedNewsModal(selectedNews);
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, #0EA5E9 0%, var(--primary) 100%)',
+                        color: '#FFFFFF',
+                        fontWeight: 800,
+                        fontSize: '0.92rem',
+                        border: 'none',
+                        borderRadius: 12,
+                        padding: '10px 20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 16px rgba(14, 165, 233, 0.35)',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.transform = 'scale(1.04)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <BookOpen size={16} /> Read Full Article →
+                    </button>
                   </div>
                 </div>
 
@@ -1134,17 +1632,30 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
                         onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
                       >
                         <img src={item.img} alt={item.title}
-                          style={{ width: 90, height: 80, objectFit: 'cover', flexShrink: 0 }} />
-                        <div style={{ padding: '10px 14px', flex: 1, minWidth: 0 }}>
-                          <div style={{ color: t.textMuted, fontSize: '0.75rem', marginBottom: 4, fontWeight: 600 }}>{item.date}</div>
-                          <div style={{ fontWeight: 800, fontSize: '0.88rem', lineHeight: 1.35, marginBottom: 6, color: t.text }}>
-                            {item.title}
+                          style={{ width: 95, height: 95, objectFit: 'cover', flexShrink: 0 }} />
+                        <div style={{ padding: '10px 14px', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div>
+                            <div style={{ color: t.textMuted, fontSize: '0.72rem', marginBottom: 4, fontWeight: 600 }}>{item.date}</div>
+                            <div style={{ fontWeight: 800, fontSize: '0.86rem', lineHeight: 1.3, marginBottom: 6, color: t.text }}>
+                              {item.title}
+                            </div>
                           </div>
-                          <span style={{
-                            background: tc.bg, color: tc.color,
-                            borderRadius: 6, padding: '2px 8px',
-                            fontSize: '0.72rem', fontWeight: 800,
-                          }}>{item.tag}</span>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                            <span style={{
+                              background: tc.bg, color: tc.color,
+                              borderRadius: 6, padding: '2px 8px',
+                              fontSize: '0.70rem', fontWeight: 800,
+                            }}>{item.tag}</span>
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedNewsModal(item);
+                              }}
+                              style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 2, padding: '2px 6px', borderRadius: 4, background: darkMode ? 'rgba(14, 165, 233, 0.1)' : '#F0F9FF' }}
+                            >
+                              <Eye size={12} /> Read Story
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1373,7 +1884,10 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
                     whileHover={{ y: -6 }}
                     transition={{ duration: 0.4, delay: (idx % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
                     className="media-grid-card"
-                    onClick={() => setActiveLightboxImg(item)}
+                    onClick={() => {
+                      setActiveLightboxImg(item);
+                      setActiveCaptureIndex(0);
+                    }}
                     style={{
                       background: t.surface,
                       borderRadius: '16px',
@@ -1396,9 +1910,12 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
                       {/* Top Badges */}
-                      <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: '8px', zIndex: 2 }}>
+                      <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', gap: '8px', zIndex: 2, flexWrap: 'wrap' }}>
                         <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
                           {item.category}
+                        </span>
+                        <span style={{ background: 'rgba(14, 165, 233, 0.9)', backdropFilter: 'blur(8px)', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <Camera size={12} /> {item.captures?.length || 1} Photos
                         </span>
                         {item.type === 'VIDEO' && (
                           <span style={{ background: '#EF4444', color: '#FFFFFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.72rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -1423,7 +1940,7 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
 
                       <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid ' + t.border, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          {item.type === 'VIDEO' ? 'Watch Video' : 'View Photo'} <ChevronRight size={14} />
+                          <Eye size={14} /> View All {item.captures?.length || 1} Event Photos <ChevronRight size={14} />
                         </span>
                       </div>
                     </div>
@@ -1683,10 +2200,10 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#DCFCE7', color: '#15803D', padding: '3px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
                     <ShieldCheck size={14} /> Fayda Verified ({selectedAthleteModal.faydaFin})
                   </div>
-                  <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F172A', lineHeight: 1.2 }}>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0F172A', lineHeight: 1.3, marginBottom: '2px' }}>
                     {selectedAthleteModal.name}
                   </h3>
-                  <div style={{ fontSize: '1.05rem', color: 'var(--primary)', fontWeight: 800 }}>
+                  <div style={{ fontSize: '1.05rem', color: 'var(--primary)', fontWeight: 700 }}>
                     {selectedAthleteModal.amharicName}
                   </div>
                 </div>
@@ -1740,17 +2257,686 @@ export default function LandingPage({ onSelectRole, onRegister, publicSubPage = 
         </div>
       )}
 
-      {/* ── LIGHTBOX MODAL FOR GALLERY IMAGES ── */}
-      {activeLightboxImg && (
-        <div className="modal-backdrop" onClick={() => setActiveLightboxImg(null)} style={{ zIndex: 9999, background: 'rgba(0,0,0,0.85)' }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'transparent', boxShadow: 'none', border: 'none', maxWidth: '900px', width: '95%', textAlign: 'center', color: '#FFF' }}>
-            <img src={activeLightboxImg.img} alt={activeLightboxImg.title} style={{ maxWidth: '100%', maxHeight: '75vh', borderRadius: '16px', objectFit: 'contain', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }} />
-            <h3 style={{ color: '#FFF', fontSize: '1.5rem', fontWeight: 900, marginTop: '16px' }}>{activeLightboxImg.title}</h3>
-            <p style={{ color: '#38BDF8', fontSize: '0.95rem' }}>📍 {activeLightboxImg.location} · 🗓️ {activeLightboxImg.date}</p>
-            <button onClick={() => setActiveLightboxImg(null)} style={{ marginTop: '20px', background: '#FFFFFF', color: '#0F172A', border: 'none', padding: '10px 24px', borderRadius: '12px', fontWeight: 800, cursor: 'pointer' }}>Close</button>
-          </div>
+      {/* ── NEWS ARTICLE READER MODAL ── */}
+      {selectedNewsModal && (
+        <div
+          className="modal-backdrop"
+          onClick={() => setSelectedNewsModal(null)}
+          style={{ zIndex: 99999, background: 'rgba(7, 12, 24, 0.85)', backdropFilter: 'blur(8px)', padding: '24px 16px' }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.25 }}
+            className="modal-content"
+            onClick={e => e.stopPropagation()}
+            style={{
+              padding: '36px 40px',
+              maxWidth: '880px',
+              width: '95%',
+              margin: '20px auto',
+              borderRadius: '24px',
+              boxShadow: '0 32px 72px rgba(0, 0, 0, 0.45)',
+              background: t.surface,
+              color: t.text,
+              border: '1px solid ' + t.border,
+            }}
+          >
+            {/* Top Bar with Badge, Read Time, Share, and Close */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{
+                  background: 'var(--primary)',
+                  color: '#FFFFFF',
+                  padding: '4px 14px',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
+                }}>
+                  {selectedNewsModal.tag}
+                </span>
+                <span style={{ background: darkMode ? 'rgba(255,255,255,0.08)' : '#F1F5F9', color: t.textMuted, padding: '4px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                  ⏱️ {selectedNewsModal.readTime || '3 min read'}
+                </span>
+                <span style={{ background: darkMode ? 'rgba(255,255,255,0.08)' : '#F1F5F9', color: t.textMuted, padding: '4px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                  📍 {selectedNewsModal.location}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  onClick={() => handleShareNews(selectedNewsModal)}
+                  title="Share Article"
+                  style={{
+                    background: newsShareCopied ? '#DCFCE7' : (darkMode ? '#1E293B' : '#F1F5F9'),
+                    color: newsShareCopied ? '#15803D' : t.text,
+                    border: 'none',
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {newsShareCopied ? <Check size={16} /> : <Share2 size={16} />}
+                  {newsShareCopied ? 'Link Copied!' : 'Share'}
+                </button>
+                <button
+                  onClick={() => setSelectedNewsModal(null)}
+                  style={{
+                    background: darkMode ? '#1E293B' : '#F1F5F9',
+                    border: 'none',
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: t.textMuted,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#EF4444'; e.currentTarget.style.color = '#FFF'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = darkMode ? '#1E293B' : '#F1F5F9'; e.currentTarget.style.color = t.textMuted; }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Hero Image */}
+            <div style={{ position: 'relative', width: '100%', height: '320px', borderRadius: '18px', overflow: 'hidden', marginBottom: '24px', background: '#0F172A' }}>
+              <img
+                src={selectedNewsModal.img}
+                alt={selectedNewsModal.title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.85) 0%, transparent 60%)' }} />
+              <div style={{ position: 'absolute', bottom: 16, left: 20, right: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#CBD5E1', fontSize: '0.82rem', fontWeight: 600 }}>
+                <span>📷 Ethiopian Athletics Federation Official Media</span>
+                <span>🗓️ {selectedNewsModal.date}</span>
+              </div>
+            </div>
+
+            {/* Article Headline & Metadata */}
+            <div style={{ marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '1.9rem', fontWeight: 900, color: t.text, lineHeight: 1.3, marginBottom: '8px' }}>
+                {selectedNewsModal.title}
+              </h2>
+              {selectedNewsModal.amharicTitle && (
+                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '16px', lineHeight: 1.4 }}>
+                  {selectedNewsModal.amharicTitle}
+                </div>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: '16px', borderBottom: '1px solid ' + t.border, color: t.textMuted, fontSize: '0.86rem', fontWeight: 600 }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  ✍️ <strong style={{ color: t.text }}>{selectedNewsModal.author}</strong>
+                </span>
+                <span>•</span>
+                <span>🏛️ Addis Ababa Headquarters</span>
+              </div>
+            </div>
+
+            {/* Lead Summary Paragraph */}
+            {selectedNewsModal.summary && (
+              <div style={{
+                background: darkMode ? 'rgba(14, 165, 233, 0.1)' : '#F0F9FF',
+                borderLeft: '4px solid var(--primary)',
+                padding: '16px 20px',
+                borderRadius: '0 14px 14px 0',
+                fontSize: '1.05rem',
+                lineHeight: 1.7,
+                fontWeight: 600,
+                color: darkMode ? '#BAE6FD' : '#0369A1',
+                marginBottom: '24px'
+              }}>
+                {selectedNewsModal.summary}
+              </div>
+            )}
+
+            {/* Main Article Paragraphs */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '28px' }}>
+              {selectedNewsModal.paragraphs ? selectedNewsModal.paragraphs.map((p, idx) => (
+                <p key={idx} style={{ color: t.textSub, fontSize: '0.98rem', lineHeight: 1.8 }}>
+                  {p}
+                </p>
+              )) : (
+                <p style={{ color: t.textSub, fontSize: '0.98rem', lineHeight: 1.8 }}>
+                  {selectedNewsModal.summary}
+                </p>
+              )}
+            </div>
+
+            {/* Key Quote Callout */}
+            {selectedNewsModal.quote && (
+              <div style={{
+                background: t.bgAlt,
+                border: '1px solid ' + t.border,
+                borderTop: '4px solid #F59E0B',
+                padding: '22px 24px',
+                borderRadius: '16px',
+                marginBottom: '28px',
+                position: 'relative'
+              }}>
+                <div style={{ fontSize: '1.08rem', fontStyle: 'italic', lineHeight: 1.7, color: t.text, fontWeight: 600, marginBottom: '12px' }}>
+                  "{selectedNewsModal.quote.text}"
+                </div>
+                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  — {selectedNewsModal.quote.author}
+                </div>
+              </div>
+            )}
+
+            {/* Key Statistics / Highlights Breakdown */}
+            {selectedNewsModal.stats && selectedNewsModal.stats.length > 0 && (
+              <div style={{ marginBottom: '28px' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: 900, color: t.text, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '14px' }}>
+                  📊 Event Highlights & Metrics
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+                  {selectedNewsModal.stats.map((s, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        background: t.bgAlt,
+                        border: '1px solid ' + t.border,
+                        borderRadius: '14px',
+                        padding: '14px',
+                        textAlign: 'center'
+                      }}
+                    >
+                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--primary)' }}>{s.value}</div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: t.textMuted, marginTop: '4px' }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Story Gallery Thumbnails */}
+            {selectedNewsModal.gallery && selectedNewsModal.gallery.length > 0 && (
+              <div style={{ marginBottom: '28px' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: 900, color: t.text, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '14px' }}>
+                  📸 Press Gallery Shots
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  {selectedNewsModal.gallery.map((imgSrc, idx) => (
+                    <div key={idx} style={{ height: '120px', borderRadius: '12px', overflow: 'hidden', border: '1px solid ' + t.border }}>
+                      <img src={imgSrc} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Bottom Story Navigation & Close */}
+            <div style={{ borderTop: '1px solid ' + t.border, paddingTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button
+                  onClick={handlePrevArticle}
+                  style={{
+                    background: t.bgAlt,
+                    border: '1px solid ' + t.border,
+                    color: t.text,
+                    padding: '10px 18px',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  <ChevronLeft size={16} /> Previous Story
+                </button>
+                <button
+                  onClick={handleNextArticle}
+                  style={{
+                    background: t.bgAlt,
+                    border: '1px solid ' + t.border,
+                    color: t.text,
+                    padding: '10px 18px',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}
+                >
+                  Next Story <ChevronRight size={16} />
+                </button>
+              </div>
+
+              <button
+                onClick={() => setSelectedNewsModal(null)}
+                className="btn-accent"
+                style={{
+                  padding: '12px 28px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                  color: '#FFF',
+                  border: 'none',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  fontSize: '0.92rem'
+                }}
+              >
+                Close Article Reader
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
+
+      {/* ── LIGHTBOX MODAL FOR GALLERY IMAGES (WITH HORIZONTAL EVENT CAPTURE SCROLL) ── */}
+      {activeLightboxImg && (() => {
+        const captures = activeLightboxImg.captures && activeLightboxImg.captures.length > 0
+          ? activeLightboxImg.captures
+          : [{ id: 1, img: activeLightboxImg.img, title: activeLightboxImg.title, caption: activeLightboxImg.description || 'EAF High-Resolution Press Photography' }];
+        const activeCapture = captures[activeCaptureIndex] || captures[0];
+
+        return (
+          <div
+            className="modal-backdrop"
+            onClick={() => setActiveLightboxImg(null)}
+            style={{ zIndex: 99999, background: 'rgba(3, 7, 18, 0.94)', backdropFilter: 'blur(16px)', padding: '16px' }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.25 }}
+              className="modal-content"
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: '#0F172A',
+                border: '1px solid rgba(255,255,255,0.12)',
+                boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
+                maxWidth: '1040px',
+                width: '95%',
+                maxHeight: '94vh',
+                overflowY: 'auto',
+                borderRadius: '24px',
+                padding: '24px 28px',
+                color: '#FFFFFF'
+              }}
+            >
+              {/* Lightbox Top Bar */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ background: 'rgba(14, 165, 233, 0.25)', color: '#38BDF8', padding: '3px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                      {activeLightboxImg.category}
+                    </span>
+                    <span style={{ color: '#94A3B8', fontSize: '0.82rem', fontWeight: 600 }}>
+                      📍 {activeLightboxImg.location} · 🗓️ {activeLightboxImg.date}
+                    </span>
+                  </div>
+                  <h3 style={{ color: '#FFFFFF', fontSize: '1.35rem', fontWeight: 900, lineHeight: 1.3 }}>
+                    {activeLightboxImg.title}
+                  </h3>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{
+                    background: 'rgba(255, 255, 255, 0.12)',
+                    color: '#FEF08A',
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    <Camera size={14} /> Photo {activeCaptureIndex + 1} of {captures.length}
+                  </span>
+                  <button
+                    onClick={() => setActiveLightboxImg(null)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.12)',
+                      border: 'none',
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#FFFFFF',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#EF4444'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'; }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Viewport Stage for Selected Capture */}
+              <div style={{
+                position: 'relative',
+                height: 'min(50vh, 440px)',
+                background: '#020617',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: 'inset 0 0 40px rgba(0,0,0,0.6)'
+              }}>
+                <img
+                  key={activeCapture.id}
+                  src={activeCapture.img}
+                  alt={activeCapture.title}
+                  style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                />
+
+                {/* Floating Left/Right Prev/Next Buttons */}
+                {captures.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveCaptureIndex(prev => prev > 0 ? prev - 1 : captures.length - 1);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        left: 12,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'rgba(15, 23, 42, 0.75)',
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        color: '#FFFFFF',
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(15, 23, 42, 0.75)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; }}
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveCaptureIndex(prev => (prev + 1) % captures.length);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        right: 12,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'rgba(15, 23, 42, 0.75)',
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        color: '#FFFFFF',
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                        zIndex: 10
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(15, 23, 42, 0.75)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; }}
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+                  </>
+                )}
+
+                {/* Bottom Overlay with Caption */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(to top, rgba(2,6,23,0.92) 0%, rgba(2,6,23,0.6) 60%, transparent 100%)',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-end',
+                  flexWrap: 'wrap',
+                  gap: 8
+                }}>
+                  <div style={{ maxWidth: '80%' }}>
+                    <div style={{ color: '#FFFFFF', fontSize: '1rem', fontWeight: 800, marginBottom: 4 }}>
+                      {activeCapture.title}
+                    </div>
+                    <div style={{ color: '#94A3B8', fontSize: '0.85rem', lineHeight: 1.4 }}>
+                      {activeCapture.caption}
+                    </div>
+                  </div>
+                  {activeCapture.photographer && (
+                    <div style={{ color: '#38BDF8', fontSize: '0.78rem', fontWeight: 700 }}>
+                      📷 {activeCapture.photographer}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ── HORIZONTAL SCROLLABLE FILMSTRIP TRACK OF ALL EVENT CAPTURES ── */}
+              <div style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#CBD5E1', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Image size={16} color="#38BDF8" /> All Images Captured at this Event (Scroll Horizontally):
+                  </span>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={() => handleScrollFilmstrip('left')}
+                      title="Scroll Left"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        color: '#FFF',
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: 800
+                      }}
+                    >
+                      ◀
+                    </button>
+                    <button
+                      onClick={() => handleScrollFilmstrip('right')}
+                      title="Scroll Right"
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        color: '#FFF',
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: 800
+                      }}
+                    >
+                      ▶
+                    </button>
+                  </div>
+                </div>
+
+                {/* Horizontal Scroll Track */}
+                <div
+                  ref={filmstripRef}
+                  style={{
+                    display: 'flex',
+                    gap: '14px',
+                    overflowX: 'auto',
+                    scrollSnapType: 'x mandatory',
+                    padding: '8px 4px 14px',
+                    scrollBehavior: 'smooth',
+                  }}
+                >
+                  {captures.map((capture, idx) => {
+                    const isSelected = idx === activeCaptureIndex;
+                    return (
+                      <div
+                        key={capture.id}
+                        onClick={() => setActiveCaptureIndex(idx)}
+                        style={{
+                          minWidth: '150px',
+                          maxWidth: '160px',
+                          height: '95px',
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          position: 'relative',
+                          flexShrink: 0,
+                          scrollSnapAlign: 'start',
+                          border: isSelected ? '3px solid #38BDF8' : '2px solid rgba(255, 255, 255, 0.15)',
+                          boxShadow: isSelected ? '0 0 16px rgba(56, 189, 248, 0.5)' : 'none',
+                          transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+                          transition: 'all 0.2s ease',
+                          opacity: isSelected ? 1 : 0.65
+                        }}
+                        onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.4)'; } }}
+                        onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.opacity = '0.65'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; } }}
+                      >
+                        <img
+                          src={capture.img}
+                          alt={capture.title}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        {/* Number Badge */}
+                        <div style={{
+                          position: 'absolute',
+                          top: 4,
+                          left: 4,
+                          background: isSelected ? '#0284C7' : 'rgba(0,0,0,0.65)',
+                          color: '#FFFFFF',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '0.65rem',
+                          fontWeight: 800
+                        }}>
+                          #{idx + 1}
+                        </div>
+                        {/* Title Overlay */}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
+                          padding: '4px 6px',
+                          color: '#FFFFFF',
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}>
+                          {capture.title}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bottom Footer Bar with Album Switching & Close Button */}
+              <div style={{
+                marginTop: '16px',
+                paddingTop: '16px',
+                borderTop: '1px solid rgba(255,255,255,0.1)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 12
+              }}>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={() => handleSwitchLightboxAlbum('prev')}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#FFF',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <ChevronLeft size={16} /> Previous Event
+                  </button>
+                  <button
+                    onClick={() => handleSwitchLightboxAlbum('next')}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#FFF',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    Next Event <ChevronRight size={16} />
+                  </button>
+                </div>
+
+                <div style={{ color: '#94A3B8', fontSize: '0.8rem', fontWeight: 600 }}>
+                  Tip: Use <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>←</kbd> <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>→</kbd> to navigate, <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>Esc</kbd> to exit
+                </div>
+
+                <button
+                  onClick={() => setActiveLightboxImg(null)}
+                  style={{
+                    background: '#FFFFFF',
+                    color: '#0F172A',
+                    border: 'none',
+                    padding: '10px 24px',
+                    borderRadius: '12px',
+                    fontWeight: 900,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(255,255,255,0.2)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#E2E8F0'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; }}
+                >
+                  ✕ Close Gallery
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        );
+      })()}
 
     </div>
   );

@@ -32,10 +32,7 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
           />
 
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-[2rem] font-black text-text-main">
-                {athlete.name}
-              </h2>
+            <div className="flex items-center gap-2 flex-wrap mb-1">
               <span className="badge badge-green">
                 <ShieldCheck size={14} />
                 Fayda ID Verified
@@ -45,8 +42,15 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
               </span>
             </div>
 
-            <p className="text-[0.95rem] text-[#047857] mt-0.5 font-bold">
-              {athlete.amharicName} — {athlete.clubName}
+            <h2 className="text-[1.1rem] font-bold text-[#0F172A] dark:text-white leading-tight mb-0.5">
+              {athlete.name}
+            </h2>
+            <div className="text-[1.05rem] font-bold text-primary dark:text-[#38BDF8] leading-tight mb-1.5">
+              {athlete.amharicName}
+            </div>
+
+            <p className="text-[0.85rem] text-slate-600 dark:text-slate-400 font-semibold mb-1">
+              {athlete.clubName}
             </p>
 
             <div className="flex gap-4 mt-2 text-[0.85rem] text-text-muted font-semibold flex-wrap">

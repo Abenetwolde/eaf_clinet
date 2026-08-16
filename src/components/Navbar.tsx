@@ -7,7 +7,7 @@ interface NavbarProps {
   currentRole: Role;
   currentAthlete: Athlete;
   currentClub: Club;
-  onSwitchRole: (role: Role) => void;
+  onSwitchRole: (role: string) => void;
   onLogout: () => void;
   onOpenAuthModal: () => void;
 }
@@ -30,7 +30,7 @@ export default function Navbar({
         {/* Brand Logo & EAF Title */}
         <div
           className="flex items-center gap-3.5 cursor-pointer"
-          onClick={() => onSwitchRole('LANDING')}
+          onClick={() => onSwitchRole('HOME')}
         >
           <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-white to-slate-100 border-2 border-blue-300/40 flex items-center justify-center shadow-[0_6px_16px_rgba(0,114,206,0.15)]">
             <span className="text-2xl">🇪🇹</span>
