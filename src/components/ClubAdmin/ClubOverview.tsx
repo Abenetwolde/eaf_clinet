@@ -18,7 +18,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
   const expiredCount = athletes.filter(a => a.licenseStatus !== 'ACTIVE').length;
 
 
-  
+
   const performanceData = [
     { month: 'Jan', points: 120 },
     { month: 'Feb', points: 150 },
@@ -28,7 +28,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
     { month: 'Jun', points: 280 },
     { month: 'Jul', points: 310 },
   ];
-  
+
   const eventsData = [
     { name: 'Sprints', value: 12 },
     { name: 'Middle Dist', value: 18 },
@@ -51,9 +51,23 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         </div>
 
         <div className="flex gap-[12px]">
-          
+          <button
+            onClick={() => onChangeSubPage('REGISTER_MEMBER')}
+            className="btn-accent"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              fontSize: '0.88rem',
+              fontWeight: 700
+            }}
+          >
+            <Users size={16} />
+            Register Members
+          </button>
 
-          <button 
+          <button
             onClick={() => onNotify("Exporting Official Club Roster Index PDF...", "info")}
             className="btn-gov-secondary"
           >
@@ -110,7 +124,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         </div>
       </div>
 
-      
+
       {/* Analytics Charts */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-[24px] mb-[28px]">
         <div className="gov-card">
@@ -174,7 +188,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
               <p className="text-text-muted mt-[4px]">
                 Unlicensed athletes cannot be entered into upcoming certified meets.
               </p>
-              <button 
+              <button
                 onClick={() => onChangeSubPage('ROSTER')}
                 className="bg-transparent border-0 text-accent font-bold text-[0.8rem] cursor-pointer mt-[8px] inline-flex items-center gap-[4px]"
               >
@@ -187,7 +201,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
               <p className="text-text-muted mt-[4px]">
                 Inter-club transfers lock automatically on August 15, 2026 (18 Days Remaining).
               </p>
-              <button 
+              <button
                 onClick={() => onChangeSubPage('TRANSFERS')}
                 className="bg-transparent border-0 text-primary font-bold text-[0.8rem] cursor-pointer mt-[8px] inline-flex items-center gap-[4px]"
               >
@@ -201,7 +215,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         <div className="gov-card">
           <div className="flex justify-between items-center mb-[16px]">
             <h3 className="text-[1.1rem] font-bold">Certified Meets Open for Entry</h3>
-            <button 
+            <button
               onClick={() => onChangeSubPage('MEETS')}
               className="bg-transparent border-0 text-primary font-bold cursor-pointer text-[0.8rem]"
             >
@@ -233,6 +247,6 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         </div>
       </div>
 
-      </div>
+    </div>
   );
 }

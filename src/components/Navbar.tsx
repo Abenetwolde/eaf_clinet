@@ -90,16 +90,6 @@ export default function Navbar({
                 )}
               </div>
 
-              {/* Switch Role Button */}
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => onSwitchRole(currentRole === 'CLUB' ? 'ATHLETE' : 'CLUB')}
-                className="btn-gov-secondary text-[0.8rem] px-3.5 py-2"
-              >
-                {currentRole === 'CLUB' ? 'Athlete View' : 'Club View'}
-              </motion.button>
-
               {/* Logout Button */}
               <motion.button
                 whileHover={{ scale: 1.03 }}

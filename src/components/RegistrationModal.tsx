@@ -489,6 +489,12 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                 style={{ flex: 1, padding: '14px 16px', fontSize: '1.05rem', borderRadius: '12px', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', fontWeight: 700, minWidth: 0 }}
                 value={faydaFin}
                 onChange={handleFinChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleInitiateFaydaLookup();
+                  }
+                }}
                 placeholder="e.g. 9840-3920-1124"
                 maxLength={14}
               />
@@ -542,6 +548,16 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                     type="text"
                     maxLength={1}
                     value={otpCode[idx] || ''}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                      if (pastedData) {
+                        setOtpCode(pastedData);
+                        const focusIndex = Math.min(pastedData.length, 5);
+                        const targetEl = document.getElementById(`otp-box-${focusIndex}`);
+                        if (targetEl) targetEl.focus();
+                      }
+                    }}
                     onChange={e => {
                       const val = e.target.value.replace(/\D/g, '');
                       const current = otpCode.split('');
@@ -554,7 +570,10 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                       }
                     }}
                     onKeyDown={e => {
-                      if (e.key === 'Backspace' && !otpCode[idx] && idx > 0) {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleVerifyOtp();
+                      } else if (e.key === 'Backspace' && !otpCode[idx] && idx > 0) {
                         const prevEl = document.getElementById(`otp-box-${idx - 1}`);
                         if (prevEl) prevEl.focus();
                       }

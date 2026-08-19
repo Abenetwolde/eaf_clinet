@@ -144,12 +144,6 @@ export default function AppLayout({
             <Globe size={13} /> Go to Home Page
           </button>
           <button
-            onClick={() => onSwitchRole(isClub ? 'ATHLETE' : 'CLUB')}
-            className="btn-gov-secondary w-full text-[0.78rem] px-3 py-2"
-          >
-            {isClub ? <><UserCheck size={13} /> Athlete View</> : <><Building2 size={13} /> Club View</>}
-          </button>
-          <button
             onClick={onLogout}
             className="bg-transparent border-none text-red-400 text-[0.78rem] font-semibold flex items-center justify-center gap-1.5 cursor-pointer py-1.5"
           >

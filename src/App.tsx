@@ -10,6 +10,7 @@ import RosterManagement from './components/ClubAdmin/RosterManagement';
 import SeedingGenerator from './components/ClubAdmin/SeedingGenerator';
 import TransferRegistry from './components/ClubAdmin/TransferRegistry';
 import MeetRegistration from './components/ClubAdmin/MeetRegistration';
+import RegisterMember from './components/ClubAdmin/RegisterMember';
 
 import AthleteOverview from './components/Athlete/AthleteOverview';
 import AthleteEvents from './components/Athlete/AthleteEvents';
@@ -30,35 +31,69 @@ import { Sun, Moon } from 'lucide-react';
 type Role = 'LANDING' | 'CLUB' | 'ATHLETE';
 
 export default function App() {
-  // Use localStorage for persistence
-  const [currentRole, setCurrentRole] = useState<Role>(() =>
-    (localStorage.getItem('eaf_currentRole') as Role) || 'LANDING'
-  );
+  // Always default to public LANDING page on fresh browser visit / npm run dev
+  // Clean up any stale localStorage role so user starts cleanly on public home page
+  const [currentRole, setCurrentRole] = useState<Role>(() => {
+    try {
+      localStorage.removeItem('eaf_currentRole');
+      const sessionRole = sessionStorage.getItem('eaf_currentRole') as Role;
+      return sessionRole || 'LANDING';
+    } catch {
+      return 'LANDING';
+    }
+  });
   const [clubSubPage, setClubSubPage] = useState('OVERVIEW');
   const [athleteSubPage, setAthleteSubPage] = useState('OVERVIEW');
   const [publicSubPage, setPublicSubPage] = useState('HOME');
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('eaf_darkMode') === 'true');
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem('eaf_darkMode') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const [clubs, setClubs] = useState(MOCK_CLUBS);
   const [athletes, setAthletes] = useState(() => {
-    const saved = localStorage.getItem('eaf_athletes');
-    return saved ? JSON.parse(saved) : MOCK_ATHLETES;
+    try {
+      const saved = localStorage.getItem('eaf_athletes');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // If any athlete is missing faydaHash, the cache is stale — reset it
+        const isStale = parsed.some((a: any) => !a.faydaHash);
+        if (isStale) {
+          localStorage.removeItem('eaf_athletes');
+          return MOCK_ATHLETES;
+        }
+        return parsed;
+      }
+      return MOCK_ATHLETES;
+    } catch {
+      return MOCK_ATHLETES;
+    }
   });
   const [transfers, setTransfers] = useState(MOCK_TRANSFERS);
 
   const [currentClub, setCurrentClub] = useState(MOCK_CLUBS[0]);
   const [currentAthlete, setCurrentAthlete] = useState(() => {
-    const savedId = localStorage.getItem('eaf_currentAthleteId');
-    if (savedId) {
-      const found = (localStorage.getItem('eaf_athletes') ? JSON.parse(localStorage.getItem('eaf_athletes')!) : MOCK_ATHLETES).find((a: any) => a.id === savedId);
-      if (found) return found;
+    try {
+      const savedId = sessionStorage.getItem('eaf_currentAthleteId') || localStorage.getItem('eaf_currentAthleteId');
+      if (savedId) {
+        const savedAthletes = localStorage.getItem('eaf_athletes') ? JSON.parse(localStorage.getItem('eaf_athletes')!) : MOCK_ATHLETES;
+        const found = savedAthletes.find((a: any) => a.id === savedId);
+        if (found) return found;
+      }
+    } catch {
+      // fallback
     }
     return MOCK_ATHLETES[0];
   });
 
   // Persist athletes data
   useEffect(() => {
-    localStorage.setItem('eaf_athletes', JSON.stringify(athletes));
+    try {
+      localStorage.setItem('eaf_athletes', JSON.stringify(athletes));
+    } catch (e) {}
     if (currentAthlete) {
       const updatedAthlete = athletes.find((a: any) => a.id === currentAthlete.id);
       if (updatedAthlete && JSON.stringify(updatedAthlete) !== JSON.stringify(currentAthlete)) {
@@ -69,7 +104,9 @@ export default function App() {
 
   // Persist dark mode state to localStorage and document.documentElement class
   useEffect(() => {
-    localStorage.setItem('eaf_darkMode', String(darkMode));
+    try {
+      localStorage.setItem('eaf_darkMode', String(darkMode));
+    } catch (e) {}
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -77,13 +114,26 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Persist session
+  // Persist active tab session
   useEffect(() => {
-    localStorage.setItem('eaf_currentRole', currentRole);
-    if (currentRole === 'ATHLETE' && currentAthlete) {
-      localStorage.setItem('eaf_currentAthleteId', currentAthlete.id);
-    }
+    try {
+      sessionStorage.setItem('eaf_currentRole', currentRole);
+      if (currentRole === 'ATHLETE' && currentAthlete) {
+        sessionStorage.setItem('eaf_currentAthleteId', currentAthlete.id);
+      }
+    } catch (e) {}
   }, [currentRole, currentAthlete]);
+
+  const handleLogout = () => {
+    try {
+      sessionStorage.removeItem('eaf_currentRole');
+      sessionStorage.removeItem('eaf_currentAthleteId');
+      localStorage.removeItem('eaf_currentRole');
+      localStorage.removeItem('eaf_currentAthleteId');
+    } catch (e) {}
+    setCurrentRole('LANDING');
+    setPublicSubPage('HOME');
+  };
 
   // Listen for registration modal trigger from AuthModal
   useEffect(() => {
@@ -110,6 +160,7 @@ export default function App() {
       if (data.club) setCurrentClub(data.club);
       setCurrentRole('CLUB');
       setClubSubPage('OVERVIEW');
+      setPublicSubPage('DASHBOARD'); // Reset to dashboard so club admin sees their dashboard first
       handleNotify(`Welcome back, ${data.club?.shortName || 'Club Admin'}!`, 'success');
     } else {
       if (data.athlete) setCurrentAthlete(data.athlete);
@@ -142,6 +193,7 @@ export default function App() {
 
   const handleSwitchRoleDirectly = (targetRole: string) => {
     if (targetRole === 'LANDING' || targetRole === 'HOME') {
+      // Keep user logged in but show landing page
       setPublicSubPage('HOME');
       setNavNonce(prev => prev + 1);
       window.scrollTo(0, 0);
@@ -198,7 +250,9 @@ export default function App() {
   };
 
   // ── LANDING PAGE ──
-  if (currentRole === 'LANDING' || (currentRole === 'ATHLETE' && publicSubPage !== 'DASHBOARD')) {
+  if (currentRole === 'LANDING' ||
+    (currentRole === 'ATHLETE' && publicSubPage !== 'DASHBOARD') ||
+    (currentRole === 'CLUB' && publicSubPage !== 'DASHBOARD')) {
     const navLinks = [
       { label: 'Home', page: 'HOME' },
       { label: 'Competitions', page: 'COMPETITIONS' },
@@ -334,7 +388,30 @@ export default function App() {
                   </button>
                 )}
                 <button
-                  onClick={() => { localStorage.removeItem('eaf_currentRole'); setCurrentRole('LANDING'); }}
+                  onClick={handleLogout}
+                  style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '7px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}
+                >
+                  Logout
+                </button>
+              </div>
+            ) : currentRole === 'CLUB' ? (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  onClick={() => {
+                    setClubSubPage('OVERVIEW');
+                    setPublicSubPage('DASHBOARD');
+                  }}
+                  className="btn-accent"
+                  style={{
+                    fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer'
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+                  My Dashboard
+                </button>
+                <button
+                  onClick={handleLogout}
                   style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '7px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}
                 >
                   Logout
@@ -433,15 +510,19 @@ export default function App() {
         currentClub={currentClub}
         currentAthlete={currentAthlete}
         onSwitchRole={handleSwitchRoleDirectly}
-        onLogout={() => {
-          localStorage.removeItem('eaf_currentRole');
-          setCurrentRole('LANDING');
-        }}
+        onLogout={handleLogout}
       >
         {clubSubPage === 'OVERVIEW' && (
           <ClubOverview
             club={currentClub} athletes={athletes} transfers={transfers}
             onChangeSubPage={setClubSubPage} onNotify={handleNotify} onAddClub={handleAddClub}
+          />
+        )}
+        {clubSubPage === 'REGISTER_MEMBER' && (
+          <RegisterMember
+            onBack={() => setClubSubPage('OVERVIEW')}
+            onNotify={handleNotify}
+            onAddAthlete={handleAddAthlete}
           />
         )}
         {clubSubPage === 'ROSTER' && (
@@ -476,10 +557,7 @@ export default function App() {
         activeSubPage={athleteSubPage}
         onChangeSubPage={setAthleteSubPage}
         currentAthlete={currentAthlete}
-        onLogout={() => {
-          localStorage.removeItem('eaf_currentRole');
-          setCurrentRole('LANDING');
-        }}
+        onLogout={handleLogout}
         onGoHome={() => handleSwitchRoleDirectly('LANDING')}
       >
         {athleteSubPage === 'OVERVIEW' && (
