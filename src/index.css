@@ -113,6 +113,14 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 h1,
@@ -771,9 +779,9 @@ input[type="checkbox"] {
   gap: 20px;
 }
 
-/* ── Competition image cards — desktop keeps full details visible ── */
-.meet-card-extra { display: flex; flex-direction: column; }
-.meet-card-toggle-btn { display: none; }
+/* ── Competition & Athlete image cards — desktop keeps full details visible ── */
+.meet-card-extra, .athlete-card-extra { display: flex; flex-direction: column; }
+.meet-card-toggle-btn, .athlete-card-toggle-btn { display: none; }
 
 /* ── Dashboards (AthleteDashboard / ClubDashboard) ── */
 .dash-page { padding: 32px 24px; }
@@ -784,16 +792,8 @@ input[type="checkbox"] {
 .otp-row { display: flex; gap: 10px; justify-content: center; margin: 12px 0; }
 .fin-row { display: flex; gap: 10px; align-items: center; }
 
-/* ── ≤ 1024px (tablet screens) ── */
-@media (max-width: 1024px) {
-  .landing-scroll-card {
-    min-width: 310px !important;
-    max-width: 330px !important;
-  }
-}
-
-/* ── ≤ 887px — navbar switches to mobile hamburger mode & collapse extra details behind See More ── */
-@media (max-width: 887px) {
+/* ── ≤ 1185px — navbar switches to mobile hamburger mode & collapse extra image text behind See More ── */
+@media (max-width: 1185px) {
   .mobile-menu-toggle { display: flex; }
   .mobile-menu-wrap {
     display: none;
@@ -818,14 +818,35 @@ input[type="checkbox"] {
   .landing-menu-btn { display: inline-flex !important; }
   .landing-mobile-menu { top: 72px !important; }
 
-  /* Competition image cards — collapse extra details behind See More */
+  /* Navigation responsive helper classes */
+  .nav-desktop-only { display: none !important; }
+  .nav-mobile-only { display: flex !important; }
+
+  /* Competition & Athlete image cards — collapse extra details behind See More at <= 1185px */
   .meet-card-extra { display: none; }
   .meet-card-toggle-btn { display: inline-flex; }
   .meet-card-expanded .meet-card-extra { display: flex; }
 
+  .athlete-card-extra { display: none; }
+  .athlete-card-toggle-btn { display: inline-flex; }
+  .athlete-card-expanded .athlete-card-extra { display: flex; }
+
   .landing-scroll-card {
     min-width: 300px !important;
-    max-width: 320px !important;
+    max-width: 330px !important;
+  }
+}
+
+@media (min-width: 1186px) {
+  .nav-desktop-only { display: flex !important; }
+  .nav-mobile-only { display: none !important; }
+}
+
+/* ── ≤ 1024px (tablet screens) ── */
+@media (max-width: 1024px) {
+  .landing-scroll-card {
+    min-width: 310px !important;
+    max-width: 330px !important;
   }
 }
 

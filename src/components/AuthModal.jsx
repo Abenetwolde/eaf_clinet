@@ -31,13 +31,14 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
   return (
     <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 9999, padding: '32px 16px' }}>
       <div 
-        className="modal-content" 
+        className="modal-content main-pad" 
         onClick={(e) => e.stopPropagation()} 
         style={{ 
-          padding: '44px 48px', 
           maxWidth: '720px', 
-          width: '95%',
-          margin: '30px auto',
+          width: '95vw',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          margin: 'auto',
           borderRadius: '24px',
           boxShadow: '0 32px 64px rgba(15, 23, 42, 0.25)',
           border: '1px solid #E2E8F0',

@@ -24,7 +24,7 @@ import AthleteNotifications from './components/Athlete/AthleteNotifications';
 import PaymentModal from './components/PaymentModal';
 import NotificationToast from './components/NotificationToast';
 
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n, LanguageSelector } from './i18n';
 
@@ -47,6 +47,7 @@ export default function App() {
   const [clubSubPage, setClubSubPage] = useState('OVERVIEW');
   const [athleteSubPage, setAthleteSubPage] = useState('OVERVIEW');
   const [publicSubPage, setPublicSubPage] = useState('HOME');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language, setLanguage, t } = useI18n();
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('eaf_darkMode') === 'true');
 
@@ -118,6 +119,7 @@ export default function App() {
       dispatch(setAthlete(newAthlete));
       dispatch(setRole('ATHLETE'));
       setAthleteSubPage('OVERVIEW');
+      setPublicSubPage('DASHBOARD');
       handleNotify(`Athlete "${newAthlete.name}" registered successfully!`, 'success');
     }
   };
@@ -184,6 +186,7 @@ export default function App() {
 
     const handleNavClick = (page: string) => {
       setPublicSubPage(page);
+      setMobileMenuOpen(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -194,44 +197,44 @@ export default function App() {
           initial={{ y: -72 }}
           animate={{ y: 0 }}
           transition={{ type: 'spring', stiffness: 200, damping: 26 }}
-          className={`sticky top-0 z-50 px-6 h-[72px] flex items-center justify-between w-full transition-all duration-300
+          className={`sticky top-0 z-50 px-4 md:px-6 h-[64px] md:h-[72px] flex items-center justify-between w-full transition-all duration-300
             ${darkMode
-              ? 'bg-[rgba(15,23,42,0.9)] border-b border-[#1E293B] shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
-              : 'bg-[rgba(255,255,255,0.95)] border-b border-[#E2E8F0] shadow-[0_8px_32px_rgba(0,0,0,0.08)]'
+              ? 'bg-[rgba(15,23,42,0.92)] border-b border-[#1E293B] shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
+              : 'bg-[rgba(255,255,255,0.96)] border-b border-[#E2E8F0] shadow-[0_8px_32px_rgba(0,0,0,0.08)]'
             }
             backdrop-blur-[16px]`}
         >
           {/* Logo + brand */}
           <div
-            className="flex items-center gap-3 cursor-pointer"
-            onClick={() => setPublicSubPage('HOME')}
+            className="flex items-center gap-[clamp(0.4rem,0.8vw,0.75rem)] cursor-pointer min-w-0 shrink-0"
+            onClick={() => handleNavClick('HOME')}
           >
-            <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center overflow-hidden shrink-0 border border-[#E2E8F0] p-0.5">
+            <div className="w-[clamp(2.1rem,3.4vw,2.75rem)] h-[clamp(2.1rem,3.4vw,2.75rem)] bg-white rounded-xl flex items-center justify-center overflow-hidden shrink-0 border border-[#E2E8F0] p-0.5">
               <img
                 src="/images/logo.jpeg"
                 alt="EAF Logo"
                 className="w-full h-full object-contain rounded-[6px]"
               />
             </div>
-            <div className="hidden-mobile flex flex-col">
-              <div className={`text-[0.95rem] font-black tracking-tight leading-tight ${darkMode ? 'text-[#F8FAFC]' : 'text-[#0F172A]'}`}>
+            <div className="flex flex-col min-w-0">
+              <div className={`text-[clamp(0.72rem,1.15vw,0.95rem)] font-black tracking-tight leading-tight whitespace-nowrap ${darkMode ? 'text-[#F8FAFC]' : 'text-[#0F172A]'}`}>
                 Ethiopian Athletics Federation
               </div>
-              <div className="text-[0.65rem] text-primary font-black">
+              <div className="text-[clamp(0.52rem,0.78vw,0.65rem)] text-primary font-black whitespace-nowrap">
                 የኢትዮጵያ አትሌቲክስ ፌዴሬሽን
               </div>
             </div>
           </div>
 
-          {/* Centre nav links */}
-          <nav className="flex items-center gap-0.5">
+          {/* Desktop nav links */}
+          <nav className="hidden min-[1186px]:flex items-center gap-[clamp(0.1rem,0.4vw,0.375rem)] min-w-0 shrink">
             {navLinks.map((link) => (
               <motion.button
                 key={link.label}
                 onClick={() => handleNavClick(link.page)}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
-                className={`border-0 cursor-pointer font-bold text-[0.85rem] px-3.5 py-2 rounded-lg transition-all duration-200 font-sans
+                className={`border-0 cursor-pointer font-bold text-[clamp(0.75rem,1vw,0.85rem)] px-[clamp(0.4rem,0.8vw,0.875rem)] py-2 rounded-lg transition-all duration-200 font-sans whitespace-nowrap
                   ${publicSubPage === link.page
                     ? `text-primary ${darkMode ? 'bg-[#1E293B]' : 'bg-[#F1F5F9]'}`
                     : `${darkMode ? 'text-[#94A3B8] hover:bg-[#334155]' : 'text-[#64748B] hover:bg-[#E2E8F0]'} bg-transparent`
@@ -249,9 +252,8 @@ export default function App() {
             ))}
           </nav>
 
-          {/* Right Side */}
-          <div className="flex gap-3 items-center">
-
+          {/* Desktop Right Side */}
+          <div className="hidden min-[1186px]:flex gap-[clamp(0.35rem,0.7vw,0.75rem)] items-center shrink-0">
             {/* 4-Language Switcher */}
             <LanguageSelector variant={darkMode ? 'dark' : 'default'} />
 
@@ -316,7 +318,107 @@ export default function App() {
               </>
             )}
           </div>
+
+          {/* Mobile Right Controls: Language Selector + Hamburger Toggle */}
+          <div className="flex min-[1186px]:hidden items-center gap-2">
+            <LanguageSelector variant={darkMode ? 'dark' : 'default'} />
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer border transition-colors
+                ${darkMode ? 'bg-[#1E293B] border-[#334155] text-white' : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#0F172A]'}`}
+              aria-label="Toggle mobile menu"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </motion.header>
+
+        {/* Mobile Dropdown Panel */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className={`min-[1186px]:hidden sticky top-[64px] z-40 px-4 py-4 border-b flex flex-col gap-3 backdrop-blur-xl shadow-xl overflow-hidden
+                ${darkMode ? 'bg-[rgba(15,23,42,0.98)] border-[#1E293B] text-white' : 'bg-white/98 border-[#E2E8F0] text-[#0F172A]'}`}
+            >
+              {/* Nav links */}
+              <div className="flex flex-col gap-1">
+                {navLinks.map((link) => (
+                  <button
+                    key={link.label}
+                    onClick={() => handleNavClick(link.page)}
+                    className={`text-left px-3.5 py-2.5 rounded-xl font-bold text-[0.9rem] transition-colors border-0 cursor-pointer ${
+                      publicSubPage === link.page
+                        ? 'bg-primary text-white'
+                        : darkMode ? 'text-[#CBD5E1] bg-transparent hover:bg-[#1E293B]' : 'text-[#475569] bg-transparent hover:bg-[#F1F5F9]'
+                    }`}
+                  >
+                    {link.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className={`h-px my-1 ${darkMode ? 'bg-[#1E293B]' : 'bg-[#E2E8F0]'}`} />
+
+              {/* Actions & Theme toggle */}
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs font-bold opacity-75">Theme</span>
+                  <button
+                    type="button"
+                    onClick={() => setDarkMode(!darkMode)}
+                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-bold border cursor-pointer ${
+                      darkMode ? 'bg-[#1E293B] border-[#334155] text-white' : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#0F172A]'
+                    }`}
+                  >
+                    {darkMode ? <Sun size={14} color="#FDE047" /> : <Moon size={14} color="#475569" />}
+                    <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                  </button>
+                </div>
+
+                {currentRole === 'ATHLETE' ? (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => { setAthleteSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); setMobileMenuOpen(false); }}
+                      className="w-full btn-accent text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 border-0 cursor-pointer text-white font-bold"
+                      style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
+                    >
+                      My Dashboard
+                    </button>
+                    <button
+                      onClick={() => { localStorage.removeItem('eaf_currentRole'); dispatch(logout()); setMobileMenuOpen(false); }}
+                      className={`w-full py-2 rounded-xl cursor-pointer text-[0.85rem] font-bold border text-center ${
+                        darkMode ? 'bg-[#1E293B] border-[#334155] text-[#94A3B8]' : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]'
+                      }`}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => { setRegModalRole('ATHLETE'); setMobileMenuOpen(false); }}
+                      className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 border-0 cursor-pointer text-white font-bold"
+                      style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
+                    >
+                      {t('nav.registerAsAthlete')}
+                    </button>
+                    <button
+                      onClick={() => { handleOpenAuthModal(); setMobileMenuOpen(false); }}
+                      className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 cursor-pointer font-bold bg-white text-[#0F172A] border border-[#CBD5E1]"
+                    >
+                      {t('nav.clubPortalLogin')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <style>{`
           @media (max-width: 768px) {
@@ -409,6 +511,7 @@ export default function App() {
       <ClientLayout
         activeSubPage={athleteSubPage}
         onChangeSubPage={setAthleteSubPage}
+        onBackToLanding={() => setPublicSubPage('HOME')}
         onLogout={() => dispatch(logout())}
       >
         {athleteSubPage === 'OVERVIEW' && (

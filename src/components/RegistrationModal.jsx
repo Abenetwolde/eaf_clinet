@@ -903,10 +903,9 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
   return (
     <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 9999, padding: '24px 16px', overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div
-        className="modal-content"
+        className="modal-content main-pad"
         onClick={e => e.stopPropagation()}
         style={{
-          padding: '44px 48px',
           maxWidth: '1100px',
           width: '95vw',
           maxHeight: '90vh',

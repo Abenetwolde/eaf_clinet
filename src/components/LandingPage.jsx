@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, CheckCircle, X, Send, Play, Image, ShieldCheck, ChevronLeft, ChevronDown, ChevronUp, HelpCircle, Plus, Minus } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
+import { ResponsiveSeeMoreText } from './ResponsiveSeeMoreText';
 import { motion } from 'framer-motion';
 import { useI18n } from '../i18n';
 
@@ -274,8 +275,15 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [selectedNews, setSelectedNews] = useState(NEWS[0]);
   const [activeStructure, setActiveStructure] = useState(null);
   const [galleryExpanded, setGalleryExpanded] = useState(false);
-  const [viewportWidth, setViewportWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1200);
   const [expandedMeetCards, setExpandedMeetCards] = useState({});
+  const [expandedAthleteCards, setExpandedAthleteCards] = useState({});
+
+  // Responsive gallery limit: needs the viewport width to decide how many images
+  // to show initially (> 1185px: full grid, otherwise a limited set).
+  // Initialized safely (SSR/browser compatible) and kept in sync on window resize.
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  );
 
   useEffect(() => {
     const handleResize = () => setViewportWidth(window.innerWidth);
@@ -473,6 +481,10 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     setExpandedMeetCards(prev => ({ ...prev, [cardKey]: !prev[cardKey] }));
   };
 
+  const toggleAthleteCard = (cardKey) => {
+    setExpandedAthleteCards(prev => ({ ...prev, [cardKey]: !prev[cardKey] }));
+  };
+
   const handleContactSubmit = (e) => {
     e.preventDefault();
     setContactSuccess(true);
@@ -534,8 +546,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     return sortByDate === 'UPCOMING_FIRST' ? dA - dB : dB - dA;
   });
 
-  // Responsive gallery: full grid on desktop, limited initial set on tablet/mobile
-  const galleryLimit = viewportWidth > 887
+  // Responsive gallery: full grid on desktop (> 1185px), limited initial set on tablet/mobile
+  const galleryLimit = viewportWidth > 1185
     ? GALLERY_IMAGES.length
     : viewportWidth <= 640 ? 4 : 6;
   const visibleGalleryImages = galleryExpanded ? GALLERY_IMAGES : GALLERY_IMAGES.slice(0, galleryLimit);
@@ -1108,73 +1120,103 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               className="landing-scroll-row"
               style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
             >
-              {[...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => (
-                <div
-                  key={`${athlete.id}-${idx}`}
-                  className="hover-lift"
-                  onClick={() => setSelectedAthleteModal(athlete)}
-                  style={{
-                    position: 'relative',
-                    minWidth: 'min(100%, 380px)',
-                    maxWidth: '400px',
-                    minHeight: '440px',
-                    flexShrink: 0,
-                    borderRadius: 24,
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'flex-end',
-                    cursor: 'pointer',
-                    boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
-                    border: '1px solid #E2E8F0'
-                  }}
-                >
-                  <div style={{
-                    position: 'absolute', inset: 0,
-                    backgroundImage: `url(${athlete.img})`,
-                    backgroundSize: 'cover', backgroundPosition: 'center top',
-                  }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.35) 55%, transparent 100%)' }} />
+              {[...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => {
+                const cardKey = `${athlete.id}-${idx}`;
+                const isCardExpanded = !!expandedAthleteCards[cardKey];
+                return (
+                  <div
+                    key={cardKey}
+                    className={`hover-lift${isCardExpanded ? ' athlete-card-expanded' : ''}`}
+                    onClick={() => setSelectedAthleteModal(athlete)}
+                    style={{
+                      position: 'relative',
+                      minWidth: 'min(100%, 380px)',
+                      maxWidth: '400px',
+                      minHeight: '360px',
+                      flexShrink: 0,
+                      borderRadius: 24,
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'flex-end',
+                      cursor: 'pointer',
+                      boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
+                      border: '1px solid #E2E8F0'
+                    }}
+                  >
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      backgroundImage: `url(${athlete.img})`,
+                      backgroundSize: 'cover', backgroundPosition: 'center top',
+                    }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.35) 55%, transparent 100%)' }} />
 
-                  {/* Fayda Badge */}
-                  <div style={{
-                    position: 'absolute', top: 16, right: 16, zIndex: 3,
-                    background: 'rgba(16, 185, 129, 0.95)', color: '#FFFFFF',
-                    fontSize: '0.72rem', fontWeight: 800,
-                    padding: '4px 10px', borderRadius: 8,
-                    display: 'inline-flex', alignItems: 'center', gap: 4
-                  }}>
-                    <ShieldCheck size={14} /> Fayda Verified
+                    {/* Fayda Badge */}
+                    <div style={{
+                      position: 'absolute', top: 16, right: 16, zIndex: 3,
+                      background: 'rgba(16, 185, 129, 0.95)', color: '#FFFFFF',
+                      fontSize: '0.72rem', fontWeight: 800,
+                      padding: '4px 10px', borderRadius: 8,
+                      display: 'inline-flex', alignItems: 'center', gap: 4
+                    }}>
+                      <ShieldCheck size={14} /> Fayda Verified
+                    </div>
+
+                    <div style={{ position: 'relative', zIndex: 2, padding: '24px' }}>
+                      <h3 style={{ color: '#FFFFFF', fontSize: '1.4rem', fontWeight: 900, marginBottom: 4, lineHeight: 1.2 }}>
+                        {athlete.name}
+                      </h3>
+                      <div style={{ color: '#38BDF8', fontSize: '0.85rem', fontWeight: 700, marginBottom: 8 }}>
+                        {athlete.amharicName}
+                      </div>
+
+                      <div className="athlete-card-extra">
+                        <span style={{ color: '#FDE047', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
+                          {athlete.achievement}
+                        </span>
+
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                          <span style={{
+                            background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: '#FFF',
+                            borderRadius: 8, padding: '4px 10px',
+                            fontSize: '0.75rem', fontWeight: 800,
+                          }}>{athlete.event}</span>
+                          <span style={{ color: '#CBD5E1', fontSize: '0.78rem', fontWeight: 600 }}>
+                            {athlete.club}
+                          </span>
+                        </div>
+
+                        <div style={{ marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '10px', color: '#FDE047', fontSize: '0.82rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          View Full Athlete Profile & PB Stats <ChevronRight size={14} />
+                        </div>
+                      </div>
+
+                      <button
+                        className="athlete-card-toggle-btn"
+                        onClick={(e) => { e.stopPropagation(); toggleAthleteCard(cardKey); }}
+                        style={{
+                          marginTop: '12px',
+                          background: 'rgba(255, 255, 255, 0.16)',
+                          backdropFilter: 'blur(8px)',
+                          WebkitBackdropFilter: 'blur(8px)',
+                          border: '1px solid rgba(255, 255, 255, 0.4)',
+                          color: '#FFFFFF',
+                          fontWeight: 800,
+                          fontSize: '0.78rem',
+                          padding: '8px 16px',
+                          borderRadius: '999px',
+                          cursor: 'pointer',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        {isCardExpanded ? loc.seeLess : loc.seeMore}
+                        {isCardExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                      </button>
+                    </div>
                   </div>
-
-                  <div style={{ position: 'relative', zIndex: 2, padding: '24px' }}>
-                    <span style={{ color: '#FDE047', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>
-                      {athlete.achievement}
-                    </span>
-                    <h3 style={{ color: '#FFFFFF', fontSize: '1.4rem', fontWeight: 900, marginBottom: 4, lineHeight: 1.2 }}>
-                      {athlete.name}
-                    </h3>
-                    <div style={{ color: '#38BDF8', fontSize: '0.85rem', fontWeight: 700, marginBottom: 12 }}>
-                      {athlete.amharicName}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <span style={{
-                        background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: '#FFF',
-                        borderRadius: 8, padding: '4px 10px',
-                        fontSize: '0.75rem', fontWeight: 800,
-                      }}>{athlete.event}</span>
-                      <span style={{ color: '#CBD5E1', fontSize: '0.78rem', fontWeight: 600 }}>
-                        {athlete.club}
-                      </span>
-                    </div>
-
-                    <div style={{ marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '10px', color: '#FDE047', fontSize: '0.82rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      View Full Athlete Profile & PB Stats <ChevronRight size={14} />
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
@@ -1255,9 +1297,13 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       {selectedNews.title}
                     </h3>
                     {selectedNews.summary && (
-                      <p style={{ color: '#CBD5E1', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: 16 }}>
-                        {selectedNews.summary}
-                      </p>
+                      <ResponsiveSeeMoreText
+                        key={selectedNews.id}
+                        text={selectedNews.summary}
+                        maxLength={90}
+                        lines={2}
+                        style={{ color: '#CBD5E1', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: 16 }}
+                      />
                     )}
                     <span style={{ color: '#38BDF8', fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                       {tr('home.readFullArticle')} →
@@ -1313,12 +1359,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               <h2 style={{ color: t.text, fontSize: '2rem', fontWeight: 900, marginBottom: 12 }}>
                 {loc.aboutTitle}
               </h2>
-              <p style={{ color: t.textSub, lineHeight: 1.8, marginBottom: 18, fontSize: '0.98rem' }}>
-                The Ethiopian Athletics Federation (EAF) is the national governing body for athletics in Ethiopia, officially recognized by World Athletics (WA) and a member of the African Athletics Confederation (AAC). Founded in 1964, EAF governs all track and field, road, cross-country, and marathon events in Ethiopia.
-              </p>
-              <p style={{ color: t.textSub, lineHeight: 1.8, marginBottom: 28, fontSize: '0.92rem' }}>
-                EAF oversees the licensing of athletes and clubs through Fayda digital IDs, organizes national championships, selects national teams for international competitions, and develops grassroots talent across all Ethiopian regional states.
-              </p>
+              <ResponsiveSeeMoreText
+                text="The Ethiopian Athletics Federation (EAF) is the national governing body for athletics in Ethiopia, officially recognized by World Athletics (WA) and a member of the African Athletics Confederation (AAC). Founded in 1964, EAF governs all track and field, road, cross-country, and marathon events in Ethiopia. EAF oversees the licensing of athletes and clubs through Fayda digital IDs, organizes national championships, selects national teams for international competitions, and develops grassroots talent across all Ethiopian regional states."
+                maxLength={180}
+                style={{ color: t.textSub, lineHeight: 1.8, marginBottom: 24, fontSize: '0.95rem' }}
+              />
               <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
                   { label: 'Founded', value: '1964' },

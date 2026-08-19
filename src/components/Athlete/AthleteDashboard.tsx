@@ -8,6 +8,7 @@ import {
 import FaydaVerification from './FaydaVerification';
 import RecordsVault from './RecordsVault';
 import EventResults from './EventResults';
+import LicenseQrCode from './LicenseQrCode';
 import type { Athlete } from '../../types';
 
 interface AthleteDashboardProps {
@@ -69,13 +70,16 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
             Renew EAF License via Telebirr (500 ETB)
           </button>
         ) : (
-          <div className="text-right">
-            <span className="badge badge-green text-[0.82rem] px-4 py-2">
-              ✓ License Active ({athlete.licenseNumber})
-            </span>
-            <div className="text-[0.78rem] text-text-muted mt-1 font-semibold">
-              Valid through Dec 31, 2026
+          <div className="flex items-center justify-end gap-3 flex-wrap">
+            <div className="text-right">
+              <span className="badge badge-green text-[0.82rem] px-4 py-2">
+                ✓ License Active ({athlete.licenseNumber})
+              </span>
+              <div className="text-[0.78rem] text-text-muted mt-1 font-semibold">
+                Valid through Dec 31, 2026
+              </div>
             </div>
+            <LicenseQrCode athlete={athlete} />
           </div>
         )}
       </div>

@@ -29,24 +29,24 @@ export default function Navbar({
       <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between flex-wrap gap-4">
         {/* Brand Logo & EAF Title */}
         <div
-          className="flex items-center gap-3.5 cursor-pointer"
+          className="flex items-center gap-[clamp(0.5rem,1vw,0.875rem)] cursor-pointer min-w-0 shrink-0"
           onClick={() => onSwitchRole('LANDING')}
         >
-          <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-white to-slate-100 border-2 border-blue-300/40 flex items-center justify-center shadow-[0_6px_16px_rgba(0,114,206,0.15)]">
-            <span className="text-2xl">🇪🇹</span>
+          <div className="relative w-[clamp(2.1rem,3.4vw,2.75rem)] h-[clamp(2.1rem,3.4vw,2.75rem)] rounded-xl bg-gradient-to-br from-white to-slate-100 border-2 border-blue-300/40 flex items-center justify-center shadow-[0_6px_16px_rgba(0,114,206,0.15)] shrink-0">
+            <span className="text-[clamp(1.1rem,1.8vw,1.5rem)]">🇪🇹</span>
             <div className="absolute top-0 left-[10%] right-[10%] h-1 bg-gradient-to-r from-[#0072CE] via-[#FFB800] via-[#1E293B] via-[#00A859] to-[#E51B24] rounded-sm" />
           </div>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-black text-text-main tracking-tight" style={{ fontFamily: 'var(--font-sans)' }}>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-[clamp(0.95rem,1.4vw,1.25rem)] font-black text-text-main tracking-tight whitespace-nowrap" style={{ fontFamily: 'var(--font-sans)' }}>
                 EOSCRMS
               </span>
-              <span className="badge badge-gold text-[0.65rem] px-2 py-0.5">
+              <span className="badge badge-gold text-[clamp(0.55rem,0.8vw,0.65rem)] px-1.5 sm:px-2 py-0.5 whitespace-nowrap">
                 OLYMPIC v1.1
               </span>
             </div>
-            <p className="text-xs text-text-muted font-semibold">EOSCRMS v1.1</p>
+            <p className="text-[clamp(0.65rem,0.9vw,0.75rem)] text-text-muted font-semibold whitespace-nowrap">EOSCRMS v1.1</p>
           </div>
         </div>
 

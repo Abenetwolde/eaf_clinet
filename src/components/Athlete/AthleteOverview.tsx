@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import type { Athlete } from '../../types';
 import { useAppSelector } from '../../store/hooks';
+import LicenseQrCode from './LicenseQrCode';
 
 interface AthleteOverviewProps {
   onChangeSubPage: (page: string) => void;
@@ -103,16 +104,19 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
               </div>
             </div>
           </div>
-          <div className="text-right">
+          <div className="flex items-center justify-end gap-3 flex-wrap">
             {athlete.licenseStatus !== 'ACTIVE' ? (
               <button onClick={() => onPayLicense(athlete)} className="btn-telebirr">
                 Renew License — 500 ETB
               </button>
             ) : (
-              <div>
-                <span className="badge badge-green px-3 py-1.5">✓ {athlete.licenseNumber}</span>
-                <div className="text-[0.75rem] text-[#8FA8BC] mt-1">Expires: Dec 31, 2026</div>
-              </div>
+              <>
+                <div className="text-right">
+                  <span className="badge badge-green px-3 py-1.5">✓ {athlete.licenseNumber}</span>
+                  <div className="text-[0.75rem] text-[#8FA8BC] mt-1">Expires: Dec 31, 2026</div>
+                </div>
+                <LicenseQrCode athlete={athlete} />
+              </>
             )}
           </div>
         </div>
