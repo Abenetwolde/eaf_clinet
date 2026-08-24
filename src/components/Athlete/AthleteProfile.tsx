@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Save, User, ShieldCheck, Mail, Phone, MapPin, Activity, Calendar } from 'lucide-react';
+import { useAppSelector } from '../../store/hooks';
 import type { Athlete } from '../../types';
 
 interface AthleteProfileProps {
-  athlete: Athlete;
   onUpdateAthlete: (athlete: Athlete) => void;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export default function AthleteProfile({ athlete, onUpdateAthlete, onNotify }: AthleteProfileProps) {
+export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthleteProfileProps) {
+  const athlete = useAppSelector((state) => state.auth.athlete);
   const [name, setName] = useState(athlete.name || '');
   const [amharicName, setAmharicName] = useState(athlete.amharicName || '');
   const [dob, setDob] = useState(athlete.dob || '');

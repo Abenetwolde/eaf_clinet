@@ -38,20 +38,7 @@
   --bg-surface-variant: #F1F3F5;
   /* AppColors.backgroundSurfaceVariant */
 
-  /* Border */
-  --border-card: #D9DEE5;
-  /* AppColors.borderDefault */
-  --border-focus: #0140A7;
 
-  /* Text */
-  --text-main: #1D1D1F;
-  /* AppColors.textPrimary   */
-  --text-heading: #1D1D1F;
-  --text-body: #555B63;
-  /* AppColors.textSecondary */
-  --text-muted: #8B9098;
-  /* AppColors.textTertiary  */
-  --text-dim: #B0B5BB;
 
   /* Status */
   --status-success: #2E7D32;
@@ -1030,4 +1017,3 @@ html.dark,
 .dark .bg-\[\#F8FAF8\] {
   background-color: var(--bg-surface-variant) !important;
 }
-

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Building2, UserCheck, ShieldCheck, RefreshCw, CheckCircle2, ArrowRight, Phone, LockKeyhole, Clock } from 'lucide-react';
 import { MOCK_CLUBS } from '../data/mockData';
+import { useI18n } from '../i18n';
 
 // Types for internal use
 interface FaydaResult {
@@ -104,6 +105,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
   onClose: () => void;
   onRegisterSuccess: (data: PendingRegistrationData) => void;
 }) {
+  const { t } = useI18n();
   const isClub = role === 'CLUB';
   const [step, setStep] = useState(0);
 
@@ -140,8 +142,8 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
   const [isSubmittedPending, setIsSubmittedPending] = useState(false);
   const [pendingRegistrationData, setPendingRegistrationData] = useState<PendingRegistrationData | null>(null);
 
-  const clubSteps = ['Account', 'Club Info', 'Confirm'];
-  const athleteSteps = ['Fayda Verification', 'Sports Info', 'Account', 'Confirm'];
+  const clubSteps = [t('registration.stepAccount'), t('registration.stepClubInfo'), t('registration.stepConfirm')];
+  const athleteSteps = [t('registration.stepFayda'), t('registration.stepSports'), t('registration.stepAccount'), t('registration.stepConfirm')];
   const steps = isClub ? clubSteps : athleteSteps;
 
   // Auto-format Fayda FIN into 12 digits (XXXX-XXXX-XXXX)
@@ -160,7 +162,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
   const handleInitiateFaydaLookup = () => {
     const cleanDigits = faydaFin.replace(/\D/g, '');
     if (cleanDigits.length < 10) {
-      setFaydaError('Enter a valid 12-digit Fayda FIN Number (e.g. 9840-3920-1124)');
+      setFaydaError(t('registration.finError'));
       return;
     }
     setFaydaError('');
@@ -174,7 +176,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
   // ── Step 2: Confirm OTP & retrieve Fayda Biometrics ──
   const handleVerifyOtp = () => {
     if (otpCode.length < 6) {
-      setFaydaError('Enter a valid 6-digit SMS OTP passcode');
+      setFaydaError(t('registration.otpError'));
       return;
     }
     setFaydaError('');
@@ -277,15 +279,18 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
         </div>
 
         <span className="badge badge-amber" style={{ fontSize: '0.82rem', padding: '6px 16px', borderRadius: '20px', marginBottom: '12px' }}>
-          ⏳ PENDING FEDERATION BOARD APPROVAL
+          {t('registration.pendingBadge')}
         </span>
 
         <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F172A', marginBottom: '8px' }}>
-          Application Submitted Successfully!
+          {t('registration.submittedTitle')}
         </h3>
 
         <p style={{ fontSize: '0.95rem', color: '#475569', maxWidth: '580px', lineHeight: 1.6, marginBottom: '24px' }}>
-          Your {isAthleteData ? 'athlete profile & Fayda identity biometrics' : 'club registration details'} have been securely logged and queued for audit by the <strong>Ethiopian Athletics Federation (EAF) Executive Board</strong>.
+          {t('registration.submittedSub', {
+            item: t(isAthleteData ? 'registration.athleteItem' : 'registration.clubItem'),
+            board: t('registration.eafBoard')
+          })}
         </p>
 
         {/* Tracking Card */}
@@ -298,8 +303,8 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
           textAlign: 'left',
           marginBottom: '24px'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', marginBottom: '14px', paddingBottom: '12px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748B' }}>TRACKING REFERENCE ID</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', marginBottom: '14px' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748B' }}>{t('registration.trackingRef')}</span>
             <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>{refNumber}</span>
           </div>
 
@@ -325,7 +330,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                   Primary Event: <strong>{pendingRegistrationData.payload.athlete.primaryEvent}</strong> · Club: <strong>{pendingRegistrationData.payload.athlete.clubName}</strong>
                 </div>
                 <div style={{ fontSize: '0.82rem', color: '#10B981', fontWeight: 800, marginTop: '4px' }}>
-                  ✓ Fayda Biometrics Verified · Status: Under Board Review
+                  {t('registration.faydaBiometricsVerified')}
                 </div>
               </div>
             </div>
@@ -342,7 +347,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
         </div>
 
         <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '16px', fontSize: '0.85rem', color: '#1E40AF', textAlign: 'left', marginBottom: '24px', width: '100%' }}>
-          📲 <strong>Notification Notice:</strong> You will receive an official SMS notification and email once your EAF license is reviewed and approved by federation officials.
+          📲 <strong>{t('registration.notificationNotice')}</strong>
         </div>
 
         <button
@@ -354,7 +359,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
           }}
           onClick={() => onRegisterSuccess(pendingRegistrationData)}
         >
-          Acknowledge & Access Portal Dashboard →
+          {t('registration.acknowledgeAccess')}
         </button>
       </div>
     );
@@ -364,14 +369,14 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
   const renderClubStep = () => {
     if (step === 0) return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>Create Admin Account</h4>
+        <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>{t('registration.clubAccountTitle')}</h4>
         <div className="form-group">
-          <label className="form-label">Official Email Address</label>
+          <label className="form-label">{t('registration.officialEmail')}</label>
           <input className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@yourclub.et" required style={{ padding: '12px 14px' }} />
         </div>
         <div className="form-group">
-          <label className="form-label">Password</label>
-          <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 8 characters" required style={{ padding: '12px 14px' }} />
+          <label className="form-label">{t('auth.passwordLabel')}</label>
+          <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('registration.minPassword')} required style={{ padding: '12px 14px' }} />
         </div>
         <div className="form-group">
           <label className="form-label">Phone Number</label>
@@ -381,25 +386,25 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
           className="btn-accent"
           style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '10px' }}
           onClick={() => email && password && phone ? setStep(1) : null}>
-          Continue to Club Details <ArrowRight size={18} />
+          {t('registration.continueClubDetails')} <ArrowRight size={18} />
         </button>
       </div>
     );
 
     if (step === 1) return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>Club Information</h4>
+        <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>{t('registration.clubInfoTitle')}</h4>
         <div className="form-group">
-          <label className="form-label">Club Official Name (English)</label>
+          <label className="form-label">{t('registration.clubNameEnglish')}</label>
           <input className="form-input" value={clubName} onChange={e => setClubName(e.target.value)} placeholder="e.g. Bekoji Athletics Club" required style={{ padding: '12px 14px' }} />
         </div>
         <div className="form-group">
-          <label className="form-label">Club Name (Amharic — የክለቡ ስም)</label>
+          <label className="form-label">{t('registration.clubNameAmharic')}</label>
           <input className="form-input" value={clubAmharic} onChange={e => setClubAmharic(e.target.value)} placeholder="e.g. በቆጂ የሩጫ አካዳሚ" required style={{ padding: '12px 14px' }} />
         </div>
         <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
           <div className="form-group">
-            <label className="form-label">Regional State</label>
+            <label className="form-label">{t('registration.regionalState')}</label>
             <select className="form-select" value={region} onChange={e => setRegion(e.target.value)} style={{ padding: '12px 14px' }}>
               <option>Addis Ababa / Federal</option>
               <option>Oromia Region</option>
@@ -412,19 +417,19 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label">Club Symbol / Emoji</label>
+            <label className="form-label">{t('registration.clubSymbol')}</label>
             <input className="form-input" value={clubLogo} onChange={e => setClubLogo(e.target.value)} placeholder="🏃" style={{ padding: '12px 14px' }} />
           </div>
         </div>
         <div className="form-group">
-          <label className="form-label">Club Manager / Director Name</label>
+          <label className="form-label">{t('registration.clubManager')}</label>
           <input className="form-input" value={manager} onChange={e => setManager(e.target.value)} placeholder="e.g. Coach Sentayehu Eshetu" required style={{ padding: '12px 14px' }} />
         </div>
         <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-          <button className="btn-gov-secondary" style={{ flex: 1, padding: '13px', borderRadius: '12px' }} onClick={() => setStep(0)}>Back</button>
+          <button className="btn-gov-secondary" style={{ flex: 1, padding: '13px', borderRadius: '12px' }} onClick={() => setStep(0)}>{t('common.back')}</button>
           <button className="btn-accent" style={{ flex: 2, padding: '13px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
             onClick={() => clubName && manager ? setStep(2) : null}>
-            Review & Submit <ArrowRight size={18} />
+            {t('registration.reviewSubmit')} <ArrowRight size={18} />
           </button>
         </div>
       </div>
@@ -432,14 +437,14 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
 
     if (step === 2) return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>Review & Confirm Registration</h4>
+        <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>{t('registration.reviewConfirmTitle')}</h4>
         <div className="table-responsive" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px' }}>
           <table className="gov-table">
             <tbody>
               {[
-                ['Club Name', `${clubName} (${clubAmharic})`],
-                ['Region', region],
-                ['Manager', manager],
+                [t('registration.clubName'), `${clubName} (${clubAmharic})`],
+                [t('registration.regionalState'), region],
+                [t('registration.clubManager'), manager],
                 ['Email', email],
                 ['Phone', phone],
               ].map(([k, v]) => (
@@ -452,12 +457,12 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
           </table>
         </div>
         <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: 1.5 }}>
-          By registering, your club agrees to comply with Ethiopian Athletics Federation rules and mandate Fayda National ID verification for all athletes.
+          {t('registration.agreeText')}
         </p>
         <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-          <button className="btn-gov-secondary" style={{ flex: 1, padding: '13px', borderRadius: '12px' }} onClick={() => setStep(1)}>Back</button>
+          <button className="btn-gov-secondary" style={{ flex: 1, padding: '13px', borderRadius: '12px' }} onClick={() => setStep(1)}>{t('common.back')}</button>
           <button className="btn-accent" style={{ flex: 2, padding: '13px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={handleClubSubmit}>
-            <CheckCircle2 size={18} /> Register Club with EAF
+            <CheckCircle2 size={18} /> {t('registration.registerClub')}
           </button>
         </div>
       </div>
@@ -470,10 +475,10 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div>
           <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A', marginBottom: '6px' }}>
-            Step 1: Fayda FIN Verification
+            {t('registration.faydaStepTitle')}
           </h4>
           <p style={{ fontSize: '0.88rem', color: '#64748B', lineHeight: 1.6 }}>
-            Enter your 12-digit Fayda FIN Number. Full legal name, date of birth, age division, and official passport photo are fetched from the National ID database.
+            {t('registration.faydaStepSub')}
           </p>
         </div>
 
@@ -481,7 +486,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
         {!otpStep && !faydaResult && (
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
-              Fayda FIN Number (12 Digits Auto-Formatted)
+              {t('registration.finLabel')}
             </label>
             <div className="fin-row" style={{ display: 'flex', gap: '10px' }}>
               <input
@@ -505,7 +510,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                 onClick={handleInitiateFaydaLookup}
                 disabled={faydaLoading}
               >
-                {faydaLoading ? <><RefreshCw size={16} className="animate-spin" /> Verifying FIN...</> : <><ShieldCheck size={18} /> Verify Fayda FIN</>}
+                {faydaLoading ? <><RefreshCw size={16} className="animate-spin" /> {t('registration.verifying')}</> : <><ShieldCheck size={18} /> {t('registration.verifyFin')}</>}
               </button>
             </div>
             {faydaError && <span style={{ color: '#EF4444', fontSize: '0.85rem', fontWeight: 700, marginTop: '6px', display: 'block' }}>{faydaError}</span>}
@@ -528,16 +533,16 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                 <Phone size={20} />
               </div>
               <div>
-                <h5 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A' }}>SMS OTP Authentication</h5>
+                <h5 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A' }}>{t('registration.otpTitle')}</h5>
                 <p style={{ fontSize: '0.83rem', color: 'var(--primary-dark)', fontWeight: 700 }}>
-                  A 6-digit OTP passcode was sent to your Fayda registered mobile (+251 91 *** *78).
+                  {t('registration.otpSub')}
                 </p>
               </div>
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', textAlign: 'center', display: 'block', marginBottom: '8px' }}>
-                Enter 6-Digit Passcode (OTP)
+                {t('registration.otpLabel')}
               </label>
               <div className="otp-row" style={{ display: 'flex', gap: '10px', justifyContent: 'center', margin: '12px 0' }}>
                 {[0, 1, 2, 3, 4, 5].map(idx => (
@@ -605,7 +610,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                 style={{ flex: 1, padding: '12px', borderRadius: '10px' }}
                 onClick={() => setOtpStep(false)}
               >
-                Back to FIN
+                {t('registration.backToFin')}
               </button>
               <button
                 type="button"
@@ -614,7 +619,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                 onClick={handleVerifyOtp}
                 disabled={otpLoading}
               >
-                {otpLoading ? <><RefreshCw size={16} className="animate-spin" /> Confirming Passcode...</> : <><CheckCircle2 size={18} /> Confirm OTP & Retrieve Biometrics</>}
+                {otpLoading ? <><RefreshCw size={16} className="animate-spin" /> {t('registration.confirmingPasscode')}</> : <><CheckCircle2 size={18} /> {t('registration.confirmOtp')}</>}
               </button>
             </div>
           </div>
@@ -637,11 +642,11 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ShieldCheck size={22} color="var(--primary-dark)" />
                 <span style={{ fontWeight: 900, color: '#0369A1', fontSize: '1rem', letterSpacing: '0.04em' }}>
-                  GOVERNMENT FAYDA ID BIOMETRICS VERIFIED
+                  {t('registration.biometricsVerifiedBadge')}
                 </span>
               </div>
               <span style={{ background: '#10B981', color: '#FFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 }}>
-                AUTHENTICATED ✓
+                {t('registration.authenticated')}
               </span>
             </div>
 
@@ -674,27 +679,27 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                   </div>
                 </div>
                 <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#0369A1', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  📷 Official Passport Photo
+                  {t('registration.passportPhoto')}
                 </span>
               </div>
 
               {/* Personal Information List */}
               <div style={{ flex: 1, minWidth: '260px' }}>
                 <h5 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0369A1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
-                  📋 Personal Identity Data List
+                  {t('registration.identityData')}
                 </h5>
                 <div className="table-responsive" style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #BAE6FD' }}>
                   <table className="gov-table" style={{ margin: 0 }}>
                     <tbody>
                       {[
-                        ['Full Legal Name (Eng)', faydaResult.name],
-                        ['Full Legal Name (Amh)', faydaResult.amharic],
-                        ['Fayda FIN Number', faydaResult.fin],
-                        ['Date of Birth (DOB)', `${faydaResult.dob} (Age 22)`],
-                        ['Age Division Tier', faydaResult.ageTier],
-                        ['Gender & Blood', `${faydaResult.gender} · Blood Type ${faydaResult.blood}`],
-                        ['Regional Delegation', faydaResult.region],
-                        ['Verification Hash', faydaResult.hash],
+                        [t('registration.fullNameEng'), faydaResult.name],
+                        [t('registration.fullNameAmh'), faydaResult.amharic],
+                        [t('registration.finLabel'), faydaResult.fin],
+                        [t('athleteProfilePortal.dob'), `${faydaResult.dob} (Age 22)`],
+                        [t('registration.ageDivisionTier'), faydaResult.ageTier],
+                        [t('registration.genderBlood'), `${faydaResult.gender} · Blood Type ${faydaResult.blood}`],
+                        [t('registration.regionalDelegation'), faydaResult.region],
+                        [t('registration.verificationHash'), faydaResult.hash],
                       ].map(([k, v]) => (
                         <tr key={k}>
                           <td style={{ width: '42%', fontWeight: 700, color: '#64748B', fontSize: '0.82rem', padding: '10px 14px' }}>{k}</td>
@@ -723,7 +728,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
             fontWeight: 700
           }}>
             <LockKeyhole size={18} />
-            <span>🔒 Please click "Verify Fayda FIN" above to enter your SMS OTP passcode.</span>
+            <span>🔒 {t('registration.otpHint')}</span>
           </div>
         )}
 
@@ -754,7 +759,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
             transition: 'all 0.2s'
           }}
         >
-          Continue to Sports Info
+          {t('registration.continueSports')}
           <ArrowRight size={20} />
         </button>
       </div>
@@ -777,12 +782,12 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
 
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>Step 2: Sports & Athletic Affiliation</h4>
+          <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>{t('registration.sportsStepTitle')}</h4>
 
           {/* Multi-select Disciplines Checkboxes */}
           <div className="form-group">
             <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', marginBottom: '8px' }}>
-              Primary Event / Discipline (Select all that apply)
+              {t('registration.disciplinesLabel')}
             </label>
             <div style={{
               display: 'grid',
@@ -841,9 +846,9 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
 
           {/* Current Registered Club Dropdown */}
           <div className="form-group">
-            <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Current Registered Club</label>
+            <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('registration.currentClub')}</label>
             <select className="form-select" value={selectedClubId} onChange={e => setSelectedClubId(e.target.value)} style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }}>
-              <option value="NONE">None (Independent / Unaffiliated Athlete)</option>
+              <option value="NONE">{t('registration.independent')}</option>
               {MOCK_CLUBS.map(c => (
                 <option key={c.id} value={c.id}>{c.shortName} ({c.region})</option>
               ))}
@@ -853,19 +858,19 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
           {/* Physical & Medical Stats Inputs */}
           <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Weight (kg)</label>
+              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('athlete.weight')} (kg)</label>
               <input className="form-input" type="number" value={weight} onChange={e => setWeight(Number(e.target.value))} style={{ padding: '12px 14px', borderRadius: '10px' }} />
             </div>
             <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Height (cm)</label>
+              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('athlete.height')} (cm)</label>
               <input className="form-input" type="number" value={height} onChange={e => setHeight(Number(e.target.value))} style={{ padding: '12px 14px', borderRadius: '10px' }} />
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(0)}>Back</button>
+            <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(0)}>{t('common.back')}</button>
             <button className="btn-accent" style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setStep(2)}>
-              Continue to Account Credentials <ArrowRight size={18} />
+              {t('registration.continueAccount')} <ArrowRight size={18} />
             </button>
           </div>
         </div>
@@ -874,36 +879,36 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
 
     if (step === 2) return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>Step 3: Portal Account Setup</h4>
+        <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>{t('registration.accountStepTitle')}</h4>
 
         <div className="form-group">
-          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Email Address</label>
+          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('registration.accountEmail')}</label>
           <input className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your.name@athletics.et" required style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
         </div>
 
         <div className="form-group">
-          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Password</label>
-          <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 8 characters" required style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
+          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('auth.passwordLabel')}</label>
+          <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('registration.minPassword')} required style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
         </div>
 
         <div className="form-group">
-          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Phone Number</label>
+          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('athleteProfilePortal.phoneNumber')}</label>
           <input className="form-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+251 91 234 5678" required style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
         </div>
 
         <div className="form-group">
-          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>Emergency Contact Person & Phone</label>
+          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('registration.emergencyContact')}</label>
           <input className="form-input" type="text" value={emergencyContact} onChange={e => setEmergencyContact(e.target.value)} style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
         </div>
 
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(1)}>Back</button>
+          <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(1)}>{t('common.back')}</button>
           <button
             className="btn-accent"
             style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
             onClick={() => email && password ? setStep(3) : null}
           >
-            Review Registration <ArrowRight size={18} />
+            {t('registration.reviewRegistration')} <ArrowRight size={18} />
           </button>
         </div>
       </div>
@@ -918,7 +923,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
 
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>Step 4: Final Confirmation Summary</h4>
+          <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>{t('registration.confirmStepTitle')}</h4>
 
           {/* Detailed Summary Card */}
           <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -933,7 +938,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#E0F2FE', color: 'var(--primary-dark)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
-                  <ShieldCheck size={14} /> FAYDA IDENTITY VERIFIED
+                  <ShieldCheck size={14} /> {t('registration.faydaIdentityVerified')}
                 </div>
                 <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0F172A' }}>{faydaResult?.name}</div>
                 <div style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 700 }}>{faydaResult?.amharic}</div>
@@ -948,20 +953,20 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
               <table className="gov-table" style={{ margin: 0 }}>
                 <tbody>
                   {[
-                    ['Full Legal Name', `${faydaResult?.name} (${faydaResult?.amharic})`],
-                    ['Fayda FIN Number', faydaResult?.fin],
-                    ['Cryptographic Hash', faydaResult?.hash],
-                    ['Date of Birth & Division', `${faydaResult?.dob} · ${faydaResult?.ageTier}`],
-                    ['Gender & Blood Group', `${faydaResult?.gender} · Type ${faydaResult?.blood}`],
-                    ['Physical Stats', `Height: ${height} cm · Weight: ${weight} kg`],
-                    ['Athletics Club', club?.shortName],
-                    ['Primary Event(s)', eventText],
-                    ['Regional Delegation', faydaResult?.region || 'Oromia Regional State'],
-                    ['Account Email', email || 'athlete@athletics.et'],
-                    ['Phone Number', phone || '+251 91 234 5678'],
-                    ['Emergency Contact', emergencyContact],
-                    ['Medical Notes', medicalNotes],
-                    ['License Status', '⏳ PENDING FEDERATION AUDIT & APPROVAL'],
+                    [t('registration.fullLegalName'), `${faydaResult?.name} (${faydaResult?.amharic})`],
+                    [t('registration.finLabel'), faydaResult?.fin],
+                    [t('registration.cryptographicHash'), faydaResult?.hash],
+                    [t('registration.dobDivision'), `${faydaResult?.dob} · ${faydaResult?.ageTier}`],
+                    [t('registration.genderBloodGroup'), `${faydaResult?.gender} · Type ${faydaResult?.blood}`],
+                    [t('registration.physicalStats'), `Height: ${height} cm · Weight: ${weight} kg`],
+                    [t('registration.athleticsClub'), club?.shortName],
+                    [t('registration.primaryEvents'), eventText],
+                    [t('registration.regionalDelegation'), faydaResult?.region || 'Oromia Regional State'],
+                    [t('registration.accountEmail'), email || 'athlete@athletics.et'],
+                    [t('athleteProfilePortal.phoneNumber'), phone || '+251 91 234 5678'],
+                    [t('registration.emergencyContact'), emergencyContact],
+                    [t('registration.medicalNotes'), medicalNotes],
+                    [t('registration.licenseStatus'), t('registration.pendingAudit')],
                   ].map(([k, v]) => (
                     <tr key={k}>
                       <td style={{ width: '38%', fontWeight: 700, color: '#64748B', fontSize: '0.82rem', padding: '10px 14px' }}>{k}</td>
@@ -974,13 +979,13 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(2)}>Back</button>
+            <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(2)}>{t('common.back')}</button>
             <button
               className="btn-accent"
               style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               onClick={handleAthleteSubmit}
             >
-              <CheckCircle2 size={18} /> Submit Athlete Registration to EAF
+              <CheckCircle2 size={18} /> {t('registration.submitAthlete')}
             </button>
           </div>
         </div>
@@ -991,10 +996,9 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
   return (
     <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 9999, padding: '24px 16px', overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div
-        className="modal-content"
+        className="modal-content main-pad"
         onClick={e => e.stopPropagation()}
         style={{
-          padding: '44px 48px',
           maxWidth: '1100px',
           width: '95vw',
           maxHeight: '90vh',
@@ -1019,10 +1023,10 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
               </div>
               <div>
                 <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F172A' }}>
-                  {isClub ? 'Register Club Account' : 'Athlete Registration'}
+                  {isClub ? t('registration.titleClub') : t('registration.titleAthlete')}
                 </h3>
                 <p style={{ fontSize: '0.85rem', color: '#64748B' }}>
-                  Ethiopian Athletics Federation — EOSCRMS Portal
+                  {t('registration.subtitle')}
                 </p>
               </div>
             </div>

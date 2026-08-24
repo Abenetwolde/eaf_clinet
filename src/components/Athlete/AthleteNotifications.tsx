@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Bell, Check, Clock, CheckSquare, Trash2 } from 'lucide-react';
+import { useAppSelector } from '../../store/hooks';
 import type { Athlete } from '../../types';
 
 interface AthleteNotificationsProps {
-  athlete: Athlete;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export default function AthleteNotifications({ athlete, onNotify }: AthleteNotificationsProps) {
+export default function AthleteNotifications({ onNotify }: AthleteNotificationsProps) {
+  const athlete = useAppSelector((state) => state.auth.athlete);
   const [notifications, setNotifications] = useState(athlete.notifications || [
     {
       id: "notif-1",

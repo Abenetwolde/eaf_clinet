@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Building2, UserCheck, Users, ArrowRightLeft, Trophy,
   Navigation, Activity, LogOut, Home,
-  Bell, ChevronRight, Award, Globe, BookOpen, Sun, Moon
+  Bell, ChevronRight, Award, Globe, BookOpen, Sun, Moon, Menu, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Club, Athlete } from '../../types';
+import { useAppSelector } from '../../store/hooks';
+import { LanguageSelector } from '../../i18n';
 
 function EAFLogo({ size = 36 }: { size?: number }) {
   return (
@@ -18,11 +19,8 @@ function EAFLogo({ size = 36 }: { size?: number }) {
 }
 
 interface AppLayoutProps {
-  currentRole: 'CLUB' | 'ATHLETE';
   activeSubPage: string;
   onChangeSubPage: (page: string) => void;
-  currentClub: Club;
-  currentAthlete: Athlete;
   onSwitchRole: (role: string) => void;
   onLogout: () => void;
   darkMode?: boolean;
@@ -31,10 +29,13 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({
-  currentRole, activeSubPage, onChangeSubPage,
-  currentClub, currentAthlete, onSwitchRole, onLogout,
+  activeSubPage, onChangeSubPage, onSwitchRole, onLogout,
   darkMode, onToggleDarkMode, children
 }: AppLayoutProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const currentRole = useAppSelector((state) => state.auth.role);
+  const currentClub = useAppSelector((state) => state.auth.club);
+  const currentAthlete = useAppSelector((state) => state.auth.athlete);
   const isClub = currentRole === 'CLUB';
 
   const clubNavItems = [
@@ -58,15 +59,37 @@ export default function AppLayout({
 
   const navItems = isClub ? clubNavItems : athleteNavItems;
 
+  const handleNavClick = (id: string) => {
+    onChangeSubPage(id);
+    setMobileOpen(false);
+  };
+
   return (
     <div className="app-container">
+      {/* Backdrop for mobile drawer */}
+      {mobileOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       {/* ── Sidebar ── */}
       <motion.aside
-        className="sidebar"
-        initial={{ x: -270 }}
-        animate={{ x: 0 }}
-        transition={{ type: 'spring', stiffness: 200, damping: 28, delay: 0.05 }}
+        className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}
+        initial={false}
       >
+        {/* Mobile Close Button */}
+        <div className="md:hidden flex justify-end p-3 border-b border-[#2D3A5A]">
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="text-white p-1 rounded-lg hover:bg-white/10 border-0 bg-transparent cursor-pointer"
+            aria-label="Close menu"
+          >
+            <X size={22} />
+          </button>
+        </div>
+
         {/* EAF Brand Header */}
         <div className="px-4.5 py-5 border-b border-[#2D3A5A] flex items-center gap-3" style={{ padding: '20px 18px' }}>
           <div className="w-[42px] h-[42px] rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.3)] shrink-0">
@@ -114,7 +137,7 @@ export default function AppLayout({
             return (
               <motion.div
                 key={item.id}
-                onClick={() => onChangeSubPage(item.id)}
+                onClick={() => handleNavClick(item.id)}
                 className={`sidebar-link ${isActive ? 'active' : ''} relative`}
                 whileHover={{ x: isActive ? 0 : 3 }}
                 whileTap={{ scale: 0.97 }}
@@ -138,13 +161,19 @@ export default function AppLayout({
         {/* Footer */}
         <div className="p-3.5 border-t border-[#2D3A5A] flex flex-col gap-2">
           <button
-            onClick={() => onSwitchRole('HOME')}
+            onClick={() => { onSwitchRole('LANDING'); setMobileOpen(false); }}
             className="btn-gov-secondary w-full text-[0.78rem] px-3 py-2 flex items-center justify-center gap-1.5"
           >
             <Globe size={13} /> Go to Home Page
           </button>
           <button
-            onClick={onLogout}
+            onClick={() => { onSwitchRole(isClub ? 'ATHLETE' : 'CLUB'); setMobileOpen(false); }}
+            className="btn-gov-secondary w-full text-[0.78rem] px-3 py-2 flex items-center justify-center gap-1.5"
+          >
+            {isClub ? <><UserCheck size={13} /> Athlete View</> : <><Building2 size={13} /> Club View</>}
+          </button>
+          <button
+            onClick={() => { onLogout(); setMobileOpen(false); }}
             className="bg-transparent border-none text-red-400 text-[0.78rem] font-semibold flex items-center justify-center gap-1.5 cursor-pointer py-1.5"
           >
             <LogOut size={13} /> Logout
@@ -155,18 +184,30 @@ export default function AppLayout({
       {/* ── Main Content ── */}
       <div className="main-content">
         <header className="header-bar">
-          <div className="flex items-center gap-1.5 text-[0.82rem] text-text-muted">
-            <span className="font-bold">EAF</span>
-            <ChevronRight size={13} />
-            <span className="font-semibold">{isClub ? 'Club Portal' : 'Athlete Portal'}</span>
-            <ChevronRight size={13} />
-            <span className="text-text-heading font-black">
-              {navItems.find((n) => n.id === activeSubPage)?.label}
-            </span>
+          <div className="flex items-center gap-2">
+            {/* Hamburger toggle for mobile */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="md:hidden p-2 rounded-lg bg-slate-100 border-0 text-slate-700 cursor-pointer flex items-center justify-center"
+              aria-label="Open navigation menu"
+            >
+              <Menu size={20} />
+            </button>
+
+            <div className="header-breadcrumb flex items-center gap-1.5 text-[0.82rem] text-text-muted">
+              <span className="font-bold">EAF</span>
+              <ChevronRight size={13} />
+              <span className="font-semibold hidden sm:inline">{isClub ? 'Club Portal' : 'Athlete Portal'}</span>
+              <ChevronRight size={13} className="hidden sm:inline" />
+              <span className="text-text-heading font-black truncate">
+                {navItems.find((n) => n.id === activeSubPage)?.label}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3.5">
-            <div className="bg-primary-light px-3 py-1.5 rounded-2xl text-[0.75rem] font-bold text-primary flex items-center gap-1.5">
+          <div className="flex items-center gap-2 sm:gap-3.5">
+            <LanguageSelector />
+            <div className="hidden sm:flex bg-primary-light px-3 py-1.5 rounded-2xl text-[0.75rem] font-bold text-primary items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-primary" />
               Active
             </div>
@@ -182,9 +223,9 @@ export default function AppLayout({
               </button>
             )}
 
-            <div className="relative cursor-pointer">
+            <div className="relative cursor-pointer p-1">
               <Bell size={19} color="var(--text-muted)" />
-              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
+              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-accent" />
             </div>
           </div>
         </header>
@@ -196,8 +237,7 @@ export default function AppLayout({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="p-8"
-            style={{ padding: '28px 32px', flex: 1 }}
+            className="main-pad p-4 sm:p-6 md:p-8 flex-1"
           >
             {children}
           </motion.div>

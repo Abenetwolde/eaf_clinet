@@ -1,23 +1,30 @@
-import React from 'react';
-import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
+import React, { useState } from 'react';
+import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2 } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import type { Club, Athlete, Transfer } from '../../types';
+import { useAppSelector } from '../../store/hooks';
 
 interface ClubOverviewProps {
-  club: Club;
-  athletes: Athlete[];
-  transfers: Transfer[];
+  club?: Club;
+  athletes?: Athlete[];
+  transfers?: Transfer[];
   onChangeSubPage: (page: string) => void;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
-  onAddClub: (club: Club) => void;
+  onAddClub?: (club: Club) => void;
 }
 
-export default function ClubOverview({ club, athletes, transfers, onChangeSubPage, onNotify }: ClubOverviewProps) {
+export default function ClubOverview({ club: propClub, athletes: propAthletes, transfers: propTransfers, onChangeSubPage, onNotify, onAddClub }: ClubOverviewProps) {
+  const storeClub = useAppSelector((state) => state.auth.club);
+  const storeAthletes = useAppSelector((state) => state.athletes);
+  const storeTransfers = useAppSelector((state) => state.club.transfers);
+
+  const club = propClub || storeClub;
+  const athletes = propAthletes || storeAthletes;
+  const transfers = propTransfers || storeTransfers;
+
   const verifiedCount = athletes.filter(a => a.faydaStatus === 'VERIFIED').length;
   const activeLicenseCount = athletes.filter(a => a.licenseStatus === 'ACTIVE').length;
   const expiredCount = athletes.filter(a => a.licenseStatus !== 'ACTIVE').length;
-
-
 
   const performanceData = [
     { month: 'Jan', points: 120 },
@@ -124,7 +131,6 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         </div>
       </div>
 
-
       {/* Analytics Charts */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-[24px] mb-[28px]">
         <div className="gov-card">
@@ -135,10 +141,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                  wrapperStyle={{ outline: 'none' }}
-                />
+                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                 <Line type="monotone" dataKey="points" stroke="var(--primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--primary)' }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -163,10 +166,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                  wrapperStyle={{ outline: 'none' }}
-                />
+                <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>

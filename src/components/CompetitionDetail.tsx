@@ -5,6 +5,7 @@ import {
   Lock, QrCode, Camera
 } from 'lucide-react';
 import { MOCK_ATHLETES, MOCK_EVENT_RESULTS, MOCK_CLUBS } from '../data/mockData';
+import { useI18n } from '../i18n';
 
 // Helper to determine banner image based on meet ID
 const getBannerUrl = (meetId) => {
@@ -128,8 +129,8 @@ export default function CompetitionDetail({
   currentAthlete,
   onLoginSuccess
 }: CompetitionDetailProps) {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<string>('about');
-
   // Results Filters
   const [resultEventFilter, setResultEventFilter] = useState<string>('ALL');
   const [resultClubFilter, setResultClubFilter] = useState<string>('ALL');
@@ -179,29 +180,6 @@ export default function CompetitionDetail({
 
   if (!meet) return null;
 
-  // Localized texts
-  const t = {
-    back: '← Back to Competitions',
-    regClosed: 'Registration Closed',
-    regOpen: 'Open for Registration',
-    upcoming: 'Upcoming',
-    live: 'LIVE EVENT',
-    organizer: 'Organizer',
-    venue: 'Venue & Address',
-    contact: 'Contact Details',
-    deadline: 'Registration Deadline',
-    regIndividual: 'Register as Individual Athlete',
-    regClub: 'Register as Club / Team',
-    actionTitle: 'Registration Action Panel',
-    verified: 'EAF Verified',
-    recordStatus: 'Record Status',
-
-    // Tabs
-    tabAbout: 'About Event',
-    tabEvents: 'Events & Categories',
-    tabStarters: 'Starter Lists',
-    tabResults: 'Live Results & Participants',
-  };
 
   // Ethiopian Fayda National ID Mock Profile Data
   const faydaNationalIdData = {
@@ -372,7 +350,7 @@ export default function CompetitionDetail({
         onMouseEnter={e => e.currentTarget.style.transform = 'translateX(-4px)'}
         onMouseLeave={e => e.currentTarget.style.transform = 'none'}
       >
-        {t.back}
+        <span>← </span>{t('competitionDetail.back')}
       </button>
 
       {/* ── A. COMPETITION HEADER & BANNER ── */}
@@ -421,13 +399,13 @@ export default function CompetitionDetail({
                 padding: '6px 14px'
               }}
             >
-              {meet.status === 'REGISTRATION_OPEN' ? t.regOpen : meet.status === 'LIVE' ? t.live : t.upcoming}
+              {meet.status === 'REGISTRATION_OPEN' ? t('competitionDetail.regOpen') : meet.status === 'LIVE' ? t('competitionDetail.live') : t('competitionDetail.upcoming')}
             </span>
             <span
               className="badge badge-gold"
               style={{ border: '1px solid rgba(200, 168, 75, 0.4)', borderRadius: '8px', padding: '6px 14px', color: '#FFE082' }}
             >
-              ★ EAF Grade A Event
+              ★ {t('competitionDetail.gradeA')}
             </span>
           </div>
 
@@ -446,7 +424,7 @@ export default function CompetitionDetail({
         {/* Localized Metadata Card */}
         <div className="gov-card" style={{ background: '#FFFFFF', display: 'flex', flexDirection: 'column', gap: '20px', borderRadius: '20px' }}>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-heading)', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
-            🏆 Competition Information
+            🏆 {t('competitionDetail.compInfo')}
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -455,7 +433,7 @@ export default function CompetitionDetail({
                 <Calendar size={18} />
               </div>
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Date &amp; Schedule</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('competitionDetail.dateSchedule')}</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-heading)', marginTop: '2px' }}>
                   {meet.date} | 08:00 AM EAT
                 </div>
@@ -467,10 +445,10 @@ export default function CompetitionDetail({
                 <Clock size={18} />
               </div>
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t.deadline}</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('competitionDetail.deadline')}</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#DC2626', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  August 05, 2026
-                  <span className="badge badge-red" style={{ padding: '2px 6px', fontSize: '0.65rem' }}>Urgent</span>
+                  August 05, 2026 
+                  <span className="badge badge-red" style={{ padding: '2px 6px', fontSize: '0.65rem' }}>{t('competitionDetail.urgent')}</span>
                 </div>
               </div>
             </div>
@@ -480,7 +458,7 @@ export default function CompetitionDetail({
                 <Award size={18} />
               </div>
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t.organizer}</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('competitionDetail.organizer')}</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-heading)', marginTop: '2px' }}>
                   Ethiopian Athletics Federation (EAF) / Regional Committee
                 </div>
@@ -492,7 +470,7 @@ export default function CompetitionDetail({
                 <Phone size={18} />
               </div>
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t.contact}</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('competitionDetail.contact')}</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-heading)', marginTop: '2px', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                   <span>📞 +251 11 551 7777</span>
                   <span>✉️ info@eaf.org.et</span>
@@ -527,10 +505,10 @@ export default function CompetitionDetail({
         >
           <div>
             <span style={{ background: '#FFFFFF', color: meet.status === 'LIVE' ? '#991B1B' : meet.status === 'REGISTRATION_CLOSED' ? '#334155' : 'var(--primary-dark)', fontWeight: 900, fontSize: '0.72rem', padding: '4px 12px', borderRadius: '20px', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>
-              {meet.status === 'REGISTRATION_CLOSED' ? '🔒 REGISTRATION CLOSED' : meet.status === 'LIVE' ? '🔴 EVENT IS LIVE IN STADIUM' : '✦ OFFICIAL EAF REGISTRATION'}
+              {meet.status === 'REGISTRATION_CLOSED' ? '🔒 REGISTRATION CLOSED' : meet.status === 'LIVE' ? '🔴 EVENT IS LIVE IN STADIUM' : `✦ ${t('competitionDetail.officialReg')}`}
             </span>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '8px', letterSpacing: '-0.01em' }}>
-              {meet.status === 'REGISTRATION_CLOSED' ? 'Registration Period Concluded' : meet.status === 'LIVE' ? 'Live Competition Underway' : t.actionTitle}
+              {meet.status === 'REGISTRATION_CLOSED' ? 'Registration Period Concluded' : meet.status === 'LIVE' ? 'Live Competition Underway' : t('competitionDetail.actionTitle')}
             </h3>
             <p style={{ color: '#E0F2FE', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '24px' }}>
               {meet.status === 'REGISTRATION_CLOSED'
@@ -539,7 +517,7 @@ export default function CompetitionDetail({
                   ? 'This competition is currently underway live in stadium. Registration is closed. Track real-time live race results & rankings below.'
                   : currentRole === 'ATHLETE'
                     ? 'You are signed in. Click below to select your disciplines and submit your individual entry for this competition.'
-                    : 'Sign in to your athlete account or create a new account with Fayda verification to register for this competition. Click below to get started.'}
+                    : t('competitionDetail.regPanelSub')}
             </p>
           </div>
 
@@ -673,10 +651,10 @@ export default function CompetitionDetail({
         }}
       >
         {[
-          { id: 'about', label: t.tabAbout },
-          { id: 'events', label: t.tabEvents },
-          { id: 'starters', label: t.tabStarters },
-          { id: 'results', label: t.tabResults },
+          { id: 'about', label: t('competitionDetail.tabAbout') },
+          { id: 'events', label: t('competitionDetail.tabEvents') },
+          { id: 'starters', label: t('competitionDetail.tabStarters') },
+          { id: 'results', label: t('competitionDetail.tabResults') },
         ].map(tab => {
           const isActive = activeTab === tab.id;
           return (
@@ -710,7 +688,7 @@ export default function CompetitionDetail({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div className="gov-card" style={{ background: '#FFFFFF', borderRadius: '18px' }}>
               <h4 style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-heading)', marginBottom: '12px' }}>
-                Event Overview
+                {t('competitionDetail.eventOverview')}
               </h4>
               <p style={{ lineHeight: 1.7, color: 'var(--text-body)', fontSize: '0.95rem' }}>
                 {aboutInfo.overview}
@@ -720,7 +698,7 @@ export default function CompetitionDetail({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
               <div className="gov-card" style={{ background: '#FFFFFF', borderRadius: '18px' }}>
                 <h4 style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-heading)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  📜 Technical Rules
+                  📜 {t('competitionDetail.technicalRules')}
                 </h4>
                 <p style={{ lineHeight: 1.6, color: 'var(--text-body)', fontSize: '0.88rem' }}>
                   {aboutInfo.rules}
@@ -729,7 +707,7 @@ export default function CompetitionDetail({
 
               <div className="gov-card" style={{ background: '#FFFFFF', borderRadius: '18px' }}>
                 <h4 style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-heading)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  🏃 Qualifying Standards
+                  🏃 {t('competitionDetail.qualifyingStandards')}
                 </h4>
                 <p style={{ lineHeight: 1.6, color: 'var(--text-body)', fontSize: '0.88rem' }}>
                   {aboutInfo.standards}
@@ -738,7 +716,7 @@ export default function CompetitionDetail({
 
               <div className="gov-card" style={{ background: '#FFFFFF', borderRadius: '18px' }}>
                 <h4 style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-heading)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  💰 Prize Purse &amp; Awards
+                  💰 {t('competitionDetail.prizePurse')}
                 </h4>
                 <p style={{ lineHeight: 1.6, color: 'var(--text-body)', fontSize: '0.88rem' }}>
                   {aboutInfo.prizes}
@@ -755,10 +733,10 @@ export default function CompetitionDetail({
               <table className="gov-table">
                 <thead>
                   <tr>
-                    <th>Event / Discipline</th>
-                    <th>Gender</th>
-                    <th>Age Category</th>
-                    <th>Registration Status</th>
+                    <th>{t('competitionDetail.eventDiscipline')}</th>
+                    <th>{t('common.gender')}</th>
+                    <th>{t('competitionDetail.ageCategory')}</th>
+                    <th>{t('competitionDetail.regStatus')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -777,7 +755,7 @@ export default function CompetitionDetail({
                       </td>
                       <td>
                         <span className={`badge ${ev.status === 'Open' ? 'badge-green' : 'badge-red'}`}>
-                          {ev.status === 'Open' ? 'OPEN' : 'CLOSED'}
+                          {ev.status === 'Open' ? t('competitionDetail.open') : t('competitionDetail.closed')}
                         </span>
                       </td>
                     </tr>
@@ -795,12 +773,12 @@ export default function CompetitionDetail({
               <table className="gov-table">
                 <thead>
                   <tr>
-                    <th>Bib #</th>
-                    <th>Athlete Name</th>
-                    <th>Club / Delegation</th>
-                    <th>Event</th>
-                    <th>Gender / Div</th>
-                    <th>Seed Time</th>
+                    <th>{t('competitionDetail.bib')}</th>
+                    <th>{t('competitionDetail.athleteName')}</th>
+                    <th>{t('competitionDetail.clubDelegation')}</th>
+                    <th>{t('common.event')}</th>
+                    <th>{t('competitionDetail.genderDiv')}</th>
+                    <th>{t('competitionDetail.seedTime')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -811,14 +789,14 @@ export default function CompetitionDetail({
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{st.name}</span>
                           {st.verified && (
-                            <span
-                              title={t.verified}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                background: '#DCFCE7',
-                                color: '#15803D',
-                                borderRadius: '50%',
+                            <span 
+                              title={t('competitionDetail.verified')} 
+                              style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                background: '#DCFCE7', 
+                                color: '#15803D', 
+                                borderRadius: '50%', 
                                 padding: '2px'
                               }}
                             >
@@ -855,8 +833,8 @@ export default function CompetitionDetail({
             {resultsData.length === 0 ? (
               <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', borderRadius: '18px' }}>
                 <Trophy size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
-                <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px' }}>Results Pending</h4>
-                <p style={{ fontSize: '0.85rem' }}>This competition has not started yet. Live results will display here once events commence.</p>
+                <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px' }}>{t('competitionDetail.resultsPending')}</h4>
+                <p style={{ fontSize: '0.85rem' }}>{t('competitionDetail.resultsPendingSub')}</p>
               </div>
             ) : (
               <div>
@@ -872,60 +850,60 @@ export default function CompetitionDetail({
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--text-heading)' }}>
                     <Filter size={18} />
-                    <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>Filter Results</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{t('competitionDetail.filterResults')}</span>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Event Type</label>
-                      <select
-                        className="form-select"
-                        value={resultEventFilter}
+                      <label className="form-label">{t('competitionDetail.eventType')}</label>
+                      <select 
+                        className="form-select" 
+                        value={resultEventFilter} 
                         onChange={e => setResultEventFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
-                        <option value="ALL">All Events</option>
+                        <option value="ALL">{t('competitionDetail.allEvents')}</option>
                         {uniqueEvents.map(e => <option key={e} value={e}>{e}</option>)}
                       </select>
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Club / Delegation</label>
-                      <select
-                        className="form-select"
-                        value={resultClubFilter}
+                      <label className="form-label">{t('competitionDetail.clubDelegation')}</label>
+                      <select 
+                        className="form-select" 
+                        value={resultClubFilter} 
                         onChange={e => setResultClubFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
-                        <option value="ALL">All Clubs</option>
+                        <option value="ALL">{t('competitionDetail.allClubs')}</option>
                         {uniqueClubs.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Gender</label>
-                      <select
-                        className="form-select"
-                        value={resultGenderFilter}
+                      <label className="form-label">{t('common.gender')}</label>
+                      <select 
+                        className="form-select" 
+                        value={resultGenderFilter} 
                         onChange={e => setResultGenderFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
-                        <option value="ALL">All Genders</option>
+                        <option value="ALL">{t('competitionDetail.allGenders')}</option>
                         <option value="Men">Men</option>
                         <option value="Women">Women</option>
                       </select>
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Age Category</label>
-                      <select
-                        className="form-select"
-                        value={resultAgeFilter}
+                      <label className="form-label">{t('competitionDetail.ageCategory')}</label>
+                      <select 
+                        className="form-select" 
+                        value={resultAgeFilter} 
                         onChange={e => setResultAgeFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
-                        <option value="ALL">All Categories</option>
-                        <option value="Senior">Senior</option>
+                        <option value="ALL">{t('competitionDetail.allCategories')}</option>
+                        <option value="Senior">{t('competitionDetail.senior')}</option>
                         <option value="U20">U20</option>
                         <option value="U18">U18</option>
                       </select>
@@ -935,7 +913,7 @@ export default function CompetitionDetail({
 
                 {filteredResults.length === 0 ? (
                   <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '36px', color: 'var(--text-muted)', borderRadius: '18px' }}>
-                    <p style={{ fontWeight: 700 }}>No results matches your filter selection.</p>
+                    <p style={{ fontWeight: 700 }}>{t('competitionDetail.noFilterResults')}</p>
                   </div>
                 ) : (
                   <div className="gov-card" style={{ background: '#FFFFFF', padding: '0', overflow: 'hidden', borderRadius: '18px' }}>
@@ -943,13 +921,13 @@ export default function CompetitionDetail({
                       <table className="gov-table">
                         <thead>
                           <tr>
-                            <th style={{ width: '80px' }}>Rank</th>
-                            <th style={{ width: '100px' }}>Bib #</th>
-                            <th>Athlete Name</th>
-                            <th>Club / Region</th>
-                            <th>Event</th>
-                            <th>Time / Distance</th>
-                            <th>Record Status</th>
+                            <th style={{ width: '80px' }}>{t('competitionDetail.rank')}</th>
+                            <th style={{ width: '100px' }}>{t('competitionDetail.bib')}</th>
+                            <th>{t('competitionDetail.athleteName')}</th>
+                            <th>{t('competitionDetail.clubRegion')}</th>
+                            <th>{t('common.event')}</th>
+                            <th>{t('competitionDetail.timeDistance')}</th>
+                            <th>{t('competitionDetail.recordStatus')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -963,14 +941,14 @@ export default function CompetitionDetail({
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{r.name}</span>
                                   {r.verified && (
-                                    <span
-                                      title={t.verified}
-                                      style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        background: '#DCFCE7',
-                                        color: '#15803D',
-                                        borderRadius: '50%',
+                                    <span 
+                                      title={t('competitionDetail.verified')} 
+                                      style={{ 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center', 
+                                        background: '#DCFCE7', 
+                                        color: '#15803D', 
+                                        borderRadius: '50%', 
                                         padding: '2px'
                                       }}
                                     >
@@ -1023,7 +1001,7 @@ export default function CompetitionDetail({
 
               <div style={{ position: 'absolute', bottom: '16px', left: '28px', zIndex: 5, color: '#FFF' }}>
                 <span className="badge badge-green" style={{ marginBottom: '4px', display: 'inline-flex', gap: '4px', fontSize: '0.75rem', fontWeight: 800 }}>
-                  <ShieldCheck size={13} /> Individual Athlete Registration
+                  <ShieldCheck size={13} /> {t('competitionDetail.modalRegisterTitle')}
                 </span>
                 <h3 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#FFF', margin: 0 }}>{meet.title}</h3>
               </div>
@@ -1038,31 +1016,31 @@ export default function CompetitionDetail({
                     <Clock size={36} />
                   </div>
                   <span className="badge badge-amber" style={{ fontSize: '0.8rem', padding: '6px 14px', fontWeight: 900, marginBottom: '12px' }}>
-                    ⏳ PENDING COMPETITION MARSHAL &amp; FEDERATION APPROVAL
+                    ⏳ {t('competitionDetail.modalPendingBadge')}
                   </span>
                   <h3 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0F172A', marginBottom: '8px' }}>
-                    Competition Application Registered
+                    {t('competitionDetail.modalSubmittedTitle')}
                   </h3>
                   <p style={{ color: '#64748B', fontSize: '0.95rem', maxWidth: '580px', lineHeight: 1.6, marginBottom: '24px' }}>
-                    Your entry application for <strong>{meet.title}</strong> has been logged. EAF Technical Marshals are reviewing your seed times, club delegation, and Fayda biometric verification.
+                    {t('competitionDetail.modalSubmittedSub', { meet: meet.title })}
                   </p>
 
                   <div style={{ background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '520px', marginBottom: '28px', textAlign: 'left' }}>
                     <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                       <div>
-                        <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>TRACKING REFERENCE</span>
+                        <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('competitionDetail.trackingRef')}</span>
                         <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>COMP-ACC-2026-984210</strong>
                       </div>
                       <div>
-                        <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>ATHLETE NAME</span>
+                        <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('competitionDetail.athleteName').toUpperCase()}</span>
                         <strong style={{ color: '#0F172A' }}>{faydaNationalIdData.fullName}</strong>
                       </div>
                       <div>
-                        <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>DISCIPLINES ENROLLED</span>
+                        <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('competitionDetail.disciplinesEnrolled')}</span>
                         <strong style={{ color: 'var(--primary-dark)' }}>{selectedDisciplines.join(', ') || '1,500m'}</strong>
                       </div>
                       <div>
-                        <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>SEED TIME</span>
+                        <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('competitionDetail.seedTime')}</span>
                         <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>12:54.20</strong>
                       </div>
                     </div>
@@ -1074,7 +1052,7 @@ export default function CompetitionDetail({
                       className="btn-accent"
                       style={{ flex: 1, padding: '14px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', fontWeight: 900, border: 'none', cursor: 'pointer', justifyContent: 'center' }}
                     >
-                      Acknowledge &amp; Return to Hub
+                      {t('competitionDetail.acknowledge')}
                     </button>
                   </div>
                 </div>
@@ -1086,12 +1064,12 @@ export default function CompetitionDetail({
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '1.2rem' }}>🇪🇹</span>
                         <div>
-                          <div style={{ fontSize: '0.78rem', fontWeight: 900, color: '#1E3A8A', letterSpacing: '0.04em' }}>ETHIOPIAN NATIONAL ID (FAYDA)</div>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 900, color: '#1E3A8A', letterSpacing: '0.04em' }}>{t('competitionDetail.nationalIdTitle')}</div>
                           <div style={{ fontSize: '0.65rem', color: '#3B82F6', fontWeight: 800 }}>የኢትዮጵያ ብሔራዊ ዲጂታል መታወቂያ</div>
                         </div>
                       </div>
                       <span className="badge badge-green" style={{ fontSize: '0.72rem', padding: '4px 10px' }}>
-                        <ShieldCheck size={13} /> Authenticated
+                        <ShieldCheck size={13} /> {t('competitionDetail.authenticated')}
                       </span>
                     </div>
 
@@ -1103,35 +1081,35 @@ export default function CompetitionDetail({
                           alt="Passport Photo"
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
-                        <span style={{ position: 'absolute', bottom: 0, background: 'rgba(15,23,42,0.85)', color: '#FFF', fontSize: '0.55rem', fontWeight: 900, textAlign: 'center', padding: '2px 0' }}>
-                          PASSPORT BIOMETRIC
+                        <span style={{ position: 'absolute', bottom: 0, insetX: 0, background: 'rgba(15,23,42,0.85)', color: '#FFF', fontSize: '0.55rem', fontWeight: 900, textAlign: 'center', padding: '2px 0' }}>
+                          {t('competitionDetail.passportBiometric')}
                         </span>
                       </div>
 
                       <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px 18px', fontSize: '0.83rem', flex: 1 }}>
                         <div>
-                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>FULL NAME</span>
+                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('competitionDetail.fullName')}</span>
                           <strong style={{ color: '#0F172A', fontSize: '0.92rem' }}>{faydaNationalIdData.fullName}</strong>
                           <div style={{ color: 'var(--primary-dark)', fontSize: '0.76rem', fontWeight: 700 }}>{faydaNationalIdData.amharicName}</div>
                         </div>
 
                         <div>
-                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>FAYDA FIN</span>
+                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('athleteProfile.faydaFin')}</span>
                           <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>{faydaNationalIdData.faydaFin}</strong>
                         </div>
 
                         <div>
-                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>DATE OF BIRTH</span>
+                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('athleteProfile.dateOfBirth')}</span>
                           <span style={{ color: '#0F172A', fontWeight: 600 }}>{faydaNationalIdData.dob}</span>
                         </div>
 
                         <div>
-                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>GENDER</span>
+                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('common.gender')}</span>
                           <span style={{ color: '#0F172A', fontWeight: 600 }}>{faydaNationalIdData.gender}</span>
                         </div>
 
                         <div style={{ gridColumn: 'span 2' }}>
-                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>REGIONAL STATE &amp; ADDRESS</span>
+                          <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('competitionDetail.regionStateAddress')}</span>
                           <span style={{ color: '#0F172A', fontWeight: 600 }}>{faydaNationalIdData.region} · {faydaNationalIdData.subcity} ({faydaNationalIdData.houseNo})</span>
                         </div>
                       </div>
@@ -1144,7 +1122,7 @@ export default function CompetitionDetail({
                     {/* Left Column: Disciplines Selection */}
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', marginBottom: '10px', display: 'block' }}>
-                        Select Meet Events / Disciplines to Enroll:
+                        {t('competitionDetail.selectDisciplines')}
                       </label>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {meet.disciplines.map(d => {
@@ -1183,21 +1161,21 @@ export default function CompetitionDetail({
                     {/* Right Column: Competition Entry Related Fields */}
                     <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       <h4 style={{ fontSize: '0.92rem', fontWeight: 900, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', paddingBottom: '8px' }}>
-                        Competition Technical Parameters
+                        {t('competitionDetail.techParams')}
                       </h4>
 
                       <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>Target Seed Time / PB</label>
+                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>{t('competitionDetail.targetSeedTime')}</label>
                         <input className="form-input" defaultValue="12:54.20" style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.9rem' }} />
                       </div>
 
                       <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>Primary Running Club / Delegation</label>
+                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>{t('competitionDetail.primaryClub')}</label>
                         <input className="form-input" defaultValue="Bekoji Athletics Club" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.9rem' }} />
                       </div>
 
                       <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>Emergency Contact Person &amp; Phone</label>
+                        <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>{t('competitionDetail.emergencyContact')}</label>
                         <input className="form-input" defaultValue="Ato Bekele Negash (+251 91 111 2233)" style={{ padding: '10px 12px', fontWeight: 600, fontSize: '0.85rem' }} />
                       </div>
                     </div>
@@ -1210,7 +1188,7 @@ export default function CompetitionDetail({
                     className="btn-accent"
                     style={{ width: '100%', padding: '16px', borderRadius: '14px', fontSize: '1rem', fontWeight: 900, justifyContent: 'center', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer', boxShadow: '0 8px 20px rgba(14, 165, 233, 0.3)' }}
                   >
-                    Submit Individual Entry for Federation Approval
+                    {t('competitionDetail.submitEntry')}
                   </button>
                 </div>
               )}

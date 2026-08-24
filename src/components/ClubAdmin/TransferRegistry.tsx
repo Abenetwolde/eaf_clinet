@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { ArrowRightLeft, Lock, Calendar, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
-import type { Club, Transfer } from '../../types';
+import { useI18n } from '../../i18n';
+import { useAppSelector } from '../../store/hooks';
+import type { Transfer } from '../../types';
 
 interface TransferRegistryProps {
-  transfers: Transfer[];
-  currentClub: Club;
   onInitiateTransfer: (transfer: Transfer) => void;
 }
 
-export default function TransferRegistry({ transfers, currentClub, onInitiateTransfer }: TransferRegistryProps) {
+export default function TransferRegistry({ onInitiateTransfer }: TransferRegistryProps) {
+  const { t } = useI18n();
+  const transfers = useAppSelector((state) => state.club.transfers);
+  const currentClub = useAppSelector((state) => state.auth.club);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [athleteName, setAthleteName] = useState<string>('Girmay Legese');
   const [targetClub, setTargetClub] = useState<string>('CBE AC (Commercial Bank)');
@@ -39,10 +42,10 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
       <div className="flex items-center justify-between flex-wrap gap-[16px] mb-[24px]">
         <div>
           <h3 className="text-[1.4rem] font-extrabold text-text-heading">
-            EAF Inter-Club Athlete Transfer Registry
+            {t('club.transferRegistryTitle')}
           </h3>
           <p className="text-[0.85rem] text-text-muted">
-            Federation Lock Mechanism & Contract Registry
+            {t('club.transferRegistrySub')}
           </p>
         </div>
 
@@ -51,7 +54,7 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
           className="btn-gov-primary"
         >
           <ArrowRightLeft size={16} />
-          Submit Transfer Agreement
+          {t('club.submitTransferAgreement')}
         </button>
       </div>
 
@@ -63,10 +66,10 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
           </div>
           <div>
             <div className="font-extrabold text-accent text-[0.98rem]">
-              Federation Transfer Window Lock Active
+              {t('club.transferWindowLockActive')}
             </div>
             <div className="text-[0.82rem] text-text-muted mt-[2px]">
-              All agreements must be submitted before <strong>August 15, 2026 at 23:59 EAT</strong>.
+              {t('club.transferWindowDeadline', { date: 'August 15, 2026 at 23:59 EAT' })}
             </div>
           </div>
         </div>
@@ -74,7 +77,7 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
         <div className="flex items-center gap-[8px] bg-white px-[14px] py-[6px] rounded-[8px] border border-[rgba(217,119,6,0.2)]">
           <Calendar size={16} color="var(--eth-amber)" />
           <span className="text-[0.82rem] font-bold text-accent font-mono">
-            18 Days Remaining
+            {t('club.daysRemaining', { count: 18 })}
           </span>
         </div>
       </div>
@@ -83,18 +86,18 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
         {/* Inbound Requests List */}
         <div>
           <h4 className="text-[1.1rem] font-bold mb-[12px] text-text-heading">
-            Inbound Requests (Other clubs requesting your athletes)
+            {t('club.inboundRequests')}
           </h4>
           <div className="gov-card p-0 overflow-hidden">
             <div className="table-responsive">
               <table className="gov-table">
                 <thead>
                   <tr>
-                    <th>Requested Athlete</th>
-                    <th>Requesting Club</th>
-                    <th>Proposed Fee (ETB)</th>
-                    <th>Rationale</th>
-                    <th>Status / Action</th>
+                    <th>{t('club.requestedAthlete')}</th>
+                    <th>{t('club.requestingClub')}</th>
+                    <th>{t('club.proposedFee')}</th>
+                    <th>{t('club.rationale')}</th>
+                    <th>{t('club.statusAction')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -105,8 +108,8 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
                     <td className="text-[0.85rem]">National team alignment strategy</td>
                     <td>
                       <div className="flex gap-[8px]">
-                        <button className="btn-gov-primary px-[12px] py-[6px] text-[0.75rem]">Approve</button>
-                        <button className="btn-gov-secondary px-[12px] py-[6px] text-[0.75rem] border-accent text-accent">Reject</button>
+                        <button className="btn-gov-primary px-[12px] py-[6px] text-[0.75rem]">{t('club.approve')}</button>
+                        <button className="btn-gov-secondary px-[12px] py-[6px] text-[0.75rem] border-accent text-accent">{t('club.reject')}</button>
                       </div>
                     </td>
                   </tr>
@@ -116,7 +119,7 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
                     <td className="font-bold font-mono text-text-heading">1,200,000 ETB</td>
                     <td className="text-[0.85rem]">Contract buyout clause activation</td>
                     <td>
-                      <span className="badge badge-amber"><AlertCircle size={12} /> Under Negotiation</span>
+                      <span className="badge badge-amber"><AlertCircle size={12} /> {t('club.underNegotiation')}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -128,41 +131,41 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
         {/* Outbound / Initiated Transfers List */}
         <div>
           <h4 className="text-[1.1rem] font-bold mb-[12px] text-text-heading">
-            Outbound & Initiated Transfers
+            {t('club.outboundTransfers')}
           </h4>
           <div className="gov-card p-0 overflow-hidden">
             <div className="table-responsive">
               <table className="gov-table">
                 <thead>
                   <tr>
-                    <th>Athlete</th>
-                    <th>From Club</th>
-                    <th>To Target Club</th>
-                    <th>Transfer Fee (ETB)</th>
-                    <th>Federation Clearance</th>
-                    <th>Contract Hash</th>
+                    <th>{t('club.athlete')}</th>
+                    <th>{t('club.fromClub')}</th>
+                    <th>{t('club.toTargetClub')}</th>
+                    <th>{t('club.transferFee')}</th>
+                    <th>{t('club.federationClearance')}</th>
+                    <th>{t('club.contractHash')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {transfers.map(t => (
-                    <tr key={t.id}>
-                      <td className="font-bold text-text-heading">{t.athleteName}</td>
-                      <td className="text-[0.85rem]">{t.fromClub}</td>
-                      <td className="text-[0.85rem] font-semibold text-primary">{t.toClub}</td>
-                      <td className="font-bold font-mono text-text-heading">{t.transferFee}</td>
+                  {transfers.map(tx => (
+                    <tr key={tx.id}>
+                      <td className="font-bold text-text-heading">{tx.athleteName}</td>
+                      <td className="text-[0.85rem]">{tx.fromClub}</td>
+                      <td className="text-[0.85rem] font-semibold text-primary">{tx.toClub}</td>
+                      <td className="font-bold font-mono text-text-heading">{tx.transferFee}</td>
                       <td>
-                        {t.eafClearanceStatus === 'APPROVED' ? (
+                        {tx.eafClearanceStatus === 'APPROVED' ? (
                           <span className="badge badge-green">
-                            <CheckCircle2 size={12} /> Approved
+                            <CheckCircle2 size={12} /> {t('club.approved')}
                           </span>
                         ) : (
                           <span className="badge badge-amber">
-                            <AlertCircle size={12} /> Pending Clearance
+                            <AlertCircle size={12} /> {t('club.pendingClearance')}
                           </span>
                         )}
                       </td>
                       <td className="font-mono text-[0.75rem] text-text-muted">
-                        {t.contractHash}
+                        {tx.contractHash}
                       </td>
                     </tr>
                   ))}
@@ -179,14 +182,14 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
           <div className="modal-content p-[28px]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-[20px]">
               <h3 className="text-[1.3rem] font-extrabold text-text-heading">
-                Submit Inter-Club Transfer Agreement
+                {t('club.submitTransferTitle')}
               </h3>
               <button onClick={() => setShowModal(false)} className="btn-gov-secondary px-[10px] py-[4px]">✕</button>
             </div>
 
             <form onSubmit={handleSubmitTransfer}>
               <div className="form-group">
-                <label className="form-label">Athlete Name</label>
+                <label className="form-label">{t('club.athleteName')}</label>
                 <input 
                   type="text" 
                   className="form-input"
@@ -197,7 +200,7 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
               </div>
 
               <div className="form-group">
-                <label className="form-label">Destination Club</label>
+                <label className="form-label">{t('club.destinationClub')}</label>
                 <input 
                   type="text" 
                   className="form-input"
@@ -208,7 +211,7 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
               </div>
 
               <div className="form-group">
-                <label className="form-label">Transfer Compensation Fee (ETB)</label>
+                <label className="form-label">{t('club.transferCompensation')}</label>
                 <input 
                   type="text" 
                   className="form-input"
@@ -219,7 +222,7 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
               </div>
 
               <div className="form-group">
-                <label className="form-label">Agreement Rationale</label>
+                <label className="form-label">{t('club.agreementRationale')}</label>
                 <textarea 
                   className="form-textarea"
                   rows={3}
@@ -229,7 +232,7 @@ export default function TransferRegistry({ transfers, currentClub, onInitiateTra
               </div>
 
               <button type="submit" className="btn-gov-primary w-full p-[12px]">
-                Submit to EAF Transfer Registry
+                {t('club.submitToEafRegistry')}
               </button>
             </form>
           </div>

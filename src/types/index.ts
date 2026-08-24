@@ -4,7 +4,7 @@
 
 export type Role = 'LANDING' | 'CLUB' | 'ATHLETE';
 export type ToastType = 'success' | 'error' | 'info';
-export type LicenseStatus = 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'NONE';
+export type LicenseStatus = 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'NONE' | 'UNLICENSED';
 export type TransferStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type MeetStatus = 'REGISTRATION_OPEN' | 'UPCOMING' | 'LIVE' | 'REGISTRATION_CLOSED' | 'COMPLETED';
 
@@ -106,6 +106,8 @@ export interface Athlete {
   phone?: string;
   emergencyContact?: string;
   bloodType?: string;
+  medicalConditions?: string;
+  medicalNotes?: string;
   height?: number;
   weight?: number;
   bio?: string;

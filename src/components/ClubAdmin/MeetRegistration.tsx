@@ -5,13 +5,11 @@ import {
   Medal, List, UserPlus, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { MOCK_MEETS, MOCK_EVENT_RESULTS } from '../../data/mockData';
-import type { Club, Athlete } from '../../types';
+import { useAppSelector } from '../../store/hooks';
 
 const MEDAL_COLORS: Record<number, string> = { 1: '#C8A84B', 2: '#A8B8C8', 3: '#C87040' };
 
 interface MeetRegistrationProps {
-  club: Club;
-  athletes: Athlete[];
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
@@ -39,7 +37,9 @@ interface RosterModalState {
   discipline: string;
 }
 
-export default function MeetRegistration({ club, athletes, onNotify }: MeetRegistrationProps) {
+export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
+  const club = useAppSelector((state) => state.auth.club);
+  const athletes = useAppSelector((state) => state.athletes);
   const [meets, setMeets] = useState<MeetCard[]>(MOCK_MEETS);
   const [activeTab, setActiveTab] = useState<string>('enroll');   // 'enroll' | 'results'
   const [selectedMeet, setSelectedMeet] = useState<string | null>(null); // meet id for results drill-down
