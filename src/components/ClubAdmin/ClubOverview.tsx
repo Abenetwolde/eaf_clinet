@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2 } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import React from 'react';
+import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import type { Club, Athlete, Transfer } from '../../types';
 
 interface ClubOverviewProps {
@@ -12,21 +12,13 @@ interface ClubOverviewProps {
   onAddClub: (club: Club) => void;
 }
 
-export default function ClubOverview({ club, athletes, transfers, onChangeSubPage, onNotify, onAddClub }: ClubOverviewProps) {
+export default function ClubOverview({ club, athletes, transfers, onChangeSubPage, onNotify }: ClubOverviewProps) {
   const verifiedCount = athletes.filter(a => a.faydaStatus === 'VERIFIED').length;
   const activeLicenseCount = athletes.filter(a => a.licenseStatus === 'ACTIVE').length;
   const expiredCount = athletes.filter(a => a.licenseStatus !== 'ACTIVE').length;
 
-  const [showClubModal, setShowClubModal] = useState<boolean>(false);
-  const [clubName, setClubName] = useState<string>('');
-  const [clubAmharic, setClubAmharic] = useState<string>('');
-  const [region, setRegion] = useState<string>('Oromia Region');
-  const [manager, setManager] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
-  const [logo, setLogo] = useState<string>('🏃‍♂️');
 
-  
+
   const performanceData = [
     { month: 'Jan', points: 120 },
     { month: 'Feb', points: 150 },
@@ -36,7 +28,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
     { month: 'Jun', points: 280 },
     { month: 'Jul', points: 310 },
   ];
-  
+
   const eventsData = [
     { name: 'Sprints', value: 12 },
     { name: 'Middle Dist', value: 18 },
@@ -59,9 +51,23 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         </div>
 
         <div className="flex gap-[12px]">
-          
+          <button
+            onClick={() => onChangeSubPage('REGISTER_MEMBER')}
+            className="btn-accent"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              fontSize: '0.88rem',
+              fontWeight: 700
+            }}
+          >
+            <Users size={16} />
+            Register Members
+          </button>
 
-          <button 
+          <button
             onClick={() => onNotify("Exporting Official Club Roster Index PDF...", "info")}
             className="btn-gov-secondary"
           >
@@ -118,7 +124,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         </div>
       </div>
 
-      
+
       {/* Analytics Charts */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-[24px] mb-[28px]">
         <div className="gov-card">
@@ -129,7 +135,10 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="month" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip className="rounded-[8px] !border-0 shadow-[0_4px_12px_rgba(0,0,0,0.1)]" />
+                <Tooltip
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  wrapperStyle={{ outline: 'none' }}
+                />
                 <Line type="monotone" dataKey="points" stroke="var(--primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--primary)' }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -147,15 +156,17 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
                   outerRadius={80}
                   paddingAngle={5}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(0)}%)`}
                   labelLine={false}
-                  className="text-[0.75rem] font-semibold"
                 >
                   {eventsData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip className="rounded-[8px] !border-0 shadow-[0_4px_12px_rgba(0,0,0,0.1)]" />
+                <Tooltip
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  wrapperStyle={{ outline: 'none' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -177,7 +188,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
               <p className="text-text-muted mt-[4px]">
                 Unlicensed athletes cannot be entered into upcoming certified meets.
               </p>
-              <button 
+              <button
                 onClick={() => onChangeSubPage('ROSTER')}
                 className="bg-transparent border-0 text-accent font-bold text-[0.8rem] cursor-pointer mt-[8px] inline-flex items-center gap-[4px]"
               >
@@ -190,7 +201,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
               <p className="text-text-muted mt-[4px]">
                 Inter-club transfers lock automatically on August 15, 2026 (18 Days Remaining).
               </p>
-              <button 
+              <button
                 onClick={() => onChangeSubPage('TRANSFERS')}
                 className="bg-transparent border-0 text-primary font-bold text-[0.8rem] cursor-pointer mt-[8px] inline-flex items-center gap-[4px]"
               >
@@ -204,7 +215,7 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         <div className="gov-card">
           <div className="flex justify-between items-center mb-[16px]">
             <h3 className="text-[1.1rem] font-bold">Certified Meets Open for Entry</h3>
-            <button 
+            <button
               onClick={() => onChangeSubPage('MEETS')}
               className="bg-transparent border-0 text-primary font-bold cursor-pointer text-[0.8rem]"
             >
@@ -236,6 +247,6 @@ export default function ClubOverview({ club, athletes, transfers, onChangeSubPag
         </div>
       </div>
 
-          </div>
+    </div>
   );
 }

@@ -10,6 +10,7 @@ import RosterManagement from './components/ClubAdmin/RosterManagement';
 import SeedingGenerator from './components/ClubAdmin/SeedingGenerator';
 import TransferRegistry from './components/ClubAdmin/TransferRegistry';
 import MeetRegistration from './components/ClubAdmin/MeetRegistration';
+import RegisterMember from './components/ClubAdmin/RegisterMember';
 
 import AthleteOverview from './components/Athlete/AthleteOverview';
 import AthleteEvents from './components/Athlete/AthleteEvents';
@@ -26,55 +27,86 @@ import NotificationToast from './components/NotificationToast';
 
 import { MOCK_CLUBS, MOCK_ATHLETES, MOCK_TRANSFERS } from './data/mockData';
 import { Sun, Moon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
-import type { Role, Club, Athlete, Transfer, Toast, PaymentData, PaymentReceipt, AuthModalConfig, LoginData } from './types';
+type Role = 'LANDING' | 'CLUB' | 'ATHLETE';
 
 export default function App() {
-  // Use localStorage for persistence
-  const [currentRole, setCurrentRole] = useState<Role>(() =>
-    (localStorage.getItem('eaf_currentRole') as Role) || 'LANDING'
-  );
+  // Always default to public LANDING page on fresh browser visit / npm run dev
+  // Clean up any stale localStorage role so user starts cleanly on public home page
+  const [currentRole, setCurrentRole] = useState<Role>(() => {
+    try {
+      localStorage.removeItem('eaf_currentRole');
+      const sessionRole = sessionStorage.getItem('eaf_currentRole') as Role;
+      return sessionRole || 'LANDING';
+    } catch {
+      return 'LANDING';
+    }
+  });
   const [clubSubPage, setClubSubPage] = useState('OVERVIEW');
   const [athleteSubPage, setAthleteSubPage] = useState('OVERVIEW');
   const [publicSubPage, setPublicSubPage] = useState('HOME');
-  const [language, setLanguage] = useState<'en' | 'am'>('en');
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('eaf_darkMode') === 'true');
-
-  const [clubs, setClubs] = useState<Club[]>(MOCK_CLUBS);
-  const [athletes, setAthletes] = useState<Athlete[]>(() => {
-    const saved = localStorage.getItem('eaf_athletes');
-    return saved ? JSON.parse(saved) : MOCK_ATHLETES;
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      return localStorage.getItem('eaf_darkMode') === 'true';
+    } catch {
+      return false;
+    }
   });
-  const [transfers, setTransfers] = useState<Transfer[]>(MOCK_TRANSFERS);
 
-  const [currentClub, setCurrentClub] = useState<Club>(MOCK_CLUBS[0]);
-  const [currentAthlete, setCurrentAthlete] = useState<Athlete>(() => {
-    const savedId = localStorage.getItem('eaf_currentAthleteId');
-    if (savedId) {
-      const pool: Athlete[] = localStorage.getItem('eaf_athletes')
-        ? JSON.parse(localStorage.getItem('eaf_athletes')!)
-        : MOCK_ATHLETES;
-      const found = pool.find((a) => a.id === savedId);
-      if (found) return found;
+  const [clubs, setClubs] = useState(MOCK_CLUBS);
+  const [athletes, setAthletes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('eaf_athletes');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // If any athlete is missing faydaHash, the cache is stale — reset it
+        const isStale = parsed.some((a: any) => !a.faydaHash);
+        if (isStale) {
+          localStorage.removeItem('eaf_athletes');
+          return MOCK_ATHLETES;
+        }
+        return parsed;
+      }
+      return MOCK_ATHLETES;
+    } catch {
+      return MOCK_ATHLETES;
+    }
+  });
+  const [transfers, setTransfers] = useState(MOCK_TRANSFERS);
+
+  const [currentClub, setCurrentClub] = useState(MOCK_CLUBS[0]);
+  const [currentAthlete, setCurrentAthlete] = useState(() => {
+    try {
+      const savedId = sessionStorage.getItem('eaf_currentAthleteId') || localStorage.getItem('eaf_currentAthleteId');
+      if (savedId) {
+        const savedAthletes = localStorage.getItem('eaf_athletes') ? JSON.parse(localStorage.getItem('eaf_athletes')!) : MOCK_ATHLETES;
+        const found = savedAthletes.find((a: any) => a.id === savedId);
+        if (found) return found;
+      }
+    } catch {
+      // fallback
     }
     return MOCK_ATHLETES[0];
   });
 
   // Persist athletes data
   useEffect(() => {
-    localStorage.setItem('eaf_athletes', JSON.stringify(athletes));
+    try {
+      localStorage.setItem('eaf_athletes', JSON.stringify(athletes));
+    } catch (e) {}
     if (currentAthlete) {
-      const updatedAthlete = athletes.find((a) => a.id === currentAthlete.id);
+      const updatedAthlete = athletes.find((a: any) => a.id === currentAthlete.id);
       if (updatedAthlete && JSON.stringify(updatedAthlete) !== JSON.stringify(currentAthlete)) {
         setCurrentAthlete(updatedAthlete);
       }
     }
-  }, [athletes]);
+  }, [athletes, currentAthlete]);
 
-  // Persist dark mode state
+  // Persist dark mode state to localStorage and document.documentElement class
   useEffect(() => {
-    localStorage.setItem('eaf_darkMode', String(darkMode));
+    try {
+      localStorage.setItem('eaf_darkMode', String(darkMode));
+    } catch (e) {}
     if (darkMode) {
       document.documentElement.classList.add('dark');
     } else {
@@ -82,29 +114,53 @@ export default function App() {
     }
   }, [darkMode]);
 
-  // Persist session
+  // Persist active tab session
   useEffect(() => {
-    localStorage.setItem('eaf_currentRole', currentRole);
-    if (currentRole === 'ATHLETE' && currentAthlete) {
-      localStorage.setItem('eaf_currentAthleteId', currentAthlete.id);
-    }
+    try {
+      sessionStorage.setItem('eaf_currentRole', currentRole);
+      if (currentRole === 'ATHLETE' && currentAthlete) {
+        sessionStorage.setItem('eaf_currentAthleteId', currentAthlete.id);
+      }
+    } catch (e) {}
   }, [currentRole, currentAthlete]);
 
-  const [authModalConfig, setAuthModalConfig] = useState<AuthModalConfig | null>(null);
-  const [regModalRole, setRegModalRole] = useState<'CLUB' | 'ATHLETE' | null>(null);
-  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
-  const [toast, setToast] = useState<Toast | null>(null);
+  const handleLogout = () => {
+    try {
+      sessionStorage.removeItem('eaf_currentRole');
+      sessionStorage.removeItem('eaf_currentAthleteId');
+      localStorage.removeItem('eaf_currentRole');
+      localStorage.removeItem('eaf_currentAthleteId');
+    } catch (e) {}
+    setCurrentRole('LANDING');
+    setPublicSubPage('HOME');
+  };
 
-  const handleNotify = (message: string, type: Toast['type'] = 'info') => setToast({ message, type });
+  // Listen for registration modal trigger from AuthModal
+  useEffect(() => {
+    const handleOpenRegistration = (e: any) => {
+      setAuthModalConfig(null); // Close auth modal
+      setRegModalRole(e.detail.role); // Open registration modal
+    };
+    window.addEventListener('openRegistrationModal', handleOpenRegistration);
+    return () => window.removeEventListener('openRegistrationModal', handleOpenRegistration);
+  }, []);
+
+  const [authModalConfig, setAuthModalConfig] = useState<any>(null);
+  const [regModalRole, setRegModalRole] = useState<'CLUB' | 'ATHLETE' | null>(null);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [toast, setToast] = useState<any>(null);
+
+  const handleNotify = (message: string, type = 'info') => setToast({ message, type });
 
   const handleOpenAuthModal = () => setAuthModalConfig({ isOpen: true });
 
-  const handleLoginSuccess = (role: 'CLUB' | 'ATHLETE', data: LoginData) => {
+  const handleLoginSuccess = (role: string, data: any) => {
     setAuthModalConfig(null);
     if (role === 'CLUB') {
       if (data.club) setCurrentClub(data.club);
       setCurrentRole('CLUB');
       setClubSubPage('OVERVIEW');
+      setPublicSubPage('DASHBOARD'); // Reset to dashboard so club admin sees their dashboard first
       handleNotify(`Welcome back, ${data.club?.shortName || 'Club Admin'}!`, 'success');
     } else {
       if (data.athlete) setCurrentAthlete(data.athlete);
@@ -114,18 +170,18 @@ export default function App() {
     }
   };
 
-  const handleRegisterSuccess = (role: 'CLUB' | 'ATHLETE', data: LoginData) => {
+  const handleRegisterSuccess = (registrationData: { type: 'CLUB' | 'ATHLETE'; payload: Record<string, any> }) => {
     setRegModalRole(null);
-    if (role === 'CLUB') {
-      const newClub = data.club!;
-      setClubs((prev) => [newClub, ...prev]);
+    if (registrationData.type === 'CLUB') {
+      const newClub = registrationData.payload.club;
+      setClubs((prev: any) => [newClub, ...prev]);
       setCurrentClub(newClub);
       setCurrentRole('CLUB');
       setClubSubPage('OVERVIEW');
       handleNotify(`Club "${newClub.shortName}" registered and logged in!`, 'success');
     } else {
-      const newAthlete = data.athlete!;
-      setAthletes((prev) => [newAthlete, ...prev]);
+      const newAthlete = registrationData.payload.athlete;
+      setAthletes((prev: any) => [newAthlete, ...prev]);
       setCurrentAthlete(newAthlete);
       setCurrentRole('ATHLETE');
       setAthleteSubPage('OVERVIEW');
@@ -133,31 +189,40 @@ export default function App() {
     }
   };
 
+  const [navNonce, setNavNonce] = useState(0);
+
   const handleSwitchRoleDirectly = (targetRole: string) => {
-    if (targetRole === 'LANDING') { setCurrentRole('LANDING'); return; }
+    if (targetRole === 'LANDING' || targetRole === 'HOME') {
+      // Keep user logged in but show landing page
+      setPublicSubPage('HOME');
+      setNavNonce(prev => prev + 1);
+      window.scrollTo(0, 0);
+      setTimeout(() => window.scrollTo(0, 0), 50);
+      return;
+    }
     setCurrentRole(targetRole as Role);
     if (targetRole === 'CLUB') setClubSubPage('OVERVIEW');
     else setAthleteSubPage('OVERVIEW');
     handleNotify(`Switched to ${targetRole === 'CLUB' ? 'Club Admin' : 'Athlete'} Portal`, 'info');
   };
 
-  const handleAddAthlete = (newAthlete: Athlete) => {
-    setAthletes((prev) => [newAthlete, ...prev]);
+  const handleAddAthlete = (newAthlete: any) => {
+    setAthletes((prev: any) => [newAthlete, ...prev]);
     handleNotify(`Athlete "${newAthlete.name}" added to roster.`, 'success');
   };
 
-  const handleAddClub = (newClub: Club) => {
-    setClubs((prev) => [newClub, ...prev]);
+  const handleAddClub = (newClub: any) => {
+    setClubs((prev: any) => [newClub, ...prev]);
     handleNotify(`Club "${newClub.name}" registered!`, 'success');
   };
 
-  const handleUpdateAthlete = (updated: Athlete) => {
-    setAthletes((prev) => prev.map((a) => a.id === updated.id ? updated : a));
+  const handleUpdateAthlete = (updated: any) => {
+    setAthletes((prev: any) => prev.map((a: any) => a.id === updated.id ? updated : a));
     setCurrentAthlete(updated);
     handleNotify('Profile data saved to local storage.', 'success');
   };
 
-  const handleInitiateLicensePayment = (athleteObj: Athlete) => {
+  const handleInitiateLicensePayment = (athleteObj: any) => {
     setPaymentData({
       athleteId: athleteObj.id,
       athleteName: athleteObj.name,
@@ -166,185 +231,223 @@ export default function App() {
     });
   };
 
-  const handlePaymentComplete = (receipt: PaymentReceipt) => {
+  const handlePaymentComplete = (receipt: any) => {
     if (paymentData?.athleteId) {
       const licNo = 'EAF-LIC-2026-' + Math.floor(1000 + Math.random() * 9000);
-      const updater = (a: Athlete) => a.id === paymentData.athleteId
-        ? { ...a, licenseStatus: 'ACTIVE' as const, licenseNumber: licNo, licenseExpiry: '2026-12-31' }
+      const updater = (a: any) => a.id === paymentData.athleteId
+        ? { ...a, licenseStatus: 'ACTIVE', licenseNumber: licNo, licenseExpiry: '2026-12-31' }
         : a;
-      setAthletes((prev) => prev.map(updater));
+      setAthletes((prev: any) => prev.map(updater));
       if (currentAthlete.id === paymentData.athleteId) setCurrentAthlete(updater(currentAthlete));
     }
     handleNotify(`Payment via ${receipt.gateway} complete! Receipt: ${receipt.receiptNo}`, 'success');
     setPaymentData(null);
   };
 
-  const handleInitiateTransfer = (newTransfer: Transfer) => {
-    setTransfers((prev) => [newTransfer, ...prev]);
+  const handleInitiateTransfer = (newTransfer: any) => {
+    setTransfers((prev: any) => [newTransfer, ...prev]);
     handleNotify(`Transfer for ${newTransfer.athleteName} submitted to EAF Registry.`, 'success');
   };
 
   // ── LANDING PAGE ──
-  if (currentRole === 'LANDING' || (currentRole === 'ATHLETE' && publicSubPage !== 'DASHBOARD')) {
+  if (currentRole === 'LANDING' ||
+    (currentRole === 'ATHLETE' && publicSubPage !== 'DASHBOARD') ||
+    (currentRole === 'CLUB' && publicSubPage !== 'DASHBOARD')) {
     const navLinks = [
-      { label: language === 'en' ? 'Home' : 'ዋና ገጽ', page: 'HOME' },
-      { label: language === 'en' ? 'Competitions' : 'ውድድሮች', page: 'COMPETITIONS' },
-      { label: language === 'en' ? 'Athletes' : 'አትሌቶች', page: 'ATHLETES' },
-      { label: language === 'en' ? 'Media' : 'ሚዲያ', page: 'MEDIA' },
+      { label: 'Home', page: 'HOME' },
+      { label: 'Competitions', page: 'COMPETITIONS' },
+      { label: 'Athletes', page: 'ATHLETES' },
+      { label: 'Media', page: 'MEDIA' },
     ];
 
     const handleNavClick = (page: string) => {
       setPublicSubPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setNavNonce(prev => prev + 1);
+      // Immediate scroll to top
+      window.scrollTo(0, 0);
+      // Also scroll after a delay to override any browser behavior
+      setTimeout(() => window.scrollTo(0, 0), 50);
+      setTimeout(() => window.scrollTo(0, 0), 150);
     };
 
     return (
-      <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-[#0D1117]' : 'bg-white'}`}>
-        {/* ── Floating Glassmorphism Header ── */}
-        <motion.header
-          initial={{ y: -72 }}
-          animate={{ y: 0 }}
-          transition={{ type: 'spring', stiffness: 200, damping: 26 }}
-          className={`sticky top-0 z-50 px-6 h-[72px] flex items-center justify-between w-full transition-all duration-300
-            ${darkMode
-              ? 'bg-[rgba(15,23,42,0.9)] border-b border-[#1E293B] shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
-              : 'bg-[rgba(255,255,255,0.95)] border-b border-[#E2E8F0] shadow-[0_8px_32px_rgba(0,0,0,0.08)]'
-            }
-            backdrop-blur-[16px]`}
-        >
-          {/* Logo + brand */}
+      <div style={{ background: darkMode ? '#0D1117' : '#FFFFFF', minHeight: '100vh', transition: 'background-color 0.3s' }}>
+        <header style={{
+          background: darkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          border: '1px solid ' + (darkMode ? '#1E293B' : '#E2E8F0'),
+          boxShadow: darkMode ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.08)',
+          padding: '0 24px',
+          height: '72px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'sticky',
+          top: '0px',
+          margin: '0 auto',
+          width: '100%',
+          maxWidth: '100%',
+          borderRadius: '0px',
+          borderLeft: 'none',
+          borderRight: 'none',
+          borderTop: 'none',
+          zIndex: 50,
+          transition: 'all 0.3s ease'
+        }}>
           <div
-            className="flex items-center gap-3 cursor-pointer"
-            onClick={() => setPublicSubPage('HOME')}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+            onClick={() => handleNavClick('HOME')}
           >
-            <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center overflow-hidden shrink-0 border border-[#E2E8F0] p-0.5">
+            <div style={{ width: '44px', height: '44px', background: '#FFFFFF', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, border: '1px solid #E2E8F0', padding: '2px' }}>
               <img
                 src="/images/logo.jpeg"
                 alt="EAF Logo"
-                className="w-full h-full object-contain rounded-[6px]"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px' }}
               />
             </div>
-            <div className="hidden-mobile flex flex-col">
-              <div className={`text-[0.95rem] font-black tracking-tight leading-tight ${darkMode ? 'text-[#F8FAFC]' : 'text-[#0F172A]'}`}>
+            <div className="hidden-mobile" style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 900, color: darkMode ? '#F8FAFC' : '#0F172A', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
                 Ethiopian Athletics Federation
               </div>
-              <div className="text-[0.65rem] text-primary font-black">
+              <div style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 800 }}>
                 የኢትዮጵያ አትሌቲክስ ፌዴሬሽን
               </div>
             </div>
           </div>
 
-          {/* Centre nav links */}
-          <nav className="flex items-center gap-0.5">
-            {navLinks.map((link) => (
-              <motion.button
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+            {navLinks.map(link => (
+              <button
                 key={link.label}
                 onClick={() => handleNavClick(link.page)}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                className={`border-0 cursor-pointer font-bold text-[0.85rem] px-3.5 py-2 rounded-lg transition-all duration-200 font-sans
-                  ${publicSubPage === link.page
-                    ? `text-primary ${darkMode ? 'bg-[#1E293B]' : 'bg-[#F1F5F9]'}`
-                    : `${darkMode ? 'text-[#94A3B8] hover:bg-[#334155]' : 'text-[#64748B] hover:bg-[#E2E8F0]'} bg-transparent`
-                  }`}
+                style={{
+                  background: publicSubPage === link.page ? (darkMode ? '#1E293B' : '#F1F5F9') : 'none',
+                  border: 'none', cursor: 'pointer',
+                  color: publicSubPage === link.page ? 'var(--primary)' : (darkMode ? '#94A3B8' : '#64748B'),
+                  fontWeight: 700, fontSize: '0.85rem',
+                  padding: '8px 14px', borderRadius: '8px',
+                  transition: 'all 0.2s',
+                  fontFamily: 'var(--font-sans)'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = darkMode ? '#334155' : '#E2E8F0'; e.currentTarget.style.color = 'var(--primary)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = publicSubPage === link.page ? (darkMode ? '#1E293B' : '#F1F5F9') : 'none'; e.currentTarget.style.color = publicSubPage === link.page ? 'var(--primary)' : (darkMode ? '#94A3B8' : '#64748B'); }}
               >
                 {link.label}
-                {publicSubPage === link.page && (
-                  <motion.div
-                    layoutId="nav-active-indicator"
-                    className="h-0.5 bg-primary mt-0.5 rounded-full"
-                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                  />
-                )}
-              </motion.button>
+              </button>
             ))}
           </nav>
 
-          {/* Right Side */}
-          <div className="flex gap-3 items-center">
-
-            {/* Modern Segmented Language Switcher */}
-            <div className={`flex rounded-xl p-0.5 gap-0.5 items-center border
-              ${darkMode ? 'bg-[#1E293B] border-[#334155]' : 'bg-[#F1F5F9] border-[#E2E8F0]'}`}
-            >
-              {(['en', 'am'] as const).map((lang) => (
-                <motion.button
-                  key={lang}
-                  onClick={() => setLanguage(lang)}
-                  whileTap={{ scale: 0.95 }}
-                  className={`border-0 rounded-[9px] px-3 py-1.5 text-[0.78rem] font-black cursor-pointer transition-all duration-200
-                    ${language === lang
-                      ? 'bg-primary text-white'
-                      : `bg-transparent ${darkMode ? 'text-[#94A3B8]' : 'text-[#475569]'}`
-                    }`}
-                >
-                  {lang === 'en' ? 'EN' : 'አማ'}
-                </motion.button>
-              ))}
-            </div>
-
-            {/* Dark/Light Theme Toggle */}
-            <motion.button
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button
               onClick={() => setDarkMode(!darkMode)}
-              whileHover={{ scale: 1.08, rotate: 15 }}
-              whileTap={{ scale: 0.92 }}
               title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer border transition-all duration-200
-                ${darkMode
-                  ? 'bg-[#1E293B] border-[#334155] text-[#F1F5F9]'
-                  : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#0F172A]'
-                }`}
+              style={{
+                background: darkMode ? '#1E293B' : '#F1F5F9',
+                border: '1px solid ' + (darkMode ? '#334155' : '#E2E8F0'),
+                color: darkMode ? '#F1F5F9' : '#0F172A',
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
             >
               {darkMode ? <Sun size={18} color="#FDE047" /> : <Moon size={18} color="#475569" />}
-            </motion.button>
+            </button>
 
             {currentRole === 'ATHLETE' ? (
-              <div className="flex gap-2 items-center">
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => { setAthleteSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); }}
-                  className="btn-accent text-[0.78rem] px-3.5 py-1.5 rounded-xl inline-flex items-center gap-1.5 border-0 cursor-pointer"
-                  style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF' }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                  {language === 'en' ? 'My Dashboard' : 'ዳሽቦርድ'}
-                </motion.button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {publicSubPage === 'DASHBOARD' ? (
+                  <button
+                    onClick={() => handleNavClick('HOME')}
+                    style={{
+                      fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
+                      background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0', cursor: 'pointer', fontWeight: 700
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    Back to Home
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setAthleteSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); }}
+                    className="btn-accent"
+                    style={{
+                      fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
+                      background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer'
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    My Dashboard
+                  </button>
+                )}
                 <button
-                  onClick={() => { localStorage.removeItem('eaf_currentRole'); setCurrentRole('LANDING'); }}
-                  className={`px-3 py-1.5 rounded-lg cursor-pointer text-[0.78rem] font-bold border
-                    ${darkMode ? 'bg-[#1E293B] border-[#334155] text-[#94A3B8]' : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]'}`}
+                  onClick={handleLogout}
+                  style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '7px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}
+                >
+                  Logout
+                </button>
+              </div>
+            ) : currentRole === 'CLUB' ? (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  onClick={() => {
+                    setClubSubPage('OVERVIEW');
+                    setPublicSubPage('DASHBOARD');
+                  }}
+                  className="btn-accent"
+                  style={{
+                    fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer'
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+                  My Dashboard
+                </button>
+                <button
+                  onClick={handleLogout}
+                  style={{ background: '#F1F5F9', border: '1px solid #E2E8F0', padding: '7px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}
                 >
                   Logout
                 </button>
               </div>
             ) : (
               <>
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+                <button
                   onClick={() => setRegModalRole('ATHLETE')}
-                  className="text-[0.78rem] px-3.5 py-1.5 rounded-xl inline-flex items-center gap-1.5 border-0 cursor-pointer text-white font-bold"
-                  style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
+                  className="btn-accent"
+                  style={{
+                    fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: 5,
+                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', boxShadow: 'none', color: '#FFF', border: 'none', cursor: 'pointer'
+                  }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>
-                  {language === 'en' ? 'Register as Athlete' : 'አትሌት ይመዝገቡ'}
-                </motion.button>
+                  Register as Athlete
+                </button>
 
-                <motion.button
-                  whileHover={{ scale: 1.03, backgroundColor: '#F1F5F9' }}
-                  whileTap={{ scale: 0.97 }}
+                <button
                   onClick={handleOpenAuthModal}
-                  className="text-[0.76rem] px-3 py-1.5 rounded-xl inline-flex items-center gap-1 cursor-pointer font-bold"
-                  style={{ background: '#FFFFFF', color: '#0F172A', border: '1px solid #CBD5E1' }}
+                  className="btn-gov-secondary"
+                  style={{
+                    fontSize: '0.76rem', padding: '7px 12px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: 4,
+                    background: '#FFFFFF', color: '#0F172A', border: '1px solid #CBD5E1', cursor: 'pointer'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#F1F5F9'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#FFFFFF'}
                 >
-                  {language === 'en' ? 'Club Portal Login' : 'የክለብ መግቢያ'}
+                  Club Portal Login
                   <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                </motion.button>
+                </button>
               </>
             )}
           </div>
-        </motion.header>
+        </header>
 
         <style>{`
           @media (max-width: 768px) {
@@ -353,10 +456,13 @@ export default function App() {
         `}</style>
 
         <LandingPage
-          language={language}
           publicSubPage={publicSubPage}
           onChangePublicSubPage={setPublicSubPage}
           darkMode={darkMode}
+          currentRole={currentRole}
+          currentAthlete={currentAthlete}
+          onLoginSuccess={handleLoginSuccess}
+          navNonce={navNonce}
           onSelectRole={(role: string) => {
             if (role === 'CLUB') handleLoginSuccess('CLUB', { club: currentClub });
             else handleLoginSuccess('ATHLETE', { athlete: currentAthlete });
@@ -404,15 +510,19 @@ export default function App() {
         currentClub={currentClub}
         currentAthlete={currentAthlete}
         onSwitchRole={handleSwitchRoleDirectly}
-        onLogout={() => {
-          localStorage.removeItem('eaf_currentRole');
-          setCurrentRole('LANDING');
-        }}
+        onLogout={handleLogout}
       >
         {clubSubPage === 'OVERVIEW' && (
           <ClubOverview
             club={currentClub} athletes={athletes} transfers={transfers}
             onChangeSubPage={setClubSubPage} onNotify={handleNotify} onAddClub={handleAddClub}
+          />
+        )}
+        {clubSubPage === 'REGISTER_MEMBER' && (
+          <RegisterMember
+            onBack={() => setClubSubPage('OVERVIEW')}
+            onNotify={handleNotify}
+            onAddAthlete={handleAddAthlete}
           />
         )}
         {clubSubPage === 'ROSTER' && (
@@ -447,10 +557,8 @@ export default function App() {
         activeSubPage={athleteSubPage}
         onChangeSubPage={setAthleteSubPage}
         currentAthlete={currentAthlete}
-        onLogout={() => {
-          localStorage.removeItem('eaf_currentRole');
-          setCurrentRole('LANDING');
-        }}
+        onLogout={handleLogout}
+        onGoHome={() => handleSwitchRoleDirectly('LANDING')}
       >
         {athleteSubPage === 'OVERVIEW' && (
           <AthleteOverview

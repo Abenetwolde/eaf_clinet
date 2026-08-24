@@ -96,11 +96,14 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
 
   // Filter logic
   const filteredAthletes = athletes.filter(athlete => {
-    const matchesSearch = athlete.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          athlete.faydaFin.includes(searchTerm) ||
-                          athlete.primaryEvent.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTier = filterTier === 'ALL' || athlete.ageTier === filterTier;
-    const matchesLicense = filterLicense === 'ALL' || athlete.licenseStatus === filterLicense;
+    const name = athlete?.name || '';
+    const fin = athlete?.faydaFin || '';
+    const event = athlete?.primaryEvent || '';
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          fin.includes(searchTerm) ||
+                          event.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTier = filterTier === 'ALL' || (athlete?.ageTier || 'Senior') === filterTier;
+    const matchesLicense = filterLicense === 'ALL' || athlete?.licenseStatus === filterLicense;
 
     return matchesSearch && matchesTier && matchesLicense;
   });
@@ -250,18 +253,25 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
               </tr>
             </thead>
             <tbody>
-              {filteredAthletes.map(athlete => (
+              {filteredAthletes.map(athlete => {
+                const photo = athlete.photoUrl || '/images/runner_marathon.png';
+                const hash = athlete.faydaHash || '0xFAYDA_' + (athlete.id ? String(athlete.id).replace(/\D/g, '') : '892A1');
+                const tier = athlete.ageTier || 'Senior';
+                const event = athlete.primaryEvent || 'Athletics';
+                const pb = athlete.pb || 'N/A';
+
+                return (
                 <tr key={athlete.id} onClick={() => setViewingAthlete(athlete)} className="hover-lift cursor-pointer">
                   <td>
                     <div className="flex items-center gap-[12px]">
                       <img 
-                        src={athlete.photoUrl} 
-                        alt={athlete.name}
+                        src={photo} 
+                        alt={athlete.name || 'Athlete'}
                         className="w-[38px] h-[38px] rounded-full object-cover"
                       />
                       <div>
-                        <div className="font-bold text-text-heading">{athlete.name}</div>
-                        <div className="text-[0.75rem] text-primary font-semibold">{athlete.amharicName}</div>
+                        <div className="font-bold text-text-heading">{athlete.name || 'Unnamed Athlete'}</div>
+                        <div className="text-[0.75rem] text-primary font-semibold">{athlete.amharicName || ''}</div>
                       </div>
                     </div>
                   </td>
@@ -273,10 +283,10 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                           <ShieldCheck size={16} color="var(--primary)" />
                           <div>
                             <div className="font-mono text-[0.85rem] font-bold">
-                              {athlete.faydaFin}
+                              {athlete.faydaFin || 'N/A'}
                             </div>
                             <div className="text-[0.65rem] text-text-dim">
-                              Hash: {athlete.faydaHash.substring(0, 10)}...
+                              Hash: {hash.substring(0, 10)}...
                             </div>
                           </div>
                         </>
@@ -296,24 +306,24 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
 
                   <td>
                     <span className={`badge ${
-                      athlete.ageTier === 'Senior' ? 'badge-blue' :
-                      athlete.ageTier === 'U20' ? 'badge-green' :
-                      athlete.ageTier === 'U18' ? 'badge-amber' : 'badge-green'
+                      tier === 'Senior' ? 'badge-blue' :
+                      tier === 'U20' ? 'badge-green' :
+                      tier === 'U18' ? 'badge-amber' : 'badge-green'
                     }`}>
-                      {athlete.ageTier} Tier
+                      {tier} Tier
                     </span>
                   </td>
 
                   <td>
-                    <div className="font-semibold text-text-heading">{athlete.primaryEvent}</div>
-                    <div className="text-[0.75rem] text-text-muted">PB: {athlete.pb}</div>
+                    <div className="font-semibold text-text-heading">{event}</div>
+                    <div className="text-[0.75rem] text-text-muted">PB: {pb}</div>
                   </td>
 
                   <td>
                     {athlete.licenseStatus === 'ACTIVE' ? (
                       <span className="badge badge-green">
                         <CheckCircle2 size={12} />
-                        Active ({athlete.licenseNumber})
+                        Active ({athlete.licenseNumber || 'EAF-LIC'})
                       </span>
                     ) : athlete.licenseStatus === 'EXPIRED' ? (
                       <span className="badge badge-amber">
@@ -342,7 +352,8 @@ export default function RosterManagement({ athletes, club, onRenewLicense, onAdd
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

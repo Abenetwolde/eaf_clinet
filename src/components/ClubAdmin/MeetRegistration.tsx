@@ -102,7 +102,7 @@ export default function MeetRegistration({ club, athletes, onNotify }: MeetRegis
             Enroll club athletes per discipline or view official event results.
           </p>
         </div>
-        <div className="flex gap-[4px] bg-[#F0F5FA] p-[4px] rounded-[10px]">
+        <div className="flex gap-[4px] bg-[var(--bg-surface-variant)] dark:bg-[#0D1220] p-[4px] rounded-[10px]">
           {[{ id: 'enroll', label: 'Enroll Athletes', icon: UserPlus }, { id: 'results', label: 'Event Results', icon: Medal }].map(t => {
             const Icon = t.icon;
             return (
@@ -123,7 +123,7 @@ export default function MeetRegistration({ club, athletes, onNotify }: MeetRegis
             const selected = getSelectedCount(meet.id);
             const enrolled = (meet.enrolledAthletes || []).filter(e => clubAthletes.find(a => a.id === e.athleteId));
             return (
-              <div key={meet.id} className="rounded-[16px] overflow-hidden border border-border-card bg-white flex flex-col shadow-[0_1px_4px_rgba(13,20,40,0.05)]">
+              <div key={meet.id} className="rounded-[16px] overflow-hidden border border-border-card bg-[var(--bg-card)] flex flex-col shadow-[0_1px_4px_rgba(13,20,40,0.05)]">
                 {/* Meet image header */}
                 <div className="relative h-[160px] overflow-hidden">
                   <img src={meet.bannerUrl} alt={meet.title} className="w-full h-full object-cover" />
@@ -160,7 +160,7 @@ export default function MeetRegistration({ club, athletes, onNotify }: MeetRegis
                             className={`rounded-[5px] px-[9px] py-[4px] text-[0.72rem] font-bold inline-flex items-center gap-[4px] ${
                               isEnrolled ? 'bg-primary-light border border-[rgba(11,87,142,0.3)] text-primary'
                               : discSel > 0 ? 'bg-[rgba(11,87,142,0.08)] border border-[rgba(11,87,142,0.4)] text-primary'
-                              : 'bg-[#F0F5FA] border border-[#C8D8E5] text-text-body'
+                              : 'bg-[var(--bg-surface-variant)] border border-border-card text-text-body'
                             } ${meet.status === 'UPCOMING' ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                             {isEnrolled ? <CheckCircle2 size={10} /> : <ArrowRight size={10} />}
                             {disc}
@@ -355,7 +355,7 @@ export default function MeetRegistration({ club, athletes, onNotify }: MeetRegis
                 <h3 className="text-[1.1rem] font-extrabold mb-[3px]">Select Athletes — {rosterModal.discipline}</h3>
                 <p className="text-[0.78rem] text-text-muted">{currentMeet.title}</p>
               </div>
-              <button onClick={() => setRosterModal(null)} className="bg-[#F1F5F1] border-0 w-[30px] h-[30px] rounded-full cursor-pointer flex items-center justify-center">
+              <button onClick={() => setRosterModal(null)} className="bg-[var(--bg-surface-variant)] border-0 w-[30px] h-[30px] rounded-full cursor-pointer flex items-center justify-center">
                 <X size={15} color="var(--text-muted)" />
               </button>
             </div>
@@ -370,7 +370,7 @@ export default function MeetRegistration({ club, athletes, onNotify }: MeetRegis
                   <label key={ath.id} className={`flex items-center gap-[12px] p-[11px_13px] rounded-[10px] transition-all duration-150 ${
                     eligible ? 'cursor-pointer' : 'cursor-not-allowed'
                   } ${eligible ? '' : 'opacity-50'} border ${
-                    checked ? 'border-[rgba(11,87,142,0.4)] bg-primary-light' : eligible ? 'border-[#D0E0D2] bg-white' : 'border-[#D0E0D2] bg-[#F8FAF8]'
+                    checked ? 'border-[rgba(11,87,142,0.4)] bg-primary-light' : eligible ? 'border-border-card bg-[var(--bg-card)]' : 'border-border-card bg-[var(--bg-surface-variant)]'
                   }`}>
                     <input type="checkbox" checked={checked} disabled={!eligible}
                       onChange={() => eligible && toggleAthlete(rosterModal.meetId, rosterModal.discipline, ath.id)} />

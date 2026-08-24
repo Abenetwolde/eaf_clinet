@@ -23,7 +23,7 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
   return (
     <div className="max-w-[1280px] mx-auto px-6 py-8">
       {/* Athlete Header Profile Banner */}
-      <div className="glass-panel p-8 mb-7 bg-gradient-to-br from-white to-[#F0FDF4] border-2 border-[rgba(0,168,89,0.3)] flex items-center justify-between flex-wrap gap-5">
+      <div className="glass-panel p-8 mb-7 bg-[var(--bg-card)] border-2 border-[rgba(0,168,89,0.25)] flex items-center justify-between flex-wrap gap-5">
         <div className="flex items-center gap-5">
           <img 
             src={athlete.photoUrl} 
@@ -32,10 +32,7 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
           />
 
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-[2rem] font-black text-text-main">
-                {athlete.name}
-              </h2>
+            <div className="flex items-center gap-2 flex-wrap mb-1">
               <span className="badge badge-green">
                 <ShieldCheck size={14} />
                 Fayda ID Verified
@@ -45,8 +42,15 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
               </span>
             </div>
 
-            <p className="text-[0.95rem] text-[#047857] mt-0.5 font-bold">
-              {athlete.amharicName} — {athlete.clubName}
+            <h2 className="text-[1.1rem] font-bold text-[#0F172A] dark:text-white leading-tight mb-0.5">
+              {athlete.name}
+            </h2>
+            <div className="text-[1.05rem] font-bold text-primary dark:text-[#38BDF8] leading-tight mb-1.5">
+              {athlete.amharicName}
+            </div>
+
+            <p className="text-[0.85rem] text-slate-600 dark:text-slate-400 font-semibold mb-1">
+              {athlete.clubName}
             </p>
 
             <div className="flex gap-4 mt-2 text-[0.85rem] text-text-muted font-semibold flex-wrap">

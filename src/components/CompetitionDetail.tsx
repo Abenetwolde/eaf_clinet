@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  Trophy, Calendar, MapPin, Phone, Mail, Award, Users, Filter, 
-  CheckCircle2, User, Building, Clock, ChevronRight, ShieldCheck, X, Download, Printer, Check
+import {
+  Trophy, Calendar, MapPin, Phone, Mail, Award, Users, Filter,
+  CheckCircle2, User, UserCheck, Building, Clock, ChevronRight, ShieldCheck, X, Download, Printer, Check,
+  Lock, QrCode, Camera
 } from 'lucide-react';
 import { MOCK_ATHLETES, MOCK_EVENT_RESULTS, MOCK_CLUBS } from '../data/mockData';
 
@@ -17,7 +18,7 @@ const getBannerUrl = (meetId) => {
 const RealisticQRCode = ({ size = 150 }) => (
   <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ borderRadius: '8px', background: '#FFFFFF', padding: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
     <rect width="100" height="100" fill="#FFFFFF" />
-    
+
     {/* Corner Finder Pattern - Top Left */}
     <rect x="5" y="5" width="26" height="26" rx="4" fill="#0F172A" />
     <rect x="9" y="9" width="18" height="18" rx="2" fill="#FFFFFF" />
@@ -110,45 +111,96 @@ const RealisticQRCode = ({ size = 150 }) => (
   </svg>
 );
 
-export default function CompetitionDetail({ meet, onBack, onRegister, language = 'en' }) {
-  const [activeTab, setActiveTab] = useState('about');
-  
+interface CompetitionDetailProps {
+  meet: any;
+  onBack: () => void;
+  onRegister: (role: 'CLUB' | 'ATHLETE') => void;
+  currentRole?: 'LANDING' | 'CLUB' | 'ATHLETE';
+  currentAthlete?: any;
+  onLoginSuccess?: (role: string, data: any) => void;
+}
+
+export default function CompetitionDetail({
+  meet,
+  onBack,
+  onRegister,
+  currentRole = 'LANDING',
+  currentAthlete,
+  onLoginSuccess
+}: CompetitionDetailProps) {
+  const [activeTab, setActiveTab] = useState<string>('about');
+
   // Results Filters
-  const [resultEventFilter, setResultEventFilter] = useState('ALL');
-  const [resultClubFilter, setResultClubFilter] = useState('ALL');
-  const [resultAgeFilter, setResultAgeFilter] = useState('ALL');
-  const [resultGenderFilter, setResultGenderFilter] = useState('ALL');
+  const [resultEventFilter, setResultEventFilter] = useState<string>('ALL');
+  const [resultClubFilter, setResultClubFilter] = useState<string>('ALL');
+  const [resultAgeFilter, setResultAgeFilter] = useState<string>('ALL');
+  const [resultGenderFilter, setResultGenderFilter] = useState<string>('ALL');
 
   // Individual Meet Registration Modal State
-  const [showIndividualModal, setShowIndividualModal] = useState(false);
-  const [selectedDisciplines, setSelectedDisciplines] = useState(meet ? [meet.disciplines[0]] : []);
-  const [registrationPass, setRegistrationPass] = useState(null);
-  const [isPendingApproval, setIsPendingApproval] = useState(false);
+  const [showIndividualModal, setShowIndividualModal] = useState<boolean>(false);
+  const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>(meet ? [meet.disciplines[0]] : []);
+  const [registrationPass, setRegistrationPass] = useState<any>(null);
+  const [isPendingApproval, setIsPendingApproval] = useState<boolean>(false);
+
+  // Auth modal state for competition sign in / register
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authEmail, setAuthEmail] = useState<string>('athlete@example.com');
+  const [authPassword, setAuthPassword] = useState<string>('athlete123');
+  const [authError, setAuthError] = useState<string>('');
+
+  // QR Code Scanner Modal State
+  const [showQrScannerModal, setShowQrScannerModal] = useState<boolean>(false);
+  const [scannedPassResult, setScannedPassResult] = useState<any>(null);
+
+  const handleAuthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authEmail.trim() || !authPassword.trim()) {
+      setAuthError('Please enter email and password');
+      return;
+    }
+    setAuthError('');
+    setShowAuthModal(false);
+
+    const lowerEmail = authEmail.toLowerCase();
+    let loggedInAthlete = currentAthlete || MOCK_ATHLETES[0];
+    if (lowerEmail.includes('haile') || lowerEmail.includes('athlete') || lowerEmail.includes('runner')) {
+      const found = MOCK_ATHLETES.find(a => a.name.toLowerCase().includes('haile')) || MOCK_ATHLETES[0];
+      if (found) loggedInAthlete = found;
+    }
+
+    if (onLoginSuccess) {
+      onLoginSuccess('ATHLETE', { athlete: loggedInAthlete });
+    }
+
+    if (meet.status === 'REGISTRATION_OPEN' || meet.status === 'UPCOMING') {
+      setShowIndividualModal(true);
+    }
+  };
 
   if (!meet) return null;
 
   // Localized texts
   const t = {
-    back: language === 'en' ? '← Back to Competitions' : '← ወደ ውድድሮች ይመለሱ',
-    regClosed: language === 'en' ? 'Registration Closed' : 'ምዝገባ ተዘግቷል',
-    regOpen: language === 'en' ? 'Open for Registration' : 'ምዝገባ ክፍት ነው',
-    upcoming: language === 'en' ? 'Upcoming' : 'መጪ ውድድር',
-    live: language === 'en' ? 'LIVE EVENT' : 'የቀጥታ ስርጭት',
-    organizer: language === 'en' ? 'Organizer' : 'አዘጋጅ',
-    venue: language === 'en' ? 'Venue & Address' : 'ቦታ እና አድራሻ',
-    contact: language === 'en' ? 'Contact Details' : 'የእውቂያ መረጃ',
-    deadline: language === 'en' ? 'Registration Deadline' : 'የምዝገባ ማብቂያ ቀን',
-    regIndividual: language === 'en' ? 'Register as Individual Athlete' : 'እንደ ግል አትሌት ይመዝገቡ',
-    regClub: language === 'en' ? 'Register as Club / Team' : 'እንደ ክለብ/ቡድን ይመዝገቡ',
-    actionTitle: language === 'en' ? 'Registration Action Panel' : 'የምዝገባ ፓነል',
-    verified: language === 'en' ? 'EAF Verified' : 'የተረጋገጠ አትሌት',
-    recordStatus: language === 'en' ? 'Record Status' : 'የሪከርድ ደረጃ',
-    
+    back: '← Back to Competitions',
+    regClosed: 'Registration Closed',
+    regOpen: 'Open for Registration',
+    upcoming: 'Upcoming',
+    live: 'LIVE EVENT',
+    organizer: 'Organizer',
+    venue: 'Venue & Address',
+    contact: 'Contact Details',
+    deadline: 'Registration Deadline',
+    regIndividual: 'Register as Individual Athlete',
+    regClub: 'Register as Club / Team',
+    actionTitle: 'Registration Action Panel',
+    verified: 'EAF Verified',
+    recordStatus: 'Record Status',
+
     // Tabs
-    tabAbout: language === 'en' ? 'About Event' : 'ስለ ውድድሩ',
-    tabEvents: language === 'en' ? 'Events & Categories' : 'የውድድር አይነቶች',
-    tabStarters: language === 'en' ? 'Starter Lists' : 'የተወዳዳሪዎች ዝርዝር',
-    tabResults: language === 'en' ? 'Live Results & Participants' : 'የቀጥታ ውጤቶች',
+    tabAbout: 'About Event',
+    tabEvents: 'Events & Categories',
+    tabStarters: 'Starter Lists',
+    tabResults: 'Live Results & Participants',
   };
 
   // Ethiopian Fayda National ID Mock Profile Data
@@ -193,22 +245,22 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
   // Mock static info for About Tab based on Meet
   const aboutInfo = {
-    overview: meet.id === 'MEET-2026-01' 
+    overview: meet.id === 'MEET-2026-01'
       ? 'The Addis Ababa International Grand Prix is the pinnacle track and field event in Ethiopia, gathering world-class runners, local elite athletes, and international competitors. Sanctioned by EAF and accredited under regional development programs.'
       : meet.id === 'MEET-2026-02'
-      ? 'The National Youth Olympic Games (U18/U20) serves as the primary talent identification platform in Ethiopia. The championship aims to discover the next generation of distance runners to represent Ethiopia in international youth competitions.'
-      : 'The Jan Meda Cross-Country trials hold deep historical significance as the ultimate selection criteria for the Ethiopian National Team representing the nation in the World Athletics Cross Country Championships.',
+        ? 'The National Youth Olympic Games (U18/U20) serves as the primary talent identification platform in Ethiopia. The championship aims to discover the next generation of distance runners to represent Ethiopia in international youth competitions.'
+        : 'The Jan Meda Cross-Country trials hold deep historical significance as the ultimate selection criteria for the Ethiopian National Team representing the nation in the World Athletics Cross Country Championships.',
     rules: 'All participants must comply with World Athletics Technical Rules and EAF local statutes. Athletes must hold an active EAF Athlete License for the 2026 season. Doping control will be carried out in accordance with WADA guidelines.',
     standards: meet.id === 'MEET-2026-01'
       ? '5,000m Men: Under 13:45.00 | 10,000m Women: Under 32:30.00 | 800m Men: Under 1:48.00. Standards must be achieved in EAF-certified events.'
       : meet.id === 'MEET-2026-02'
-      ? 'Open to athletes aged U18 (born 2009-2010) and U20 (born 2007-2008). Must be affiliated with an EAF-registered regional club or academy.'
-      : 'Open entry for registered club teams (max 6 runners per category). Top 4 finishers automatically qualify for selection pools.',
+        ? 'Open to athletes aged U18 (born 2009-2010) and U20 (born 2007-2008). Must be affiliated with an EAF-registered regional club or academy.'
+        : 'Open entry for registered club teams (max 6 runners per category). Top 4 finishers automatically qualify for selection pools.',
     prizes: meet.id === 'MEET-2026-01'
       ? 'Gold: 100,000 ETB | Silver: 60,000 ETB | Bronze: 40,000 ETB. A special record-breaking bonus of 150,000 ETB is awarded for breaking national records.'
       : meet.id === 'MEET-2026-02'
-      ? 'EAF youth development grants: 30,000 ETB for top finishers. Training gear packages provided by Adidas Ethiopia for top 6 finalists.'
-      : 'National team training camp selection for top 6. Cash prizes up to 50,000 ETB for club delegations.'
+        ? 'EAF youth development grants: 30,000 ETB for top finishers. Training gear packages provided by Adidas Ethiopia for top 6 finalists.'
+        : 'National team training camp selection for top 6. Cash prizes up to 50,000 ETB for club delegations.'
   };
 
   // Generate sub-events for Events Tab
@@ -252,12 +304,12 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
   // Fetch Results if available
   const rawResults = MOCK_EVENT_RESULTS[meet.id] || [];
-  
+
   const resultsData = [];
   rawResults.forEach(disciplineBlock => {
     disciplineBlock.results.forEach(res => {
       const matchingAthlete = MOCK_ATHLETES.find(a => a.name === res.athleteName);
-      
+
       let gender = disciplineBlock.discipline.toLowerCase().includes('women') ? 'Women' : 'Men';
       if (matchingAthlete) {
         gender = matchingAthlete.gender;
@@ -300,9 +352,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
-      
+
       {/* Back button */}
-      <button 
+      <button
         onClick={onBack}
         style={{
           background: 'none',
@@ -324,7 +376,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
       </button>
 
       {/* ── A. COMPETITION HEADER & BANNER ── */}
-      <div 
+      <div
         style={{
           position: 'relative',
           borderRadius: '24px',
@@ -337,7 +389,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
           marginBottom: '32px'
         }}
       >
-        <div 
+        <div
           style={{
             position: 'absolute',
             inset: 0,
@@ -346,20 +398,20 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
             backgroundPosition: 'center',
           }}
         />
-        <div 
+        <div
           style={{
             position: 'absolute',
             inset: 0,
             background: 'linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.6) 60%, transparent 100%)'
           }}
         />
-        
+
         {/* Banner Content */}
         <div style={{ position: 'relative', zIndex: 2, padding: '32px', color: '#FFFFFF' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
-            <span 
-              className="badge" 
-              style={{ 
+            <span
+              className="badge"
+              style={{
                 background: meet.status === 'REGISTRATION_OPEN' ? '#0E7490' : meet.status === 'LIVE' ? '#DC2626' : '#B45309',
                 color: '#FFFFFF',
                 borderRadius: '8px',
@@ -371,8 +423,8 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
             >
               {meet.status === 'REGISTRATION_OPEN' ? t.regOpen : meet.status === 'LIVE' ? t.live : t.upcoming}
             </span>
-            <span 
-              className="badge badge-gold" 
+            <span
+              className="badge badge-gold"
               style={{ border: '1px solid rgba(200, 168, 75, 0.4)', borderRadius: '8px', padding: '6px 14px', color: '#FFE082' }}
             >
               ★ EAF Grade A Event
@@ -389,8 +441,8 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
       </div>
 
       {/* Grid of metadata card & registration panel */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '24px', marginBottom: '40px' }}>
-        
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+
         {/* Localized Metadata Card */}
         <div className="gov-card" style={{ background: '#FFFFFF', display: 'flex', flexDirection: 'column', gap: '20px', borderRadius: '20px' }}>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-heading)', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
@@ -417,7 +469,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
               <div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t.deadline}</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#DC2626', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  August 05, 2026 
+                  August 05, 2026
                   <span className="badge badge-red" style={{ padding: '2px 6px', fontSize: '0.65rem' }}>Urgent</span>
                 </div>
               </div>
@@ -451,63 +503,170 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
         </div>
 
         {/* Registration Action Panel */}
-        <div 
-          className="gov-card" 
-          style={{ 
-            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', 
+        <div
+          className="gov-card"
+          style={{
+            background: meet.status === 'REGISTRATION_CLOSED'
+              ? 'linear-gradient(135deg, #334155 0%, #0F172A 100%)'
+              : meet.status === 'LIVE'
+                ? 'linear-gradient(135deg, #991B1B 0%, #450A0A 100%)'
+                : 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
             color: '#FFFFFF',
-            border: 'none', 
+            border: 'none',
             borderRadius: '24px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
             padding: '32px',
-            boxShadow: '0 16px 36px rgba(2, 132, 199, 0.28)'
+            boxShadow: meet.status === 'LIVE'
+              ? '0 16px 36px rgba(220, 38, 38, 0.28)'
+              : meet.status === 'REGISTRATION_CLOSED'
+                ? '0 16px 36px rgba(51, 65, 85, 0.25)'
+                : '0 16px 36px rgba(2, 132, 199, 0.28)'
           }}
         >
           <div>
-            <span style={{ background: '#FFFFFF', color: 'var(--primary-dark)', fontWeight: 900, fontSize: '0.72rem', padding: '4px 12px', borderRadius: '20px', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>
-              ✦ OFFICIAL EAF REGISTRATION
+            <span style={{ background: '#FFFFFF', color: meet.status === 'LIVE' ? '#991B1B' : meet.status === 'REGISTRATION_CLOSED' ? '#334155' : 'var(--primary-dark)', fontWeight: 900, fontSize: '0.72rem', padding: '4px 12px', borderRadius: '20px', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>
+              {meet.status === 'REGISTRATION_CLOSED' ? '🔒 REGISTRATION CLOSED' : meet.status === 'LIVE' ? '🔴 EVENT IS LIVE IN STADIUM' : '✦ OFFICIAL EAF REGISTRATION'}
             </span>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '8px', letterSpacing: '-0.01em' }}>
-              {t.actionTitle}
+              {meet.status === 'REGISTRATION_CLOSED' ? 'Registration Period Concluded' : meet.status === 'LIVE' ? 'Live Competition Underway' : t.actionTitle}
             </h3>
             <p style={{ color: '#E0F2FE', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '24px' }}>
-              Register for this meet to secure your spot. Athlete entries require Fayda ID verification. Club entries must be managed by certified coaches.
+              {meet.status === 'REGISTRATION_CLOSED'
+                ? 'Registration for this competition has been officially closed by the EAF Technical Committee. No new athlete entries are currently accepted.'
+                : meet.status === 'LIVE'
+                  ? 'This competition is currently underway live in stadium. Registration is closed. Track real-time live race results & rankings below.'
+                  : currentRole === 'ATHLETE'
+                    ? 'You are signed in. Click below to select your disciplines and submit your individual entry for this competition.'
+                    : 'Sign in to your athlete account or create a new account with Fayda verification to register for this competition. Click below to get started.'}
             </p>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button 
-              onClick={() => setShowIndividualModal(true)}
-              className="btn-accent"
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            {meet.status === 'REGISTRATION_CLOSED' ? (
+              <button
+                disabled
+                style={{
+                  flex: 1,
+                  padding: '16px 20px',
+                  borderRadius: '14px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  color: '#94A3B8',
+                  fontWeight: 800,
+                  cursor: 'not-allowed',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <Lock size={18} /> Registration Closed
+              </button>
+            ) : meet.status === 'LIVE' ? (
+              <button
+                onClick={() => setActiveTab('results')}
+                className="btn-accent"
+                style={{
+                  flex: 1,
+                  padding: '16px 20px',
+                  borderRadius: '14px',
+                  background: '#FFFFFF',
+                  color: '#991B1B',
+                  fontWeight: 900,
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)'
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.98rem' }}>
+                  <Trophy size={20} color="#991B1B" /> View Live Results &amp; Leaderboard
+                </span>
+                <ChevronRight size={18} color="#991B1B" />
+              </button>
+            ) : currentRole === 'ATHLETE' ? (
+              <button
+                onClick={() => setShowIndividualModal(true)}
+                className="btn-accent"
+                style={{
+                  flex: 1,
+                  padding: '16px 20px',
+                  borderRadius: '14px',
+                  justifyContent: 'space-between',
+                  background: '#FFFFFF',
+                  color: 'var(--primary-dark)',
+                  fontWeight: 900,
+                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)',
+                  cursor: 'pointer',
+                  border: 'none'
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.98rem' }}>
+                  <UserCheck size={20} color="var(--primary-dark)" /> Register for Competition
+                </span>
+                <ChevronRight size={18} color="var(--primary-dark)" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="btn-accent"
+                style={{
+                  flex: 1,
+                  padding: '16px 20px',
+                  borderRadius: '14px',
+                  justifyContent: 'space-between',
+                  background: '#FFFFFF',
+                  color: 'var(--primary-dark)',
+                  fontWeight: 900,
+                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)',
+                  cursor: 'pointer',
+                  border: 'none'
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.98rem' }}>
+                  <User size={20} color="var(--primary-dark)" /> Sign In / Register
+                </span>
+                <ChevronRight size={18} color="var(--primary-dark)" />
+              </button>
+            )}
+
+            {/* QR Scanner Icon Button */}
+            <button
+              onClick={() => setShowQrScannerModal(true)}
+              title="Scan Athlete Competition Pass or BIB QR Code"
               style={{
-                width: '100%',
-                padding: '16px 20px',
+                width: '54px',
+                height: '54px',
                 borderRadius: '14px',
-                justifyContent: 'space-between',
-                background: '#FFFFFF',
-                color: 'var(--primary-dark)',
-                fontWeight: 900,
-                boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)',
+                background: 'rgba(255, 255, 255, 0.18)',
+                color: '#FFFFFF',
+                border: '1px solid rgba(255, 255, 255, 0.35)',
                 cursor: 'pointer',
-                border: 'none'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                backdropFilter: 'blur(8px)',
+                transition: 'all 0.2s'
               }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)'}
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.98rem' }}>
-                <User size={20} color="var(--primary-dark)" /> {t.regIndividual}
-              </span>
-              <ChevronRight size={18} color="var(--primary-dark)" />
+              <QrCode size={24} color="#FFFFFF" />
             </button>
           </div>
         </div>
       </div>
 
       {/* ── B. TABBED INFORMATION ARCHITECTURE ── */}
-      <div 
-        style={{ 
-          display: 'flex', 
-          borderBottom: '2px solid #E2E8F0', 
+      <div
+        style={{
+          display: 'flex',
+          borderBottom: '2px solid #E2E8F0',
           marginBottom: '28px',
           overflowX: 'auto',
           gap: '8px'
@@ -545,7 +704,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
       {/* Tab Content */}
       <div style={{ minHeight: '300px' }}>
-        
+
         {/* 1. About Tab */}
         {activeTab === 'about' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -652,14 +811,14 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{st.name}</span>
                           {st.verified && (
-                            <span 
-                              title={t.verified} 
-                              style={{ 
-                                display: 'inline-flex', 
-                                alignItems: 'center', 
-                                background: '#DCFCE7', 
-                                color: '#15803D', 
-                                borderRadius: '50%', 
+                            <span
+                              title={t.verified}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                background: '#DCFCE7',
+                                color: '#15803D',
+                                borderRadius: '50%',
                                 padding: '2px'
                               }}
                             >
@@ -701,12 +860,12 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
               </div>
             ) : (
               <div>
-                <div 
-                  className="gov-card" 
-                  style={{ 
-                    background: '#F8FAFC', 
-                    borderRadius: '18px', 
-                    marginBottom: '20px', 
+                <div
+                  className="gov-card"
+                  style={{
+                    background: '#F8FAFC',
+                    borderRadius: '18px',
+                    marginBottom: '20px',
                     padding: '20px',
                     border: '1px solid #E2E8F0'
                   }}
@@ -719,9 +878,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Event Type</label>
-                      <select 
-                        className="form-select" 
-                        value={resultEventFilter} 
+                      <select
+                        className="form-select"
+                        value={resultEventFilter}
                         onChange={e => setResultEventFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
@@ -732,9 +891,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Club / Delegation</label>
-                      <select 
-                        className="form-select" 
-                        value={resultClubFilter} 
+                      <select
+                        className="form-select"
+                        value={resultClubFilter}
                         onChange={e => setResultClubFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
@@ -745,9 +904,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Gender</label>
-                      <select 
-                        className="form-select" 
-                        value={resultGenderFilter} 
+                      <select
+                        className="form-select"
+                        value={resultGenderFilter}
                         onChange={e => setResultGenderFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
@@ -759,9 +918,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Age Category</label>
-                      <select 
-                        className="form-select" 
-                        value={resultAgeFilter} 
+                      <select
+                        className="form-select"
+                        value={resultAgeFilter}
                         onChange={e => setResultAgeFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
@@ -804,14 +963,14 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{r.name}</span>
                                   {r.verified && (
-                                    <span 
-                                      title={t.verified} 
-                                      style={{ 
-                                        display: 'inline-flex', 
-                                        alignItems: 'center', 
-                                        background: '#DCFCE7', 
-                                        color: '#15803D', 
-                                        borderRadius: '50%', 
+                                    <span
+                                      title={t.verified}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        background: '#DCFCE7',
+                                        color: '#15803D',
+                                        borderRadius: '50%',
                                         padding: '2px'
                                       }}
                                     >
@@ -848,14 +1007,14 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
       {/* ── INDIVIDUAL ATHLETE MEET REGISTRATION MODAL ── */}
       {showIndividualModal && (
         <div className="modal-backdrop" onClick={() => { setShowIndividualModal(false); setRegistrationPass(null); setIsPendingApproval(false); }} style={{ zIndex: 9999, padding: '24px 16px', overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content modal-bleed" onClick={e => e.stopPropagation()} style={{ padding: '0', maxWidth: '1100px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', boxShadow: '0 32px 72px rgba(15,23,42,0.35)' }}>
-            
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '0', maxWidth: '1100px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', borderRadius: '24px', boxShadow: '0 32px 72px rgba(15,23,42,0.35)' }}>
+
             {/* Modal Header with Event Banner */}
             <div className="modal-bleed-banner" style={{ position: 'relative', height: '140px', background: '#0F172A' }}>
               <img src={getBannerUrl(meet.id)} alt={meet.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0F172A 0%, transparent 100%)' }} />
-              
-              <button 
+
+              <button
                 onClick={() => { setShowIndividualModal(false); setRegistrationPass(null); setIsPendingApproval(false); }}
                 style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
               >
@@ -887,7 +1046,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   <p style={{ color: '#64748B', fontSize: '0.95rem', maxWidth: '580px', lineHeight: 1.6, marginBottom: '24px' }}>
                     Your entry application for <strong>{meet.title}</strong> has been logged. EAF Technical Marshals are reviewing your seed times, club delegation, and Fayda biometric verification.
                   </p>
-                  
+
                   <div style={{ background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: '16px', padding: '20px', width: '100%', maxWidth: '520px', marginBottom: '28px', textAlign: 'left' }}>
                     <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                       <div>
@@ -910,7 +1069,7 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   </div>
 
                   <div style={{ display: 'flex', gap: '14px', width: '100%', maxWidth: '420px' }}>
-                    <button 
+                    <button
                       onClick={() => { setShowIndividualModal(false); setIsPendingApproval(false); }}
                       className="btn-accent"
                       style={{ flex: 1, padding: '14px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', fontWeight: 900, border: 'none', cursor: 'pointer', justifyContent: 'center' }}
@@ -939,12 +1098,12 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                     <div className="wrap-on-mobile" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
                       {/* Formal Passport Photo Display */}
                       <div style={{ position: 'relative', width: '100px', height: '130px', borderRadius: '12px', overflow: 'hidden', border: '3px solid #3B82F6', boxShadow: '0 6px 16px rgba(59,130,246,0.2)', background: '#FFF', flexShrink: 0 }}>
-                        <img 
-                          src={faydaNationalIdData.photoUrl} 
-                          alt="Passport Photo" 
+                        <img
+                          src={faydaNationalIdData.photoUrl}
+                          alt="Passport Photo"
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
-                        <span style={{ position: 'absolute', bottom: 0, insetX: 0, background: 'rgba(15,23,42,0.85)', color: '#FFF', fontSize: '0.55rem', fontWeight: 900, textAlign: 'center', padding: '2px 0' }}>
+                        <span style={{ position: 'absolute', bottom: 0, background: 'rgba(15,23,42,0.85)', color: '#FFF', fontSize: '0.55rem', fontWeight: 900, textAlign: 'center', padding: '2px 0' }}>
                           PASSPORT BIOMETRIC
                         </span>
                       </div>
@@ -980,8 +1139,8 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   </div>
 
                   {/* 2-Column Grid: Disciplines Selection + Competition Related Metadata */}
-                  <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', marginBottom: '24px' }}>
-                    
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', marginBottom: '24px' }}>
+
                     {/* Left Column: Disciplines Selection */}
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', marginBottom: '10px', display: 'block' }}>
@@ -991,15 +1150,15 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                         {meet.disciplines.map(d => {
                           const checked = selectedDisciplines.includes(d);
                           return (
-                            <label 
-                              key={d} 
-                              style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '12px', 
-                                padding: '12px 16px', 
-                                borderRadius: '12px', 
-                                border: checked ? '2px solid var(--primary)' : '1px solid #E2E8F0', 
+                            <label
+                              key={d}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '12px 16px',
+                                borderRadius: '12px',
+                                border: checked ? '2px solid var(--primary)' : '1px solid #E2E8F0',
                                 background: checked ? '#F0F9FF' : '#FFFFFF',
                                 cursor: 'pointer',
                                 fontWeight: 700,
@@ -1008,8 +1167,8 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                                 transition: 'all 0.15s'
                               }}
                             >
-                              <input 
-                                type="checkbox" 
+                              <input
+                                type="checkbox"
                                 checked={checked}
                                 onChange={() => handleToggleDiscipline(d)}
                                 style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
@@ -1046,9 +1205,9 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                   </div>
 
                   {/* Submit Enrollment Button */}
-                  <button 
+                  <button
                     onClick={() => setIsPendingApproval(true)}
-                    className="btn-accent" 
+                    className="btn-accent"
                     style={{ width: '100%', padding: '16px', borderRadius: '14px', fontSize: '1rem', fontWeight: 900, justifyContent: 'center', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer', boxShadow: '0 8px 20px rgba(14, 165, 233, 0.3)' }}
                   >
                     Submit Individual Entry for Federation Approval
@@ -1056,6 +1215,270 @@ export default function CompetitionDetail({ meet, onBack, onRegister, language =
                 </div>
               )}
             </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── SIGN IN / REGISTER MODAL FOR COMPETITION ENTRY ── */}
+      {showAuthModal && (
+        <div className="modal-backdrop" onClick={() => setShowAuthModal(false)} style={{ zIndex: 9999, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '32px 28px', maxWidth: '480px', width: '95%', borderRadius: '24px', boxShadow: '0 25px 60px rgba(15,23,42,0.3)', border: '1px solid #E2E8F0', background: '#FFFFFF', position: 'relative' }}>
+            
+            {/* Close button */}
+            <button
+              onClick={() => setShowAuthModal(false)}
+              style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+            >
+              <X size={20} />
+            </button>
+
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{ width: '54px', height: '54px', borderRadius: '16px', background: 'rgba(14, 165, 233, 0.1)', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                <Trophy size={28} />
+              </div>
+              <h3 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#0F172A', marginBottom: '6px' }}>
+                Sign In / Register
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: '#64748B', lineHeight: 1.5 }}>
+                Sign in to your athlete account to enter<br />
+                <strong style={{ color: '#0F172A' }}>{meet.title}</strong>
+              </p>
+            </div>
+
+            {/* Demo Credentials Box */}
+            <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '12px', padding: '12px 14px', marginBottom: '20px', fontSize: '0.82rem', color: '#1E40AF' }}>
+              <div style={{ fontWeight: 800, marginBottom: '2px' }}>💡 Demo Test Credentials:</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>athlete@example.com / athlete123</div>
+            </div>
+
+            {authError && (
+              <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem', marginBottom: '16px' }}>
+                {authError}
+              </div>
+            )}
+
+            {/* Login Form */}
+            <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={authEmail}
+                  onChange={e => setAuthEmail(e.target.value)}
+                  placeholder="athlete@example.com"
+                  required
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #CBD5E1', background: '#F8FAFC', color: '#0F172A', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', border: '1px solid #CBD5E1', background: '#F8FAFC', color: '#0F172A', fontSize: '0.95rem', outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn-accent"
+                style={{ width: '100%', padding: '14px', borderRadius: '12px', fontSize: '0.98rem', fontWeight: 900, background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer', justifyContent: 'center', marginTop: '4px' }}
+              >
+                Sign In &amp; Continue to Event Registration
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '24px 0 18px' }}>
+              <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase' }}>New Athlete?</span>
+              <div style={{ flex: 1, height: '1px', background: '#E2E8F0' }} />
+            </div>
+
+            {/* Mini Create Account / Fayda Registration Option */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowAuthModal(false);
+                onRegister('ATHLETE');
+              }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: '12px',
+                fontSize: '0.92rem',
+                fontWeight: 800,
+                background: '#F1F5F9',
+                color: 'var(--primary-dark)',
+                border: '1px solid #CBD5E1',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#E2E8F0'}
+              onMouseLeave={e => e.currentTarget.style.background = '#F1F5F9'}
+            >
+              <ShieldCheck size={18} color="var(--primary)" />
+              Register as Athlete with Fayda ID
+            </button>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── QR CODE SCANNER MODAL FOR ATHLETE PASS & ACCREDITATION ── */}
+      {showQrScannerModal && (
+        <div className="modal-backdrop" onClick={() => { setShowQrScannerModal(false); setScannedPassResult(null); }} style={{ zIndex: 9999, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '32px 28px', maxWidth: '520px', width: '95%', borderRadius: '24px', boxShadow: '0 25px 60px rgba(15,23,42,0.35)', border: '1px solid #E2E8F0', background: '#FFFFFF', position: 'relative' }}>
+            
+            {/* Close button */}
+            <button
+              onClick={() => { setShowQrScannerModal(false); setScannedPassResult(null); }}
+              style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+            >
+              <X size={20} />
+            </button>
+
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(14, 165, 233, 0.12)', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                <QrCode size={30} />
+              </div>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0F172A', marginBottom: '4px' }}>
+                EAF Athlete Pass QR Scanner
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: 1.5 }}>
+                Scan Competition Entry Pass, BIB Number, or Athlete Accreditation QR Code
+              </p>
+            </div>
+
+            {scannedPassResult ? (
+              /* Verified Scan Result Screen */
+              <div style={{ background: '#F0FDF4', border: '2px solid #86EFAC', borderRadius: '20px', padding: '24px', textAlign: 'center', marginBottom: '20px' }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#DCFCE7', color: '#16A34A', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+                  <CheckCircle2 size={36} />
+                </div>
+                <span className="badge badge-green" style={{ fontSize: '0.78rem', padding: '4px 12px', fontWeight: 900, marginBottom: '12px', display: 'inline-block' }}>
+                  ✅ PASS VERIFIED &amp; ACCREDITED
+                </span>
+                <h4 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0F172A', marginBottom: '4px' }}>
+                  {scannedPassResult.athleteName}
+                </h4>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '16px' }}>
+                  {scannedPassResult.bib} · PASS ID: {scannedPassResult.passId}
+                </div>
+
+                <div style={{ background: '#FFFFFF', border: '1px solid #BBF7D0', borderRadius: '14px', padding: '16px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
+                  <div><span style={{ color: '#64748B', fontWeight: 700 }}>Event:</span> <strong>{meet.title}</strong></div>
+                  <div><span style={{ color: '#64748B', fontWeight: 700 }}>Disciplines:</span> <strong>{scannedPassResult.disciplines.join(', ')}</strong></div>
+                  <div><span style={{ color: '#64748B', fontWeight: 700 }}>Fayda FIN:</span> <strong style={{ fontFamily: 'var(--font-mono)' }}>{scannedPassResult.faydaFin}</strong></div>
+                  <div><span style={{ color: '#64748B', fontWeight: 700 }}>Venue Access:</span> <strong style={{ color: '#16A34A' }}>Staging Tunnel &amp; Track Access Granted</strong></div>
+                </div>
+
+                <button
+                  onClick={() => setScannedPassResult(null)}
+                  style={{ width: '100%', marginTop: '16px', padding: '12px', borderRadius: '10px', background: '#16A34A', color: '#FFF', fontWeight: 800, border: 'none', cursor: 'pointer' }}
+                >
+                  Scan Another Pass
+                </button>
+              </div>
+            ) : (
+              /* Simulated Camera Scanner Box */
+              <div>
+                <div style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: '240px',
+                  background: '#0F172A',
+                  borderRadius: '20px',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid var(--primary)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                  marginBottom: '20px'
+                }}>
+                  {/* Scanner Grid Overlay */}
+                  <div style={{ position: 'absolute', inset: '30px', border: '2px dashed var(--primary)', borderRadius: '16px', opacity: 0.8 }} />
+                  
+                  {/* Scanner Corner Guides */}
+                  <div style={{ position: 'absolute', top: '24px', left: '24px', width: '20px', height: '20px', borderTop: '4px solid #38BDF8', borderLeft: '4px solid #38BDF8' }} />
+                  <div style={{ position: 'absolute', top: '24px', right: '24px', width: '20px', height: '20px', borderTop: '4px solid #38BDF8', borderRight: '4px solid #38BDF8' }} />
+                  <div style={{ position: 'absolute', bottom: '24px', left: '24px', width: '20px', height: '20px', borderBottom: '4px solid #38BDF8', borderLeft: '4px solid #38BDF8' }} />
+                  <div style={{ position: 'absolute', bottom: '24px', right: '24px', width: '20px', height: '20px', borderBottom: '4px solid #38BDF8', borderRight: '4px solid #38BDF8' }} />
+
+                  {/* Animated Scan Line */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      width: '80%',
+                      height: '3px',
+                      background: 'linear-gradient(90deg, transparent, #22C55E, transparent)',
+                      boxShadow: '0 0 15px #22C55E',
+                      animation: 'scanLine 2s infinite ease-in-out'
+                    }}
+                  />
+
+                  <div style={{ color: '#94A3B8', textAlign: 'center', zIndex: 2, padding: '0 20px' }}>
+                    <Camera size={36} color="#38BDF8" style={{ marginBottom: '8px' }} />
+                    <div style={{ fontSize: '0.85rem', color: '#F8FAFC', fontWeight: 700 }}>Align Athlete QR Pass within frame</div>
+                    <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '4px' }}>Camera feed active · Searching for barcode...</div>
+                  </div>
+                </div>
+
+                {/* Scan Line CSS Animation */}
+                <style>{`
+                  @keyframes scanLine {
+                    0% { top: 20%; }
+                    50% { top: 80%; }
+                    100% { top: 20%; }
+                  }
+                `}</style>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sampleAthlete = currentAthlete || MOCK_ATHLETES[0];
+                    setScannedPassResult({
+                      athleteName: sampleAthlete.name || 'Haile Demisse Tadesse',
+                      bib: 'BIB-9042',
+                      passId: `EAF-PASS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+                      disciplines: meet.disciplines ? meet.disciplines.slice(0, 2) : ['5,000m'],
+                      faydaFin: sampleAthlete.faydaFin || '9840-3920-1124',
+                    });
+                  }}
+                  className="btn-accent"
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    fontSize: '0.95rem',
+                    fontWeight: 900,
+                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                    color: '#FFF',
+                    border: 'none',
+                    cursor: 'pointer',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ⚡ Simulate Scan Pass &amp; Verify Access
+                </button>
+              </div>
+            )}
 
           </div>
         </div>

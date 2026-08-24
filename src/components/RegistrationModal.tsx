@@ -1,9 +1,80 @@
 import React, { useState } from 'react';
-import { X, Building2, UserCheck, ShieldCheck, RefreshCw, CheckCircle2, ArrowRight, Mail, Lock, Phone, User, Award, FileText, LockKeyhole, Clock, AlertCircle, Check } from 'lucide-react';
+import { X, Building2, UserCheck, ShieldCheck, RefreshCw, CheckCircle2, ArrowRight, Phone, LockKeyhole, Clock } from 'lucide-react';
 import { MOCK_CLUBS } from '../data/mockData';
 
+// Types for internal use
+interface FaydaResult {
+  name: string;
+  amharic: string;
+  dob: string;
+  gender: string;
+  blood: string;
+  region: string;
+  photoUrl: string;
+  ageTier: string;
+  fin: string;
+  hash: string;
+  verificationDate: string;
+}
+
+interface AthletePayload {
+  id: string;
+  name: string;
+  amharicName: string;
+  dob: string;
+  gender: string;
+  ageTier: string;
+  clubId: string;
+  clubName: string;
+  faydaFin: string;
+  faydaStatus: string;
+  faydaHash: string;
+  primaryEvent: string;
+  licenseStatus: string;
+  licenseNumber: null;
+  licenseExpiry: null;
+  photoUrl: string;
+  checkinStatus: string;
+  qrCodeData: null;
+  weight: number;
+  height: number;
+  restingHR: number;
+  trainingLoad: string;
+  emergencyContact: string;
+  medicalNotes: string;
+  email: string;
+  phone: string;
+  region: string;
+  personalBests: unknown[];
+  seasonBests: unknown[];
+  weightLog: unknown[];
+  trainingLog: unknown[];
+  achievements: unknown[];
+}
+
+interface ClubPayload {
+  id: string;
+  name: string;
+  shortName: string;
+  region: string;
+  manager: string;
+  email: string;
+  phone: string;
+  licensedAthletes: number;
+  pendingVerifications: number;
+  unlicensedAthletes: number;
+  transfersCount: number;
+  logo: string;
+  clubRank: number;
+  totalPoints: number;
+}
+
+type PendingRegistrationData =
+  | { type: 'ATHLETE'; payload: { athlete: AthletePayload } }
+  | { type: 'CLUB'; payload: { club: ClubPayload } };
+
 // Step indicator bar
-function StepBar({ steps, current }) {
+function StepBar({ steps, current }: { steps: string[]; current: number }) {
   return (
     <div className="stepbar" style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
       {steps.map((s, i) => (
@@ -28,7 +99,11 @@ function StepBar({ steps, current }) {
   );
 }
 
-export default function RegistrationModal({ role, onClose, onRegisterSuccess }) {
+export default function RegistrationModal({ role, onClose, onRegisterSuccess }: {
+  role: 'CLUB' | 'ATHLETE';
+  onClose: () => void;
+  onRegisterSuccess: (data: PendingRegistrationData) => void;
+}) {
   const isClub = role === 'CLUB';
   const [step, setStep] = useState(0);
 
@@ -52,7 +127,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
   const [selectedClubId, setSelectedClubId] = useState('NONE');
   const [primaryEvent, setPrimaryEvent] = useState(['5,000m Long Distance']);
   const [faydaLoading, setFaydaLoading] = useState(false);
-  const [faydaResult, setFaydaResult] = useState(null);
+  const [faydaResult, setFaydaResult] = useState<FaydaResult | null>(null);
   const [faydaError, setFaydaError] = useState('');
 
   // Athlete physical & contact metadata
@@ -63,7 +138,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
 
   // Pending approval screen state
   const [isSubmittedPending, setIsSubmittedPending] = useState(false);
-  const [pendingRegistrationData, setPendingRegistrationData] = useState(null);
+  const [pendingRegistrationData, setPendingRegistrationData] = useState<PendingRegistrationData | null>(null);
 
   const clubSteps = ['Account', 'Club Info', 'Confirm'];
   const athleteSteps = ['Fayda Verification', 'Sports Info', 'Account', 'Confirm'];
@@ -144,7 +219,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
   };
 
   const handleAthleteSubmit = () => {
-    const club = selectedClubId === 'NONE' 
+    const club = selectedClubId === 'NONE'
       ? { id: 'NONE', name: 'Independent / Unaffiliated Athlete', shortName: 'Independent' }
       : (MOCK_CLUBS.find(c => c.id === selectedClubId) || MOCK_CLUBS[0]);
 
@@ -169,7 +244,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
       photoUrl: faydaResult?.photoUrl || '/images/runner_female.png',
       checkinStatus: 'NOT_CHECKED_IN',
       qrCodeData: null,
-      weight, height, restingHR: 48, trainingLoad: 60,
+      weight, height, restingHR: 48, trainingLoad: '60',
       emergencyContact, medicalNotes,
       email: email || 'athlete@athletics.et',
       phone: phone || '+251 91 234 5678',
@@ -183,9 +258,9 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
 
   // ── Pending Approval View ──
   const renderPendingApprovalScreen = () => {
-    const data = pendingRegistrationData?.payload;
-    const isAthleteData = pendingRegistrationData?.type === 'ATHLETE';
+    if (!pendingRegistrationData) return null;
     const refNumber = 'EAF-REG-2026-' + Math.floor(100000 + Math.random() * 900000);
+    const isAthleteData = pendingRegistrationData.type === 'ATHLETE';
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '10px 0' }}>
@@ -223,15 +298,15 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
           textAlign: 'left',
           marginBottom: '24px'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', pb: '12px', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', marginBottom: '14px', paddingBottom: '12px' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748B' }}>TRACKING REFERENCE ID</span>
             <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>{refNumber}</span>
           </div>
 
-          {isAthleteData && data?.athlete && (
+          {isAthleteData && (
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
               <img
-                src={data.athlete.photoUrl}
+                src={pendingRegistrationData.payload.athlete.photoUrl}
                 alt="Passport Photo"
                 style={{
                   width: '90px', height: '115px',
@@ -241,10 +316,13 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
                 }}
               />
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A' }}>{data.athlete.name}</div>
-                <div style={{ fontSize: '0.88rem', color: 'var(--primary-dark)', fontWeight: 700, marginTop: '2px' }}>{data.athlete.amharicName}</div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A' }}>{pendingRegistrationData.payload.athlete.name}</div>
+                <div style={{ fontSize: '0.88rem', color: 'var(--primary-dark)', fontWeight: 700, marginTop: '2px' }}>{pendingRegistrationData.payload.athlete.amharicName}</div>
                 <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '6px' }}>
-                  Fayda FIN: <strong>{data.athlete.faydaFin}</strong> · Club: <strong>{data.athlete.clubName}</strong>
+                  Fayda FIN: <strong>{pendingRegistrationData.payload.athlete.faydaFin}</strong>
+                </div>
+                <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '4px' }}>
+                  Primary Event: <strong>{pendingRegistrationData.payload.athlete.primaryEvent}</strong> · Club: <strong>{pendingRegistrationData.payload.athlete.clubName}</strong>
                 </div>
                 <div style={{ fontSize: '0.82rem', color: '#10B981', fontWeight: 800, marginTop: '4px' }}>
                   ✓ Fayda Biometrics Verified · Status: Under Board Review
@@ -253,11 +331,11 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             </div>
           )}
 
-          {!isAthleteData && data?.club && (
+          {!isAthleteData && (
             <div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0F172A' }}>{data.club.name}</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0F172A' }}>{pendingRegistrationData.payload.club.name}</div>
               <div style={{ fontSize: '0.88rem', color: '#64748B', marginTop: '4px' }}>
-                Region: <strong>{data.club.region}</strong> · Manager: <strong>{data.club.manager}</strong>
+                Region: <strong>{pendingRegistrationData.payload.club.region}</strong> · Manager: <strong>{pendingRegistrationData.payload.club.manager}</strong>
               </div>
             </div>
           )}
@@ -274,11 +352,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
             background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF',
             border: 'none', fontWeight: 900, cursor: 'pointer'
           }}
-          onClick={() => {
-            if (pendingRegistrationData) {
-              onRegisterSuccess(pendingRegistrationData.type, pendingRegistrationData.payload);
-            }
-          }}
+          onClick={() => onRegisterSuccess(pendingRegistrationData)}
         >
           Acknowledge & Access Portal Dashboard →
         </button>
@@ -415,6 +489,12 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
                 style={{ flex: 1, padding: '14px 16px', fontSize: '1.05rem', borderRadius: '12px', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', fontWeight: 700, minWidth: 0 }}
                 value={faydaFin}
                 onChange={handleFinChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleInitiateFaydaLookup();
+                  }
+                }}
                 placeholder="e.g. 9840-3920-1124"
                 maxLength={14}
               />
@@ -468,6 +548,16 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
                     type="text"
                     maxLength={1}
                     value={otpCode[idx] || ''}
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+                      if (pastedData) {
+                        setOtpCode(pastedData);
+                        const focusIndex = Math.min(pastedData.length, 5);
+                        const targetEl = document.getElementById(`otp-box-${focusIndex}`);
+                        if (targetEl) targetEl.focus();
+                      }
+                    }}
                     onChange={e => {
                       const val = e.target.value.replace(/\D/g, '');
                       const current = otpCode.split('');
@@ -480,7 +570,10 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
                       }
                     }}
                     onKeyDown={e => {
-                      if (e.key === 'Backspace' && !otpCode[idx] && idx > 0) {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleVerifyOtp();
+                      } else if (e.key === 'Backspace' && !otpCode[idx] && idx > 0) {
                         const prevEl = document.getElementById(`otp-box-${idx - 1}`);
                         if (prevEl) prevEl.focus();
                       }
@@ -817,8 +910,8 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }) 
     );
 
     if (step === 3) {
-      const club = selectedClubId === 'NONE' 
-        ? { shortName: 'Independent' } 
+      const club = selectedClubId === 'NONE'
+        ? { shortName: 'Independent' }
         : (MOCK_CLUBS.find(c => c.id === selectedClubId) || { shortName: 'EAF Club' });
 
       const eventText = Array.isArray(primaryEvent) ? primaryEvent.join(', ') : primaryEvent;

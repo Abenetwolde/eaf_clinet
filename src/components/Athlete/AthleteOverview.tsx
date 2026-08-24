@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import {
   ShieldCheck, Navigation, Activity, Award, ArrowRight,
-  Weight, TrendingUp, Calendar, Plus, Trash2, Edit3, Save, Trophy
+  Weight, TrendingUp, Calendar, Plus, Trash2, Edit3, Save, Trophy,
+  Medal, MapPin, Flag
 } from 'lucide-react';
 import type { Athlete } from '../../types';
+import { MOCK_EVENT_RESULTS, MEET_META } from '../../data/mockData';
 
 interface AthleteOverviewProps {
   athlete: Athlete;
@@ -74,31 +76,74 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
   };
 
   const tabs = [
-    { id: 'overview',  label: 'Overview' },
-    { id: 'pbs',       label: 'Personal Bests' },
-    { id: 'weight',    label: 'Weight Log' },
-    { id: 'training',  label: 'Training Log' },
+    { id: 'overview', label: 'Overview' },
+    { id: 'competitions', label: 'Competition History' },
+    { id: 'pbs', label: 'Personal Bests' },
+    { id: 'weight', label: 'Weight Log' },
+    { id: 'training', label: 'Training Log' },
   ];
+
+  // ── Build competition history for this athlete ──
+  interface CompResult {
+    meetId: string;
+    meetTitle: string;
+    meetDate: string;
+    meetVenue: string;
+    discipline: string;
+    pos: number;
+    time: string;
+    pb: boolean;
+    sb: boolean;
+    totalAthletes: number;
+  }
+  const competitionHistory: CompResult[] = [];
+  Object.entries(MOCK_EVENT_RESULTS).forEach(([meetId, disciplines]) => {
+    const meta = MEET_META[meetId];
+    disciplines.forEach(disc => {
+      const myResult = disc.results.find(r => r.athleteName === athlete.name);
+      if (myResult) {
+        competitionHistory.push({
+          meetId,
+          meetTitle: meta?.title ?? meetId,
+          meetDate: meta?.date ?? '—',
+          meetVenue: meta?.venue ?? '—',
+          discipline: disc.discipline,
+          pos: myResult.pos,
+          time: myResult.time,
+          pb: myResult.pb,
+          sb: myResult.sb,
+          totalAthletes: disc.results.length,
+        });
+      }
+    });
+  });
+  const totalRaces = competitionHistory.length;
+  const goldCount = competitionHistory.filter(r => r.pos === 1).length;
+  const silverCount = competitionHistory.filter(r => r.pos === 2).length;
+  const bronzeCount = competitionHistory.filter(r => r.pos === 3).length;
+  const medalCount = goldCount + silverCount + bronzeCount;
+  const bestPos = competitionHistory.length > 0 ? Math.min(...competitionHistory.map(r => r.pos)) : null;
 
   return (
     <div>
       {/* Profile Header */}
-      <div className="gov-card p-6 mb-6 bg-gradient-to-br from-[#1A1F2E] to-[#1E2740] border-0 text-white">
+      <div className="gov-card p-6 mb-6 bg-white dark:bg-[#121829] border border-slate-200/80 dark:border-slate-800 shadow-sm rounded-2xl">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-[18px]">
+          <div className="flex items-center gap-4">
             <img src={athlete.photoUrl} alt={athlete.name}
-              className="w-[72px] h-[72px] rounded-[14px] object-cover border-2 border-accent" />
+              className="w-16 h-16 rounded-2xl object-cover border-2 border-primary shadow-sm" />
             <div>
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h2 className="text-[1.6rem] font-black text-white">{athlete.name}</h2>
                 <span className="badge badge-green"><ShieldCheck size={12} /> Fayda Verified</span>
-                <span className="badge badge-amber">{athlete.ageTier}</span>
+                <span className="badge badge-amber">{athlete.ageTier} Tier</span>
               </div>
-              <p className="text-[#C8A84B] font-bold text-[0.9rem]">{athlete.amharicName} — {athlete.clubName}</p>
-              <div className="flex gap-[14px] mt-1.5 text-[0.82rem] text-[#8FA8BC]">
-                <span>FIN: <strong className="text-white font-mono">{athlete.faydaFin}</strong></span>
+              <h2 className="text-[1.1rem] font-bold text-[#0F172A] dark:text-white leading-tight mb-0.5">{athlete.name}</h2>
+              <div className="text-[1.05rem] font-bold text-primary dark:text-[#38BDF8] leading-tight mb-1.5">{athlete.amharicName}</div>
+              <p className="text-[0.85rem] text-slate-600 dark:text-slate-400 font-semibold mb-1">{athlete.clubName}</p>
+              <div className="flex gap-3 text-[0.82rem] text-slate-500 dark:text-slate-400 flex-wrap">
+                <span>FIN: <strong className="text-[#0F172A] dark:text-white font-mono text-[0.88rem]">{athlete.faydaFin}</strong></span>
                 <span>•</span>
-                <span>Event: <strong className="text-white">{athlete.primaryEvent}</strong></span>
+                <span>Event: <strong className="text-primary font-bold">{athlete.primaryEvent}</strong></span>
               </div>
             </div>
           </div>
@@ -118,7 +163,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
       </div>
 
       {/* Tab Nav */}
-      <div className="flex gap-1 mb-6 bg-[#F0F5FA] p-1 rounded-xl w-fit">
+      <div className="flex gap-1 mb-6 bg-[var(--bg-surface-variant)] p-1 rounded-xl w-fit flex-wrap">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
             className={`px-[18px] py-2 rounded-[9px] border-0 cursor-pointer font-bold text-[0.85rem] transition-all duration-150 ${activeTab === t.id ? 'bg-primary text-white shadow-[0_2px_8px_rgba(11,87,142,0.25)]' : 'bg-transparent text-text-muted shadow-none'}`}>
@@ -191,6 +236,114 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* ── COMPETITION HISTORY TAB ── */}
+      {activeTab === 'competitions' && (
+        <div>
+          {/* Summary stats */}
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4 mb-6">
+            {[
+              { label: 'Races Run', value: totalRaces, icon: Flag, color: 'var(--primary)' },
+              { label: 'Medals', value: medalCount, icon: Medal, color: '#C8A84B' },
+              { label: '🥇 Gold', value: goldCount, icon: Trophy, color: '#C8A84B' },
+              { label: '🥈 Silver', value: silverCount, icon: Trophy, color: '#A8B8C8' },
+              { label: '🥉 Bronze', value: bronzeCount, icon: Trophy, color: '#C87040' },
+              { label: 'Best Finish', value: bestPos ? `#${bestPos}` : '—', icon: TrendingUp, color: 'var(--primary)' },
+            ].map(s => {
+              const Icon = s.icon;
+              return (
+                <div key={s.label} className="stat-card">
+                  <div className="flex justify-center mb-1">
+                    <Icon size={18} color={s.color} />
+                  </div>
+                  <div className="stat-value text-[1.5rem]" style={{ color: s.color }}>{s.value}</div>
+                  <div className="stat-label">{s.label}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {totalRaces === 0 ? (
+            <div className="gov-card text-center p-16 text-text-muted">
+              <Trophy size={44} color="#D0E0D2" className="mx-auto mb-4" />
+              <p className="font-bold text-[1rem] mb-1">No competition results found</p>
+              <p className="text-[0.82rem]">Results will appear here once this athlete competes in an EAF-certified meet.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-5">
+              {/* Group by meet */}
+              {Object.keys(MEET_META).map(meetId => {
+                const meetResults = competitionHistory.filter(r => r.meetId === meetId);
+                if (meetResults.length === 0) return null;
+                const meta = MEET_META[meetId];
+                return (
+                  <div key={meetId} className="gov-card p-0 overflow-hidden">
+                    {/* Meet header */}
+                    <div className="px-5 py-4 bg-gradient-to-r from-[#1A1F2E] to-[#1E2740] flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <div className="text-white font-extrabold text-[0.95rem]">{meta.title}</div>
+                        <div className="flex items-center gap-3 mt-1 text-[0.78rem] text-[#8FA8BC]">
+                          <span className="flex items-center gap-1"><Calendar size={11} /> {meta.date}</span>
+                          <span className="flex items-center gap-1"><MapPin size={11} /> {meta.venue}</span>
+                        </div>
+                      </div>
+                      <span className="badge badge-amber text-[0.68rem]">
+                        {meetResults.length} event{meetResults.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    {/* Results table */}
+                    <div className="table-responsive">
+                      <table className="gov-table">
+                        <thead>
+                          <tr>
+                            <th>Pos</th>
+                            <th>Discipline</th>
+                            <th>Time / Result</th>
+                            <th>Field</th>
+                            <th>Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {meetResults.map((r, i) => (
+                            <tr key={i}>
+                              <td>
+                                <div style={{
+                                  width: 32, height: 32, borderRadius: '50%',
+                                  background: r.pos === 1 ? 'rgba(200,168,75,0.15)' : r.pos === 2 ? 'rgba(168,184,200,0.15)' : r.pos === 3 ? 'rgba(200,112,64,0.15)' : 'var(--bg-surface-variant)',
+                                  border: `2px solid ${r.pos === 1 ? '#C8A84B' : r.pos === 2 ? '#A8B8C8' : r.pos === 3 ? '#C87040' : 'var(--border-card)'}`,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontWeight: 900, fontSize: '0.8rem',
+                                  color: r.pos === 1 ? '#C8A84B' : r.pos === 2 ? '#A8B8C8' : r.pos === 3 ? '#C87040' : 'var(--text-muted)'
+                                }}>
+                                  {r.pos <= 3 ? ['🥇', '🥈', '🥉'][r.pos - 1] : r.pos}
+                                </div>
+                              </td>
+                              <td><strong className="text-[0.9rem]">{r.discipline}</strong></td>
+                              <td>
+                                <span className={`font-mono font-extrabold text-[1rem] ${r.pos === 1 ? 'text-[#C8A84B]' : 'text-primary'
+                                  }`}>{r.time}</span>
+                              </td>
+                              <td className="text-text-muted text-[0.82rem]">
+                                {r.pos} / {r.totalAthletes}
+                              </td>
+                              <td className="flex gap-1.5 flex-wrap">
+                                {r.pb && <span className="badge badge-amber text-[0.6rem]">PB</span>}
+                                {r.sb && <span className="badge badge-blue text-[0.6rem]">SB</span>}
+                                {!r.pb && !r.sb && <span className="text-text-dim text-[0.78rem]">—</span>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -268,7 +421,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                 <div className="form-group">
                   <label className="form-label">Event</label>
                   <select className="form-select" value={pbEvent} onChange={e => setPbEvent(e.target.value)}>
-                    {['100m','200m','400m','800m','1,500m','3,000m','5,000m','10,000m','Half Marathon','Marathon','3,000m Steeplechase','110m Hurdles','Long Jump','Triple Jump','High Jump','Shot Put','Discus','Javelin'].map(ev => (
+                    {['100m', '200m', '400m', '800m', '1,500m', '3,000m', '5,000m', '10,000m', 'Half Marathon', 'Marathon', '3,000m Steeplechase', '110m Hurdles', 'Long Jump', 'Triple Jump', 'High Jump', 'Shot Put', 'Discus', 'Javelin'].map(ev => (
                       <option key={ev}>{ev}</option>
                     ))}
                   </select>
@@ -403,7 +556,7 @@ export default function AthleteOverview({ athlete, onChangeSubPage, onPayLicense
                   <div className="form-group">
                     <label className="form-label">Session Type</label>
                     <select className="form-select" value={trainType} onChange={e => setTrainType(e.target.value)}>
-                      {['Easy Run','Long Run','Tempo Run','Track Work','Speed Work','Fartlek','Hill Repeats','Recovery Run','Cross Training','Strength & Conditioning'].map(t => <option key={t}>{t}</option>)}
+                      {['Easy Run', 'Long Run', 'Tempo Run', 'Track Work', 'Speed Work', 'Fartlek', 'Hill Repeats', 'Recovery Run', 'Cross Training', 'Strength & Conditioning'].map(t => <option key={t}>{t}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
