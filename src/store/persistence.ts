@@ -13,6 +13,10 @@ export const STORAGE_KEYS = {
   athletes: 'eaf_athletes',
   clubs: 'eaf_clubs',
   transfers: 'eaf_transfers',
+  accessToken: 'eaf_accessToken',
+  refreshToken: 'eaf_refreshToken',
+  userId: 'eaf_userId',
+  userData: 'eaf_userData',
 } as const;
 
 export function readJSON<T>(key: string, fallback: T): T {

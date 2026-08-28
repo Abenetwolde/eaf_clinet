@@ -10,14 +10,14 @@ export const apiSlice = createApi({
     baseUrl,
     prepareHeaders: (headers, { getState }) => {
       const state = getState() as RootState;
-      const token = state.auth?.token;
+      const token = state.auth?.token || (typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('eaf_token') : null);
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
       return headers;
     },
   }),
-  tagTypes: ['Athletes', 'Clubs', 'Competitions', 'Events', 'Registrations', 'Results', 'Users'],
+  tagTypes: ['Athletes', 'Clubs', 'Competitions', 'Events', 'News', 'Registrations', 'Results', 'Users'],
   endpoints: (builder) => ({
     getAthletes: builder.query<Athlete[], void>({
       query: () => 'athletes',

@@ -30,9 +30,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n, LanguageSelector } from './i18n';
 
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { setRole, setClub, setAthlete, logout } from './store/slices/authSlice';
+import { setRole, setClub, setAthlete, logout, setAuthLoading, setUserData } from './store/slices/authSlice';
 import { addAthlete, updateAthlete, setAthletes } from './store/slices/athleteSlice';
 import { addClub, addTransfer } from './store/slices/clubSlice';
+import { useLazyGetMeQuery, useLogoutApiMutation } from './store/api/authApi';
 import { Athlete, Club, Transfer } from './types';
 
 type Role = 'LANDING' | 'CLUB' | 'ATHLETE';
@@ -44,6 +45,39 @@ export default function App() {
   const currentClub = useAppSelector((state) => state.auth.club);
   const currentAthlete = useAppSelector((state) => state.auth.athlete);
   const athletes = useAppSelector((state) => state.athletes);
+  const authToken = useAppSelector((state) => state.auth.token);
+  const userData = useAppSelector((state) => state.auth.userData);
+
+  // API hooks
+  const [fetchMe] = useLazyGetMeQuery();
+  const [logoutApi] = useLogoutApiMutation();
+
+  // Auto-login: validate saved token on mount
+  useEffect(() => {
+    if (authToken && currentRole !== 'LANDING') {
+      dispatch(setAuthLoading());
+      fetchMe()
+        .unwrap()
+        .then((res) => {
+          if (res?.data) {
+            dispatch(setUserData({
+              id: res.data.id,
+              email: res.data.email,
+              firstName: res.data.firstName,
+              lastName: res.data.lastName,
+              phoneNumber: res.data.phoneNumber,
+              status: res.data.status,
+              roles: res.data.roles,
+              permissions: res.data.permissions,
+            }));
+          }
+        })
+        .catch(() => {
+          // Token invalid/expired — clear auth
+          dispatch(logout());
+        });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Local UI state
   const [clubSubPage, setClubSubPage] = useState('OVERVIEW');
@@ -95,6 +129,10 @@ export default function App() {
   }, [currentRole, currentAthlete]);
 
   const handleLogout = () => {
+    // Call logout API (fire-and-forget — it's stateless on the server)
+    if (authToken) {
+      logoutApi().catch(() => {});
+    }
     try {
       sessionStorage.removeItem('eaf_currentRole');
       sessionStorage.removeItem('eaf_currentAthleteId');

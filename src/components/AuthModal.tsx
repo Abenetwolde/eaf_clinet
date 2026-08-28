@@ -1,20 +1,105 @@
 import React, { useState } from 'react';
-import { MOCK_CLUBS, MOCK_ATHLETES } from '../data/mockData';
+import { useLoginMutation } from '../store/api/authApi';
+import { useAppDispatch } from '../store/hooks';
+import { login } from '../store/slices/authSlice';
 
-export default function AuthModal({ onClose, onLoginSuccess }) {
+export default function AuthModal({ onClose, onLoginSuccess }: {
+  onClose: () => void;
+  onLoginSuccess: (role: string, data: any) => void;
+}) {
+  const dispatch = useAppDispatch();
+  const [loginApi, { isLoading }] = useLoginMutation();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const lowerEmail = email.toLowerCase();
+    setError('');
 
-    if (lowerEmail.includes('athlete') || lowerEmail.includes('haile') || lowerEmail.includes('runner') || lowerEmail.includes('@example')) {
-      const selectedAthlete = MOCK_ATHLETES.find(a => a.name.toLowerCase().includes('haile')) || MOCK_ATHLETES[0];
-      onLoginSuccess('ATHLETE', { athlete: selectedAthlete });
-    } else {
-      const selectedClub = MOCK_CLUBS.find(c => c.email.toLowerCase() === lowerEmail) || MOCK_CLUBS[0];
-      onLoginSuccess('CLUB', { club: selectedClub });
+    try {
+      const res = await loginApi({ email, password }).unwrap();
+      const data = res.data;
+
+      // Determine role from userRole or roles array
+      const userRole = data.userRole?.toLowerCase() || '';
+      const roles = data.user?.roles || [];
+      const isAthlete = userRole.includes('athlete') || roles.some(r => r.toUpperCase() === 'ATHLETE');
+      const appRole = isAthlete ? 'ATHLETE' : 'CLUB';
+
+      // Build userData for persistence
+      const userData = {
+        id: data.user?.id || data.userId,
+        email: data.user?.email || email,
+        firstName: data.user?.firstName || '',
+        lastName: data.user?.lastName || '',
+        status: data.status || data.user?.status || 'ACTIVE',
+        roles,
+      };
+
+      // Dispatch token + user data to Redux
+      dispatch(login({
+        role: appRole,
+        token: data.token || data.accessToken,
+        refreshToken: data.refreshToken,
+        userId: data.userId || data.user?.id,
+        userData,
+      }));
+
+      // Build club or athlete object for the existing handler
+      if (appRole === 'CLUB') {
+        onLoginSuccess('CLUB', {
+          club: {
+            id: data.clubId || 'CLUB-' + data.userId,
+            name: data.clubName || 'My Club',
+            shortName: data.clubName || 'Club',
+            region: 'Addis Ababa',
+            manager: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim() || 'Admin',
+            email: data.user?.email || email,
+            phone: '',
+            licensedAthletes: 0,
+            pendingVerifications: 0,
+            unlicensedAthletes: 0,
+            transfersCount: 0,
+            logo: '🏃',
+            clubRank: 0,
+            totalPoints: 0,
+          },
+        });
+      } else {
+        onLoginSuccess('ATHLETE', {
+          athlete: {
+            id: data.userId || data.user?.id,
+            name: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim() || data.userName || 'Athlete',
+            dob: '',
+            gender: '',
+            ageTier: 'Senior',
+            clubId: data.clubId || undefined,
+            clubName: data.clubName || undefined,
+            faydaFin: data.fanNumber || undefined,
+            faydaStatus: 'VERIFIED',
+            licenseStatus: 'PENDING',
+            photoUrl: '/images/runner_female.png',
+            email: data.user?.email || email,
+            phone: '',
+            personalBests: [],
+            seasonBests: [],
+            weightLog: [],
+            trainingLog: [],
+            achievements: [],
+          },
+        });
+      }
+    } catch (err: unknown) {
+      const apiErr = err as { data?: { message?: string; success?: boolean }; error?: string; status?: string | number };
+      const msg = apiErr?.data?.message || apiErr?.error || 'Login failed. Please check your credentials.';
+
+      if (apiErr?.status === 'FETCH_ERROR' || !apiErr?.status) {
+        setError('Cannot reach the server. Please try again later.');
+      } else {
+        setError(msg);
+      }
     }
   };
 
@@ -69,27 +154,24 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
           </p>
         </div>
 
-        {/* Mock Mode Test Credentials */}
-        <div style={{
-          background: '#EFF6FF',
-          border: '1px solid #BFDBFE',
-          borderRadius: '12px',
-          padding: '14px 16px',
-          marginBottom: '24px',
-          fontSize: '0.85rem',
-          color: '#1E40AF'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-            <div style={{ fontSize: '1rem' }}>ℹ️</div>
-            <div>
-              <div style={{ fontWeight: 800, marginBottom: '6px' }}>Mock Mode - Test Credentials:</div>
-              <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', lineHeight: 1.6 }}>
-                <div>Club Admin: admin@eacrms.gov.et / admin123</div>
-                <div>Athlete: athlete@example.com / athlete123</div>
-              </div>
+        {/* Error Message */}
+        {error && (
+          <div style={{
+            background: '#FEF2F2',
+            border: '1px solid #FECACA',
+            borderRadius: '12px',
+            padding: '14px 16px',
+            marginBottom: '24px',
+            fontSize: '0.85rem',
+            color: '#991B1B',
+            fontWeight: 600
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <span style={{ fontSize: '1rem' }}>⚠️</span>
+              <span>{error}</span>
             </div>
           </div>
-        </div>
+        )}
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Email Input */}
@@ -151,23 +233,35 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
           {/* Login Button */}
           <button
             type="submit"
+            disabled={isLoading}
             style={{
               width: '100%',
               padding: '16px',
               fontSize: '1.05rem',
               borderRadius: '12px',
-              background: '#0B5ED7',
+              background: isLoading ? '#94A3B8' : '#0B5ED7',
               color: '#FFFFFF',
-              cursor: 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               border: 'none',
               fontWeight: 700,
               marginTop: '8px',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#0A4FB5'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#0B5ED7'}
+            onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = '#0A4FB5'; }}
+            onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = '#0B5ED7'; }}
           >
-            Login
+            {isLoading ? (
+              <>
+                <svg width="18" height="18" viewBox="0 0 24 24" style={{ animation: 'spin 1s linear infinite' }}>
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" strokeDasharray="31.4" strokeDashoffset="10" strokeLinecap="round" />
+                </svg>
+                Logging in...
+              </>
+            ) : 'Login'}
           </button>
 
           {/* Register Link */}
@@ -196,6 +290,7 @@ export default function AuthModal({ onClose, onLoginSuccess }) {
           </div>
         </form>
       </div>
+      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

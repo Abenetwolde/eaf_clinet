@@ -1,15 +1,19 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share, RefreshCw } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
+import NewsDetail from './NewsDetail';
+import GalleryDetail from './GalleryDetail';
 import { ResponsiveSeeMoreText } from './ResponsiveSeeMoreText';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '../i18n';
+import { useGetNewsQuery, type NewsArticle } from '../store/api/newsApi';
+import { useGetAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
 
 /* ─────────────────────────────────────────────
    STATIC DATA & GALLERY IMAGES
    ───────────────────────────────────────────── */
 export interface NewsItem {
-  id: number;
+  id: number | string;
   date: string;
   title: string;
   amharicTitle?: string;
@@ -50,190 +54,12 @@ export interface GalleryItem {
   captures: GalleryCapture[];
 }
 
-const NEWS: NewsItem[] = [
-  {
-    id: 1,
-    date: 'May 18, 2026',
-    title: 'Ethiopia Finishes 24th African Championship with 15 Medals',
-    amharicTitle: 'ኢትዮጵያ 24ኛውን የአፍሪካ አትሌቲክስ ሻምፒዮና በ15 ሜዳሊያዎች አጠናቀቀች',
-    summary: 'Ethiopia collected 7 gold, 4 silver, and 4 bronze medals at the 24th African Athletics Championship hosted in Accra, Ghana, topping the distance running charts.',
-    tag: 'Championship',
-    img: '/images/d1.jpg',
-    featured: true,
-    author: 'EAF Media Unit / Solomon Desta',
-    readTime: '4 min read',
-    location: 'Accra, Ghana',
-    paragraphs: [
-      'The Ethiopian National Athletics Team delivered a historic performance at the 24th African Senior Athletics Championships concluded at the Accra International Stadium, securing a remarkable haul of 7 Gold, 4 Silver, and 4 Bronze medals across four grueling days of elite continental competition.',
-      'Led by dominant tactical masterclasses in the men’s 10,000m and women’s 5,000m, Ethiopian distance runners swept both podiums while showing impressive breakthroughs in middle-distance and steeplechase disciplines. The young sensation Haile Demisse clinched gold in the 5,000m with an electrifying final lap sprint of 53.2 seconds, holding off formidable East African rivals.',
-      'In the women’s 10,000m, Sifan Mengistu Wolde set a new championship record with a commanding solo run from 6,000 meters out, crossing the line in 30:52.14 amidst thunderous applause from the stadium crowd and the vibrant Ethiopian diaspora delegation.',
-      'The Ethiopian Athletics Federation President lauded the athletes, declaring this championship a definitive confirmation of the federation’s long-term talent development pipeline as Ethiopia prepares for the upcoming World Athletics Championships.'
-    ],
-    quote: {
-      text: 'Our athletes demonstrated unmatched tactical maturity, national pride, and resilience under high humidity. The future of Ethiopian athletics is stronger than ever.',
-      author: 'Derartu Tulu, EAF Executive Leadership'
-    },
-    stats: [
-      { label: 'Gold Medals', value: '7' },
-      { label: 'Silver Medals', value: '4' },
-      { label: 'Bronze Medals', value: '4' },
-      { label: 'Total Medals', value: '15' },
-      { label: 'Continental Rank', value: '#1 (Distance)' }
-    ],
-    gallery: ['/images/d1.jpg', '/images/d5.jpg', '/images/a2.jpg']
-  },
-  {
-    id: 2,
-    date: 'Apr 26, 2026',
-    title: 'Ethiopian Heroes Dominate London Marathon',
-    amharicTitle: 'የኢትዮጵያ ጀግኖች የለንደን ማራቶንን በበላይነት አጠናቀቁ',
-    summary: 'Ethiopian elite marathoners showcased breathtaking endurance along the Thames, capturing both men’s and women’s podium crowns in world-class times.',
-    tag: 'Marathon',
-    img: '/images/d2.jpeg',
-    author: 'EAF International Desk / London',
-    readTime: '3 min read',
-    location: 'London, United Kingdom',
-    paragraphs: [
-      'Ethiopian distance masters wrote another glorious chapter in distance running history at the prestigious London Marathon, dominating a world-class field from Blackheath to The Mall in front of hundreds of thousands of spectators.',
-      'In the women’s elite race, Tigst Assefa unleashed a blistering surge after passing the 35km mark near Embankment, breaking away from the defending champion and crossing the finish line in a spectacular course-record pace.',
-      'The men’s division was equally thrilling, with Ethiopian athletes controlling the rhythm through 30km before an explosive dual sprint towards Buckingham Palace sealed a 1-2 finish for Ethiopia.',
-      'EAF Technical Director noted that the rigorous altitude preparation in Entoto and Sululta was instrumental in sustaining peak cardiovascular power through the cool, breezy London conditions.'
-    ],
-    quote: {
-      text: 'Every kilometer we train in the hills of Bekoji and Sululta is for this exact moment—bringing glory to the green, yellow, and red flag.',
-      author: 'Tigst Assefa, Marathon Champion'
-    },
-    stats: [
-      { label: 'Women Winning Time', value: '2:14:18' },
-      { label: 'Men Winning Time', value: '2:03:42' },
-      { label: 'Top-5 Ethiopian Finishers', value: '4 Athletes' },
-      { label: 'Spectator Crowd', value: '800,000+' }
-    ],
-    gallery: ['/images/d2.jpeg', '/images/runner_marathon.png', '/images/a1.jpg']
-  },
-  {
-    id: 3,
-    date: 'Apr 26, 2026',
-    title: '4th Ethiopia Tamirt 10KM Won by Nibret Kinde & Birtukan Mola',
-    amharicTitle: '4ኛው የኢትዮጵያ ታምርት 10 ኪሜ በንብረት ኪንዴ እና ብርቱካን ሞላ አሸናፊነት ተጠናቀቀ',
-    summary: 'More than 20,000 participants and national club elites raced through the heart of the capital in a vibrant celebration of athletics and national unity.',
-    tag: 'Road Race',
-    img: '/images/d3.jpeg',
-    author: 'EAF Road Race Committee',
-    readTime: '3 min read',
-    location: 'Meskel Square, Addis Ababa',
-    paragraphs: [
-      'The 4th edition of the annual Ethiopia Tamirt 10-Kilometer Road Race electrified Addis Ababa as over 20,000 elite and mass participants lined up at the historic Meskel Square on Sunday morning.',
-      'Nibret Kinde produced an exceptional tactical performance, pulling clear of the elite men’s pack at the 7km uphill stretch towards Mexico Square and crossing the tape in 28:14 at an altitude of 2,355 meters.',
-      'In the women’s contest, Birtukan Mola delivered a stunning kick over the final 500 meters to secure first place in 31:48, setting a new course benchmark for high-altitude 10k road circuits in Ethiopia.',
-      'Federation officials commended the flawless electronic chip timing, Fayda athlete verification integration, and enthusiastic turnout from youth development academies across all regional states.'
-    ],
-    quote: {
-      text: 'Running alongside thousands of fellow Ethiopians at Meskel Square gives you unmatched energy. It proves grassroots athletics is thriving across our country.',
-      author: 'Nibret Kinde, Men’s 10K Winner'
-    },
-    stats: [
-      { label: 'Registered Runners', value: '22,400+' },
-      { label: 'Men Record', value: '28:14.2' },
-      { label: 'Women Record', value: '31:48.0' },
-      { label: 'Participating Clubs', value: '34 Clubs' }
-    ],
-    gallery: ['/images/d3.jpeg', '/images/runners_training.png', '/images/banner_grand_prix.png']
-  },
-  {
-    id: 4,
-    date: 'Apr 26, 2026',
-    title: '10-Day Athletics Judging Training Completed',
-    amharicTitle: 'የ10 ቀናት የአትሌቲክስ ዳኝነት እና ቴክኒካል ስልጠና በስኬት ተጠናቀቀ',
-    summary: 'Sixty technical officials from 11 regional states completed advanced World Athletics Level-1 and Level-2 technical judging, officiating, and photo-finish certification.',
-    tag: 'Training',
-    img: '/images/d4.jpg',
-    author: 'EAF Technical & Education Department',
-    readTime: '3 min read',
-    location: 'EAF Headquarters & National Stadium',
-    paragraphs: [
-      'The Ethiopian Athletics Federation successfully concluded an intensive 10-day Technical Officials and Judging Certification Seminar at the EAF Headquarters and Addis Ababa National Stadium.',
-      'The comprehensive curriculum covered modern electronic timing systems, false start detection sensors, wind gauge calibration, track umpire coordination, and strict anti-doping protocol enforcement.',
-      'Facilitated by certified World Athletics international technical delegates, the seminar awarded 60 officials with national level badges, significantly expanding Ethiopia’s officiating capacity ahead of the international calendar.',
-      'EAF Technical Committee affirmed that digitalizing meet operations and licensing officials through the central EAF Portal will ensure maximum integrity and international standard alignment in all domestic meets.'
-    ],
-    quote: {
-      text: 'World-class athletes require world-class officiating. Modern electronic timing and trained technical referees guarantee fair and accurate results for every competitor.',
-      author: 'Technical Committee Chairperson'
-    },
-    stats: [
-      { label: 'Certified Officials', value: '60 Judges' },
-      { label: 'Regional States', value: '11 Regions' },
-      { label: 'Course Duration', value: '80 Hours' },
-      { label: 'Standard', value: 'World Athletics L1/L2' }
-    ],
-    gallery: ['/images/d4.jpg', '/images/d5.jpg', '/images/logo.jpeg']
-  },
-  {
-    id: 5,
-    date: 'May 10, 2026',
-    title: 'Ethiopian Delegation Departs for African Championships',
-    amharicTitle: 'የኢትዮጵያ ብሔራዊ ልዑክ ለአፍሪካ ሻምፒዮና ጉዞ ጀመረ',
-    summary: 'A 42-member contingent of elite athletes, coaches, physiotherapists, and team physicians departed Addis Ababa with high expectations and thorough preparation.',
-    tag: 'Championship',
-    img: '/images/d5.jpg',
-    author: 'EAF National Teams Secretariat',
-    readTime: '2 min read',
-    location: 'Bole International Airport',
-    paragraphs: [
-      'The official Ethiopian delegation composed of 32 elite track and field athletes and 10 technical support staff departed from Bole International Airport for the 24th African Athletics Championships in Accra, Ghana.',
-      'The squad underwent an intensive six-week residential high-altitude training camp in Sululta and the Ethiopian Youth Sport Academy, focusing on tactical speed surges, humid conditions acclimation, and team relay transitions.',
-      'Speaking before departure, National Team Head Coach expressed strong confidence in the blend of Olympic veteran leaders and emerging U20 youth champions who earned their national vests through the recent national trials.',
-      'Supporters, family members, and federation leadership gathered at the departure lounge to offer their prayers, blessings, and words of national encouragement.'
-    ],
-    quote: {
-      text: 'We go to Accra not just to participate, but to uphold Ethiopia’s proud legacy as the beacon of African distance running excellence.',
-      author: 'National Team Head Coach'
-    },
-    stats: [
-      { label: 'Delegation Size', value: '42 Members' },
-      { label: 'Athletes', value: '32 Competitors' },
-      { label: 'Disciplines', value: '14 Events' },
-      { label: 'Target Medals', value: '12+ Medals' }
-    ],
-    gallery: ['/images/d5.jpg', '/images/a2.jpg', '/images/runners_training.png']
-  },
-  {
-    id: 6,
-    date: 'May 10, 2026',
-    title: 'National Team Official Send-Off Ceremony Held',
-    amharicTitle: 'ለብሔራዊ ቡድኑ ይፋዊ የሽኝት እና የክብር ስነ-ስርዓት ተካሄደ',
-    summary: 'Government dignitaries, athletics legends, and corporate sponsors gathered to honor the national athletics contingent and hand over the sacred national flag.',
-    tag: 'National Team',
-    img: '/images/a1.jpg',
-    author: 'EAF Communications Office',
-    readTime: '3 min read',
-    location: 'Skylight Hotel, Addis Ababa',
-    paragraphs: [
-      'In a grand and dignified ceremony held at the Ethiopian Skylight Hotel ballroom, the Ethiopian Athletics Federation, Ministry of Culture & Sports, and key corporate partners hosted the official send-off gala for the national athletics squad.',
-      'The event commenced with the ceremonial handover of the Ethiopian national tricolor by government ministers to the team captain, symbolizing the hopes and unity of over 120 million citizens.',
-      'Athletics legends including double Olympic champion Derartu Tulu and Haile Gebrselassie delivered impassioned speeches, sharing wisdom on mental composure, tactical endurance, and honoring the legacy of Abebe Bikila.',
-      'Major federation partners, including Ethiopian Airlines, Ethio Telecom, and Commercial Bank of Ethiopia, announced enhanced performance bonuses and reward packages for medal-winning performances.'
-    ],
-    quote: {
-      text: 'Wearing the Ethiopian uniform is the ultimate privilege. Carry the national flag with pride, integrity, and uncompromising dedication on the track.',
-      author: 'EAF Executive Committee'
-    },
-    stats: [
-      { label: 'Distinguished Guests', value: '350+ Attendees' },
-      { label: 'Corporate Sponsors', value: '6 Partners' },
-      { label: 'Athletes Honored', value: '32 Athletes' },
-      { label: 'Flag Ceremony', value: 'Official Handover' }
-    ],
-    gallery: ['/images/a1.jpg', '/images/d5.jpg', '/images/d4.jpg']
-  }
-];
 
 const ENRICHED_MEETS = [
   {
     id: "MEET-2026-01",
     title: "Addis Ababa International Grand Prix 2026",
-    amharic: "አዲስ አበባ ግራንድ ፕሪ 2026",
+    amharic: "አዲስ አበባ ዓለም አቀፍ ግራንድ ፕሪ 2026",
     venue: "Addis Ababa National Stadium",
     date: "2026-08-12",
     dateString: "August 12–14, 2026",
@@ -245,7 +71,7 @@ const ENRICHED_MEETS = [
   {
     id: "MEET-2026-02",
     title: "Ethiopian National Youth Olympic Games U18/U20",
-    amharic: "ብሔራዊ የወጣቶች ኦሎምፒክ ጨዋታዎች",
+    amharic: "ብሔራዊ የወጣቶች ኦሊምፒክ ጨዋታዎች U18/U20",
     venue: "Hawassa International Stadium",
     date: "2026-09-05",
     dateString: "September 5–8, 2026",
@@ -257,7 +83,7 @@ const ENRICHED_MEETS = [
   {
     id: "MEET-2026-03",
     title: "Jan Meda National Cross-Country Olympic Trials",
-    amharic: "ጃን ሜዳ ብሔራዊ ምርጫ",
+    amharic: "ጃን ሜዳ ብሔራዊ የኦሊምፒክ ማጣሪያ ውድድር",
     venue: "Jan Meda Race Course, Addis Ababa",
     date: "2026-10-20",
     dateString: "October 20, 2026",
@@ -308,7 +134,7 @@ const ATHLETES = [
   {
     id: 1,
     name: 'Tigst Assefa',
-    amharicName: 'ትዕግስት አሰፋ',
+    amharicName: 'ትግስት አሰፋ',
     achievement: '2023 Berlin Marathon World Record — 2:11:53',
     event: 'Marathon',
     club: 'Ethiopian National Team / Adidas',
@@ -543,7 +369,7 @@ const STRUCTURE_ITEMS = [
   {
     icon: <Award size={22} color="var(--primary)" />,
     title: 'Executive Committee',
-    amharic: 'ስራ አስፈጻሚ',
+    amharic: 'ሥራ አስፈፃሚ ኮሚቴ',
     description: 'The Executive Committee is elected by the General Assembly and handles the day-to-day administration of the federation. It implements General Assembly decisions, manages federation finances, appoints technical staff, and oversees national team selection and international relations with World Athletics (WA) and the African Athletics Confederation (AAC).',
     members: '11 elected officials: President, VP, Secretary General, Treasurer & 7 members',
     meets: 'Monthly (at least quarterly)',
@@ -551,7 +377,7 @@ const STRUCTURE_ITEMS = [
   {
     icon: <Activity size={22} color="var(--primary)" />,
     title: 'Technical Committee',
-    amharic: 'ቴክኒካዊ ኮሚቴ',
+    amharic: 'ቴክኒክ ኮሚቴ',
     description: 'The Technical Committee oversees all sporting and competition matters. This includes drafting competition rules aligned with World Athletics standards, accrediting coaches and officials, managing athlete licensing, organizing national championships, and approving the national competition calendar for track, field, road, cross-country, and marathon events.',
     members: '7 technical experts: Head Coach, Chief Official, Medical Officer & specialists',
     meets: 'Bi-monthly and before all major national championships',
@@ -559,7 +385,7 @@ const STRUCTURE_ITEMS = [
   {
     icon: <BookOpen size={22} color="var(--primary)" />,
     title: 'Training & Research',
-    amharic: 'ስልጠናና ምርምር',
+    amharic: 'ስልጠና እና ምርምር',
     description: 'The Training & Research Department drives the scientific development of Ethiopian athletics. It designs national coaching education programs, conducts sports science research, provides nutritional and anti-doping guidance, coordinates with universities and sports institutes, and monitors the Long-Term Athlete Development (LTAD) pathway from youth to elite level.',
     members: 'Department Head, 4 senior coaches, 2 sports scientists, anti-doping officer',
     meets: 'Weekly (training camps) and quarterly (research reviews)',
@@ -568,22 +394,63 @@ const STRUCTURE_ITEMS = [
 
 
 const QUICK_LINKS = [
-  ['Home', 'ቅድመ ገፅ', '#home'],
+  ['Home', 'ቅድመ ገጽ', '#home'],
   ['News', 'ዜና', '#news'],
-  ['Competitions', 'ውድድሮች', '#competitions'],
-  ['Results', 'ውጤት', '#competitions'],
-  ['Athlete Profile', 'አትሌት ፕሮፋይል', '#athletes'],
-  ['Gallery', 'ምስል', '#media'],
-  ['Contact', 'ያግኙን', '#contact'],
+  ['Gallery', 'áˆáˆµáˆ', '#media'],
+  ['Contact', 'á‹«áŒáŠ™áŠ•', '#contact'],
 ];
 
-const TAG_COLORS = {
+const TAG_COLORS: Record<string, { bg: string; color: string }> = {
   Championship: { bg: '#E0F2FE', color: '#0369A1' },
+  CHAMPIONSHIP: { bg: '#E0F2FE', color: '#0369A1' },
   Marathon: { bg: '#FEF3C7', color: '#B45309' },
+  MARATHON: { bg: '#FEF3C7', color: '#B45309' },
   'Road Race': { bg: '#DCFCE7', color: '#15803D' },
+  ROAD_RACE: { bg: '#DCFCE7', color: '#15803D' },
   Training: { bg: '#F3E8FF', color: '#6B21A8' },
+  TRAINING: { bg: '#F3E8FF', color: '#6B21A8' },
   'National Team': { bg: '#FEE2E2', color: '#B91C1C' },
+  NATIONAL_TEAM: { bg: '#FEE2E2', color: '#B91C1C' },
+  RECOGNITION: { bg: '#FEF3C7', color: '#B45309' },
+  ANNOUNCEMENT: { bg: '#E0E7FF', color: '#4338CA' },
+  COMMUNITY: { bg: '#DCFCE7', color: '#15803D' },
+  GENERAL: { bg: '#F1F5F9', color: '#475569' },
 };
+
+function formatNewsDate(dateStr: string) {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
+const DEFAULT_NEWS_IMAGES = [
+  '/images/d1.jpg',
+  '/images/d2.jpeg',
+  '/images/d3.jpeg',
+  '/images/d4.jpg',
+  '/images/d5.jpg',
+  '/images/runner_marathon.png',
+];
+
+function mapArticleToNewsItem(article: NewsArticle, index: number): NewsItem {
+  return {
+    id: article.id,
+    date: formatNewsDate(article.date),
+    title: article.title,
+    summary: article.shortDescription,
+    tag: article.category || 'General',
+    img: article.imageUrl || DEFAULT_NEWS_IMAGES[index % DEFAULT_NEWS_IMAGES.length],
+    featured: article.isFeatured,
+    author: article.author || 'EAF Communications Department',
+    readTime: '3 min read',
+    location: 'Addis Ababa, Ethiopia',
+    paragraphs: article.shortDescription ? [article.shortDescription] : [],
+  };
+}
 
 /* ─────────────────────────────────────────────
    VECTOR ILLUSTRATION COMPONENTS
@@ -626,6 +493,97 @@ interface LandingPageProps {
 
 export default function LandingPage({ onSelectRole, onRegister, language = 'en', publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false, currentRole = 'LANDING', currentAthlete, onLoginSuccess, navNonce }: LandingPageProps) {
   const { t: tr } = useI18n();
+
+  // ── Fetch real News from Backend API ──
+  const { data: apiNews, isLoading: isNewsLoading } = useGetNewsQuery();
+
+  // ⚡ Instant localStorage cache to eliminate ALL loading delay on page load!
+  const [cachedNews, setCachedNews] = useState<NewsItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('eaf_news_cache');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (apiNews && apiNews.length > 0) {
+      const mapped = apiNews.map((article, idx) => mapArticleToNewsItem(article, idx));
+      setCachedNews(mapped);
+      try {
+        localStorage.setItem('eaf_news_cache', JSON.stringify(mapped));
+      } catch {}
+    }
+  }, [apiNews]);
+
+  const newsList: NewsItem[] = useMemo(() => {
+    if (apiNews && apiNews.length > 0) {
+      return apiNews.map((article, idx) => mapArticleToNewsItem(article, idx));
+    }
+    return cachedNews;
+  }, [apiNews, cachedNews]);
+
+  // ── Fetch Athletes from Backend API (with instant 0ms localStorage cache) ──
+  const { data: apiAthletes } = useGetAthletesQuery();
+  const [cachedAthletes, setCachedAthletes] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('eaf_athletes_cache');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (apiAthletes && apiAthletes.length > 0) {
+      const mapped = apiAthletes.map((ath, idx) => ({
+        id: ath.id || idx + 1,
+        name: ath.name || (ath.user ? `${ath.user.firstName} ${ath.user.lastName}` : 'Ethiopian Athlete'),
+        amharicName: ath.amharicName || ath.name,
+        achievement: ath.achievement || `${ath.primaryEvent || 'Track & Field'} Competitor`,
+        event: ath.primaryEvent || 'Track & Field',
+        club: ath.clubName || 'Ethiopian National Team',
+        faydaFin: 'VERIFIED',
+        faydaStatus: ath.faydaVerified ? 'VERIFIED' : 'PENDING',
+        dob: '2000-01-01',
+        gender: ath.gender || 'Senior',
+        ageTier: ath.ageTier || 'Senior',
+        pb: ath.personalBest || 'Personal Best Mark',
+        quote: ath.quote || 'Dedicating every stride to Ethiopia.',
+        img: ath.photoUrl || (idx % 2 === 0 ? '/images/a1.jpg' : '/images/a2.jpg'),
+        medals: ['🥇 National Competitor', '🥈 Elite Athlete'],
+      }));
+      setCachedAthletes(mapped);
+      try {
+        localStorage.setItem('eaf_athletes_cache', JSON.stringify(mapped));
+      } catch {}
+    }
+  }, [apiAthletes]);
+
+  const athleteList = useMemo(() => {
+    if (apiAthletes && apiAthletes.length > 0) {
+      return apiAthletes.map((ath, idx) => ({
+        id: ath.id || idx + 1,
+        name: ath.name || (ath.user ? `${ath.user.firstName} ${ath.user.lastName}` : 'Ethiopian Athlete'),
+        amharicName: ath.amharicName || ath.name,
+        achievement: ath.achievement || `${ath.primaryEvent || 'Track & Field'} Competitor`,
+        event: ath.primaryEvent || 'Track & Field',
+        club: ath.clubName || 'Ethiopian National Team',
+        faydaFin: 'VERIFIED',
+        faydaStatus: ath.faydaVerified ? 'VERIFIED' : 'PENDING',
+        dob: '2000-01-01',
+        gender: ath.gender || 'Senior',
+        ageTier: ath.ageTier || 'Senior',
+        pb: ath.personalBest || 'Personal Best Mark',
+        quote: ath.quote || 'Dedicating every stride to Ethiopia.',
+        img: ath.photoUrl || (idx % 2 === 0 ? '/images/a1.jpg' : '/images/a2.jpg'),
+        medals: ['🥇 National Competitor', '🥈 Elite Athlete'],
+      }));
+    }
+    return cachedAthletes.length > 0 ? cachedAthletes : ATHLETES;
+  }, [apiAthletes, cachedAthletes]);
+
   const [selectedMeetId, setSelectedMeetId] = useState<string | null>(null);
   const [selectedAthleteModal, setSelectedAthleteModal] = useState<any>(null);
   const [selectedGalleryTab, setSelectedGalleryTab] = useState<string>('All');
@@ -633,22 +591,43 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [activeLightboxImg, setActiveLightboxImg] = useState<GalleryItem | null>(null);
   const [activeCaptureIndex, setActiveCaptureIndex] = useState<number>(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [selectedNews, setSelectedNews] = useState<NewsItem>(NEWS[0]);
+  // Track which article the user manually previewed in the hero card (null = auto = first item)
+  const [selectedNewsOverrideId, setSelectedNewsOverrideId] = useState<string | number | null>(null);
+  // Derive the featured hero article purely from the live list — never stale mock data
+  const selectedNews: NewsItem | null = useMemo(() => {
+    if (selectedNewsOverrideId !== null) {
+      const found = newsList.find(n => n.id === selectedNewsOverrideId);
+      if (found) return found;
+    }
+    return newsList[0] || null;
+  }, [newsList, selectedNewsOverrideId]);
   const [activeStructure, setActiveStructure] = useState<{ title: string; icon: any; amharic: string; description: string; members: string; meets: string } | null>(null);
   const [galleryExpanded, setGalleryExpanded] = useState<boolean>(false);
   const [expandedMeetCards, setExpandedMeetCards] = useState<Record<string, boolean>>({});
   const [expandedAthleteCards, setExpandedAthleteCards] = useState<Record<string, boolean>>({});
   const [viewportWidth, setViewportWidth] = useState<number>(() => typeof window !== 'undefined' ? window.innerWidth : 1200);
 
-  // News modal state
+  // News state (Full-page news reader)
+  const [selectedNewsItem, setSelectedNewsItem] = useState<NewsItem | null>(null);
   const [selectedNewsModal, setSelectedNewsModal] = useState<NewsItem | null>(null);
+  const [selectedGalleryAlbum, setSelectedGalleryAlbum] = useState<GalleryItem | null>(null);
   const [newsShareCopied, setNewsShareCopied] = useState<boolean>(false);
+  const newsReaderRef = useRef<HTMLDivElement>(null);
+
+  // Scroll full-page news reader back to top when the article changes
+  useEffect(() => {
+    if (selectedNewsModal && newsReaderRef.current) {
+      newsReaderRef.current.scrollTo({ top: 0 });
+    }
+  }, [selectedNewsModal?.id]);
 
   const filmstripRef = useRef<HTMLDivElement>(null);
 
-  // Reset selected competition and scroll to top when publicSubPage or navNonce changes
+  // Reset selected competition / news / gallery album and scroll to top when publicSubPage or navNonce changes
   useEffect(() => {
     setSelectedMeetId(null);
+    setSelectedNewsItem(null);
+    setSelectedGalleryAlbum(null);
     if (publicSubPage === 'HOME') {
       window.scrollTo(0, 0);
       setTimeout(() => { window.scrollTo(0, 0); }, 50);
@@ -713,16 +692,16 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   const handleNextArticle = () => {
     if (!selectedNewsModal) return;
-    const currentIndex = NEWS.findIndex(n => n.id === selectedNewsModal.id);
-    const nextIndex = (currentIndex + 1) % NEWS.length;
-    setSelectedNewsModal(NEWS[nextIndex]);
+    const currentIndex = newsList.findIndex(n => n.id === selectedNewsModal.id);
+    const nextIndex = (currentIndex + 1) % newsList.length;
+    setSelectedNewsModal(newsList[nextIndex]);
   };
 
   const handlePrevArticle = () => {
     if (!selectedNewsModal) return;
-    const currentIndex = NEWS.findIndex(n => n.id === selectedNewsModal.id);
-    const prevIndex = (currentIndex - 1 + NEWS.length) % NEWS.length;
-    setSelectedNewsModal(NEWS[prevIndex]);
+    const currentIndex = newsList.findIndex(n => n.id === selectedNewsModal.id);
+    const prevIndex = (currentIndex - 1 + newsList.length) % newsList.length;
+    setSelectedNewsModal(newsList[prevIndex]);
   };
 
   // Switch album in lightbox
@@ -1011,17 +990,21 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     return sortByDate === 'UPCOMING_FIRST' ? dA.getTime() - dB.getTime() : dB.getTime() - dA.getTime();
   });
 
-  // Responsive gallery: full grid on desktop (> 1185px), limited initial set on tablet/mobile
-  const galleryLimit = viewportWidth > 1185
-    ? GALLERY_IMAGES.length
-    : viewportWidth <= 640 ? 4 : 6;
-  const visibleGalleryImages = galleryExpanded ? GALLERY_IMAGES : GALLERY_IMAGES.slice(0, galleryLimit);
-  const showGalleryToggle = GALLERY_IMAGES.length > galleryLimit;
+  // Responsive gallery: category filtering and responsive display count
+  const filteredGalleryImages = selectedGalleryTab === 'All'
+    ? GALLERY_IMAGES
+    : GALLERY_IMAGES.filter(g => g.category.toLowerCase() === selectedGalleryTab.toLowerCase());
 
-  // Collapse back to the initial set whenever the visible-count breakpoint changes
+  const galleryLimit = viewportWidth > 1185
+    ? 9
+    : viewportWidth <= 640 ? 4 : 6;
+  const visibleGalleryImages = galleryExpanded ? filteredGalleryImages : filteredGalleryImages.slice(0, galleryLimit);
+  const showGalleryToggle = filteredGalleryImages.length > galleryLimit;
+
+  // Collapse back to the initial set whenever the visible-count breakpoint or category changes
   useEffect(() => {
     setGalleryExpanded(false);
-  }, [galleryLimit]);
+  }, [galleryLimit, selectedGalleryTab]);
 
   if (selectedMeetId) {
     const meetObj = ENRICHED_MEETS.find(m => m.id === selectedMeetId);
@@ -1033,6 +1016,45 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         currentRole={currentRole}
         currentAthlete={currentAthlete}
         onLoginSuccess={onLoginSuccess}
+      />
+    );
+  }
+
+  if (selectedNewsItem) {
+    return (
+      <NewsDetail
+        news={selectedNewsItem}
+        allNews={newsList}
+        onBack={() => {
+          setSelectedNewsItem(null);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onSelectNews={(item) => {
+          setSelectedNewsItem(item);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onRegister={onRegister}
+        currentRole={currentRole}
+        currentAthlete={currentAthlete}
+        darkMode={darkMode}
+      />
+    );
+  }
+
+  if (selectedGalleryAlbum) {
+    return (
+      <GalleryDetail
+        album={selectedGalleryAlbum}
+        allAlbums={GALLERY_IMAGES}
+        onBack={() => {
+          setSelectedGalleryAlbum(null);
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+        }}
+        onSelectAlbum={(album) => {
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+          setSelectedGalleryAlbum(album);
+        }}
+        darkMode={darkMode}
       />
     );
   }
@@ -1092,31 +1114,57 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               marginBottom: '18px',
               letterSpacing: '-0.025em',
               display: 'flex',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              gap: '0.25em 0.35em'
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '8px',
             }}>
               {(() => {
-                const heroWords = tr('home.heroTitle').split(' ');
+                const fullTitle = tr('home.heroTitle');
                 const heroColors = [t.text, 'var(--primary)', t.text, darkMode ? '#38BDF8' : '#0284C7', '#D97706'];
-                return heroWords.map((word, index) => (
-                  <motion.span
-                    key={index}
-                    initial={{ opacity: 0, x: index % 2 === 0 ? -100 : 100, filter: 'blur(6px)' }}
-                    animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                    transition={{
-                      duration: 0.75,
-                      delay: 0.12 + index * 0.13,
-                      ease: [0.16, 1, 0.3, 1]
-                    }}
-                    style={{
-                      color: heroColors[index % heroColors.length],
-                      display: 'inline-block'
-                    }}
-                  >
-                    {word}
-                  </motion.span>
-                ));
+                const lines = fullTitle.includes(':')
+                  ? [fullTitle.split(':')[0] + ':', fullTitle.split(':').slice(1).join(':').trim()]
+                  : [fullTitle];
+
+                let globalWordIndex = 0;
+
+                return lines.map((line, lineIndex) => {
+                  const lineWords = line.split(' ');
+                  return (
+                    <motion.div
+                      key={lineIndex}
+                      initial={{ opacity: 0, x: lineIndex % 2 === 0 ? -100 : 100, filter: 'blur(6px)' }}
+                      animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                      transition={{
+                        duration: 0.75,
+                        delay: 0.12 + lineIndex * 0.25,
+                        ease: [0.16, 1, 0.3, 1]
+                      }}
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                        gap: '0.25em 0.35em',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {lineWords.map((word, wIdx) => {
+                        const wordColor = heroColors[globalWordIndex % heroColors.length];
+                        globalWordIndex++;
+                        return (
+                          <span
+                            key={wIdx}
+                            style={{
+                              color: wordColor,
+                              display: 'inline-block'
+                            }}
+                          >
+                            {word}
+                          </span>
+                        );
+                      })}
+                    </motion.div>
+                  );
+                });
               })()}
             </h1>
 
@@ -1188,10 +1236,39 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         </section>
       )}
 
-      {/* ── 3. COMPETITIONS HUB WITH EMBEDDED SEARCH & FILTERS + AUTO-SCROLL CAROUSEL ── */}
+      {/* ── 3. COMPETITIONS HUB WITH EMBEDDED SEARCH & FILTERS + 3-IN-A-ROW GRID ON VIEW ALL ── */}
       {(publicSubPage === "HOME" || publicSubPage === "COMPETITIONS") && (
         <section id="competitions" style={{ background: t.bgAlt, padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
-          <div style={{ maxWidth: 1240, margin: '0 auto' }}>
+          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+            {/* Top Bar with Back Button if in COMPETITIONS subpage */}
+            {publicSubPage === 'COMPETITIONS' && (
+              <div style={{ marginBottom: '24px' }}>
+                <motion.button
+                  whileHover={{ scale: 1.03, x: -3 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => onChangePublicSubPage('HOME')}
+                  style={{
+                    background: t.surface,
+                    color: t.text,
+                    border: '1px solid ' + t.border,
+                    padding: '8px 18px',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <ChevronLeft size={18} />
+                  Back to Home
+                </motion.button>
+              </div>
+            )}
+
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: '16px' }}>
               <div>
                 <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text, marginBottom: 4 }}>
@@ -1202,40 +1279,24 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 </p>
               </div>
 
-              {/* Carousel Navigation & Progress Dots */}
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-                {sortedMeets.length > 1 && (
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }} aria-label="Carousel pagination">
-                    {sortedMeets.map((_, dotIdx) => (
-                      <button
-                        key={dotIdx}
-                        onClick={() => scrollToCompIndex(dotIdx)}
-                        className={`carousel-dot${activeCompIndex % sortedMeets.length === dotIdx ? ' active' : ''}`}
-                        aria-label={`Go to slide ${dotIdx + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button
-                    onClick={() => handleScrollBanners('left')}
-                    className="carousel-nav-btn"
-                    aria-label="Previous competitions"
-                    title="Previous"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <button
-                    onClick={() => handleScrollBanners('right')}
-                    className="carousel-nav-btn"
-                    aria-label="Next competitions"
-                    title="Next"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-              </div>
+              {publicSubPage === 'HOME' && (
+                <button
+                  onClick={() => onChangePublicSubPage('COMPETITIONS')}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--primary)',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  {tr('home.viewAllCompetitions')} ({ENRICHED_MEETS.length}) →
+                </button>
+              )}
             </div>
 
             {/* EMBEDDED SEARCH & FILTER WIDGET INSIDE COMPETITIONS HUB */}
@@ -1350,98 +1411,65 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </div>
             </div>
 
-            {/* Scrollable Horizontal Carousel of Competition Banner Cards */}
+            {/* Competitions Grid (3 Cards in one row on desktop) */}
             {sortedMeets.length === 0 ? (
               <div style={{ background: t.surface, border: '1px solid ' + t.border, borderRadius: '20px', padding: '48px', textAlign: 'center', color: t.textMuted }}>
                 <Trophy size={48} style={{ opacity: 0.2, marginBottom: '12px' }} />
                 <h4 style={{ fontWeight: 800 }}>{tr('home.noCompetitions')}</h4>
               </div>
             ) : (
+              /* ── 3 IN A ROW GRID (INITIALLY 3 ON HOME, ALL ON VIEW ALL) ── */
               <div
-                tabIndex={0}
-                aria-label="Competitions and Championship Hub Carousel"
-                ref={(el) => {
-                  compScrollRef.current = el;
-                  bannerScrollRef.current = el;
-                }}
-                className={`landing-scroll-row${isDraggingComp ? ' is-dragging' : ''}`}
-                onMouseDown={handleCompMouseDown}
-                onMouseMove={handleCompMouseMove}
-                onMouseUp={handleCompMouseUp}
-                onMouseLeave={handleCompMouseUp}
-                onScroll={() => {
-                  const el = compScrollRef.current;
-                  if (el && sortedMeets.length > 0) {
-                    const cards = el.querySelectorAll('.landing-scroll-card');
-                    if (cards.length > 0) {
-                      const containerLeft = el.scrollLeft;
-                      let closestIdx = 0;
-                      let minDiff = Infinity;
-                      cards.forEach((card, i) => {
-                        const diff = Math.abs((card.offsetLeft - el.offsetLeft) - containerLeft);
-                        if (diff < minDiff) {
-                          minDiff = diff;
-                          closestIdx = i;
-                        }
-                      });
-                      setActiveCompIndex(closestIdx % sortedMeets.length);
-                    }
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'ArrowLeft') handleScrollBanners('left');
-                  if (e.key === 'ArrowRight') handleScrollBanners('right');
-                }}
                 style={{
-                  display: 'flex',
+                  display: 'grid',
+                  gridTemplateColumns: viewportWidth > 1024 ? 'repeat(3, minmax(0, 1fr))' : viewportWidth > 640 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
                   gap: '24px',
-                  overflowX: 'auto',
-                  paddingBottom: '20px',
-                  paddingTop: '8px',
-                  outline: 'none',
-                  cursor: isDraggingComp ? 'grabbing' : 'grab'
                 }}
               >
-                {[...sortedMeets, ...sortedMeets, ...sortedMeets].map((meet, idx) => {
-                  const cardKey = `${meet.id}-${idx}`;
-                  const isCardExpanded = !!expandedMeetCards[cardKey];
+                {(publicSubPage === 'HOME' ? sortedMeets.slice(0, 3) : sortedMeets).map((meet) => {
                   const badgeColor = meet.status === 'REGISTRATION_OPEN' ? 'var(--primary)' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
                   const statusName = meet.status === 'REGISTRATION_OPEN' ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
 
                   return (
-                    <div
-                      key={cardKey}
-                      className={`landing-scroll-card${isCardExpanded ? ' meet-card-expanded' : ''}`}
-                      onClick={() => {
-                        if (compHasDragged.current) {
-                          compHasDragged.current = false;
-                          return;
-                        }
-                        setSelectedMeetId(meet.id);
-                      }}
+                    <motion.div
+                      key={meet.id}
+                      whileHover={{ y: -6 }}
+                      onClick={() => setSelectedMeetId(meet.id)}
                       style={{
-                        minWidth: 'min(100%, 360px)',
-                        maxWidth: '380px',
-                        flexShrink: 0,
-                        scrollSnapAlign: 'start',
                         position: 'relative',
                         borderRadius: '24px',
                         overflow: 'hidden',
-                        minHeight: '360px',
+                        minHeight: '380px',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'flex-end',
                         cursor: 'pointer',
-                        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.1)',
-                        border: '1px solid rgba(226, 232, 240, 0.8)'
+                        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
+                        border: '1px solid ' + (darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(226, 232, 240, 0.9)'),
+                        background: '#0F172A',
                       }}
                     >
-                      <div className="comp-card-bg-img" style={{ backgroundImage: `url(${meet.img})` }} />
-                      <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'linear-gradient(to top, rgba(15,23,42,0.96) 0%, rgba(15,23,42,0.65) 50%, rgba(15,23,42,0.15) 100%)'
-                      }} />
+                      {/* Fully visible background image */}
+                      <img
+                        src={meet.img}
+                        alt={meet.title}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          transition: 'transform 0.4s ease',
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'linear-gradient(to top, rgba(15,23,42,0.96) 0%, rgba(15,23,42,0.48) 50%, rgba(15,23,42,0.12) 100%)',
+                          pointerEvents: 'none',
+                        }}
+                      />
 
                       <div style={{ position: 'relative', zIndex: 1, padding: '24px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -1455,81 +1483,59 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                             letterSpacing: '0.04em',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            boxShadow: meet.status === 'LIVE' ? '0 0 12px rgba(239, 68, 68, 0.5)' : 'none'
+                            boxShadow: meet.status === 'LIVE' ? '0 0 12px rgba(239, 68, 68, 0.5)' : 'none',
                           }}>
                             {meet.status === 'LIVE' && <span className="status-pulse-dot" />}
                             {statusName}
                           </span>
 
                           <span style={{
-                            background: 'rgba(255, 255, 255, 0.18)',
+                            background: 'rgba(255, 255, 255, 0.2)',
                             backdropFilter: 'blur(8px)',
                             WebkitBackdropFilter: 'blur(8px)',
                             color: '#FFFFFF',
-                            fontSize: '0.72rem',
+                            fontSize: '0.74rem',
                             fontWeight: 800,
                             padding: '4px 10px',
                             borderRadius: '8px',
-                            border: '1px solid rgba(255, 255, 255, 0.25)'
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
                           }}>
-                            📍 {meet.region}
+                             {meet.region}
                           </span>
                         </div>
 
-                        <h3 style={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 900, marginBottom: '12px', lineHeight: 1.35, letterSpacing: '-0.01em' }}>
+                        <h3 style={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 900, marginBottom: '10px', lineHeight: 1.35, letterSpacing: '-0.01em' }}>
                           {language === 'am' ? meet.amharic || meet.title : meet.title}
                         </h3>
 
-                        <div className="meet-card-extra">
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
-                              <MapPin size={14} style={{ flexShrink: 0 }} />
-                              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{meet.venue}</span>
-                            </span>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
-                              <Calendar size={14} style={{ flexShrink: 0 }} />
-                              <span>{meet.dateString}</span>
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.15)', paddingTop: '12px' }}>
-                            <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px', transition: 'gap 0.2s ease' }}>
-                              {tr('home.viewDetails')} <ChevronRight size={16} />
-                            </span>
-                          </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
+                            <MapPin size={14} style={{ flexShrink: 0 }} />
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{meet.venue}</span>
+                          </span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
+                            <Calendar size={14} style={{ flexShrink: 0 }} />
+                            <span>{meet.dateString}</span>
+                          </span>
                         </div>
 
-                        <button
-                          className="meet-card-toggle-btn"
-                          onClick={(e) => { e.stopPropagation(); toggleMeetCard(cardKey); }}
-                          style={{
-                            marginTop: '14px',
-                            background: 'rgba(255, 255, 255, 0.16)',
-                            backdropFilter: 'blur(8px)',
-                            WebkitBackdropFilter: 'blur(8px)',
-                            border: '1px solid rgba(255, 255, 255, 0.4)',
-                            color: '#FFFFFF',
-                            fontWeight: 800,
-                            fontSize: '0.78rem',
-                            padding: '8px 16px',
-                            borderRadius: '999px',
-                            cursor: 'pointer',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
-                        >
-                          {isCardExpanded ? loc.seeLess : loc.seeMore}
-                          {isCardExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                        </button>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.18)', paddingTop: '12px' }}>
+                          <span style={{ color: '#E2E8F0', fontSize: '0.74rem', fontWeight: 700 }}>
+                            {meet.disciplines ? `${meet.disciplines.length} Disciplines` : 'Track & Field'}
+                          </span>
+                          <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            {tr('home.viewDetails')} <ChevronRight size={16} />
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
             )}
 
-            {/* VIEW MORE COMPETITIONS BUTTON */}
-            {publicSubPage === 'HOME' && (
+            {/* VIEW MORE COMPETITIONS BUTTON (Only on HOME view) */}
+            {publicSubPage === 'HOME' && sortedMeets.length > 3 && (
               <div style={{ marginTop: '36px', textAlign: 'center' }}>
                 <button
                   className="btn-accent"
@@ -1587,7 +1593,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               className="landing-scroll-row"
               style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
             >
-              {[...ATHLETES, ...ATHLETES, ...ATHLETES].map((athlete, idx) => {
+              {[...athleteList, ...athleteList, ...athleteList].map((athlete, idx) => {
                 const cardKey = `${athlete.id}-${idx}`;
                 const isCardExpanded = !!expandedAthleteCards[cardKey];
                 return (
@@ -1740,116 +1746,175 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </div>
 
               <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-                {/* Featured Main News — driven by selectedNews state */}
-                <div
-                  onClick={() => setSelectedNewsModal(selectedNews)}
-                  style={{
-                    flex: '1.5 1 340px',
-                    backgroundImage: `url(${selectedNews.img})`,
-                    backgroundSize: 'cover', backgroundPosition: 'center',
-                    minHeight: 420, borderRadius: 24, overflow: 'hidden',
-                    position: 'relative', display: 'flex', flexDirection: 'column',
-                    justifyContent: 'flex-end', cursor: 'pointer',
-                    boxShadow: '0 12px 32px rgba(15, 23, 42, 0.1)',
-                    transition: 'all 0.35s ease',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(1, 64, 167, 0.2)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 12px 32px rgba(15, 23, 42, 0.1)';
-                  }}
-                >
-                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.45) 55%, transparent 100%)' }} />
-                  <div style={{ position: 'relative', zIndex: 1, padding: 32 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-                      <span style={{
-                        background: 'var(--primary)', color: '#FFF',
-                        borderRadius: 8, padding: '4px 12px',
-                        fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.06em',
-                        display: 'inline-block',
-                      }}>{selectedNews.tag || tr('home.latestAnnouncement')}</span>
-                      <span style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(6px)', color: '#F1F5F9', borderRadius: 8, padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700 }}>
-                        ⏱️ {selectedNews.readTime || '3 min read'}
-                      </span>
+                {(isNewsLoading && newsList.length === 0) || !selectedNews ? (
+                  <>
+                    {/* Featured Main News Skeleton */}
+                    <div
+                      style={{
+                        flex: '1.5 1 340px',
+                        minHeight: 420,
+                        borderRadius: 24,
+                        background: darkMode ? '#131B2E' : '#E2E8F0',
+                        padding: 32,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        gap: 14,
+                        opacity: 0.7,
+                      }}
+                    >
+                      <div style={{ width: '25%', height: 22, borderRadius: 8, background: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }} />
+                      <div style={{ width: '85%', height: 32, borderRadius: 8, background: darkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)' }} />
+                      <div style={{ width: '60%', height: 20, borderRadius: 6, background: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }} />
+                      <div style={{ width: '95%', height: 16, borderRadius: 6, background: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }} />
                     </div>
 
-                    <div style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: 8, fontWeight: 600 }}>
-                      🗓️ {selectedNews.date} · 📍 {selectedNews.location || 'Addis Ababa'}
-                    </div>
-
-                    <h3 style={{ color: '#FFFFFF', fontSize: '1.6rem', fontWeight: 900, marginBottom: 12, lineHeight: 1.3 }}>
-                      {selectedNews.title}
-                    </h3>
-                    {selectedNews.amharicTitle && (
-                      <div style={{ color: '#FDE047', fontSize: '0.98rem', fontWeight: 700, marginBottom: 12 }}>
-                        {selectedNews.amharicTitle}
-                      </div>
-                    )}
-                    {selectedNews.summary && (
-                      <ResponsiveSeeMoreText
-                        key={selectedNews.id}
-                        text={selectedNews.summary}
-                        maxLength={90}
-                        lines={2}
-                        style={{ color: '#CBD5E1', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: 16 }}
-                      />
-                    )}
-                    <span style={{ color: '#38BDF8', fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                      {tr('home.readFullArticle')} →
-                    </span>
-                  </div>
-                </div>
-
-                {/* Side Stack — all items except the currently featured one */}
-                <div style={{ flex: '1 1 280px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {NEWS.filter(item => item.id !== selectedNews.id).map(item => {
-                    const tc = TAG_COLORS[item.tag] || { bg: '#F1F5F9', color: '#475569' };
-                    return (
-                      <div
-                        key={item.id}
-                        onClick={() => setSelectedNews(item)}
-                        style={{
-                          display: 'flex', background: t.surface, borderRadius: 16,
-                          overflow: 'hidden', border: '1px solid ' + t.border, cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                          transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(1,64,167,0.12)'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
-                      >
-                        <img src={item.img} alt={item.title}
-                          style={{ width: 95, height: 95, objectFit: 'cover', flexShrink: 0 }} />
-                        <div style={{ padding: '10px 14px', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                          <div>
-                            <div style={{ color: t.textMuted, fontSize: '0.72rem', marginBottom: 4, fontWeight: 600 }}>{item.date}</div>
-                            <div style={{ fontWeight: 800, fontSize: '0.86rem', lineHeight: 1.3, marginBottom: 6, color: t.text }}>
-                              {item.title}
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-                            <span style={{
-                              background: tc.bg, color: tc.color,
-                              borderRadius: 6, padding: '2px 8px',
-                              fontSize: '0.70rem', fontWeight: 800,
-                            }}>{item.tag}</span>
-                            <span
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedNewsModal(item);
-                              }}
-                              style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 2, padding: '2px 6px', borderRadius: 4, background: darkMode ? 'rgba(14, 165, 233, 0.1)' : '#F0F9FF' }}
-                            >
-                              <Eye size={12} /> Read Story
-                            </span>
+                    {/* Side Stack Skeleton */}
+                    <div style={{ flex: '1 1 280px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {[1, 2, 3].map(i => (
+                        <div
+                          key={i}
+                          style={{
+                            display: 'flex',
+                            gap: 14,
+                            background: t.surface,
+                            borderRadius: 16,
+                            padding: 10,
+                            border: '1px solid ' + t.border,
+                            alignItems: 'center',
+                            opacity: 0.7,
+                          }}
+                        >
+                          <div style={{ width: 95, height: 95, borderRadius: 12, background: darkMode ? '#1E293B' : '#E2E8F0', flexShrink: 0 }} />
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ width: '40%', height: 12, borderRadius: 4, background: darkMode ? '#1E293B' : '#CBD5E1' }} />
+                            <div style={{ width: '90%', height: 18, borderRadius: 6, background: darkMode ? '#1E293B' : '#E2E8F0' }} />
+                            <div style={{ width: '35%', height: 14, borderRadius: 4, background: darkMode ? '#1E293B' : '#CBD5E1' }} />
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Featured Main News — driven by selectedNews state */}
+                    <div
+                      onClick={() => setSelectedNewsItem(selectedNews)}
+                      style={{
+                        flex: '1.5 1 340px',
+                        backgroundImage: `url(${selectedNews.img})`,
+                        backgroundSize: 'cover', backgroundPosition: 'center',
+                        minHeight: 420, borderRadius: 24, overflow: 'hidden',
+                        position: 'relative', display: 'flex', flexDirection: 'column',
+                        justifyContent: 'flex-end', cursor: 'pointer',
+                        boxShadow: '0 12px 32px rgba(15, 23, 42, 0.1)',
+                        transition: 'all 0.35s ease',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = '0 20px 40px rgba(1, 64, 167, 0.2)';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 12px 32px rgba(15, 23, 42, 0.1)';
+                      }}
+                    >
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.45) 55%, transparent 100%)' }} />
+                      <div style={{ position: 'relative', zIndex: 1, padding: 32 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+                          <span style={{
+                            background: 'var(--primary)', color: '#FFF',
+                            borderRadius: 8, padding: '4px 12px',
+                            fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.06em',
+                            display: 'inline-block',
+                          }}>{selectedNews.tag || tr('home.latestAnnouncement')}</span>
+                          <span style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(6px)', color: '#F1F5F9', borderRadius: 8, padding: '4px 10px', fontSize: '0.75rem', fontWeight: 700 }}>
+                            ⏱️ {selectedNews.readTime || '3 min read'}
+                          </span>
+                        </div>
+
+                        <div style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: 8, fontWeight: 600 }}>
+                          🗓️ {selectedNews.date} · 📍 {selectedNews.location || 'Addis Ababa'}
+                        </div>
+
+                        <h3 style={{ color: '#FFFFFF', fontSize: '1.6rem', fontWeight: 900, marginBottom: 12, lineHeight: 1.3 }}>
+                          {selectedNews.title}
+                        </h3>
+                        {selectedNews.amharicTitle && (
+                          <div style={{ color: '#FDE047', fontSize: '0.98rem', fontWeight: 700, marginBottom: 12 }}>
+                            {selectedNews.amharicTitle}
+                          </div>
+                        )}
+                        {selectedNews.summary && (
+                          <ResponsiveSeeMoreText
+                            key={selectedNews.id}
+                            text={selectedNews.summary}
+                            maxLength={90}
+                            lines={2}
+                            style={{ color: '#CBD5E1', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: 16 }}
+                          />
+                        )}
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedNewsItem(selectedNews);
+                          }}
+                          style={{ color: '#38BDF8', fontWeight: 800, fontSize: '0.92rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                        >
+                          {tr('home.readFullArticle')} →
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+
+                    {/* Side Stack — all items except the currently featured one */}
+                    <div style={{ flex: '1 1 280px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {newsList.filter(item => item.id !== selectedNews?.id).map(item => {
+                        const tc = TAG_COLORS[item.tag] || { bg: '#F1F5F9', color: '#475569' };
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => setSelectedNewsOverrideId(item.id)}
+                            style={{
+                              display: 'flex', background: t.surface, borderRadius: 16,
+                              overflow: 'hidden', border: '1px solid ' + t.border, cursor: 'pointer',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 6px 20px rgba(1,64,167,0.12)'; e.currentTarget.style.borderColor = 'var(--primary)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
+                          >
+                            <img src={item.img} alt={item.title}
+                              style={{ width: 95, height: 95, objectFit: 'cover', flexShrink: 0 }} />
+                            <div style={{ padding: '10px 14px', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                              <div>
+                                <div style={{ color: t.textMuted, fontSize: '0.72rem', marginBottom: 4, fontWeight: 600 }}>{item.date}</div>
+                                <div style={{ fontWeight: 800, fontSize: '0.86rem', lineHeight: 1.3, marginBottom: 6, color: t.text }}>
+                                  {item.title}
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                                <span style={{
+                                  background: tc.bg, color: tc.color,
+                                  borderRadius: 6, padding: '2px 8px',
+                                  fontSize: '0.70rem', fontWeight: 800,
+                                }}>{item.tag}</span>
+                                <span
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedNewsItem(item);
+                                  }}
+                                  style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 2, padding: '2px 6px', borderRadius: 4, background: darkMode ? 'rgba(14, 165, 233, 0.1)' : '#F0F9FF' }}
+                                >
+                                  <Eye size={12} /> Read Story
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </section>
@@ -2042,89 +2107,271 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         </section>
       )}
 
-      {/* ── 8. MEDIA & PHOTO/VIDEO GALLERY COLLECTION — RESPONSIVE MOSAIC GRID ── */}
+      {/* ── 8. MEDIA & PHOTO/VIDEO GALLERY COLLECTION — PREMIUM MODERN GALLERY ── */}
       {(publicSubPage === 'HOME' || publicSubPage === 'MEDIA') && (
-        <section id="media" style={{ padding: '60px 24px', background: t.bgAlt, borderTop: '1px solid ' + t.border }}>
-          <div style={{ maxWidth: 1240, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#E0F2FE', color: 'var(--primary-dark)', padding: '6px 16px', borderRadius: '30px', fontWeight: 800, fontSize: '0.82rem', marginBottom: '12px' }}>
-                <Image size={16} /> EAF OFFICIAL MEDIA COLLECTION
+        <section id="media" style={{ padding: '70px 24px', background: t.bgAlt, borderTop: '1px solid ' + t.border, position: 'relative', overflow: 'hidden' }}>
+          {/* Subtle Ambient Background Gradient */}
+          <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '800px', height: '300px', background: 'radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
+
+          <div style={{ maxWidth: 1280, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: 36 }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                color: '#FFFFFF',
+                padding: '6px 18px',
+                borderRadius: '999px',
+                fontWeight: 800,
+                fontSize: '0.76rem',
+                marginBottom: '14px',
+                letterSpacing: '0.06em',
+                boxShadow: '0 6px 18px rgba(1, 64, 167, 0.25)'
+              }}>
+                <Image size={14} /> EAF OFFICIAL MEDIA VAULT
               </div>
-              <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: t.text }}>High-Resolution Photo &amp; Video Gallery</h2>
-              <p style={{ color: t.textMuted, marginTop: '8px', fontSize: '1rem', maxWidth: '600px', margin: '8px auto 0' }}>
-                Explore historic championship moments, marathon victories, send-off ceremonies, and athlete training sessions
+              <h2 style={{
+                fontSize: 'clamp(2rem, 4vw, 2.75rem)',
+                fontWeight: 900,
+                lineHeight: 1.15,
+                letterSpacing: '-0.025em',
+                margin: '0 0 12px',
+                background: 'linear-gradient(120deg, var(--text-landing, #0F172A) 30%, var(--primary) 70%, #F59E0B 100%)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}>
+                High-Resolution Photo &amp; Video Gallery
+              </h2>
+              <div style={{ width: 64, height: 4, borderRadius: 4, margin: '12px auto 14px', background: 'linear-gradient(90deg, var(--primary), #F59E0B)' }} />
+              <p style={{ color: t.textMuted, fontSize: '0.98rem', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6, fontWeight: 500 }}>
+                Explore historic championship moments, marathon victories, send-off ceremonies, and high-altitude training sessions
               </p>
             </div>
 
-            {/* Asymmetric Dense Mosaic Grid Layout Collection */}
-            <div className="media-grid" style={{
+            {/* Category Filter Pills */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '10px',
+              marginBottom: '36px'
+            }}>
+              {[
+                { id: 'All', label: 'All Media', count: GALLERY_IMAGES.length },
+                { id: 'Championships', label: 'Championships', count: GALLERY_IMAGES.filter(g => g.category === 'Championships').length },
+                { id: 'Marathons', label: 'Marathons', count: GALLERY_IMAGES.filter(g => g.category === 'Marathons').length },
+                { id: 'Track & Field', label: 'Track & Field', count: GALLERY_IMAGES.filter(g => g.category === 'Track & Field').length },
+                { id: 'Ceremonies', label: 'Ceremonies', count: GALLERY_IMAGES.filter(g => g.category === 'Ceremonies').length },
+              ].map(tab => {
+                const isActive = selectedGalleryTab === tab.id;
+                return (
+                  <motion.button
+                    key={tab.id}
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => setSelectedGalleryTab(tab.id)}
+                    style={{
+                      background: isActive
+                        ? 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)'
+                        : t.surface,
+                      color: isActive ? '#FFFFFF' : t.textSub,
+                      border: isActive ? '1px solid var(--primary)' : '1px solid ' + t.border,
+                      padding: '8px 18px',
+                      borderRadius: '999px',
+                      fontSize: '0.86rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: isActive ? '0 6px 18px rgba(1, 64, 167, 0.25)' : '0 2px 6px rgba(0,0,0,0.03)',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <span>{tab.label}</span>
+                    <span style={{
+                      background: isActive ? 'rgba(255,255,255,0.25)' : darkMode ? 'rgba(255,255,255,0.08)' : '#F1F5F9',
+                      color: isActive ? '#FFFFFF' : t.textMuted,
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                    }}>
+                      {tab.count}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* Gallery Cards Grid */}
+            <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gridAutoRows: '240px',
-              gridAutoFlow: 'dense',
-              gap: '20px'
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              gap: '24px'
             }}>
               {visibleGalleryImages.map((item, idx) => {
-                const isHero = idx === 0;
-                const isTall = idx === 1 || idx === 6;
-                const isWide = idx === 3 || idx === 8;
+                const capturesCount = item.captures?.length || 1;
                 return (
                   <motion.div
                     key={item.id}
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 24 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    whileHover={{ y: -6 }}
-                    transition={{ duration: 0.4, delay: (idx % 3) * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                    className="hover-lift media-grid-card"
+                    whileHover={{ y: -8 }}
+                    transition={{ duration: 0.35, delay: (idx % 3) * 0.06 }}
                     onClick={() => {
-                      setActiveLightboxImg(item);
-                      setActiveCaptureIndex(0);
+                      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+                      setSelectedGalleryAlbum(item);
                     }}
                     style={{
                       position: 'relative',
-                      borderRadius: '24px',
+                      borderRadius: '22px',
                       overflow: 'hidden',
-                      gridColumn: isHero ? 'span 2' : isWide ? 'span 2' : 'span 1',
-                      gridRow: isHero ? 'span 2' : isTall ? 'span 2' : 'span 1',
+                      height: '310px',
                       cursor: 'pointer',
-                      boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
-                      border: '1px solid #E2E8F0',
-                      minHeight: isTall || isHero ? '480px' : '240px'
+                      boxShadow: '0 10px 28px rgba(15, 23, 42, 0.12)',
+                      border: '1px solid ' + (darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(226, 232, 240, 0.9)'),
+                      background: '#0F172A',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
                     }}
                   >
+                    {/* Background Media Image */}
                     <motion.img
                       src={item.img}
                       alt={item.title}
-                      className="media-card-img"
-                      whileHover={{ scale: 1.08 }}
-                      transition={{ duration: 0.5 }}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      whileHover={{ scale: 1.07 }}
+                      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                      }}
                     />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0.2) 60%, transparent 100%)' }} />
 
-                    {/* Top Badges */}
-                    <div style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ background: 'var(--primary)', color: '#FFF', padding: '4px 12px', borderRadius: '14px', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>
+                    {/* Gradient Overlay for crystal-clear readability */}
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(to top, rgba(15, 23, 42, 0.96) 0%, rgba(15, 23, 42, 0.45) 45%, rgba(15, 23, 42, 0.15) 100%)',
+                      pointerEvents: 'none',
+                    }} />
+
+                    {/* Top Floating Badges */}
+                    <div style={{
+                      position: 'relative',
+                      zIndex: 2,
+                      padding: '16px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <span style={{
+                        background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                        color: '#FFFFFF',
+                        padding: '5px 13px',
+                        borderRadius: '999px',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                      }}>
                         {item.category}
                       </span>
+
                       {item.type === 'VIDEO' ? (
-                        <span style={{ background: 'rgba(239, 68, 68, 0.9)', color: '#FFF', padding: '4px 10px', borderRadius: '14px', fontSize: '0.7rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Play size={12} fill="#FFF" /> HD Video
+                        <span style={{
+                          background: 'rgba(239, 68, 68, 0.92)',
+                          backdropFilter: 'blur(8px)',
+                          WebkitBackdropFilter: 'blur(8px)',
+                          color: '#FFFFFF',
+                          padding: '5px 12px',
+                          borderRadius: '999px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          boxShadow: '0 4px 12px rgba(239, 68, 68, 0.35)',
+                        }}>
+                          <Play size={12} fill="#FFF" /> HD Video • {capturesCount} Shots
                         </span>
                       ) : (
-                        <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', color: '#FFF', padding: '4px 10px', borderRadius: '14px', fontSize: '0.7rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          📸 Photo
+                        <span style={{
+                          background: 'rgba(15, 23, 42, 0.75)',
+                          backdropFilter: 'blur(8px)',
+                          WebkitBackdropFilter: 'blur(8px)',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          color: '#FFFFFF',
+                          padding: '5px 12px',
+                          borderRadius: '999px',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                        }}>
+                          <Camera size={12} /> {capturesCount} Photos
                         </span>
                       )}
                     </div>
 
-                    {/* Bottom Content */}
-                    <div style={{ position: 'absolute', bottom: 20, left: 20, right: 20, color: '#FFF', zIndex: 2 }}>
-                      <h4 style={{ fontSize: isHero ? '1.5rem' : '1.1rem', fontWeight: 900, lineHeight: 1.2, marginBottom: '6px' }}>{item.title}</h4>
-                      <div style={{ fontSize: '0.8rem', color: '#94A3B8', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                        <span>📍 {item.location}</span>
-                        <span>🗓️ {item.date}</span>
+                    {/* Bottom Content Area */}
+                    <div style={{
+                      position: 'relative',
+                      zIndex: 2,
+                      padding: '20px',
+                      color: '#FFFFFF',
+                    }}>
+                      <h4 style={{
+                        fontSize: '1.15rem',
+                        fontWeight: 900,
+                        lineHeight: 1.3,
+                        marginBottom: '8px',
+                        letterSpacing: '-0.01em',
+                        color: '#FFFFFF',
+                      }}>
+                        {item.title}
+                      </h4>
+
+                      <p style={{
+                        fontSize: '0.82rem',
+                        color: '#CBD5E1',
+                        lineHeight: 1.45,
+                        marginBottom: '12px',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        opacity: 0.9,
+                      }}>
+                        {item.description}
+                      </p>
+
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: '0.76rem',
+                        color: '#94A3B8',
+                        fontWeight: 600,
+                        borderTop: '1px solid rgba(255,255,255,0.12)',
+                        paddingTop: '10px',
+                      }}>
+                        <span> {item.location}</span>
+                        <span style={{ color: '#38BDF8', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          View Album →
+                        </span>
                       </div>
                     </div>
                   </motion.div>
@@ -2132,29 +2379,32 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               })}
             </div>
 
+            {/* See More Toggle Button */}
             {showGalleryToggle && (
-              <div style={{ marginTop: '36px', textAlign: 'center' }}>
-                <button
+              <div style={{ marginTop: '40px', textAlign: 'center' }}>
+                <motion.button
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.96 }}
                   onClick={() => setGalleryExpanded(prev => !prev)}
-                  className="btn-accent"
                   style={{
-                    padding: '12px 32px',
-                    borderRadius: '12px',
+                    padding: '14px 34px',
+                    borderRadius: '14px',
                     fontSize: '0.95rem',
                     fontWeight: 800,
                     background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
-                    color: '#FFF',
+                    color: '#FFFFFF',
                     border: 'none',
                     cursor: 'pointer',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '8px',
-                    boxShadow: '0 8px 24px rgba(2, 132, 199, 0.25)'
+                    boxShadow: '0 8px 24px rgba(1, 64, 167, 0.25)',
+                    transition: 'all 0.25s ease',
                   }}
                 >
-                  {galleryExpanded ? loc.seeLess : loc.seeMore}
+                  {galleryExpanded ? 'See Fewer Albums' : `See All ${filteredGalleryImages.length} Albums`}
                   {galleryExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </button>
+                </motion.button>
               </div>
             )}
           </div>
@@ -2275,7 +2525,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     Ethiopian Athletics Federation
                   </div>
                   <div style={{ color: '#FEF08A', fontSize: '0.78rem', fontWeight: 800 }}>
-                    የኢትዮጵያ አትሌቲክስ ፌዴሬሽን
+                    á‹¨áŠ¢á‰µá‹®áŒµá‹« áŠ á‰µáˆŒá‰²áŠ­áˆµ áŒá‹´áˆ¬áˆ½áŠ•
                   </div>
                 </div>
               </div>
@@ -2309,7 +2559,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             {/* Col 2: Quick Links */}
             <div>
               <h4 style={{ color: '#FEF08A', fontWeight: 900, fontSize: '1rem', marginBottom: 20, letterSpacing: '0.04em' }}>
-                Quick Links / ፈጣን አገናኞች
+                Quick Links / áˆáŒ£áŠ• áŠ áŒˆáŠ“áŠžá‰½
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {QUICK_LINKS.map(([en, am, href]) => (
@@ -2333,7 +2583,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             {/* Col 3: Direct Contact Details */}
             <div>
               <h4 style={{ color: '#FEF08A', fontWeight: 900, fontSize: '1rem', marginBottom: 20, letterSpacing: '0.04em' }}>
-                Federation HQ / ያናግሩን
+                Federation HQ / á‹«áŠ“áŒáˆ©áŠ•
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
@@ -2355,7 +2605,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           {/* Bottom Copyright Bar */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 24, textAlign: 'center', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <p style={{ color: '#FFFFFF', fontSize: '0.82rem', fontWeight: 600 }}>
-              © 2026 Ethiopian Athletics Federation — የኢትዮጵያ አትሌቲክስ ፌዴሬሽን. All rights reserved.
+              © 2026 Ethiopian Athletics Federation — á‹¨áŠ¢á‰µá‹®áŒµá‹« áŠ á‰µáˆŒá‰²áŠ­áˆµ áŒá‹´áˆ¬áˆ½áŠ•. All rights reserved.
             </p>
             <p style={{ color: '#FEF08A', fontSize: '0.82rem', fontWeight: 800 }}>
               EOSCRMS Government Portal System v4.2
@@ -2440,287 +2690,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         </div>
       )}
 
-      {/* ── NEWS ARTICLE READER MODAL ── */}
-      {selectedNewsModal && (
-        <div
-          className="modal-backdrop"
-          onClick={() => setSelectedNewsModal(null)}
-          style={{ zIndex: 99999, background: 'rgba(7, 12, 24, 0.85)', backdropFilter: 'blur(8px)', padding: '24px 16px' }}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.25 }}
-            className="modal-content"
-            onClick={e => e.stopPropagation()}
-            style={{
-              padding: '36px 40px',
-              maxWidth: '880px',
-              width: '95%',
-              margin: '20px auto',
-              borderRadius: '24px',
-              boxShadow: '0 32px 72px rgba(0, 0, 0, 0.45)',
-              background: t.surface,
-              color: t.text,
-              border: '1px solid ' + t.border,
-            }}
-          >
-            {/* Top Bar with Badge, Read Time, Share, and Close */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{
-                  background: 'var(--primary)',
-                  color: '#FFFFFF',
-                  padding: '4px 14px',
-                  borderRadius: '8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}>
-                  {selectedNewsModal.tag}
-                </span>
-                <span style={{ background: darkMode ? 'rgba(255,255,255,0.08)' : '#F1F5F9', color: t.textMuted, padding: '4px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
-                  ⏱️ {selectedNewsModal.readTime || '3 min read'}
-                </span>
-                <span style={{ background: darkMode ? 'rgba(255,255,255,0.08)' : '#F1F5F9', color: t.textMuted, padding: '4px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
-                  📍 {selectedNewsModal.location}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <button
-                  onClick={() => handleShareNews(selectedNewsModal)}
-                  title="Share Article"
-                  style={{
-                    background: newsShareCopied ? '#DCFCE7' : (darkMode ? '#1E293B' : '#F1F5F9'),
-                    color: newsShareCopied ? '#15803D' : t.text,
-                    border: 'none',
-                    padding: '8px 14px',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  {newsShareCopied ? <Check size={16} /> : <Share2 size={16} />}
-                  {newsShareCopied ? 'Link Copied!' : 'Share'}
-                </button>
-                <button
-                  onClick={() => setSelectedNewsModal(null)}
-                  style={{
-                    background: darkMode ? '#1E293B' : '#F1F5F9',
-                    border: 'none',
-                    width: '38px',
-                    height: '38px',
-                    borderRadius: '50%',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: t.textMuted,
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#EF4444'; e.currentTarget.style.color = '#FFF'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = darkMode ? '#1E293B' : '#F1F5F9'; e.currentTarget.style.color = t.textMuted; }}
-                >
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
-
-            {/* Hero Image */}
-            <div style={{ position: 'relative', width: '100%', height: '320px', borderRadius: '18px', overflow: 'hidden', marginBottom: '24px', background: '#0F172A' }}>
-              <img
-                src={selectedNewsModal.img}
-                alt={selectedNewsModal.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.85) 0%, transparent 60%)' }} />
-              <div style={{ position: 'absolute', bottom: 16, left: 20, right: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#CBD5E1', fontSize: '0.82rem', fontWeight: 600 }}>
-                <span>📷 Ethiopian Athletics Federation Official Media</span>
-                <span>🗓️ {selectedNewsModal.date}</span>
-              </div>
-            </div>
-
-            {/* Article Headline & Metadata */}
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '1.9rem', fontWeight: 900, color: t.text, lineHeight: 1.3, marginBottom: '8px' }}>
-                {selectedNewsModal.title}
-              </h2>
-              {selectedNewsModal.amharicTitle && (
-                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '16px', lineHeight: 1.4 }}>
-                  {selectedNewsModal.amharicTitle}
-                </div>
-              )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: '16px', borderBottom: '1px solid ' + t.border, color: t.textMuted, fontSize: '0.86rem', fontWeight: 600 }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  ✍️ <strong style={{ color: t.text }}>{selectedNewsModal.author}</strong>
-                </span>
-                <span>•</span>
-                <span>🏛️ Addis Ababa Headquarters</span>
-              </div>
-            </div>
-
-            {/* Lead Summary Paragraph */}
-            {selectedNewsModal.summary && (
-              <div style={{
-                background: darkMode ? 'rgba(14, 165, 233, 0.1)' : '#F0F9FF',
-                borderLeft: '4px solid var(--primary)',
-                padding: '16px 20px',
-                borderRadius: '0 14px 14px 0',
-                fontSize: '1.05rem',
-                lineHeight: 1.7,
-                fontWeight: 600,
-                color: darkMode ? '#BAE6FD' : '#0369A1',
-                marginBottom: '24px'
-              }}>
-                {selectedNewsModal.summary}
-              </div>
-            )}
-
-            {/* Main Article Paragraphs */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '28px' }}>
-              {selectedNewsModal.paragraphs ? selectedNewsModal.paragraphs.map((p, idx) => (
-                <p key={idx} style={{ color: t.textSub, fontSize: '0.98rem', lineHeight: 1.8 }}>
-                  {p}
-                </p>
-              )) : (
-                <p style={{ color: t.textSub, fontSize: '0.98rem', lineHeight: 1.8 }}>
-                  {selectedNewsModal.summary}
-                </p>
-              )}
-            </div>
-
-            {/* Key Quote Callout */}
-            {selectedNewsModal.quote && (
-              <div style={{
-                background: t.bgAlt,
-                border: '1px solid ' + t.border,
-                borderTop: '4px solid #F59E0B',
-                padding: '22px 24px',
-                borderRadius: '16px',
-                marginBottom: '28px',
-                position: 'relative'
-              }}>
-                <div style={{ fontSize: '1.08rem', fontStyle: 'italic', lineHeight: 1.7, color: t.text, fontWeight: 600, marginBottom: '12px' }}>
-                  "{selectedNewsModal.quote.text}"
-                </div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  — {selectedNewsModal.quote.author}
-                </div>
-              </div>
-            )}
-
-            {/* Key Statistics / Highlights Breakdown */}
-            {selectedNewsModal.stats && selectedNewsModal.stats.length > 0 && (
-              <div style={{ marginBottom: '28px' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: 900, color: t.text, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '14px' }}>
-                  📊 Event Highlights & Metrics
-                </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
-                  {selectedNewsModal.stats.map((s, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        background: t.bgAlt,
-                        border: '1px solid ' + t.border,
-                        borderRadius: '14px',
-                        padding: '14px',
-                        textAlign: 'center'
-                      }}
-                    >
-                      <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--primary)' }}>{s.value}</div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: t.textMuted, marginTop: '4px' }}>{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Story Gallery Thumbnails */}
-            {selectedNewsModal.gallery && selectedNewsModal.gallery.length > 0 && (
-              <div style={{ marginBottom: '28px' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: 900, color: t.text, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '14px' }}>
-                  📸 Press Gallery Shots
-                </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                  {selectedNewsModal.gallery.map((imgSrc, idx) => (
-                    <div key={idx} style={{ height: '120px', borderRadius: '12px', overflow: 'hidden', border: '1px solid ' + t.border }}>
-                      <img src={imgSrc} alt={`Gallery ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Bottom Story Navigation & Close */}
-            <div style={{ borderTop: '1px solid ' + t.border, paddingTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  onClick={handlePrevArticle}
-                  style={{
-                    background: t.bgAlt,
-                    border: '1px solid ' + t.border,
-                    color: t.text,
-                    padding: '10px 18px',
-                    borderRadius: '10px',
-                    fontWeight: 800,
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6
-                  }}
-                >
-                  <ChevronLeft size={16} /> Previous Story
-                </button>
-                <button
-                  onClick={handleNextArticle}
-                  style={{
-                    background: t.bgAlt,
-                    border: '1px solid ' + t.border,
-                    color: t.text,
-                    padding: '10px 18px',
-                    borderRadius: '10px',
-                    fontWeight: 800,
-                    fontSize: '0.85rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6
-                  }}
-                >
-                  Next Story <ChevronRight size={16} />
-                </button>
-              </div>
-
-              <button
-                onClick={() => setSelectedNewsModal(null)}
-                className="btn-accent"
-                style={{
-                  padding: '12px 28px',
-                  borderRadius: '12px',
-                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
-                  color: '#FFF',
-                  border: 'none',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  fontSize: '0.92rem'
-                }}
-              >
-                Close Article Reader
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
       {/* ── LIGHTBOX MODAL FOR GALLERY IMAGES (WITH HORIZONTAL EVENT CAPTURE SCROLL) ── */}
       {activeLightboxImg && (() => {
         const captures = activeLightboxImg.captures && activeLightboxImg.captures.length > 0
@@ -2762,7 +2731,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       {activeLightboxImg.category}
                     </span>
                     <span style={{ color: '#94A3B8', fontSize: '0.82rem', fontWeight: 600 }}>
-                      📍 {activeLightboxImg.location} · 🗓️ {activeLightboxImg.date}
+                       {activeLightboxImg.location} Â·  {activeLightboxImg.date}
                     </span>
                   </div>
                   <h3 style={{ color: '#FFFFFF', fontSize: '1.35rem', fontWeight: 900, lineHeight: 1.3 }}>
@@ -2915,7 +2884,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   </div>
                   {activeCapture.photographer && (
                     <div style={{ color: '#38BDF8', fontSize: '0.78rem', fontWeight: 700 }}>
-                      📷 {activeCapture.photographer}
+                      · {activeCapture.photographer}
                     </div>
                   )}
                 </div>
@@ -3093,7 +3062,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 </div>
 
                 <div style={{ color: '#94A3B8', fontSize: '0.8rem', fontWeight: 600 }}>
-                  Tip: Use <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>←</kbd> <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>→</kbd> to navigate, <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>Esc</kbd> to exit
+                  Tip: Use <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>←</kbd> <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>→</kbd> to navigate, <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>Esc</kbd> to exit
                 </div>
 
                 <button
