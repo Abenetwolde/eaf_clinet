@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '../i18n';
 import { useGetNewsQuery, type NewsArticle } from '../store/api/newsApi';
 import { useGetAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
+import { MOCK_NEWS } from '../data/mockData';
 
 /* ─────────────────────────────────────────────
    STATIC DATA & GALLERY IMAGES
@@ -517,12 +518,35 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     }
   }, [apiNews]);
 
+  const fallbackNews: NewsItem[] = useMemo(() => {
+    return MOCK_NEWS.map((item, idx) => ({
+      id: item.id,
+      date: item.date,
+      title: item.title,
+      summary: item.summary,
+      tag: item.tag || item.category || 'General',
+      img: item.imageUrl || DEFAULT_NEWS_IMAGES[idx % DEFAULT_NEWS_IMAGES.length],
+      featured: idx === 0,
+      author: 'EAF Communications Department',
+      readTime: '3 min read',
+      location: 'Addis Ababa, Ethiopia',
+      paragraphs: [
+        item.summary,
+        'The Ethiopian Athletics Federation continues to expand competition infrastructure and athlete support systems across all regional member associations.',
+        'Official dispatches and tournament event schedules are synchronized regularly through the EAF Federation Hub platform.'
+      ],
+    }));
+  }, []);
+
   const newsList: NewsItem[] = useMemo(() => {
     if (apiNews && apiNews.length > 0) {
       return apiNews.map((article, idx) => mapArticleToNewsItem(article, idx));
     }
-    return cachedNews;
-  }, [apiNews, cachedNews]);
+    if (cachedNews && cachedNews.length > 0) {
+      return cachedNews;
+    }
+    return fallbackNews;
+  }, [apiNews, cachedNews, fallbackNews]);
 
   // ── Fetch Athletes from Backend API (with instant 0ms localStorage cache) ──
   const { data: apiAthletes } = useGetAthletesQuery();
