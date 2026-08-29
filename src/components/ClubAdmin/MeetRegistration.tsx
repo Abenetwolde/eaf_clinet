@@ -90,7 +90,8 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
   const discAthleteSel = rosterModal ? new Set((selections[rosterModal.meetId]?.[rosterModal.discipline]) || []) : new Set();
 
   // ── results data ──
-  const resultsForMeet = selectedMeet ? (MOCK_EVENT_RESULTS[selectedMeet] || []) : [];
+  const selectedMeetObj = selectedMeet ? meets.find(m => m.id === selectedMeet) : null;
+  const resultsForMeet = selectedMeetObj && selectedMeetObj.status !== 'REGISTRATION_OPEN' && selectedMeetObj.status !== 'UPCOMING' ? (MOCK_EVENT_RESULTS[selectedMeet] || []) : [];
 
   return (
     <div>
@@ -211,7 +212,7 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
           {/* Meet selector */}
           <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-[16px] mb-[28px]">
             {meets.map(meet => {
-              const hasResults = !!(MOCK_EVENT_RESULTS[meet.id]);
+              const hasResults = meet.status !== 'REGISTRATION_OPEN' && meet.status !== 'UPCOMING' && !!(MOCK_EVENT_RESULTS[meet.id]);
               const isSelected = selectedMeet === meet.id;
               return (
                 <div key={meet.id}
@@ -225,7 +226,7 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
                     <div className="absolute inset-0 flex items-center justify-center flex-col gap-[4px] p-[12px]">
                       <h4 className="text-white font-extrabold text-[0.88rem] text-center leading-[1.3]">{meet.title}</h4>
                       <span className="text-[0.72rem] text-[#8FA8BC] font-bold">
-                        {hasResults ? `${MOCK_EVENT_RESULTS[meet.id].length} events with results` : 'Results not yet published'}
+                        {hasResults ? `${MOCK_EVENT_RESULTS[meet.id].length} events with results` : (meet.status === 'REGISTRATION_OPEN' || meet.status === 'UPCOMING') ? 'Registration in progress' : 'Results not yet published'}
                       </span>
                     </div>
                     {isSelected && (

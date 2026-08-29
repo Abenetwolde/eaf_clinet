@@ -267,8 +267,8 @@ export default function CompetitionDetail({
     };
   });
 
-  // Generate Starter Lists
-  const starterList = MOCK_ATHLETES.map((ath, idx) => ({
+  // Generate Starter Lists (suppressed when event is open for registration)
+  const starterList = (meet.status === 'REGISTRATION_OPEN' || meet.status === 'UPCOMING') ? [] : MOCK_ATHLETES.map((ath, idx) => ({
     bib: `BIB-30${idx + 1}`,
     name: ath.name,
     amharicName: ath.amharicName,
@@ -280,8 +280,8 @@ export default function CompetitionDetail({
     verified: ath.faydaStatus === 'VERIFIED'
   }));
 
-  // Fetch Results if available
-  const rawResults = MOCK_EVENT_RESULTS[meet.id] || [];
+  // Fetch Results if available (suppressed when event is open for registration)
+  const rawResults = (meet.status === 'REGISTRATION_OPEN' || meet.status === 'UPCOMING') ? [] : (MOCK_EVENT_RESULTS[meet.id] || []);
 
   const resultsData = [];
   rawResults.forEach(disciplineBlock => {
@@ -768,63 +768,71 @@ export default function CompetitionDetail({
 
         {/* 3. Starter Lists Tab */}
         {activeTab === 'starters' && (
-          <div className="gov-card" style={{ background: '#FFFFFF', padding: '0', overflow: 'hidden', borderRadius: '18px' }}>
-            <div className="table-responsive">
-              <table className="gov-table">
-                <thead>
-                  <tr>
-                    <th>{t('competitionDetail.bib')}</th>
-                    <th>{t('competitionDetail.athleteName')}</th>
-                    <th>{t('competitionDetail.clubDelegation')}</th>
-                    <th>{t('common.event')}</th>
-                    <th>{t('competitionDetail.genderDiv')}</th>
-                    <th>{t('competitionDetail.seedTime')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {starterList.map((st, i) => (
-                    <tr key={i}>
-                      <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)' }}>{st.bib}</td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{st.name}</span>
-                          {st.verified && (
-                            <span 
-                              title={t('competitionDetail.verified')} 
-                              style={{ 
-                                display: 'inline-flex', 
-                                alignItems: 'center', 
-                                background: '#DCFCE7', 
-                                color: '#15803D', 
-                                borderRadius: '50%', 
-                                padding: '2px'
-                              }}
-                            >
-                              <CheckCircle2 size={12} fill="#15803D" stroke="#DCFCE7" />
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{st.amharicName}</div>
-                      </td>
-                      <td style={{ fontWeight: 600 }}>{st.club}</td>
-                      <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{st.event}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          <span className={`badge ${st.gender === 'Male' ? 'badge-blue' : 'badge-amber'}`} style={{ padding: '2px 6px', fontSize: '0.65rem' }}>
-                            {st.gender === 'Male' ? 'M' : 'F'}
-                          </span>
-                          <span className="badge" style={{ background: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', padding: '2px 6px', fontSize: '0.65rem' }}>
-                            {st.ageGroup}
-                          </span>
-                        </div>
-                      </td>
-                      <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{st.seedTime}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          starterList.length === 0 ? (
+            <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)', borderRadius: '18px' }}>
+              <Users size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
+              <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px' }}>Starter List Pending</h4>
+              <p style={{ fontSize: '0.85rem' }}>Official athlete starter lists will be published after registration closes.</p>
             </div>
-          </div>
+          ) : (
+            <div className="gov-card" style={{ background: '#FFFFFF', padding: '0', overflow: 'hidden', borderRadius: '18px' }}>
+              <div className="table-responsive">
+                <table className="gov-table">
+                  <thead>
+                    <tr>
+                      <th>{t('competitionDetail.bib')}</th>
+                      <th>{t('competitionDetail.athleteName')}</th>
+                      <th>{t('competitionDetail.clubDelegation')}</th>
+                      <th>{t('common.event')}</th>
+                      <th>{t('competitionDetail.genderDiv')}</th>
+                      <th>{t('competitionDetail.seedTime')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {starterList.map((st, i) => (
+                      <tr key={i}>
+                        <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)' }}>{st.bib}</td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{st.name}</span>
+                            {st.verified && (
+                              <span 
+                                title={t('competitionDetail.verified')} 
+                                style={{ 
+                                  display: 'inline-flex', 
+                                  alignItems: 'center', 
+                                  background: '#DCFCE7', 
+                                  color: '#15803D', 
+                                  borderRadius: '50%', 
+                                  padding: '2px'
+                                }}
+                              >
+                                <CheckCircle2 size={12} fill="#15803D" stroke="#DCFCE7" />
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{st.amharicName}</div>
+                        </td>
+                        <td style={{ fontWeight: 600 }}>{st.club}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{st.event}</td>
+                        <td>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <span className={`badge ${st.gender === 'Male' ? 'badge-blue' : 'badge-amber'}`} style={{ padding: '2px 6px', fontSize: '0.65rem' }}>
+                              {st.gender === 'Male' ? 'M' : 'F'}
+                            </span>
+                            <span className="badge" style={{ background: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', padding: '2px 6px', fontSize: '0.65rem' }}>
+                              {st.ageGroup}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{st.seedTime}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
         )}
 
         {/* 4. Live Results Tab */}

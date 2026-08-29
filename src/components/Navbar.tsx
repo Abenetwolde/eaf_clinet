@@ -1,7 +1,8 @@
 import React from 'react';
-import { ShieldCheck, UserCheck, Building2, LogOut, Sparkles, Award } from 'lucide-react';
+import { ShieldCheck, UserCheck, Building2, LogOut, Sparkles, Award, LayoutDashboard } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Club, Athlete, Role } from '../types';
+import { useAppSelector } from '../store/hooks';
 
 interface NavbarProps {
   currentRole: Role;
@@ -15,6 +16,10 @@ interface NavbarProps {
 export default function Navbar({
   currentRole, currentAthlete, currentClub, onSwitchRole, onLogout, onOpenAuthModal
 }: NavbarProps) {
+  const authState = useAppSelector(state => state.auth);
+  const isAuthenticated = authState.isAuthenticated || !!authState.token;
+  const userRole = authState.role || 'ATHLETE';
+
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
@@ -22,7 +27,7 @@ export default function Navbar({
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className={`sticky top-0 z-50 ${
         currentRole === 'LANDING'
-          ? 'bg-transparent backdrop-blur-none border-none shadow-none'
+          ? 'bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm'
           : 'bg-white/88 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_4px_20px_rgba(15,23,42,0.04)]'
       }`}
     >
@@ -53,14 +58,38 @@ export default function Navbar({
         {/* System Navigation & Role Context Controls */}
         <div className="flex items-center gap-3">
           {currentRole === 'LANDING' ? (
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => onOpenAuthModal()}
-              className="btn-primary text-[0.9rem] px-5 py-2.5"
-            >
-              Sign In
-            </motion.button>
+            isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => onSwitchRole(userRole)}
+                  className="btn-primary text-[0.88rem] px-4 py-2 flex items-center gap-2"
+                >
+                  <LayoutDashboard size={16} />
+                  My Dashboard
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={onLogout}
+                  className="bg-red-50 border border-red-200 text-red-600 px-3.5 py-2 rounded-xl flex items-center gap-1.5 text-[0.8rem] font-bold cursor-pointer transition-colors hover:bg-red-100"
+                >
+                  <LogOut size={14} />
+                  Logout
+                </motion.button>
+              </div>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => onOpenAuthModal()}
+                className="btn-primary text-[0.9rem] px-5 py-2.5"
+              >
+                Sign In
+              </motion.button>
+            )
           ) : (
             <>
               {/* Active Session Indicator */}

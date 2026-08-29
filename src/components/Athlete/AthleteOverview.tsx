@@ -7,7 +7,7 @@ import {
   FileText, Check, Copy, User, Lock, ExternalLink
 } from 'lucide-react';
 import type { Athlete } from '../../types';
-import { MOCK_EVENT_RESULTS, MEET_META, MOCK_ATHLETES } from '../../data/mockData';
+import { MOCK_EVENT_RESULTS, MEET_META, MOCK_ATHLETES, MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
 import LicenseQrCode from './LicenseQrCode';
 
@@ -130,6 +130,8 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
   const competitionHistory: CompResult[] = [];
   if (athlete?.name) {
     Object.entries(MOCK_EVENT_RESULTS).forEach(([meetId, disciplines]) => {
+      const meetObj = MOCK_MEETS.find(m => m.id === meetId);
+      if (meetObj && (meetObj.status === 'REGISTRATION_OPEN' || meetObj.status === 'UPCOMING')) return;
       const meta = MEET_META[meetId];
       disciplines.forEach(disc => {
         const myResult = disc.results.find(r => r.athleteName === athlete.name);

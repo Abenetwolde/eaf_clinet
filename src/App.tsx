@@ -186,15 +186,22 @@ export default function App() {
       dispatch(setClub(newClub));
       dispatch(setRole('CLUB'));
       setClubSubPage('OVERVIEW');
-      handleNotify(`Club "${newClub.shortName}" registered and logged in!`, 'success');
+      setPublicSubPage('HOME');
+      setNavNonce(prev => prev + 1);
+      window.scrollTo(0, 0);
+      setTimeout(() => window.scrollTo(0, 0), 50);
+      handleNotify(`Club "${newClub.shortName}" registered successfully! Welcome to EAF.`, 'success');
     } else {
       const newAthlete = registrationData.payload.athlete as Athlete;
       dispatch(addAthlete(newAthlete));
       dispatch(setAthlete(newAthlete));
       dispatch(setRole('ATHLETE'));
       setAthleteSubPage('OVERVIEW');
-      setPublicSubPage('DASHBOARD');
-      handleNotify(`Athlete "${newAthlete.name}" registered successfully!`, 'success');
+      setPublicSubPage('HOME');
+      setNavNonce(prev => prev + 1);
+      window.scrollTo(0, 0);
+      setTimeout(() => window.scrollTo(0, 0), 50);
+      handleNotify(`Athlete "${newAthlete.name}" registered successfully! Welcome to EAF.`, 'success');
     }
   };
 

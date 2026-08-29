@@ -1106,67 +1106,22 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '920px', margin: '0 auto' }}>
 
-            <h1 style={{
-              color: t.text,
-              fontSize: 'clamp(2.2rem, 5.5vw, 3.8rem)',
-              fontWeight: 900,
-              lineHeight: 1.25,
-              marginBottom: '18px',
-              letterSpacing: '-0.025em',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '8px',
-            }}>
-              {(() => {
-                const fullTitle = tr('home.heroTitle');
-                const heroColors = [t.text, 'var(--primary)', t.text, darkMode ? '#38BDF8' : '#0284C7', '#D97706'];
-                const lines = fullTitle.includes(':')
-                  ? [fullTitle.split(':')[0] + ':', fullTitle.split(':').slice(1).join(':').trim()]
-                  : [fullTitle];
-
-                let globalWordIndex = 0;
-
-                return lines.map((line, lineIndex) => {
-                  const lineWords = line.split(' ');
-                  return (
-                    <motion.div
-                      key={lineIndex}
-                      initial={{ opacity: 0, x: lineIndex % 2 === 0 ? -100 : 100, filter: 'blur(6px)' }}
-                      animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                      transition={{
-                        duration: 0.75,
-                        delay: 0.12 + lineIndex * 0.25,
-                        ease: [0.16, 1, 0.3, 1]
-                      }}
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        justifyContent: 'center',
-                        gap: '0.25em 0.35em',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {lineWords.map((word, wIdx) => {
-                        const wordColor = heroColors[globalWordIndex % heroColors.length];
-                        globalWordIndex++;
-                        return (
-                          <span
-                            key={wIdx}
-                            style={{
-                              color: wordColor,
-                              display: 'inline-block'
-                            }}
-                          >
-                            {word}
-                          </span>
-                        );
-                      })}
-                    </motion.div>
-                  );
-                });
-              })()}
-            </h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              style={{
+                color: t.text,
+                fontSize: 'clamp(2.2rem, 5.2vw, 3.6rem)',
+                fontWeight: 900,
+                lineHeight: 1.25,
+                marginBottom: '18px',
+                letterSpacing: '-0.025em',
+                textAlign: 'center',
+              }}
+            >
+              {tr('home.heroTitle')}
+            </motion.h1>
 
             <p style={{
               color: t.textSub,
@@ -2525,7 +2480,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     Ethiopian Athletics Federation
                   </div>
                   <div style={{ color: '#FEF08A', fontSize: '0.78rem', fontWeight: 800 }}>
-                    á‹¨áŠ¢á‰µá‹®áŒµá‹« áŠ á‰µáˆŒá‰²áŠ­áˆµ áŒá‹´áˆ¬áˆ½áŠ•
+                    የኢትዮጵያ አትሌቲክስ ፌዴሬሽን
                   </div>
                 </div>
               </div>
@@ -2559,7 +2514,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             {/* Col 2: Quick Links */}
             <div>
               <h4 style={{ color: '#FEF08A', fontWeight: 900, fontSize: '1rem', marginBottom: 20, letterSpacing: '0.04em' }}>
-                Quick Links / áˆáŒ£áŠ• áŠ áŒˆáŠ“áŠžá‰½
+                Quick Links / ፈጣን አገናኞች
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {QUICK_LINKS.map(([en, am, href]) => (
@@ -2583,7 +2538,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             {/* Col 3: Direct Contact Details */}
             <div>
               <h4 style={{ color: '#FEF08A', fontWeight: 900, fontSize: '1rem', marginBottom: 20, letterSpacing: '0.04em' }}>
-                Federation HQ / á‹«áŠ“áŒáˆ©áŠ•
+                Federation HQ / አድራሻችን
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
@@ -2605,7 +2560,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           {/* Bottom Copyright Bar */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 24, textAlign: 'center', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <p style={{ color: '#FFFFFF', fontSize: '0.82rem', fontWeight: 600 }}>
-              © 2026 Ethiopian Athletics Federation — á‹¨áŠ¢á‰µá‹®áŒµá‹« áŠ á‰µáˆŒá‰²áŠ­áˆµ áŒá‹´áˆ¬áˆ½áŠ•. All rights reserved.
+              © 2026 Ethiopian Athletics Federation — የኢትዮጵያ አትሌቲክስ ፌዴሬሽን. All rights reserved.
             </p>
             <p style={{ color: '#FEF08A', fontSize: '0.82rem', fontWeight: 800 }}>
               EOSCRMS Government Portal System v4.2

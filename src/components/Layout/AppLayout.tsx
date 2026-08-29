@@ -161,22 +161,75 @@ export default function AppLayout({
         {/* Footer */}
         <div className="p-3.5 border-t border-[#2D3A5A] flex flex-col gap-2">
           <button
+            type="button"
             onClick={() => { onSwitchRole('LANDING'); setMobileOpen(false); }}
-            className="btn-gov-secondary w-full text-[0.78rem] px-3 py-2 flex items-center justify-center gap-1.5"
+            style={{
+              background: 'rgba(255, 255, 255, 0.12)',
+              color: '#FFFFFF',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              borderRadius: '10px',
+              padding: '10px 14px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.22)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
           >
-            <Globe size={13} /> Go to Home Page
+            <Globe size={15} color="#FFFFFF" /> Go to Home Page
           </button>
+
           <button
+            type="button"
             onClick={() => { onSwitchRole(isClub ? 'ATHLETE' : 'CLUB'); setMobileOpen(false); }}
-            className="btn-gov-secondary w-full text-[0.78rem] px-3 py-2 flex items-center justify-center gap-1.5"
+            style={{
+              background: 'rgba(255, 255, 255, 0.12)',
+              color: '#FFFFFF',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              borderRadius: '10px',
+              padding: '10px 14px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.22)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
           >
-            {isClub ? <><UserCheck size={13} /> Athlete View</> : <><Building2 size={13} /> Club View</>}
+            {isClub ? <><UserCheck size={15} color="#FFFFFF" /> Athlete View</> : <><Building2 size={15} color="#FFFFFF" /> Club View</>}
           </button>
+
           <button
+            type="button"
             onClick={() => { onLogout(); setMobileOpen(false); }}
-            className="bg-transparent border-none text-red-400 text-[0.78rem] font-semibold flex items-center justify-center gap-1.5 cursor-pointer py-1.5"
+            style={{
+              background: 'transparent',
+              color: '#F87171',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 12px',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = '#FCA5A5'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#F87171'}
           >
-            <LogOut size={13} /> Logout
+            <LogOut size={15} color="#F87171" /> Logout
           </button>
         </div>
       </motion.aside>

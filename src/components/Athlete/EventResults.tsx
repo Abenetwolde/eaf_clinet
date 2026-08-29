@@ -12,7 +12,8 @@ export default function EventResults({ onNotify }: EventResultsProps) {
   const [selectedMeet, setSelectedMeet] = useState<string | null>(null);
   const [expandedDisc, setExpandedDisc] = useState<number | null>(null);
 
-  const meetResults = selectedMeet ? (MOCK_EVENT_RESULTS[selectedMeet] || []) : [];
+  const selectedMeetObj = selectedMeet ? MOCK_MEETS.find(m => m.id === selectedMeet) : null;
+  const meetResults = selectedMeet && selectedMeetObj && selectedMeetObj.status !== 'REGISTRATION_OPEN' && selectedMeetObj.status !== 'UPCOMING' ? (MOCK_EVENT_RESULTS[selectedMeet] || []) : [];
 
   return (
     <div>
@@ -28,7 +29,7 @@ export default function EventResults({ onNotify }: EventResultsProps) {
       {/* Meet selector grid */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-[18px] mb-8">
         {MOCK_MEETS.map(meet => {
-          const results = MOCK_EVENT_RESULTS[meet.id];
+          const results = (meet.status !== 'REGISTRATION_OPEN' && meet.status !== 'UPCOMING') ? MOCK_EVENT_RESULTS[meet.id] : undefined;
           const hasResults = results && results.length > 0;
           const resultCount = hasResults ? results.reduce((acc, d) => acc + d.results.length, 0) : 0;
           const isSelected = selectedMeet === meet.id;
