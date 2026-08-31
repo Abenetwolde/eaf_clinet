@@ -162,7 +162,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
 
   const tabs = [
     { id: 'overview', label: 'Dashboard Overview', icon: BarChart3 },
-    { id: 'competitions', label: `Competition History (${totalRaces})`, icon: Trophy },
+    // { id: 'competitions', label: `Competition History (${totalRaces})`, icon: Trophy },
     { id: 'pbs', label: `Personal Bests (${(athlete?.personalBests || []).length})`, icon: Zap },
     { id: 'weight', label: `Weight & Body (${(athlete?.weightLog || []).length})`, icon: Weight },
     { id: 'training', label: `Training Log (${(athlete?.trainingLog || []).length})`, icon: Flame },

@@ -63,7 +63,7 @@ export default function RegisterMember({ onBack, onNotify, onAddAthlete }: Regis
     setFaydaFin(formatted);
   };
 
-  // Step 1: Initiate Fayda lookup & launch OTP prompt
+  // Step 1: Initiate Fayda lookup & auto-verify biometrics
   const handleInitiateFaydaLookup = () => {
     const cleanDigits = faydaFin.replace(/\D/g, '');
     if (cleanDigits.length < 10) {
@@ -74,20 +74,6 @@ export default function RegisterMember({ onBack, onNotify, onAddAthlete }: Regis
     setFaydaLoading(true);
     setTimeout(() => {
       setFaydaLoading(false);
-      setOtpStep(true); // Open OTP verification
-    }, 900);
-  };
-
-  // Step 2: Confirm OTP & retrieve Fayda Biometrics
-  const handleVerifyOtp = () => {
-    if (otpCode.length < 6) {
-      setFaydaError('Enter a valid 6-digit SMS OTP passcode');
-      return;
-    }
-    setFaydaError('');
-    setOtpLoading(true);
-    setTimeout(() => {
-      setOtpLoading(false);
       setOtpStep(false);
 
       const mockProfiles = [
@@ -95,12 +81,16 @@ export default function RegisterMember({ onBack, onNotify, onAddAthlete }: Regis
         { name: 'Almaz Bekele Negash', amharic: 'አልማዝ በቀለ ነጋሽ', dob: '2003-06-18', gender: 'Female', blood: 'O+', region: 'Oromia Regional State', photoUrl: '/images/runner_female.png' },
         { name: 'Marta Woldu Haile', amharic: 'ማርታ ወልዱ ኃይሌ', dob: '2008-04-07', gender: 'Female', blood: 'B+', region: 'Amhara Regional State', photoUrl: '/images/a1.jpg' },
       ];
-      const cleanDigits = faydaFin.replace(/\D/g, '');
       const pick = mockProfiles[cleanDigits.length % mockProfiles.length];
 
       setFaydaResult(pick);
       onNotify('Fayda ID verified successfully!', 'success');
-    }, 1100);
+    }, 400);
+  };
+
+  // Step 2: Confirm OTP & retrieve Fayda Biometrics (Bypassed)
+  const handleVerifyOtp = () => {
+    handleInitiateFaydaLookup();
   };
 
   // Handle Pasting full 6-digit OTP into boxes

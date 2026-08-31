@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share, RefreshCw } from 'lucide-react';
+import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share, RefreshCw, Zap } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 import NewsDetail from './NewsDetail';
 import GalleryDetail from './GalleryDetail';
@@ -614,6 +614,58 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
   const [activeLightboxImg, setActiveLightboxImg] = useState<GalleryItem | null>(null);
   const [activeCaptureIndex, setActiveCaptureIndex] = useState<number>(0);
+  // Hero Section Live Competitions Ticker State
+  const [heroTickerIndex, setHeroTickerIndex] = useState(0);
+  const HERO_LIVE_RESULTS = useMemo(() => [
+    {
+      id: "MEET-2026-04",
+      title: "Oromia Athletics Championship 2026",
+      location: "Asella Stadium • Oromia Region",
+      category: "Men 10,000m Track Final",
+      leader: "Lamecha Girma (Oromia Police)",
+      time: "26:48.30",
+      status: "LIVE NOW",
+      img: "/images/d1.jpg",
+    },
+    {
+      id: "MEET-2026-01",
+      title: "Addis Ababa International Grand Prix 2026",
+      location: "National Stadium • Addis Ababa",
+      category: "Men 5,000m Track Final",
+      leader: "Berihu Aregawi (Commercial Bank)",
+      time: "12:54.20",
+      status: "LIVE NOW",
+      img: "/images/banner_grand_prix.png",
+    },
+    {
+      id: "MEET-2026-03",
+      title: "Jan Meda National Cross-Country Olympic Trials",
+      location: "Jan Meda Race Course • Addis Ababa",
+      category: "Senior Men 10km Cross Country",
+      leader: "Selemon Barega (Police Sports)",
+      time: "28:12.05",
+      status: "LIVE NOW",
+      img: "/images/banner_jan_meda.png",
+    },
+    {
+      id: "MEET-2026-02",
+      title: "Ethiopian National Youth Olympic Games U18/U20",
+      location: "Hawassa International Stadium • Sidama",
+      category: "Women 1,500m Track Final",
+      leader: "Birke Haylom (CBO Club)",
+      time: "03:56.40",
+      status: "LIVE NOW",
+      img: "/images/banner_youth_games.png",
+    },
+  ], []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHeroTickerIndex(prev => (prev + 1) % HERO_LIVE_RESULTS.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [HERO_LIVE_RESULTS.length]);
+
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   // Track which article the user manually previewed in the hero card (null = auto = first item)
   const [selectedNewsOverrideId, setSelectedNewsOverrideId] = useState<string | number | null>(null);
@@ -1102,77 +1154,251 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   return (
     <div style={{ background: t.bg, minHeight: '100vh', overflowX: 'hidden', color: t.text, transition: 'background 0.3s, color 0.3s' }}>
 
-      {/* ── 1. HERO SECTION WITH VECTOR GRAPHICS ── */}
+      {/* ── 1. HERO SECTION WITH MODERN GLASSMORPHISM & METRICS ── */}
       {publicSubPage === 'HOME' && (
         <section
           id="home"
           style={{
             position: 'relative',
-            minHeight: '520px',
+            minHeight: '560px',
             background: t.bgHero,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '40px 24px 70px',
+            padding: '50px 24px 60px',
             margin: '0',
             overflow: 'hidden'
           }}
         >
-          {/* Vector decorative background accents */}
+          {/* Ambient Light Radial Glow Accents for High-Definition Glassmorphism */}
+          <div style={{ position: 'absolute', top: '10%', left: '15%', width: '480px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0) 70%)', filter: 'blur(55px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: '20%', right: '15%', width: '480px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(16, 185, 129, 0) 70%)', filter: 'blur(55px)', pointerEvents: 'none' }} />
+
+          {/* Subtle Vector track background accents */}
           <VectorTrackLines />
-          <div style={{ position: 'absolute', right: '-40px', top: '20px', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', right: '-40px', top: '20px', pointerEvents: 'none', opacity: 0.12 }}>
             <VectorRunnerDecoration />
           </div>
-          <div style={{ position: 'absolute', left: '-60px', bottom: '10px', pointerEvents: 'none', transform: 'scaleX(-1)' }}>
+          <div style={{ position: 'absolute', left: '-60px', bottom: '10px', pointerEvents: 'none', transform: 'scaleX(-1)', opacity: 0.12 }}>
             <VectorRunnerDecoration />
           </div>
 
-          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '920px', margin: '0 auto' }}>
+          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '1040px', margin: '0 auto', width: '100%' }}>
 
+            {/* Headline */}
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
               style={{
                 color: t.text,
-                fontSize: 'clamp(2.2rem, 5.2vw, 3.6rem)',
-                fontWeight: 900,
-                lineHeight: 1.25,
-                marginBottom: '18px',
+                fontSize: 'clamp(2.2rem, 5vw, 3.6rem)',
+                fontWeight: 800,
+                lineHeight: 1.15,
+                marginBottom: '24px',
                 letterSpacing: '-0.025em',
                 textAlign: 'center',
               }}
             >
-              {tr('home.heroTitle')}
+              EAF Digital Athlete Portal: <br />
+              <span style={{
+                background: 'linear-gradient(135deg, #0284C7 0%, #10B981 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 900
+              }}>
+                Verify & Track Live Results
+              </span>
             </motion.h1>
 
-            <p style={{
-              color: t.textSub,
-              fontSize: 'clamp(1rem, 2vw, 1.18rem)',
-              maxWidth: '720px',
-              margin: '0 auto 36px',
-              lineHeight: 1.6,
-              fontWeight: 500
-            }}>
-              {loc.heroSubtitle}
-            </p>
+            {/* Animated Live Results Showcase Card (Bento Floating Glassmorphic Card) */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              style={{
+                maxWidth: '840px',
+                margin: '0 auto 24px',
+                background: darkMode
+                  ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.65) 0%, rgba(15, 23, 42, 0.45) 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(240, 249, 255, 0.45) 100%)',
+                border: darkMode
+                  ? '1px solid rgba(255, 255, 255, 0.18)'
+                  : '1px solid rgba(255, 255, 255, 0.95)',
+                borderRadius: '20px',
+                padding: '14px 20px',
+                boxShadow: darkMode
+                  ? '0 20px 50px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
+                  : '0 20px 45px -10px rgba(2, 132, 199, 0.18), inset 0 2px 2px rgba(255, 255, 255, 1), 0 0 1px rgba(0, 0, 0, 0.1)',
+                backdropFilter: 'blur(28px) saturate(200%)',
+                WebkitBackdropFilter: 'blur(28px) saturate(200%)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                position: 'relative',
+                overflow: 'hidden',
+                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
+              onClick={() => {
+                const liveMeet = HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length];
+                setSelectedMeetId(liveMeet.id);
+              }}
+            >
+              {/* Glass Reflection Highlight Sheen */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '45%',
+                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 100%)',
+                pointerEvents: 'none',
+                borderRadius: '20px 20px 0 0'
+              }} />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={heroTickerIndex}
+                  initial={{ opacity: 0, y: 22 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -22 }}
+                  transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}
+                >
+                  {/* Left: Compact Competition Thumbnail Image Preview */}
+                  <div style={{ position: 'relative', width: '115px', height: '64px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.18)' }}>
+                    <img
+                      src={HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].img}
+                      alt={HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.75) 100%)' }} />
+                    
+                    {/* Pulsing Live Badge */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '4px',
+                      left: '4px',
+                      background: '#EF4444',
+                      color: '#FFF',
+                      fontSize: '0.58rem',
+                      fontWeight: 900,
+                      padding: '2px 5px',
+                      borderRadius: '5px',
+                      letterSpacing: '0.04em',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                      boxShadow: '0 2px 6px rgba(239, 68, 68, 0.4)'
+                    }}>
+                      <span style={{ position: 'relative', display: 'flex', width: '5px', height: '5px' }}>
+                        <span style={{ position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', background: '#FFF', opacity: 0.8, animation: 'ping 1.2s cubic-bezier(0,0,0.2,1) infinite' }} />
+                        <span style={{ position: 'relative', display: 'inline-flex', borderRadius: '50%', height: '5px', width: '5px', background: '#FFF' }} />
+                      </span>
+                      LIVE
+                    </div>
+                  </div>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px' }}>
+                  {/* Center Content: Meet Title, Venue, Live Standings Ticker */}
+                  <div style={{ flex: 1, minWidth: '220px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Zap size={12} color="#EF4444" /> LIVE RESULTS
+                      </span>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 800, background: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', color: t.textMuted, padding: '1px 6px', borderRadius: '100px' }}>
+                        {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].location}
+                      </span>
+                    </div>
+
+                    <h3 style={{ fontSize: '0.98rem', fontWeight: 900, color: t.text, margin: '0 0 4px', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '420px' }}>
+                      {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].title}
+                    </h3>
+
+                    {/* Live Ticker info line */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: t.textSub, flexWrap: 'wrap' }}>
+                      <span style={{ color: '#10B981', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <Activity size={12} /> {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].category}:
+                      </span>
+                      <span style={{ fontWeight: 700, color: t.text }}>
+                        {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].leader}
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.74rem', background: darkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)', color: '#10B981', padding: '1px 5px', borderRadius: '5px', fontWeight: 800 }}>
+                        ⏱️ {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].time}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right Action: Compact Encouraging Navigation Button */}
+                  <div style={{ flexShrink: 0 }}>
+                    <div style={{
+                      background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+                      color: '#FFF',
+                      fontWeight: 800,
+                      fontSize: '0.76rem',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      boxShadow: '0 3px 10px rgba(239, 68, 68, 0.3)',
+                      transition: 'transform 0.2s ease'
+                    }}>
+                      Live Standings <ArrowRight size={14} />
+                    </div>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Bottom Dot Nav Indicators */}
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Click to view details
+                </span>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  {HERO_LIVE_RESULTS.map((m, idx) => (
+                    <button
+                      key={m.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHeroTickerIndex(idx);
+                      }}
+                      style={{
+                        width: heroTickerIndex % HERO_LIVE_RESULTS.length === idx ? '18px' : '5px',
+                        height: '5px',
+                        borderRadius: '100px',
+                        background: heroTickerIndex % HERO_LIVE_RESULTS.length === idx ? '#EF4444' : (darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'),
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Action Buttons (Primary & Secondary CTAs) */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+              style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', marginBottom: '24px' }}
+            >
               {/* Primary CTA */}
               <button
                 onClick={() => onRegister('ATHLETE')}
                 className="btn-accent"
                 style={{
-                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                  background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
                   color: '#FFFFFF',
                   fontWeight: 800,
                   fontSize: '0.98rem',
-                  padding: '16px 32px',
+                  padding: '14px 28px',
                   borderRadius: '14px',
                   border: 'none',
                   cursor: 'pointer',
-                  boxShadow: '0 10px 28px rgba(2, 132, 199, 0.35)',
+                  boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.35)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '10px',
@@ -1180,7 +1406,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 }}
               >
                 <CheckCircle size={20} />
-                {loc.btnPrimary}
+                Register / Verify EAF ID
               </button>
 
               {/* Secondary CTA */}
@@ -1190,27 +1416,29 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
                 style={{
-                  background: t.surface,
-                  border: '1px solid ' + t.borderSubtle,
+                  background: darkMode ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF',
+                  border: '1px solid ' + (darkMode ? 'rgba(255, 255, 255, 0.16)' : '#CBD5E1'),
+                  backdropFilter: 'blur(12px)',
                   color: t.text,
                   fontWeight: 800,
                   fontSize: '0.98rem',
-                  padding: '16px 32px',
+                  padding: '14px 28px',
                   borderRadius: '14px',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '10px',
-                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.05)',
-                  transition: 'all 0.2s'
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.04)',
+                  transition: 'all 0.2s ease'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = t.bgAlt; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = t.surface; e.currentTarget.style.transform = 'none'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = darkMode ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF'; e.currentTarget.style.transform = 'none'; }}
               >
-                <Trophy size={20} color="var(--primary)" />
-                {loc.btnSecondary}
+                <Trophy size={20} color="#0284C7" />
+                Explore Competitions
               </button>
-            </div>
+            </motion.div>
+
           </div>
         </section>
       )}

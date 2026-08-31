@@ -327,12 +327,12 @@ export default function App() {
               <motion.button
                 key={link.label}
                 onClick={() => handleNavClick(link.page)}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                className={`border-0 cursor-pointer font-bold text-[clamp(0.75rem,1vw,0.85rem)] px-[clamp(0.4rem,0.8vw,0.875rem)] py-2 rounded-lg transition-all duration-200 font-sans whitespace-nowrap
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className={`border-0 cursor-pointer font-extrabold text-[clamp(0.78rem,1vw,0.85rem)] px-[clamp(0.5rem,0.9vw,0.95rem)] py-2 rounded-full transition-all duration-200 font-sans whitespace-nowrap
                   ${publicSubPage === link.page
-                    ? `text-primary ${darkMode ? 'bg-[#1E293B]' : 'bg-[#F1F5F9]'}`
-                    : `${darkMode ? 'text-[#94A3B8] hover:bg-[#334155]' : 'text-[#64748B] hover:bg-[#E2E8F0]'} bg-transparent`
+                    ? `text-primary ${darkMode ? 'bg-sky-950/60 text-sky-400 border border-sky-500/30' : 'bg-sky-50 text-sky-700 font-black'}`
+                    : `${darkMode ? 'text-[#94A3B8] hover:bg-[#1E293B]' : 'text-[#64748B] hover:bg-[#F1F5F9]'} bg-transparent`
                   }`}
               >
                 {link.label}
@@ -426,35 +426,29 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              <>
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setRegModalRole('ATHLETE')}
-                  className="btn-accent"
-                  style={{
-                    fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: 5,
-                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', boxShadow: 'none', color: '#FFF', border: 'none', cursor: 'pointer'
-                  }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>
-                  {t('nav.registerAsAthlete')}
-                </motion.button>
-
-                <button
-                  onClick={handleOpenAuthModal}
-                  className="btn-gov-secondary"
-                  style={{
-                    fontSize: '0.76rem', padding: '7px 12px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: 4,
-                    background: '#FFFFFF', color: '#0F172A', border: '1px solid #CBD5E1', cursor: 'pointer'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#F1F5F9'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#FFFFFF'}
-                >
-                  {t('nav.clubPortalLogin')}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-                </button>
-              </>
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={handleOpenAuthModal}
+                className="btn-accent"
+                style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  padding: '8px 18px',
+                  borderRadius: '12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
+                  color: '#FFF',
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                Portal Login
+              </motion.button>
             )}
           </div>
 

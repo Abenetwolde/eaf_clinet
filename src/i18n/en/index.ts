@@ -405,7 +405,7 @@ export const en = {
       genderBlood: 'Gender & Blood',
       regionalDelegation: 'Regional Delegation',
       verificationHash: 'Verification Hash',
-      otpHint: '🔒 Please click "Verify Fayda FIN" above to enter your SMS OTP passcode.',
+      otpHint: '',
       continueSports: 'Continue to Sports Info',
       sportsStepTitle: 'Step 2: Sports & Athletic Affiliation',
       disciplinesLabel: 'Primary Event / Discipline (Select all that apply)',
