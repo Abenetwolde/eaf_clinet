@@ -193,7 +193,7 @@ export default function NewsDetail({
 
             {/* Breadcrumb path */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: theme.textMuted, fontWeight: 600 }}>
-              <span onClick={onBack} style={{ cursor: 'pointer', hover: { color: 'var(--primary)' } }}>Home</span>
+              <span onClick={onBack} style={{ cursor: 'pointer' }}>Home</span>
               <span>/</span>
               <span onClick={onBack} style={{ cursor: 'pointer' }}>News</span>
               <span>/</span>
@@ -675,7 +675,7 @@ export default function NewsDetail({
                     gap: '16px',
                   }}
                 >
-                  {news.gallery.map((imgSrc, idx) => (
+                  {displayGallery.map((imgSrc, idx) => (
                     <motion.div
                       key={idx}
                       whileHover={{ scale: 1.03 }}

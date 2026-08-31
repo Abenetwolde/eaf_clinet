@@ -3,11 +3,14 @@ import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Awar
 import CompetitionDetail from './CompetitionDetail';
 import NewsDetail from './NewsDetail';
 import GalleryDetail from './GalleryDetail';
+import AthleteDetail from './AthleteDetail';
 import { ResponsiveSeeMoreText } from './ResponsiveSeeMoreText';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '../i18n';
 import { useGetNewsQuery, type NewsArticle } from '../store/api/newsApi';
-import { useGetAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
+import { useGetPublicAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
+import { useGetGalleryQuery, type GalleryAlbum } from '../store/api/galleryApi';
+import { useGetPublishedEventsQuery, type BackendEvent, formatEventRange, deriveEventStatus } from '../store/api/eventsApi';
 
 /* ─────────────────────────────────────────────
    STATIC DATA & GALLERY IMAGES
@@ -45,12 +48,16 @@ export interface GalleryCapture {
 export interface GalleryItem {
   id: number;
   title: string;
+  amharicTitle?: string | null;
   category: string;
   img: string;
   location: string;
   date: string;
   type: 'PHOTO' | 'VIDEO';
   description: string;
+  capturesCount?: number;
+  videoUrl?: string | null;
+  videoDuration?: string | null;
   captures: GalleryCapture[];
 }
 
@@ -198,6 +205,91 @@ const ATHLETES = [
     quote: 'Perseverance and faith turn every challenging kilometer into victory.',
     img: '/images/runner_female.png',
     medals: ['🥇 2025 Ethiopian Olympic Trial Champion', '🥇 Hawassa Half Marathon Winner'],
+  },
+  {
+    id: 5,
+    name: 'Gudaf Tsegay Desta',
+    amharicName: 'ጉዳፍ ፀጋይ ደስታ',
+    achievement: 'World Record Holder 5,000m — 14:00.21',
+    event: '1,500m / 5,000m / 10,000m',
+    club: 'Ethiopian National Team / CBE AC',
+    faydaFin: '8821-4902-1199',
+    faydaStatus: 'VERIFIED',
+    dob: '1997-01-23',
+    gender: 'Female',
+    ageTier: 'Senior',
+    pb: '14:00.21 (World Record 5000m)',
+    quote: 'To break a world record for Ethiopia requires speed, endurance, and fearless determination.',
+    img: '/images/a1.jpg',
+    medals: ['🥇 World Championships 10,000m Gold', '🥇 World Record 5,000m', '🥈 Olympic Games Bronze'],
+  },
+  {
+    id: 6,
+    name: 'Yomif Kejelcha Atomsa',
+    amharicName: 'ዮሚፍ ቀጀልቻ አቶምሳ',
+    achievement: 'World Half Marathon Record & 5000m Star',
+    event: '5,000m / 10,000m / Half Marathon',
+    club: 'Ethiopian National Team / Oromia Police SC',
+    faydaFin: '3310-7782-9901',
+    faydaStatus: 'VERIFIED',
+    dob: '1997-08-01',
+    gender: 'Male',
+    ageTier: 'Senior',
+    pb: '12:38.95 (5000m) / 57:30 (Half Marathon)',
+    quote: 'Every stride is calibrated for greatness on the track and roads.',
+    img: '/images/a2.jpg',
+    medals: ['🥇 World Indoor 3000m Champion', '🥇 Diamond League Trophy', '🥈 World Championships Silver'],
+  },
+  {
+    id: 7,
+    name: 'Lamecha Girma Grmaye',
+    amharicName: 'ላሜቻ ግርማ ግርማዬ',
+    achievement: 'World Record 3,000m Steeplechase — 7:52.11',
+    event: '3,000m Steeplechase / 5,000m',
+    club: 'Ethiopian National Team / Defense AC',
+    faydaFin: '5519-2041-8833',
+    faydaStatus: 'VERIFIED',
+    dob: '2000-11-26',
+    gender: 'Male',
+    ageTier: 'Senior',
+    pb: '7:52.11 (World Record)',
+    quote: 'Clearing every water barrier with national pride in my heart.',
+    img: '/images/runner_marathon.png',
+    medals: ['🥇 World Record 3000m SC', '🥈 Olympic Silver Medalist', '🥈 3x World Championship Silver'],
+  },
+  {
+    id: 8,
+    name: 'Tamirat Tola Abera',
+    amharicName: 'ታሚራት ቶላ አበራ',
+    achievement: 'Paris 2024 Olympic Marathon Champion — 2:06:26 (OR)',
+    event: 'Marathon',
+    club: 'Ethiopian National Team / Oromia Police SC',
+    faydaFin: '7712-9940-2211',
+    faydaStatus: 'VERIFIED',
+    dob: '1991-08-11',
+    gender: 'Male',
+    ageTier: 'Senior',
+    pb: '2:03:39 (Marathon) / 2:06:26 (Olympic Record)',
+    quote: 'Believing in yourself and answering the nation’s call can conquer any course.',
+    img: '/images/athlete_haile.jpeg',
+    medals: ['🥇 Paris 2024 Olympic Marathon Gold (OR)', '🥇 World Championships Marathon Gold', '🥇 New York Marathon Winner'],
+  },
+  {
+    id: 9,
+    name: 'Letesenbet Gidey',
+    amharicName: 'ለተሰንበት ግደይ',
+    achievement: 'World Record Holder 10,000m & Half Marathon',
+    event: '5,000m / 10,000m / Half Marathon',
+    club: 'Ethiopian National Team / Trans AC',
+    faydaFin: '1192-8830-4455',
+    faydaStatus: 'VERIFIED',
+    dob: '1998-03-20',
+    gender: 'Female',
+    ageTier: 'Senior',
+    pb: '29:01.03 (10,000m WR) / 1:02:52 (Half Marathon WR)',
+    quote: 'Setting world records for Ethiopia is a dream fueled by countless kilometers of discipline.',
+    img: '/images/runner_female.png',
+    medals: ['🥇 World Champion 10,000m', '🥇 World Record Holder', '🥉 Olympic Games Bronze 10,000m'],
   }
 ];
 
@@ -452,6 +544,95 @@ function mapArticleToNewsItem(article: NewsArticle, index: number): NewsItem {
   };
 }
 
+// ── Category label helpers (API enum → display label) ────────────────────────
+const GALLERY_CATEGORY_LABELS: Record<string, string> = {
+  CHAMPIONSHIP: 'Championships',
+  MARATHON: 'Marathons',
+  ROAD_RACE: 'Road Race',
+  TRAINING: 'Training',
+  NATIONAL_TEAM: 'National Team',
+  HISTORIC: 'Historic',
+};
+
+function formatGalleryDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
+/** Maps an API GalleryAlbum to the GalleryItem shape expected by the existing UI */
+function mapAlbumToGalleryItem(album: GalleryAlbum, index: number): GalleryItem {
+  return {
+    id: index + 1,                        // UI still uses numeric ids for prev/next nav
+    title: album.title,
+    amharicTitle: album.amharicTitle ?? null,
+    category: GALLERY_CATEGORY_LABELS[album.category] || album.category,
+    img: album.coverImage,
+    location: album.location,
+    date: formatGalleryDate(album.eventDate),
+    type: album.type as 'PHOTO' | 'VIDEO',
+    description: album.description,
+    capturesCount: album.capturesCount,
+    videoUrl: album.videoUrl ?? null,
+    videoDuration: album.videoDuration ?? null,
+    // captures are loaded lazily via GalleryDetail (GET /gallery/:id)
+    // Store the API id so GalleryDetail can fetch captures on demand
+    captures: [
+      {
+        id: 1,
+        img: album.coverImage,
+        title: album.title,
+        caption: album.description || 'EAF Official Media',
+        photographer: album.photographer || 'EAF Media Unit',
+      },
+    ],
+    _apiId: album.id, // stash original string id for lazy capture fetch
+  } as GalleryItem & { _apiId: string };
+}
+
+// ── Event (competition) mapping: API BackendEvent → UI meet card ────────────
+const EVENT_BANNER_FALLBACKS = [
+  'https://images.unsplash.com/photo-1532444458054-01a7dd3e9fca?w=900&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=900&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=900&auto=format&fit=crop&q=80',
+];
+
+export interface MeetCard {
+  id: string;
+  title: string;
+  amharic: string;
+  venue: string;
+  date: string;
+  dateString: string;
+  status: string;
+  disciplines: string[];
+  region: string;
+  img: string;
+  _apiId?: string;
+}
+
+/** Maps an API BackendEvent to the meet-card shape expected by the existing UI */
+function mapEventToMeet(ev: BackendEvent, index: number): MeetCard {
+  const { date, dateString } = formatEventRange(ev.schedule);
+  return {
+    id: ev.id,
+    title: ev.title,
+    amharic: '',  // events API has no Amharic title yet; UI falls back to title
+    venue: ev.venue || 'Venue TBA',
+    date: date || (ev.createdAt || '').slice(0, 10),
+    dateString: dateString || 'Schedule TBA',
+    status: deriveEventStatus(ev),
+    disciplines: ev.disciplines && ev.disciplines.length > 0 ? ev.disciplines : ['Track & Field'],
+    region: '', // region not exposed by the events API yet
+    img: ev.bannerUrl || EVENT_BANNER_FALLBACKS[index % EVENT_BANNER_FALLBACKS.length],
+    _apiId: ev.id, // stash original string id for lazy detail fetch
+  };
+}
+
 /* ─────────────────────────────────────────────
    VECTOR ILLUSTRATION COMPONENTS
    ───────────────────────────────────────────── */
@@ -492,7 +673,10 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onSelectRole, onRegister, language = 'en', publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false, currentRole = 'LANDING', currentAthlete, onLoginSuccess, navNonce }: LandingPageProps) {
-  const { t: tr } = useI18n();
+  const { t: tr, language: ctxLanguage } = useI18n();
+  // Effective display language: the i18n context (LanguageSelector) is the source of truth;
+  // the language prop is only a fallback for callers that still thread it manually.
+  const lang = ctxLanguage || language;
 
   // ── Fetch real News from Backend API ──
   const { data: apiNews, isLoading: isNewsLoading } = useGetNewsQuery();
@@ -524,8 +708,70 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     return cachedNews;
   }, [apiNews, cachedNews]);
 
-  // ── Fetch Athletes from Backend API (with instant 0ms localStorage cache) ──
-  const { data: apiAthletes } = useGetAthletesQuery();
+  // ── Fetch live Gallery albums from Backend API ──
+  const { data: apiGalleryResp } = useGetGalleryQuery({ limit: 50 });
+  const apiGalleryAlbums = apiGalleryResp?.data;
+
+  const [cachedGallery, setCachedGallery] = useState<GalleryItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('eaf_gallery_cache');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (apiGalleryAlbums && apiGalleryAlbums.length > 0) {
+      const mapped = apiGalleryAlbums.map((album, idx) => mapAlbumToGalleryItem(album, idx));
+      setCachedGallery(mapped);
+      try {
+        localStorage.setItem('eaf_gallery_cache', JSON.stringify(mapped));
+      } catch {}
+    }
+  }, [apiGalleryAlbums]);
+
+  /** Live gallery list: API → mapped GalleryItems → cached → static fallback */
+  const galleryList: GalleryItem[] = useMemo(() => {
+    if (apiGalleryAlbums && apiGalleryAlbums.length > 0) {
+      return apiGalleryAlbums.map((album, idx) => mapAlbumToGalleryItem(album, idx));
+    }
+    return cachedGallery.length > 0 ? cachedGallery : GALLERY_IMAGES;
+  }, [apiGalleryAlbums, cachedGallery]);
+
+  // ── Fetch published Events/Competitions from Backend API ──
+  const { data: apiEventsResp } = useGetPublishedEventsQuery();
+  const apiEvents = apiEventsResp?.data;
+
+  const [cachedMeets, setCachedMeets] = useState<MeetCard[]>(() => {
+    try {
+      const saved = localStorage.getItem('eaf_events_cache');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (apiEvents && apiEvents.length > 0) {
+      const mapped = apiEvents.map((ev, idx) => mapEventToMeet(ev, idx));
+      setCachedMeets(mapped);
+      try {
+        localStorage.setItem('eaf_events_cache', JSON.stringify(mapped));
+      } catch {}
+    }
+  }, [apiEvents]);
+
+  /** Live competitions list: API → mapped MeetCards → cached → static fallback */
+  const meetsList: MeetCard[] = useMemo(() => {
+    if (apiEvents && apiEvents.length > 0) {
+      return apiEvents.map((ev, idx) => mapEventToMeet(ev, idx));
+    }
+    return cachedMeets.length > 0 ? cachedMeets : (ENRICHED_MEETS as MeetCard[]);
+  }, [apiEvents, cachedMeets]);
+
+  // ── Fetch Athletes from Backend Public API (with instant 0ms localStorage cache) ──
+  const { data: apiAthletes } = useGetPublicAthletesQuery({ limit: 50 });
   const [cachedAthletes, setCachedAthletes] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('eaf_athletes_cache');
@@ -535,13 +781,22 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     }
   });
 
+  const athleteFallbackImages = [
+    'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=700&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=700&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=700&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=700&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1483721074577-440a256d09aa?w=700&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=700&auto=format&fit=crop&q=80',
+  ];
+
   useEffect(() => {
     if (apiAthletes && apiAthletes.length > 0) {
       const mapped = apiAthletes.map((ath, idx) => ({
         id: ath.id || idx + 1,
         name: ath.name || (ath.user ? `${ath.user.firstName} ${ath.user.lastName}` : 'Ethiopian Athlete'),
         amharicName: ath.amharicName || ath.name,
-        achievement: ath.achievement || `${ath.primaryEvent || 'Track & Field'} Competitor`,
+        achievement: ath.achievement || `${ath.primaryEvent || 'Track & Field'} Elite Competitor`,
         event: ath.primaryEvent || 'Track & Field',
         club: ath.clubName || 'Ethiopian National Team',
         faydaFin: 'VERIFIED',
@@ -551,7 +806,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         ageTier: ath.ageTier || 'Senior',
         pb: ath.personalBest || 'Personal Best Mark',
         quote: ath.quote || 'Dedicating every stride to Ethiopia.',
-        img: ath.photoUrl || (idx % 2 === 0 ? '/images/a1.jpg' : '/images/a2.jpg'),
+        img: ath.photoUrl || athleteFallbackImages[idx % athleteFallbackImages.length],
         medals: ['🥇 National Competitor', '🥈 Elite Athlete'],
       }));
       setCachedAthletes(mapped);
@@ -567,7 +822,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         id: ath.id || idx + 1,
         name: ath.name || (ath.user ? `${ath.user.firstName} ${ath.user.lastName}` : 'Ethiopian Athlete'),
         amharicName: ath.amharicName || ath.name,
-        achievement: ath.achievement || `${ath.primaryEvent || 'Track & Field'} Competitor`,
+        achievement: ath.achievement || `${ath.primaryEvent || 'Track & Field'} Elite Competitor`,
         event: ath.primaryEvent || 'Track & Field',
         club: ath.clubName || 'Ethiopian National Team',
         faydaFin: 'VERIFIED',
@@ -577,7 +832,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         ageTier: ath.ageTier || 'Senior',
         pb: ath.personalBest || 'Personal Best Mark',
         quote: ath.quote || 'Dedicating every stride to Ethiopia.',
-        img: ath.photoUrl || (idx % 2 === 0 ? '/images/a1.jpg' : '/images/a2.jpg'),
+        img: ath.photoUrl || athleteFallbackImages[idx % athleteFallbackImages.length],
         medals: ['🥇 National Competitor', '🥈 Elite Athlete'],
       }));
     }
@@ -586,6 +841,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   const [selectedMeetId, setSelectedMeetId] = useState<string | null>(null);
   const [selectedAthleteModal, setSelectedAthleteModal] = useState<any>(null);
+  const [selectedAthleteDetail, setSelectedAthleteDetail] = useState<any>(null);
   const [selectedGalleryTab, setSelectedGalleryTab] = useState<string>('All');
   const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
   const [activeLightboxImg, setActiveLightboxImg] = useState<GalleryItem | null>(null);
@@ -623,11 +879,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   const filmstripRef = useRef<HTMLDivElement>(null);
 
-  // Reset selected competition / news / gallery album and scroll to top when publicSubPage or navNonce changes
+  // Reset selected competition / news / gallery album / athlete and scroll to top when publicSubPage or navNonce changes
   useEffect(() => {
     setSelectedMeetId(null);
     setSelectedNewsItem(null);
     setSelectedGalleryAlbum(null);
+    setSelectedAthleteDetail(null);
     if (publicSubPage === 'HOME') {
       window.scrollTo(0, 0);
       setTimeout(() => { window.scrollTo(0, 0); }, 50);
@@ -707,11 +964,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   // Switch album in lightbox
   const handleSwitchLightboxAlbum = (direction: 'prev' | 'next') => {
     if (!activeLightboxImg) return;
-    const currentIdx = GALLERY_IMAGES.findIndex(g => g.id === activeLightboxImg.id);
+    const currentIdx = galleryList.findIndex(g => g.id === activeLightboxImg.id);
     const targetIdx = direction === 'next'
-      ? (currentIdx + 1) % GALLERY_IMAGES.length
-      : (currentIdx - 1 + GALLERY_IMAGES.length) % GALLERY_IMAGES.length;
-    setActiveLightboxImg(GALLERY_IMAGES[targetIdx]);
+      ? (currentIdx + 1) % galleryList.length
+      : (currentIdx - 1 + galleryList.length) % galleryList.length;
+    setActiveLightboxImg(galleryList[targetIdx]);
     setActiveCaptureIndex(0);
   };
 
@@ -728,6 +985,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   // Athletes filter states
   const [athleteSearchText, setAthleteSearchText] = useState<string>('');
   const [athleteEventFilter, setAthleteEventFilter] = useState<string>('ALL');
+  const [athleteGenderFilter, setAthleteGenderFilter] = useState<string>('ALL');
+  const [athleteClubFilter, setAthleteClubFilter] = useState<string>('ALL');
+  const [athleteSort, setAthleteSort] = useState<string>('FEATURED');
 
   // Contact form state
   const [contactForm, setContactForm] = useState<{ name: string; email: string; subject: string; message: string }>({ name: '', email: '', subject: '', message: '' });
@@ -923,20 +1183,46 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     }, 4000);
   };
 
-  // Filter athletes
-  const filteredAthletes = ATHLETES.filter(athlete => {
-    if (athleteSearchText) {
-      const q = athleteSearchText.toLowerCase();
-      const matchName = athlete.name.toLowerCase().includes(q) || (athlete.amharicName && athlete.amharicName.includes(q));
-      const matchClub = athlete.club.toLowerCase().includes(q);
-      if (!matchName && !matchClub) return false;
-    }
-    if (athleteEventFilter !== 'ALL' && athlete.event !== athleteEventFilter) return false;
-    return true;
-  });
+  // Filter athletes from live athleteList
+  const filteredAthletes = useMemo(() => {
+    return athleteList.filter((athlete) => {
+      if (athleteSearchText) {
+        const q = athleteSearchText.toLowerCase();
+        const matchName =
+          (athlete.name && athlete.name.toLowerCase().includes(q)) ||
+          (athlete.amharicName && athlete.amharicName.toLowerCase().includes(q));
+        const matchClub = athlete.club && athlete.club.toLowerCase().includes(q);
+        const matchEvent = athlete.event && athlete.event.toLowerCase().includes(q);
+        const matchAchievement = athlete.achievement && athlete.achievement.toLowerCase().includes(q);
+        if (!matchName && !matchClub && !matchEvent && !matchAchievement) return false;
+      }
+      if (athleteEventFilter !== 'ALL' && !athlete.event?.toLowerCase().includes(athleteEventFilter.toLowerCase())) {
+        return false;
+      }
+      if (athleteGenderFilter !== 'ALL' && athlete.gender && athlete.gender.toLowerCase() !== athleteGenderFilter.toLowerCase()) {
+        return false;
+      }
+      if (athleteClubFilter !== 'ALL' && !athlete.club?.toLowerCase().includes(athleteClubFilter.toLowerCase())) {
+        return false;
+      }
+      return true;
+    }).sort((a, b) => {
+      if (athleteSort === 'NAME_ASC') return (a.name || '').localeCompare(b.name || '');
+      if (athleteSort === 'NAME_DESC') return (b.name || '').localeCompare(a.name || '');
+      return 0;
+    });
+  }, [athleteList, athleteSearchText, athleteEventFilter, athleteGenderFilter, athleteClubFilter, athleteSort]);
 
-  // Get unique events from athletes
-  const uniqueEvents = Array.from(new Set(ATHLETES.map(a => a.event)));
+  // Get unique events and clubs from live athleteList
+  const athleteUniqueEvents = useMemo(() => {
+    const events = athleteList.map(a => a.event).filter(Boolean);
+    return Array.from(new Set(events));
+  }, [athleteList]);
+
+  const athleteUniqueClubs = useMemo(() => {
+    const clubs = athleteList.map(a => a.club).filter(Boolean);
+    return Array.from(new Set(clubs));
+  }, [athleteList]);
 
   // Localized string packs
   const loc = {
@@ -969,7 +1255,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     partnersTitle: tr('home.partnersTitle'),
   };
 
-  const filteredMeets = ENRICHED_MEETS.filter(meet => {
+  const filteredMeets = meetsList.filter(meet => {
     if (searchText) {
       const q = searchText.toLowerCase();
       const matchTitle = meet.title.toLowerCase().includes(q) || (meet.amharic && meet.amharic.toLowerCase().includes(q));
@@ -992,8 +1278,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   // Responsive gallery: category filtering and responsive display count
   const filteredGalleryImages = selectedGalleryTab === 'All'
-    ? GALLERY_IMAGES
-    : GALLERY_IMAGES.filter(g => g.category.toLowerCase() === selectedGalleryTab.toLowerCase());
+    ? galleryList
+    : galleryList.filter(g => g.category.toLowerCase() === selectedGalleryTab.toLowerCase());
 
   const galleryLimit = viewportWidth > 1185
     ? 9
@@ -1007,7 +1293,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   }, [galleryLimit, selectedGalleryTab]);
 
   if (selectedMeetId) {
-    const meetObj = ENRICHED_MEETS.find(m => m.id === selectedMeetId);
+    const meetObj = meetsList.find(m => m.id === selectedMeetId);
     return (
       <CompetitionDetail
         meet={meetObj}
@@ -1045,7 +1331,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     return (
       <GalleryDetail
         album={selectedGalleryAlbum}
-        allAlbums={GALLERY_IMAGES}
+        allAlbums={galleryList}
         onBack={() => {
           setSelectedGalleryAlbum(null);
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
@@ -1054,6 +1340,27 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
           setSelectedGalleryAlbum(album);
         }}
+        darkMode={darkMode}
+      />
+    );
+  }
+
+  if (selectedAthleteDetail) {
+    return (
+      <AthleteDetail
+        athlete={selectedAthleteDetail}
+        allAthletes={athleteList}
+        onBack={() => {
+          setSelectedAthleteDetail(null);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onSelectAthlete={(ath) => {
+          setSelectedAthleteDetail(ath);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onRegister={onRegister}
+        currentRole={currentRole}
+        currentAthlete={currentAthlete}
         darkMode={darkMode}
       />
     );
@@ -1294,7 +1601,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     gap: '6px',
                   }}
                 >
-                  {tr('home.viewAllCompetitions')} ({ENRICHED_MEETS.length}) →
+                  {tr('home.viewAllCompetitions')} ({meetsList.length}) →
                 </button>
               )}
             </div>
@@ -1490,7 +1797,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                           </span>
 
                           <span style={{
-                            background: 'rgba(255, 255, 255, 0.2)',
+                            background: 'rgba(255, 255, 255, 0.18)',
                             backdropFilter: 'blur(8px)',
                             WebkitBackdropFilter: 'blur(8px)',
                             color: '#FFFFFF',
@@ -1499,13 +1806,17 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                             padding: '4px 10px',
                             borderRadius: '8px',
                             border: '1px solid rgba(255, 255, 255, 0.3)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
                           }}>
-                             {meet.region}
+                            <MapPin size={12} style={{ flexShrink: 0, color: '#38BDF8' }} />
+                            <span>{meet.region}</span>
                           </span>
                         </div>
 
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 900, marginBottom: '10px', lineHeight: 1.35, letterSpacing: '-0.01em' }}>
-                          {language === 'am' ? meet.amharic || meet.title : meet.title}
+                          {lang === 'am' ? meet.amharic || meet.title : meet.title}
                         </h3>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
@@ -1557,7 +1868,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   onClick={() => onChangePublicSubPage('COMPETITIONS')}
                 >
                   <Trophy size={18} />
-                  {tr('home.viewAllCompetitions')} ({ENRICHED_MEETS.length}) →
+                  {tr('home.viewAllCompetitions')} ({meetsList.length}) →
                 </button>
               </div>
             )}
@@ -1565,133 +1876,552 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         </section>
       )}
 
-      {/* ── 4. FEATURED ATHLETES SPOTLIGHT (PLACED ABOVE NEWS SECTION AS REQUESTED!) ── */}
+      {/* ── 4. FEATURED ATHLETES SPOTLIGHT (ON HOME) & ATHLETES DIRECTORY HUB (ON ATHLETES) ── */}
       {(publicSubPage === "HOME" || publicSubPage === "ATHLETES") && (
-        <section id="athletes" style={{ background: t.bg, padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
-          <div style={{ maxWidth: 1240, margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: '16px' }}>
+        <section id="athletes" style={{ background: t.bg, padding: '60px 0', borderTop: '1px solid ' + t.border, overflow: 'hidden' }}>
+          <style>{`
+            @keyframes athletes-continuous-scroll {
+              0%   { transform: translateX(0); }
+              100% { transform: translateX(-50%); }
+            }
+            .athletes-motion-track {
+              display: flex;
+              gap: 24px;
+              width: max-content;
+              animation: athletes-continuous-scroll 45s linear infinite;
+              padding: 12px 24px 24px;
+            }
+            .athletes-motion-track:hover {
+              animation-play-state: paused;
+            }
+            .athlete-motion-card {
+              transition: transform 0.28s ease, box-shadow 0.28s ease;
+            }
+            .athlete-motion-card:hover {
+              transform: translateY(-8px) scale(1.02);
+              box-shadow: 0 22px 45px rgba(0, 0, 0, 0.42) !important;
+            }
+          `}</style>
+
+          <div style={{ maxWidth: 1280, margin: '0 auto', paddingLeft: 24, paddingRight: 24 }}>
+            {/* Top Bar with Back Button if in ATHLETES subpage */}
+            {publicSubPage === 'ATHLETES' && (
+              <div style={{ marginBottom: '24px' }}>
+                <motion.button
+                  whileHover={{ scale: 1.03, x: -3 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => onChangePublicSubPage('HOME')}
+                  style={{
+                    background: t.surface,
+                    color: t.text,
+                    border: '1px solid ' + t.border,
+                    padding: '8px 18px',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  <ChevronLeft size={18} />
+                  Back to Home
+                </motion.button>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: '16px' }}>
               <div>
-                <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text }}>{loc.athletesTitle}</h2>
-                <p style={{ color: 'var(--primary)', fontWeight: 700, marginTop: '4px' }}>
-                  Click on any athlete card to view full  competition profile details
+                <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text, marginBottom: 4 }}>
+                  {publicSubPage === 'ATHLETES' ? 'Ethiopian National Athletes Directory' : loc.athletesTitle}
+                </h2>
+                <p style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.95rem' }}>
+                  {publicSubPage === 'ATHLETES'
+                    ? 'Official database of licensed athletes, Olympic medalists, and rising national stars'
+                    : 'World record holders, Olympic champions, and national elite representatives'}
                 </p>
               </div>
 
               {publicSubPage === 'HOME' && (
                 <button
-                  className="btn-gov-secondary"
-                  onClick={() => onChangePublicSubPage('ATHLETES')}
-                  style={{ borderRadius: '10px', padding: '10px 20px', fontWeight: 800 }}
+                  onClick={() => {
+                    onChangePublicSubPage('ATHLETES');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--primary)',
+                    fontWeight: 800,
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
                 >
-                  View All Athletes →
+                  View All Athletes ({athleteList.length}) →
                 </button>
               )}
             </div>
 
-            <div
-              ref={athleteScrollRef}
-              className="landing-scroll-row"
-              style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
-            >
-              {[...athleteList, ...athleteList, ...athleteList].map((athlete, idx) => {
-                const cardKey = `${athlete.id}-${idx}`;
-                const isCardExpanded = !!expandedAthleteCards[cardKey];
-                return (
+            {/* EMBEDDED SEARCH & FILTER WIDGET INSIDE ATHLETES HUB (When in ATHLETES view) */}
+            {publicSubPage === 'ATHLETES' && (
+              <div
+                style={{
+                  background: t.surface,
+                  border: '1px solid ' + t.border,
+                  borderRadius: '20px',
+                  boxShadow: '0 12px 32px rgba(15, 23, 42, 0.06)',
+                  padding: '24px',
+                  marginBottom: '32px',
+                  color: t.text,
+                }}
+              >
+                {/* Free-text Search */}
+                <div style={{ position: 'relative', marginBottom: '16px' }}>
+                  <Search
+                    size={20}
+                    style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }}
+                  />
+                  <input
+                    type="text"
+                    value={athleteSearchText}
+                    onChange={e => setAthleteSearchText(e.target.value)}
+                    placeholder="Search by athlete name, Amharic name, club, or primary event..."
+                    style={{
+                      width: '100%',
+                      background: t.inputBg,
+                      border: '1px solid ' + t.borderSubtle,
+                      borderRadius: '14px',
+                      padding: '14px 14px 14px 48px',
+                      color: t.text,
+                      fontSize: '0.98rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                      transition: 'all 0.2s ease',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={e => e.target.style.borderColor = 'var(--primary)'}
+                    onBlur={e => e.target.style.borderColor = '#CBD5E1'}
+                  />
+                </div>
+
+                {/* Filter Widgets Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '14px', alignItems: 'flex-end' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>Event / Discipline</label>
+                    <select
+                      className="form-select"
+                      value={athleteEventFilter}
+                      onChange={e => setAthleteEventFilter(e.target.value)}
+                      style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
+                    >
+                      <option value="ALL">All Events</option>
+                      {athleteUniqueEvents.map(evt => (
+                        <option key={evt} value={evt}>{evt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>Gender</label>
+                    <select
+                      className="form-select"
+                      value={athleteGenderFilter}
+                      onChange={e => setAthleteGenderFilter(e.target.value)}
+                      style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
+                    >
+                      <option value="ALL">All Genders</option>
+                      <option value="Female">Female</option>
+                      <option value="Male">Male</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>Club / Team</label>
+                    <select
+                      className="form-select"
+                      value={athleteClubFilter}
+                      onChange={e => setAthleteClubFilter(e.target.value)}
+                      style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
+                    >
+                      <option value="ALL">All Clubs</option>
+                      {athleteUniqueClubs.map(clb => (
+                        <option key={clb} value={clb}>{clb}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>Sort Order</label>
+                    <select
+                      className="form-select"
+                      value={athleteSort}
+                      onChange={e => setAthleteSort(e.target.value)}
+                      style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
+                    >
+                      <option value="FEATURED">Featured First</option>
+                      <option value="NAME_ASC">Name (A–Z)</option>
+                      <option value="NAME_DESC">Name (Z–A)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Reset Filters Quick Button if active */}
+                {(athleteSearchText || athleteEventFilter !== 'ALL' || athleteGenderFilter !== 'ALL' || athleteClubFilter !== 'ALL') && (
+                  <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => {
+                        setAthleteSearchText('');
+                        setAthleteEventFilter('ALL');
+                        setAthleteGenderFilter('ALL');
+                        setAthleteClubFilter('ALL');
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'var(--primary)',
+                        fontSize: '0.82rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      ✕ Reset All Filters
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ── HOME VIEW: CONTINUOUS INFINITE HORIZONTAL MOTION RAIL ── */}
+          {publicSubPage === 'HOME' && (
+            <div style={{ overflow: 'hidden', paddingBottom: '8px' }}>
+              <div className="athletes-motion-track">
+                {[...athleteList, ...athleteList, ...athleteList].map((athlete, idx) => (
                   <div
-                    key={cardKey}
-                    className={`hover-lift${isCardExpanded ? ' athlete-card-expanded' : ''}`}
-                    onClick={() => setSelectedAthleteModal(athlete)}
+                    key={`${athlete.id || idx}-${idx}`}
+                    className="athlete-motion-card"
+                    onClick={() => setSelectedAthleteDetail(athlete)}
                     style={{
                       position: 'relative',
-                      minWidth: 'min(100%, 380px)',
-                      maxWidth: '400px',
-                      minHeight: '360px',
-                      flexShrink: 0,
-                      borderRadius: 24,
+                      width: '320px',
+                      minWidth: '320px',
+                      height: '420px',
+                      borderRadius: '24px',
                       overflow: 'hidden',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'flex-end',
                       cursor: 'pointer',
-                      boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
-                      border: '1px solid #E2E8F0'
+                      boxShadow: '0 14px 34px rgba(15, 23, 42, 0.16)',
+                      border: '1px solid ' + (darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(226, 232, 240, 0.9)'),
+                      background: '#0F172A',
+                      flexShrink: 0,
                     }}
                   >
-                    <div style={{
-                      position: 'absolute', inset: 0,
-                      backgroundImage: `url(${athlete.img})`,
-                      backgroundSize: 'cover', backgroundPosition: 'center top',
-                    }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.35) 55%, transparent 100%)' }} />
+                    {/* Athlete Portrait Photo */}
+                    <img
+                      src={athlete.img}
+                      alt={athlete.name}
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        objectPosition: 'center top',
+                      }}
+                    />
 
-                    {/* Fayda Badge */}
-                    <div style={{
-                      position: 'absolute', top: 16, right: 16, zIndex: 3,
-                      background: 'rgba(16, 185, 129, 0.95)', color: '#FFFFFF',
-                      fontSize: '0.72rem', fontWeight: 800,
-                      padding: '4px 10px', borderRadius: 8,
-                      display: 'inline-flex', alignItems: 'center', gap: 4
-                    }}>
-                      <ShieldCheck size={14} /> Fayda Verified
+                    {/* Gradient Overlay for Crisp Legibility */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(to top, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.6) 45%, rgba(15,23,42,0.1) 100%)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+
+                    {/* Floating Badges Header */}
+                    <div style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{
+                        background: 'rgba(16, 185, 129, 0.92)',
+                        backdropFilter: 'blur(8px)',
+                        color: '#FFFFFF',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                      }}>
+                        <ShieldCheck size={13} /> Fayda Verified
+                      </span>
+
+                      <span style={{
+                        background: 'rgba(255, 255, 255, 0.22)',
+                        backdropFilter: 'blur(8px)',
+                        color: '#FFFFFF',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                      }}>
+                        {athlete.event}
+                      </span>
                     </div>
 
-                    <div style={{ position: 'relative', zIndex: 2, padding: '24px' }}>
-                      <h3 style={{ color: '#FFFFFF', fontSize: '1.4rem', fontWeight: 900, marginBottom: 4, lineHeight: 1.2 }}>
+                    {/* Athlete Info Card Bottom */}
+                    <div style={{ position: 'relative', zIndex: 2, padding: '22px' }}>
+                      <h3 style={{ color: '#FFFFFF', fontSize: '1.3rem', fontWeight: 900, marginBottom: 2, lineHeight: 1.25, letterSpacing: '-0.01em' }}>
                         {athlete.name}
                       </h3>
                       <div style={{ color: '#38BDF8', fontSize: '0.85rem', fontWeight: 700, marginBottom: 8 }}>
                         {athlete.amharicName}
                       </div>
 
-                      <div className="athlete-card-extra">
-                        <span style={{ color: '#FDE047', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
-                          {athlete.achievement}
-                        </span>
-
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <span style={{
-                            background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: '#FFF',
-                            borderRadius: 8, padding: '4px 10px',
-                            fontSize: '0.75rem', fontWeight: 800,
-                          }}>{athlete.event}</span>
-                          <span style={{ color: '#CBD5E1', fontSize: '0.78rem', fontWeight: 600 }}>
-                            {athlete.club}
+                      {/* PB Badge */}
+                      {athlete.pb && (
+                        <div style={{
+                          background: 'rgba(253, 224, 71, 0.15)',
+                          border: '1px solid rgba(253, 224, 71, 0.35)',
+                          borderRadius: '8px',
+                          padding: '4px 10px',
+                          display: 'inline-block',
+                          marginBottom: '8px',
+                        }}>
+                          <span style={{ color: '#FDE047', fontSize: '0.75rem', fontWeight: 800 }}>
+                            ⚡ PB: {athlete.pb}
                           </span>
                         </div>
+                      )}
 
-                        <div style={{ marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '10px', color: '#FDE047', fontSize: '0.82rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          View Full Athlete Profile & PB Stats <ChevronRight size={14} />
-                        </div>
+                      {/* Achievement Note */}
+                      <p style={{
+                        color: '#E2E8F0',
+                        fontSize: '0.76rem',
+                        fontWeight: 600,
+                        lineHeight: 1.4,
+                        marginBottom: '12px',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}>
+                        {athlete.achievement}
+                      </p>
+
+                      {/* Footer: Club & Action */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.16)', paddingTop: '12px' }}>
+                        <span style={{ color: '#94A3B8', fontSize: '0.74rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '55%' }}>
+                          {athlete.club}
+                        </span>
+                        <span style={{ color: '#38BDF8', fontSize: '0.82rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          View Stats <ChevronRight size={14} />
+                        </span>
                       </div>
-
-                      <button
-                        className="athlete-card-toggle-btn"
-                        onClick={(e) => { e.stopPropagation(); toggleAthleteCard(cardKey); }}
-                        style={{
-                          marginTop: '12px',
-                          background: 'rgba(255, 255, 255, 0.16)',
-                          backdropFilter: 'blur(8px)',
-                          WebkitBackdropFilter: 'blur(8px)',
-                          border: '1px solid rgba(255, 255, 255, 0.4)',
-                          color: '#FFFFFF',
-                          fontWeight: 800,
-                          fontSize: '0.78rem',
-                          padding: '8px 16px',
-                          borderRadius: '999px',
-                          cursor: 'pointer',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        {isCardExpanded ? loc.seeLess : loc.seeMore}
-                        {isCardExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                      </button>
                     </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+
+              {/* VIEW ALL ATHLETES BUTTON (Only on HOME view) */}
+              <div style={{ marginTop: '28px', textAlign: 'center' }}>
+                <button
+                  className="btn-accent"
+                  style={{
+                    padding: '14px 36px',
+                    borderRadius: '14px',
+                    fontSize: '0.98rem',
+                    fontWeight: 800,
+                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
+                    color: '#FFF',
+                    boxShadow: '0 8px 24px rgba(2, 132, 199, 0.25)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.25s ease'
+                  }}
+                  onClick={() => {
+                    onChangePublicSubPage('ATHLETES');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  <UserCheck size={18} />
+                  View All Athletes ({athleteList.length}) →
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* ── ATHLETES VIEW: RESPONSIVE 3-COLUMN DIRECTORY GRID ── */}
+          {publicSubPage === 'ATHLETES' && (
+            <div style={{ maxWidth: 1280, margin: '0 auto', paddingLeft: 24, paddingRight: 24 }}>
+              {filteredAthletes.length === 0 ? (
+                <div style={{ background: t.surface, border: '1px solid ' + t.border, borderRadius: '20px', padding: '48px', textAlign: 'center', color: t.textMuted }}>
+                  <UserCheck size={48} style={{ opacity: 0.2, marginBottom: '12px' }} />
+                  <h4 style={{ fontWeight: 800 }}>No athletes found matching your search.</h4>
+                  <p style={{ fontSize: '0.88rem', marginTop: 4 }}>Try clearing search keywords or filter selections.</p>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns:
+                      viewportWidth > 1024
+                        ? 'repeat(3, minmax(0, 1fr))'
+                        : viewportWidth > 680
+                        ? 'repeat(2, minmax(0, 1fr))'
+                        : '1fr',
+                    gap: '26px',
+                  }}
+                >
+                  {filteredAthletes.map((athlete, idx) => (
+                    <motion.div
+                      key={athlete.id || idx}
+                      whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                      onClick={() => setSelectedAthleteDetail(athlete)}
+                      style={{
+                        position: 'relative',
+                        borderRadius: '24px',
+                        overflow: 'hidden',
+                        minHeight: '410px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        cursor: 'pointer',
+                        boxShadow: '0 14px 34px rgba(15, 23, 42, 0.12)',
+                        border: '1px solid ' + (darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(226, 232, 240, 0.9)'),
+                        background: '#0F172A',
+                      }}
+                    >
+                      {/* Athlete Portrait Photo */}
+                      <img
+                        src={athlete.img}
+                        alt={athlete.name}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          objectPosition: 'center top',
+                          transition: 'transform 0.4s ease',
+                        }}
+                      />
+
+                      {/* Gradient Overlay for Crisp Legibility */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'linear-gradient(to top, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.6) 45%, rgba(15,23,42,0.1) 100%)',
+                          pointerEvents: 'none',
+                        }}
+                      />
+
+                      {/* Floating Badges Header */}
+                      <div style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{
+                          background: 'rgba(16, 185, 129, 0.92)',
+                          backdropFilter: 'blur(8px)',
+                          color: '#FFFFFF',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                        }}>
+                          <ShieldCheck size={13} /> Fayda Verified
+                        </span>
+
+                        <span style={{
+                          background: 'rgba(255, 255, 255, 0.22)',
+                          backdropFilter: 'blur(8px)',
+                          color: '#FFFFFF',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                        }}>
+                          {athlete.event}
+                        </span>
+                      </div>
+
+                      {/* Athlete Info Card Bottom */}
+                      <div style={{ position: 'relative', zIndex: 2, padding: '24px' }}>
+                        <h3 style={{ color: '#FFFFFF', fontSize: '1.35rem', fontWeight: 900, marginBottom: 2, lineHeight: 1.25, letterSpacing: '-0.01em' }}>
+                          {athlete.name}
+                        </h3>
+                        <div style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 700, marginBottom: 8 }}>
+                          {athlete.amharicName}
+                        </div>
+
+                        {/* PB Badge */}
+                        {athlete.pb && (
+                          <div style={{
+                            background: 'rgba(253, 224, 71, 0.15)',
+                            border: '1px solid rgba(253, 224, 71, 0.35)',
+                            borderRadius: '8px',
+                            padding: '4px 10px',
+                            display: 'inline-block',
+                            marginBottom: '8px',
+                          }}>
+                            <span style={{ color: '#FDE047', fontSize: '0.76rem', fontWeight: 800 }}>
+                              ⚡ PB: {athlete.pb}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Achievement Note */}
+                        <p style={{
+                          color: '#E2E8F0',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          lineHeight: 1.45,
+                          marginBottom: '14px',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}>
+                          {athlete.achievement}
+                        </p>
+
+                        {/* Footer: Club & Action */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.16)', paddingTop: '12px' }}>
+                          <span style={{ color: '#94A3B8', fontSize: '0.76rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '55%' }}>
+                            {athlete.club}
+                          </span>
+                          <span style={{ color: '#38BDF8', fontSize: '0.84rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            View Stats <ChevronRight size={14} />
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -2161,11 +2891,13 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               marginBottom: '36px'
             }}>
               {[
-                { id: 'All', label: 'All Media', count: GALLERY_IMAGES.length },
-                { id: 'Championships', label: 'Championships', count: GALLERY_IMAGES.filter(g => g.category === 'Championships').length },
-                { id: 'Marathons', label: 'Marathons', count: GALLERY_IMAGES.filter(g => g.category === 'Marathons').length },
-                { id: 'Track & Field', label: 'Track & Field', count: GALLERY_IMAGES.filter(g => g.category === 'Track & Field').length },
-                { id: 'Ceremonies', label: 'Ceremonies', count: GALLERY_IMAGES.filter(g => g.category === 'Ceremonies').length },
+                { id: 'All', label: 'All Media', count: galleryList.length },
+                { id: 'Championships', label: 'Championships', count: galleryList.filter(g => g.category === 'Championships').length },
+                { id: 'Marathons', label: 'Marathons', count: galleryList.filter(g => g.category === 'Marathons').length },
+                { id: 'Road Race', label: 'Road Race', count: galleryList.filter(g => g.category === 'Road Race').length },
+                { id: 'Training', label: 'Training', count: galleryList.filter(g => g.category === 'Training').length },
+                { id: 'National Team', label: 'National Team', count: galleryList.filter(g => g.category === 'National Team').length },
+                { id: 'Historic', label: 'Historic', count: galleryList.filter(g => g.category === 'Historic').length },
               ].map(tab => {
                 const isActive = selectedGalleryTab === tab.id;
                 return (
@@ -2215,7 +2947,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               gap: '24px'
             }}>
               {visibleGalleryImages.map((item, idx) => {
-                const capturesCount = item.captures?.length || 1;
+                const capturesCount = item.capturesCount || item.captures?.length || 1;
                 return (
                   <motion.div
                     key={item.id}
@@ -2304,7 +3036,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                           gap: '5px',
                           boxShadow: '0 4px 12px rgba(239, 68, 68, 0.35)',
                         }}>
-                          <Play size={12} fill="#FFF" /> HD Video • {capturesCount} Shots
+                          <Play size={12} fill="#FFF" /> HD Video{item.videoDuration ? ` • ${item.videoDuration}` : ''} • {capturesCount} Shots
                         </span>
                       ) : (
                         <span style={{
@@ -2341,7 +3073,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                         letterSpacing: '-0.01em',
                         color: '#FFFFFF',
                       }}>
-                        {item.title}
+                        {lang === 'am' && item.amharicTitle ? item.amharicTitle : item.title}
                       </h4>
 
                       <p style={{

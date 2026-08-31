@@ -140,6 +140,16 @@ const authSlice = createSlice({
       if (action.payload) writeString(STORAGE_KEYS.accessToken, action.payload);
       else removeItem(STORAGE_KEYS.accessToken);
     },
+    refreshTokens(state, action: PayloadAction<{ token: string; refreshToken?: string | null }>) {
+      state.token = action.payload.token;
+      if (action.payload.refreshToken !== undefined) {
+        state.refreshToken = action.payload.refreshToken;
+      }
+      writeString(STORAGE_KEYS.accessToken, action.payload.token);
+      if (action.payload.refreshToken) {
+        writeString(STORAGE_KEYS.refreshToken, action.payload.refreshToken);
+      }
+    },
     setUserData(state, action: PayloadAction<UserDataFromApi | null>) {
       state.userData = action.payload;
       if (action.payload) writeJSON(STORAGE_KEYS.userData, action.payload);
@@ -197,5 +207,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setRole, setClub, setAthlete, setToken, setUserData, setAuthLoading, login, logout } = authSlice.actions;
+export const { setRole, setClub, setAthlete, setToken, setUserData, setAuthLoading, login, logout, refreshTokens } = authSlice.actions;
 export default authSlice.reducer;

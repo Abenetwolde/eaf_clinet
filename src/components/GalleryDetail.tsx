@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import {
   ChevronLeft, ChevronRight, Share2, Camera, Calendar, MapPin,
   Check, Play, Image, Eye, ArrowRight, Bookmark, Sparkles, Layers, Maximize2, Minimize2, ZoomIn, X, SlidersHorizontal
@@ -6,6 +6,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '../i18n';
 import type { GalleryItem, GalleryCapture } from './LandingPage';
+import { useGetGalleryByIdQuery } from '../store/api/galleryApi';
 
 interface GalleryDetailProps {
   album: GalleryItem;
@@ -22,11 +23,40 @@ export default function GalleryDetail({
   onSelectAlbum,
   darkMode = false,
 }: GalleryDetailProps) {
-  const { t: tr } = useI18n();
+  const { t: tr, language } = useI18n();
 
-  const captures: GalleryCapture[] = album.captures && album.captures.length > 0
-    ? album.captures
-    : [{ id: 1, img: album.img, title: album.title, caption: album.description || 'EAF Press Photography', photographer: 'EAF Media Unit' }];
+  // If album was loaded from the API it carries _apiId — fetch full captures lazily
+  const apiId = (album as GalleryItem & { _apiId?: string })._apiId ?? null;
+  const { data: apiDetail } = useGetGalleryByIdQuery(apiId!, { skip: !apiId });
+
+  // Effective video metadata: prefer the prop, enrich from the API detail once loaded
+  const videoUrl = album.videoUrl ?? apiDetail?.videoUrl ?? null;
+  const videoDuration = album.videoDuration ?? apiDetail?.videoDuration ?? null;
+  const hasVideo = album.type === 'VIDEO' && !!videoUrl;
+
+  // Amharic title (API-provided) shown when the UI language is Amharic
+  const amharicTitle = album.amharicTitle ?? apiDetail?.amharicTitle ?? null;
+  const displayTitle = language === 'am' && amharicTitle ? amharicTitle : album.title;
+
+  // Map API GalleryCapture → local GalleryCapture shape
+  const apiCaptures: GalleryCapture[] = useMemo(() => {
+    if (!apiDetail?.captures?.length) return [];
+    return apiDetail.captures.map((c, idx) => ({
+      id: idx + 1,
+      img: c.url,
+      title: c.title || album.title,
+      caption: c.caption || album.description || 'EAF Official Media',
+      photographer: c.photographer || album.captures?.[0]?.photographer || 'EAF Media Unit',
+      time: c.timestamp || undefined,
+    }));
+  }, [apiDetail, album]);
+
+  // Final captures: prefer API data, fall back to the prop, then the cover image
+  const captures: GalleryCapture[] = useMemo(() => {
+    if (apiCaptures.length > 0) return apiCaptures;
+    if (album.captures && album.captures.length > 0) return album.captures;
+    return [{ id: 1, img: album.img, title: album.title, caption: album.description || 'EAF Press Photography', photographer: 'EAF Media Unit' }];
+  }, [apiCaptures, album]);
 
   // Find index of the exact image that was displayed on the card
   const exactImgIndex = captures.findIndex((c) => c.img === album.img);
@@ -34,6 +64,7 @@ export default function GalleryDetail({
   const [copied, setCopied] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [fitMode, setFitMode] = useState<'contain' | 'cover'>('contain');
+  const [viewMode, setViewMode] = useState<'video' | 'photo'>(hasVideo ? 'video' : 'photo');
   const filmstripRef = useRef<HTMLDivElement>(null);
   const mainStageRef = useRef<HTMLDivElement>(null);
 
@@ -46,9 +77,10 @@ export default function GalleryDetail({
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
-    const idx = captures.findIndex((c) => c.img === album.img);
-    setActiveCaptureIndex(idx >= 0 ? idx : 0);
-  }, [album.id, album.img]);
+    // Reset to first capture whenever the album changes (API data may not have arrived yet)
+    setActiveCaptureIndex(0);
+    setViewMode(hasVideo ? 'video' : 'photo');
+  }, [album.id, hasVideo]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -59,15 +91,15 @@ export default function GalleryDetail({
         } else {
           onBack();
         }
-      } else if (e.key === 'ArrowRight') {
+      } else if (viewMode === 'photo' && e.key === 'ArrowRight') {
         setActiveCaptureIndex((prev) => (prev < captures.length - 1 ? prev + 1 : 0));
-      } else if (e.key === 'ArrowLeft') {
+      } else if (viewMode === 'photo' && e.key === 'ArrowLeft') {
         setActiveCaptureIndex((prev) => (prev > 0 ? prev - 1 : captures.length - 1));
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [captures.length, isFullscreen, onBack]);
+  }, [captures.length, isFullscreen, onBack, viewMode]);
 
   // Scroll filmstrip thumbnail into view
   useEffect(() => {
@@ -257,7 +289,7 @@ export default function GalleryDetail({
                   gap: '4px',
                 }}
               >
-                <Play size={12} fill="#EF4444" /> HD Video Coverage
+                <Play size={12} fill="#EF4444" /> HD Video Coverage{videoDuration ? ` • ${videoDuration}` : ''}
               </span>
             ) : (
               <span
@@ -273,7 +305,7 @@ export default function GalleryDetail({
                   gap: '5px',
                 }}
               >
-                <Camera size={13} /> {captures.length} Press Photography Captures
+                <Camera size={13} /> {album.capturesCount ?? captures.length} Press Photography Captures
               </span>
             )}
 
@@ -292,7 +324,7 @@ export default function GalleryDetail({
               marginBottom: '10px',
             }}
           >
-            {album.title}
+            {displayTitle}
           </h1>
 
           <p style={{ color: theme.textSub, fontSize: '1rem', lineHeight: 1.6, maxWidth: '820px', margin: 0 }}>
@@ -381,7 +413,45 @@ export default function GalleryDetail({
               <Sparkles size={13} /> Ultra-HD Press Quality
             </span>
 
-            {/* Fit / Cover Display Toggle */}
+            {/* Video ⇄ Photos Mode Toggle (video albums only) */}
+            {hasVideo && (
+              <button
+                onClick={() => setViewMode((prev) => (prev === 'video' ? 'photo' : 'video'))}
+                title={viewMode === 'video' ? 'Browse photo captures' : 'Watch the event video'}
+                style={{
+                  background: viewMode === 'video' ? 'rgba(239, 68, 68, 0.92)' : 'rgba(15, 23, 42, 0.82)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  color: '#FFFFFF',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '999px',
+                  padding: '6px 14px',
+                  fontSize: '0.76rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = viewMode === 'video' ? 'rgba(239, 68, 68, 0.92)' : 'rgba(15, 23, 42, 0.82)';
+                }}
+              >
+                {viewMode === 'video' ? (
+                  <><Image size={13} /> View Photos</>
+                ) : (
+                  <><Play size={13} fill="#FFFFFF" /> Watch Video</>
+                )}
+              </button>
+            )}
+
+            {/* Fit / Cover Display Toggle (photo mode only) */}
+            {viewMode === 'photo' && (
+            <>
             <button
               onClick={() => setFitMode((prev) => (prev === 'contain' ? 'cover' : 'contain'))}
               title={fitMode === 'contain' ? 'Fill stage (cover)' : 'Fit entire photo (contain)'}
@@ -441,9 +511,41 @@ export default function GalleryDetail({
             >
               <Maximize2 size={13} /> Fullscreen
             </button>
+            </>
+            )}
           </div>
 
-          {/* Main Foreground Image Container */}
+          {/* Main Foreground Media Container — video stage or photo stage */}
+          {viewMode === 'video' && videoUrl ? (
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 2,
+                width: '100%',
+                minHeight: 'min(76vh, 620px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '64px 24px 24px',
+                boxSizing: 'border-box',
+              }}
+            >
+              <iframe
+                src={videoUrl}
+                title={displayTitle}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                style={{
+                  width: 'min(100%, calc(min(70vh, 580px) * 16 / 9))',
+                  aspectRatio: '16 / 9',
+                  borderRadius: '18px',
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  boxShadow: '0 24px 60px rgba(0, 0, 0, 0.6)',
+                  background: '#000000',
+                }}
+              />
+            </div>
+          ) : (
           <div
             style={{
               position: 'relative',
@@ -508,9 +610,10 @@ export default function GalleryDetail({
               </motion.div>
             </AnimatePresence>
           </div>
+          )}
 
           {/* Floating Left Navigation Button */}
-          {captures.length > 1 && (
+          {viewMode === 'photo' && captures.length > 1 && (
             <button
               onClick={() => setActiveCaptureIndex((prev) => (prev > 0 ? prev - 1 : captures.length - 1))}
               title="Previous photo (←)"
@@ -549,7 +652,7 @@ export default function GalleryDetail({
           )}
 
           {/* Floating Right Navigation Button */}
-          {captures.length > 1 && (
+          {viewMode === 'photo' && captures.length > 1 && (
             <button
               onClick={() => setActiveCaptureIndex((prev) => (prev + 1) % captures.length)}
               title="Next photo (→)"
@@ -587,7 +690,8 @@ export default function GalleryDetail({
             </button>
           )}
 
-          {/* Bottom Caption Overlay */}
+          {/* Bottom Caption Overlay (photo mode only) */}
+          {viewMode === 'photo' && (
           <div
             style={{
               position: 'absolute',
@@ -636,6 +740,7 @@ export default function GalleryDetail({
               )}
             </div>
           </div>
+          )}
         </motion.div>
 
         {/* Filmstrip Track of All Captures in This Album */}
@@ -708,7 +813,10 @@ export default function GalleryDetail({
                 <motion.div
                   key={capture.id}
                   whileHover={{ scale: 1.04 }}
-                  onClick={() => setActiveCaptureIndex(idx)}
+                  onClick={() => {
+                    setActiveCaptureIndex(idx);
+                    setViewMode('photo');
+                  }}
                   style={{
                     minWidth: '170px',
                     maxWidth: '180px',
@@ -803,7 +911,7 @@ export default function GalleryDetail({
                 <ChevronLeft size={16} /> PREVIOUS EVENT ALBUM
               </div>
               <div style={{ fontWeight: 800, fontSize: '0.98rem', color: theme.text, lineHeight: 1.35 }}>
-                {prevAlbum.title}
+                {language === 'am' && prevAlbum.amharicTitle ? prevAlbum.amharicTitle : prevAlbum.title}
               </div>
               <div style={{ fontSize: '0.78rem', color: theme.textMuted, marginTop: '10px' }}>
                 📍 {prevAlbum.location} • {prevAlbum.category}
@@ -834,7 +942,7 @@ export default function GalleryDetail({
                 NEXT EVENT ALBUM <ChevronRight size={16} />
               </div>
               <div style={{ fontWeight: 800, fontSize: '0.98rem', color: theme.text, lineHeight: 1.35 }}>
-                {nextAlbum.title}
+                {language === 'am' && nextAlbum.amharicTitle ? nextAlbum.amharicTitle : nextAlbum.title}
               </div>
               <div style={{ fontSize: '0.78rem', color: theme.textMuted, marginTop: '10px' }}>
                 📍 {nextAlbum.location} • {nextAlbum.category}
@@ -921,7 +1029,7 @@ export default function GalleryDetail({
                         📍 {item.location} • 🗓️ {item.date}
                       </div>
                       <h4 style={{ fontSize: '1.05rem', fontWeight: 900, color: theme.text, lineHeight: 1.35, marginBottom: '8px' }}>
-                        {item.title}
+                        {language === 'am' && item.amharicTitle ? item.amharicTitle : item.title}
                       </h4>
                       <p style={{ fontSize: '0.85rem', color: theme.textSub, lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                         {item.description}
@@ -929,7 +1037,7 @@ export default function GalleryDetail({
                     </div>
 
                     <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: `1px solid ${theme.border}`, color: 'var(--primary)', fontSize: '0.84rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      View Full Album ({item.captures?.length || 1} Photos) <ArrowRight size={14} />
+                      View Full Album ({item.capturesCount || item.captures?.length || 1} {item.type === 'VIDEO' ? 'Shots' : 'Photos'}) <ArrowRight size={14} />
                     </div>
                   </div>
                 </motion.div>

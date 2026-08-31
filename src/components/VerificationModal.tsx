@@ -33,20 +33,16 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
       const res = await verifyEmail({ email, code: emailCode }).unwrap();
       setEmailVerified(true);
       setSuccessMessage(res.data?.message || 'Email verified successfully.');
-
-      if (res.data?.accountActive) {
-        setAccountActive(true);
-        setStep('DONE');
-      } else {
-        // Email verified but account not active yet — prompt phone verification
-        setStep('PHONE');
-      }
+      setAccountActive(!!res.data?.accountActive);
+      setStep('DONE');
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string }; error?: string; status?: string | number };
+      const msg = apiErr?.data?.message || apiErr?.error;
+
       if (apiErr?.status === 'FETCH_ERROR' || !apiErr?.status) {
-        setError('Cannot reach the server. Please try again.');
+        setError('Cannot reach the server. Please check your connection and try again.');
       } else {
-        setError(apiErr?.data?.message || apiErr?.error || 'Invalid or expired code.');
+        setError(msg || 'Invalid or expired verification code. Please try again.');
       }
     }
   };
@@ -253,16 +249,6 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
               </p>
             </div>
 
-            {successMessage && (
-              <div style={{
-                background: '#ECFDF5', border: '1px solid #A7F3D0',
-                borderRadius: '10px', padding: '10px 14px',
-                fontSize: '0.84rem', color: '#065F46', fontWeight: 600
-              }}>
-                {successMessage}
-              </div>
-            )}
-
             {renderOtpInput(emailCode, setEmailCode, handleVerifyEmail, isVerifyingEmail)}
           </div>
         )}
@@ -317,17 +303,6 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
             </button>
 
             {renderOtpInput(phoneOtp, setPhoneOtp, handleVerifyPhone, isVerifyingPhone)}
-
-            <button
-              type="button"
-              onClick={() => { setStep('DONE'); onVerified(); }}
-              style={{
-                background: 'none', border: 'none', color: '#64748B',
-                fontSize: '0.85rem', cursor: 'pointer', textAlign: 'center', fontWeight: 600
-              }}
-            >
-              Skip for now
-            </button>
           </div>
         )}
 

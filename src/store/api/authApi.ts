@@ -44,35 +44,40 @@ export interface UserData {
   createdAt?: string;
 }
 
+// NOTE: /auth/login returns a flat "mobile-friendly" payload (NOT enveloped
+// in {success, data}) — see swagger: "Returns the mobile-friendly auth payload
+// expected by the app: token, userRole, refreshToken, club metadata and user profile."
 export interface LoginResponse {
-  success: boolean;
-  message?: string;
-  data: {
-    token: string;
-    accessToken: string;
-    userId: string;
-    userRole: string;
-    userName: string;
-    fanNumber?: string | null;
-    clubId?: string | null;
-    clubName?: string | null;
-    refreshToken: string;
+  token: string;
+  accessToken: string;
+  userId: string;
+  userRole: string;
+  userName: string;
+  fanNumber?: string | null;
+  clubId?: string | null;
+  clubName?: string | null;
+  refreshToken: string;
+  status: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
     status: string;
-    user: {
-      id: string;
-      email: string;
-      firstName: string;
-      lastName: string;
-      status: string;
-      roles: string[];
-    };
+    roles: string[];
   };
 }
 
 export interface RegisterUserResponse {
   success: boolean;
   message: string;
-  data: UserData;
+  data: UserData & {
+    // Non-production servers return the emailed code directly
+    verification?: {
+      message: string;
+      code: string;
+    };
+  };
 }
 
 export interface MeResponse {

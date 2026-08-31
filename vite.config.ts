@@ -10,9 +10,10 @@ export default defineConfig({
         target: 'http://196.189.239.105:5000',
         changeOrigin: true,
         secure: false,
+        timeout: 60000,
+        proxyTimeout: 60000,
       },
     },
   },
 })
-
 

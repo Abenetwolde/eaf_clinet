@@ -143,14 +143,26 @@ export default function App() {
     setPublicSubPage('HOME');
   };
 
-  // Listen for registration modal trigger from AuthModal
+  // Listen for registration & login modal triggers
   useEffect(() => {
     const handleOpenRegistration = (e: any) => {
       setAuthModalConfig(null); // Close auth modal
       setRegModalRole(e.detail.role); // Open registration modal
     };
+    const handleOpenLogin = (e: any) => {
+      setRegModalRole(null); // Close registration modal
+      setAuthModalConfig({
+        isOpen: true,
+        initialRole: e.detail?.role || 'ATHLETE',
+        initialEmail: e.detail?.email || '',
+      });
+    };
     window.addEventListener('openRegistrationModal', handleOpenRegistration);
-    return () => window.removeEventListener('openRegistrationModal', handleOpenRegistration);
+    window.addEventListener('openLoginModal', handleOpenLogin);
+    return () => {
+      window.removeEventListener('openRegistrationModal', handleOpenRegistration);
+      window.removeEventListener('openLoginModal', handleOpenLogin);
+    };
   }, []);
 
   const [authModalConfig, setAuthModalConfig] = useState<any>(null);
@@ -160,7 +172,8 @@ export default function App() {
 
   const handleNotify = (message: string, type = 'info') => setToast({ message, type });
 
-  const handleOpenAuthModal = () => setAuthModalConfig({ isOpen: true });
+  const handleOpenAuthModal = (initialRole: 'CLUB' | 'ATHLETE' = 'CLUB', initialEmail = '') =>
+    setAuthModalConfig({ isOpen: true, initialRole, initialEmail });
 
   const handleLoginSuccess = (role: string, data: any) => {
     setAuthModalConfig(null);
@@ -435,17 +448,27 @@ export default function App() {
                 </motion.button>
 
                 <button
-                  onClick={handleOpenAuthModal}
+                  onClick={() => handleOpenAuthModal()}
                   className="btn-gov-secondary"
                   style={{
-                    fontSize: '0.76rem', padding: '7px 12px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: 4,
-                    background: '#FFFFFF', color: '#0F172A', border: '1px solid #CBD5E1', cursor: 'pointer'
+                    fontSize: '0.78rem',
+                    padding: '8px 15px',
+                    borderRadius: '10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: darkMode ? '#1E293B' : '#FFFFFF',
+                    color: darkMode ? '#F1F5F9' : '#0F172A',
+                    border: '1px solid ' + (darkMode ? '#334155' : '#CBD5E1'),
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    transition: 'all 0.2s',
                   }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#F1F5F9'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#FFFFFF'}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = darkMode ? '#334155' : '#F1F5F9')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = darkMode ? '#1E293B' : '#FFFFFF')}
                 >
-                  {t('nav.clubPortalLogin')}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" /><polyline points="10 17 15 12 10 7" /><line x1="15" y1="12" x2="3" y2="12" /></svg>
+                  {t('nav.portalLogin')}
                 </button>
               </>
             )}
@@ -541,9 +564,11 @@ export default function App() {
                     </button>
                     <button
                       onClick={() => { handleOpenAuthModal(); setMobileMenuOpen(false); }}
-                      className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 cursor-pointer font-bold bg-white text-[#0F172A] border border-[#CBD5E1]"
+                      className={`w-full py-2.5 rounded-xl cursor-pointer font-bold text-xs border text-center transition-all ${
+                        darkMode ? 'bg-[#1E293B] border-[#334155] text-white' : 'bg-white text-[#0F172A] border-[#CBD5E1]'
+                      }`}
                     >
-                      {t('nav.clubPortalLogin')}
+                      {t('nav.portalLogin')}
                     </button>
                   </div>
                 )}
@@ -574,7 +599,12 @@ export default function App() {
         />
 
         {authModalConfig?.isOpen && (
-          <AuthModal onClose={() => setAuthModalConfig(null)} onLoginSuccess={handleLoginSuccess} />
+          <AuthModal
+            onClose={() => setAuthModalConfig(null)}
+            onLoginSuccess={handleLoginSuccess}
+            initialRole={authModalConfig?.initialRole || 'CLUB'}
+            initialEmail={authModalConfig?.initialEmail || ''}
+          />
         )}
 
         {regModalRole && (
@@ -653,9 +683,8 @@ export default function App() {
       <ClientLayout
         activeSubPage={athleteSubPage}
         onChangeSubPage={setAthleteSubPage}
-        currentAthlete={currentAthlete}
         onLogout={handleLogout}
-        onGoHome={() => handleSwitchRoleDirectly('LANDING')}
+        onGoHome={() => setPublicSubPage('HOME')}
         onBackToLanding={() => setPublicSubPage('HOME')}
       >
         {athleteSubPage === 'OVERVIEW' && (
