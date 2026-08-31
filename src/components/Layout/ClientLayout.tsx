@@ -22,9 +22,7 @@ export default function ClientLayout({
   const currentAthlete = useAppSelector((state) => state.auth.athlete);
   const tabs = [
     { id: 'OVERVIEW', label: 'Dashboard', icon: Home },
-    { id: 'EVENTS', label: 'Competitions', icon: Calendar },
     { id: 'APPLIED', label: 'My Registrations', icon: BookOpen },
-    { id: 'RESULTS', label: 'Results & Standings', icon: Trophy },
   ];
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, AlertCircle, Clock, X, QrCode, FileCheck } from 'lucide-react';
+import { Calendar, MapPin, AlertCircle, Clock, X, QrCode, FileCheck, Download } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
@@ -78,6 +78,106 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
       status: "REGISTRATION_OPEN"
     };
     setSelectedApplication({ ...app, meet: meetDetails });
+  };
+
+  const handleDownloadPass = (app: ApplicationDetail) => {
+    if (!app) return;
+
+    const meetName = app.meetTitle || 'EAF Championship';
+    const venue = app.meet?.venue || 'Addis Ababa Stadium';
+    const date = app.meet?.date || '2026';
+    const disciplinesStr = app.disciplines.join(', ');
+    const codeId = `EAF-${app.meetId.substring(0, 8)}-${athlete.id.substring(4, 12)}`;
+
+    // Build SVG Image for the Accreditation Pass
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="850" viewBox="0 0 600 850">
+      <defs>
+        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#06152B"/>
+          <stop offset="50%" stop-color="#0A2540"/>
+          <stop offset="100%" stop-color="#0F172A"/>
+        </linearGradient>
+        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#F59E0B"/>
+          <stop offset="50%" stop-color="#FCD34D"/>
+          <stop offset="100%" stop-color="#D97706"/>
+        </linearGradient>
+        <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#10B981"/>
+          <stop offset="100%" stop-color="#059669"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Background Card -->
+      <rect width="600" height="850" rx="32" fill="url(#bgGrad)" stroke="#F59E0B" stroke-width="3"/>
+      
+      <!-- Top Gold/Green Accent Bar -->
+      <rect x="0" y="0" width="600" height="12" rx="6" fill="url(#goldGrad)"/>
+
+      <!-- Header Section -->
+      <text x="300" y="55" font-family="sans-serif" font-size="14" font-weight="900" fill="#FCD34D" text-anchor="middle" letter-spacing="3">ETHIOPIAN ATHLETICS FEDERATION</text>
+      <text x="300" y="82" font-family="sans-serif" font-size="22" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">OFFICIAL ACCREDITATION PASS</text>
+      <text x="300" y="105" font-family="sans-serif" font-size="12" font-weight="700" fill="#38BDF8" text-anchor="middle">NATIONAL DIGITAL COMPETITION ENTRY</text>
+
+      <line x1="40" y1="125" x2="560" y2="125" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+
+      <!-- Meet Details Banner -->
+      <rect x="40" y="145" width="520" height="100" rx="16" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+      <text x="60" y="178" font-family="sans-serif" font-size="18" font-weight="900" fill="#FFFFFF">${meetName.replace(/&/g, '&amp;')}</text>
+      <text x="60" y="205" font-family="sans-serif" font-size="13" font-weight="700" fill="#94A3B8">📍 ${venue.replace(/&/g, '&amp;')}</text>
+      <text x="60" y="227" font-family="sans-serif" font-size="13" font-weight="700" fill="#94A3B8">📅 ${date.replace(/&/g, '&amp;')}</text>
+
+      <!-- Athlete Biometrics Card Block -->
+      <rect x="40" y="265" width="520" height="230" rx="20" fill="rgba(15,23,42,0.8)" stroke="rgba(245,158,11,0.4)" stroke-width="2"/>
+      
+      <!-- Athlete Photo Box -->
+      <rect x="65" y="290" width="130" height="160" rx="16" fill="#1E293B" stroke="#F59E0B" stroke-width="2"/>
+      <text x="130" y="375" font-family="sans-serif" font-size="48" text-anchor="middle" fill="#FCD34D">🏃</text>
+      <text x="130" y="420" font-family="sans-serif" font-size="11" font-weight="900" fill="#10B981" text-anchor="middle">FAYDA VERIFIED</text>
+
+      <!-- Athlete Info -->
+      <text x="215" y="320" font-family="sans-serif" font-size="22" font-weight="900" fill="#FFFFFF">${(athlete.name || 'Athlete Name').replace(/&/g, '&amp;')}</text>
+      <text x="215" y="345" font-family="sans-serif" font-size="16" font-weight="800" fill="#FCD34D">${(athlete.amharicName || 'አልማዝ በቀለ ነጋሽ').replace(/&/g, '&amp;')}</text>
+      
+      <text x="215" y="380" font-family="sans-serif" font-size="13" font-weight="700" fill="#94A3B8">Fayda FIN: <tspan fill="#FFFFFF" font-family="monospace" font-weight="900">${athlete.faydaFin || '7961-3131-0300'}</tspan></text>
+      <text x="215" y="405" font-family="sans-serif" font-size="13" font-weight="700" fill="#94A3B8">License No: <tspan fill="#FFFFFF" font-family="monospace" font-weight="900">${athlete.licenseNumber || 'ETH-2026-ACTIVE'}</tspan></text>
+      <text x="215" y="430" font-family="sans-serif" font-size="13" font-weight="700" fill="#94A3B8">Club: <tspan fill="#FFFFFF" font-weight="900">${(athlete.clubName || 'Independent').replace(/&/g, '&amp;')}</tspan></text>
+      <text x="215" y="455" font-family="sans-serif" font-size="13" font-weight="700" fill="#94A3B8">Disciplines: <tspan fill="#38BDF8" font-weight="900">${disciplinesStr.replace(/&/g, '&amp;')}</tspan></text>
+
+      <!-- QR Code Security Block -->
+      <rect x="40" y="515" width="520" height="210" rx="20" fill="#FFFFFF"/>
+      <text x="300" y="545" font-family="sans-serif" font-size="14" font-weight="900" fill="#0F172A" text-anchor="middle">CALL ROOM ACCREDITATION QR CODE</text>
+      
+      <!-- Simulated Vector QR Matrix -->
+      <rect x="235" y="560" width="130" height="130" fill="#0F172A" rx="8"/>
+      <rect x="245" y="570" width="35" height="35" fill="#FFFFFF"/>
+      <rect x="253" y="578" width="19" height="19" fill="#0F172A"/>
+      <rect x="320" y="570" width="35" height="35" fill="#FFFFFF"/>
+      <rect x="328" y="578" width="19" height="19" fill="#0F172A"/>
+      <rect x="245" y="645" width="35" height="35" fill="#FFFFFF"/>
+      <rect x="253" y="653" width="19" height="19" fill="#0F172A"/>
+      <rect x="295" y="610" width="15" height="15" fill="#FFFFFF"/>
+      <rect x="315" y="630" width="20" height="20" fill="#FFFFFF"/>
+      <rect x="290" y="640" width="15" height="15" fill="#FFFFFF"/>
+
+      <text x="300" y="710" font-family="monospace" font-size="14" font-weight="900" fill="#0F172A" text-anchor="middle">${codeId}</text>
+
+      <!-- Footer Badge & Stamp -->
+      <rect x="40" y="745" width="520" height="60" rx="14" fill="url(#badgeGrad)"/>
+      <text x="300" y="780" font-family="sans-serif" font-size="15" font-weight="900" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">✓ CONFIRMED ATHLETE ACCREDITATION • CALL ROOM READY</text>
+
+    </svg>`;
+
+    const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `EAF_Accreditation_Pass_${app.meetId}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    onNotify?.('Accreditation Pass image downloaded successfully!', 'success');
   };
 
   return (
@@ -265,10 +365,10 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
               {/* Footer Button */}
               <div className="mt-5">
                 <button 
-                  className="btn-gov-primary w-full p-3 rounded-xl text-[0.9rem]" 
-                  onClick={() => setSelectedApplication(null)}
+                  className="btn-gov-primary w-full p-3 rounded-xl text-[0.9rem] flex items-center justify-center gap-2 font-extrabold cursor-pointer" 
+                  onClick={() => handleDownloadPass(selectedApplication)}
                 >
-                  Close Window
+                  <Download size={17} /> Download Pass
                 </button>
               </div>
             </div>

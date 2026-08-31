@@ -50,10 +50,8 @@ export default function AppLayout({
     { id: 'APPLIED',       label: 'My Applications',   icon: BookOpen },
     { id: 'PROFILE',       label: 'My Profile',        icon: UserCheck },
     { id: 'NOTIFICATIONS', label: 'Notifications',     icon: Bell },
-    { id: 'EVENTS',        label: 'Events',            icon: Globe },
     { id: 'CHECKIN',       label: 'Check-In',          icon: Navigation },
     { id: 'RACES',         label: 'Races',             icon: Activity },
-    { id: 'RESULTS',       label: 'Event Results',     icon: Trophy },
     { id: 'RECORDS',       label: 'Records',           icon: Award },
   ];
 

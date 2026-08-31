@@ -199,12 +199,12 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[0.72rem] font-black px-2.5 py-0.5 rounded-full">
                   <ShieldCheck size={12} /> Fayda Verified
                 </span>
-                <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[0.72rem] font-black px-2.5 py-0.5 rounded-full">
+                {/* <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[0.72rem] font-black px-2.5 py-0.5 rounded-full">
                   🏅 {athlete.ageTier || 'Senior Division'}
                 </span>
                 <span className="inline-flex items-center gap-1 bg-sky-500/20 text-sky-200 border border-sky-400/30 text-[0.72rem] font-bold px-2.5 py-0.5 rounded-full">
                   🇪🇹 Ethiopian Athletics
-                </span>
+                </span> */}
               </div>
 
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white m-0">
@@ -419,7 +419,8 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
               </div>
             </div>
 
-            {/* Desktop Portal Management Modules Grid (Clean, Cohesive Federation Design) */}
+            {/* Desktop Portal Management Modules Grid (Commented out per user request) */}
+            {/*
             <div className="space-y-3">
               <div className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">
                 Portal Management Modules • የአትሌት አገልግሎቶች
@@ -459,53 +460,90 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 })}
               </div>
             </div>
+            */}
 
           </div>
 
           {/* ── RIGHT / SIDEBAR COLUMN (4 cols) ── */}
           <div className="lg:col-span-4 space-y-6">
 
-            {/* 1. Official Digital Pass Credential Card */}
-            <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-[#0F172A] to-[#1E293B] p-5 text-white shadow-xl border border-slate-700/60 relative overflow-hidden">
-              <div className="flex justify-between items-center pb-3 mb-3 border-b border-white/10">
-                <div>
-                  <div className="text-[0.65rem] font-black text-[#FCD34D] tracking-wider uppercase">
-                    EAF DIGITAL ACCREDITATION
+            {/* 1. Official Digital Pass Credential Card (Realistic Athlete Digital ID Card Design) */}
+            <div className="rounded-2xl bg-gradient-to-br from-[#06152B] via-[#0A2540] to-[#0F172A] p-5 text-white shadow-2xl border border-amber-500/30 relative overflow-hidden">
+              {/* Background watermark hologram & gradient accent */}
+              <div className="pointer-events-none absolute -right-12 -bottom-12 w-44 h-44 rounded-full bg-gradient-to-br from-amber-500/10 to-emerald-500/10 blur-2xl" />
+              <div className="pointer-events-none absolute top-0 right-0 w-32 h-1 bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-400" />
+
+              {/* Card Header Banner */}
+              <div className="flex justify-between items-center pb-3 mb-3.5 border-b border-white/15">
+                <div className="flex items-center gap-2">
+                  <img src="/images/logo.jpeg" alt="EAF" className="w-6 h-6 rounded-md object-cover border border-white/20" />
+                  <div>
+                    <div className="text-[0.62rem] font-black text-[#FCD34D] tracking-widest uppercase leading-tight">
+                      ETHIOPIAN ATHLETICS FEDERATION
+                    </div>
+                    <div className="text-[0.72rem] font-extrabold text-white leading-tight">
+                      NATIONAL ATHLETE DIGITAL ID
+                    </div>
                   </div>
-                  <div className="text-xs font-extrabold text-white">National Athlete Card</div>
                 </div>
-                <div className="bg-emerald-500 text-white text-[0.65rem] font-black px-2 py-0.5 rounded">
-                  AUTHENTICATED
+                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[0.62rem] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <CheckCircle2 size={10} /> VERIFIED
+                </span>
+              </div>
+
+              {/* Card Body: Athlete Photo + Details + Embedded Verification QR */}
+              <div className="flex items-start gap-3.5">
+                {/* Athlete Portrait Photo */}
+                <div className="relative shrink-0">
+                  <img
+                    src={athlete.photoUrl || '/images/runner_female.png'}
+                    alt={athlete.name}
+                    className="w-16 h-20 rounded-xl object-cover border-2 border-amber-400/80 shadow-md bg-slate-800"
+                  />
+                  <div className="absolute -bottom-1 -right-1 bg-amber-500 text-slate-950 font-black text-[0.58rem] px-1 rounded border border-white">
+                    {athlete.ageTier || 'SNR'}
+                  </div>
+                </div>
+
+                {/* ID Details */}
+                <div className="min-w-0 flex-1 space-y-1">
+                  <div className="text-sm font-black text-white truncate leading-tight">{athlete.name}</div>
+                  <div className="text-[0.75rem] font-bold text-amber-300 truncate">{athlete.amharicName || 'አልማዝ በቀለ ነጋሽ'}</div>
+                  
+                  <div className="text-[0.7rem] text-slate-300 pt-0.5 space-y-0.5">
+                    <div>Event: <strong className="text-white">{athlete.primaryEvent}</strong></div>
+                    <div>Club: <strong className="text-white">{athlete.clubName || 'Independent'}</strong></div>
+                    <div className="flex items-center gap-1">
+                      FIN: <strong className="text-[#FCD34D] font-mono text-[0.72rem]">{athlete.faydaFin || '7961-3131-0300'}</strong>
+                      <button
+                        onClick={handleCopyFin}
+                        title="Copy FIN"
+                        className="text-slate-300 hover:text-white bg-white/10 p-0.5 rounded border-none cursor-pointer"
+                      >
+                        {copiedFin ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Small Security Verification QR Thumbnail */}
+                <div className="shrink-0 bg-white p-1.5 rounded-lg border border-slate-700 shadow-sm flex flex-col items-center">
+                  <QrCode size={38} className="text-slate-950" />
+                  <span className="text-[0.55rem] font-extrabold text-slate-700 mt-0.5">VERIFY</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <div className="bg-white p-2 rounded-xl shrink-0 shadow-md">
-                  <QrCode size={64} className="text-slate-950" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-black text-white truncate">{athlete.name}</div>
-                  <div className="text-xs text-primary-light truncate">{athlete.amharicName}</div>
-                  <div className="text-[0.72rem] text-slate-400 mt-1.5 flex items-center justify-between">
-                    <span>FIN: <strong className="text-[#FCD34D] font-mono">{athlete.faydaFin || '7961-3131-0300'}</strong></span>
-                    <button
-                      onClick={handleCopyFin}
-                      title="Copy FIN"
-                      className="text-slate-300 hover:text-white bg-white/10 p-1 rounded border-none cursor-pointer"
-                    >
-                      {copiedFin ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center text-[0.7rem] text-slate-400">
-                <span>World Athletics ID: <strong className="text-white">ETH-2026-092</strong></span>
-                <span className="text-emerald-400 font-bold">✓ Active License</span>
+              {/* Card Footer Bar */}
+              <div className="mt-3.5 pt-2.5 border-t border-white/15 flex justify-between items-center text-[0.68rem] text-slate-300">
+                <span>LIC: <strong className="font-mono text-white">{athlete.licenseNumber || 'ETH-2026-092'}</strong></span>
+                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                  <ShieldCheck size={12} /> Active Digital Accreditation
+                </span>
               </div>
             </div>
 
-            {/* 2. Upcoming National Championships Widget */}
+            {/* 2. Upcoming National Championships Widget (Commented out per user request) */}
+            {/*
             <div className="bg-white dark:bg-[#121829] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -534,6 +572,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 </div>
               </div>
             </div>
+            */}
 
             {/* 3. Federation Compliance & Clearances */}
             <div className="bg-white dark:bg-[#121829] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-3">

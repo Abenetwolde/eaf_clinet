@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { QrCode, X } from 'lucide-react';
+import { QrCode, X, Download } from 'lucide-react';
 import type { Athlete } from '../../types';
 
 // ── License QR payload builder (isolated so it can be wired to a backend) ──
-// There is no backend license QR/verification endpoint yet, so the QR encodes
-// the athlete's existing local license data. When a real endpoint exists, swap
-// this function for a verifier payload/URL (e.g. `${API_ORIGIN}/verify/...`).
 export function buildLicenseQrValue(athlete: Athlete): string {
   return JSON.stringify({
     type: 'EAF_LICENSE',
@@ -34,6 +31,23 @@ export default function LicenseQrCode({ athlete, size = 180 }: LicenseQrCodeProp
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  const handleDownloadQr = () => {
+    const svgElement = document.querySelector('#license-qr-svg-wrapper svg');
+    if (!svgElement) return;
+
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = svgUrl;
+    downloadLink.download = `EAF_License_QR_${athlete.licenseNumber || 'ATHLETE'}.svg`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(svgUrl);
+  };
+
   if (!athlete.licenseNumber) return null;
 
   return (
@@ -49,7 +63,7 @@ export default function LicenseQrCode({ athlete, size = 180 }: LicenseQrCodeProp
         View QR
       </button>
 
-      {/* License QR modal (only shown after clicking "View QR") */}
+      {/* License QR modal */}
       {open && (
         <div
           className="modal-backdrop"
@@ -69,15 +83,15 @@ export default function LicenseQrCode({ athlete, size = 180 }: LicenseQrCodeProp
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Close license QR code"
+                aria-label="Close modal"
                 className="w-8 h-8 rounded-lg flex items-center justify-center border-0 cursor-pointer bg-[#F1F5F9] text-[#475569] hover:bg-[#E2E8F0] font-bold shrink-0"
               >
                 <X size={16} />
               </button>
             </div>
 
-            {/* QR code */}
-            <div className="inline-flex bg-white p-3 rounded-xl border border-[#E2E8F0] mx-auto">
+            {/* QR code container */}
+            <div id="license-qr-svg-wrapper" className="inline-flex bg-white p-3 rounded-xl border border-[#E2E8F0] mx-auto shadow-sm">
               <QRCodeSVG value={buildLicenseQrValue(athlete)} size={size} level="M" />
             </div>
 
@@ -91,14 +105,14 @@ export default function LicenseQrCode({ athlete, size = 180 }: LicenseQrCodeProp
               </div>
             </div>
 
-            {/* Close */}
+            {/* Download Button */}
             <button
               type="button"
-              onClick={() => setOpen(false)}
-              className="mt-5 w-full py-2.5 rounded-xl border-0 cursor-pointer font-bold text-[0.9rem] text-white"
+              onClick={handleDownloadQr}
+              className="mt-5 w-full py-3 rounded-xl border-0 cursor-pointer font-extrabold text-[0.92rem] text-white flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
               style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
             >
-              Close
+              <Download size={17} /> Download QR Code
             </button>
           </div>
         </div>
