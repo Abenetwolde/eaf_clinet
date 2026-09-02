@@ -30,7 +30,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n, LanguageSelector } from './i18n';
 
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { setRole, setClub, setAthlete, logout, setAuthLoading, setUserData } from './store/slices/authSlice';
+import { setRole, setClub, setAthlete, logout, setAuthLoading, sessionRestored, setUserData } from './store/slices/authSlice';
 import { addAthlete, updateAthlete, setAthletes } from './store/slices/athleteSlice';
 import { addClub, addTransfer } from './store/slices/clubSlice';
 import { useLazyGetMeQuery, useLogoutApiMutation } from './store/api/authApi';
@@ -71,6 +71,9 @@ export default function App() {
               permissions: res.data.permissions,
             }));
           }
+          // Token validated — restore the authenticated status (it was set
+          // to 'loading' above and nothing else would flip it back).
+          dispatch(sessionRestored());
         })
         .catch(() => {
           // Token invalid/expired — clear auth
@@ -98,13 +101,21 @@ export default function App() {
     try {
       localStorage.setItem('eaf_athletes', JSON.stringify(athletes));
     } catch (e) {}
+  }, [athletes]);
+
+  // Sync the current athlete when the local pool entry is edited (e.g. club
+  // admin updates). Deliberately NOT re-run when currentAthlete changes —
+  // that would clobber the freshly hydrated backend profile with the stale
+  // local pool entry.
+  useEffect(() => {
     if (currentAthlete) {
       const updatedAthlete = athletes.find((a: any) => a.id === currentAthlete.id);
       if (updatedAthlete && JSON.stringify(updatedAthlete) !== JSON.stringify(currentAthlete)) {
         dispatch(setAthlete(updatedAthlete));
       }
     }
-  }, [athletes, currentAthlete, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [athletes, dispatch]);
 
   // Persist dark mode state to localStorage and document.documentElement class
   useEffect(() => {

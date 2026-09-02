@@ -9,6 +9,7 @@ import FaydaVerification from './FaydaVerification';
 import RecordsVault from './RecordsVault';
 import EventResults from './EventResults';
 import LicenseQrCode from './LicenseQrCode';
+import { formatFaydaId } from '../../utils/formatFaydaId';
 import type { Athlete } from '../../types';
 
 interface AthleteDashboardProps {
@@ -55,7 +56,7 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
             </p>
 
             <div className="flex gap-4 mt-2 text-[0.85rem] text-text-muted font-semibold flex-wrap">
-              <span>Fayda FIN: <strong className="text-text-main font-mono">{athlete.faydaFin}</strong></span>
+              <span>Fayda FIN: <strong className="text-text-main font-mono">{formatFaydaId(athlete.faydaFin) || '—'}</strong></span>
               <span>•</span>
               <span>Discipline: <strong className="text-text-main">{athlete.primaryEvent}</strong></span>
               <span>•</span>

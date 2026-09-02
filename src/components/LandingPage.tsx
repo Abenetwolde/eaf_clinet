@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share, RefreshCw } from 'lucide-react';
+import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share, RefreshCw, Building2 } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 import NewsDetail from './NewsDetail';
 import GalleryDetail from './GalleryDetail';
@@ -1879,30 +1879,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       {/* ── 4. FEATURED ATHLETES SPOTLIGHT (ON HOME) & ATHLETES DIRECTORY HUB (ON ATHLETES) ── */}
       {(publicSubPage === "HOME" || publicSubPage === "ATHLETES") && (
         <section id="athletes" style={{ background: t.bg, padding: '60px 0', borderTop: '1px solid ' + t.border, overflow: 'hidden' }}>
-          <style>{`
-            @keyframes athletes-continuous-scroll {
-              0%   { transform: translateX(0); }
-              100% { transform: translateX(-50%); }
-            }
-            .athletes-motion-track {
-              display: flex;
-              gap: 24px;
-              width: max-content;
-              animation: athletes-continuous-scroll 45s linear infinite;
-              padding: 12px 24px 24px;
-            }
-            .athletes-motion-track:hover {
-              animation-play-state: paused;
-            }
-            .athlete-motion-card {
-              transition: transform 0.28s ease, box-shadow 0.28s ease;
-            }
-            .athlete-motion-card:hover {
-              transform: translateY(-8px) scale(1.02);
-              box-shadow: 0 22px 45px rgba(0, 0, 0, 0.42) !important;
-            }
-          `}</style>
-
           <div style={{ maxWidth: 1280, margin: '0 auto', paddingLeft: 24, paddingRight: 24 }}>
             {/* Top Bar with Back Button if in ATHLETES subpage */}
             {publicSubPage === 'ATHLETES' && (
@@ -2101,140 +2077,91 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             )}
           </div>
 
-          {/* ── HOME VIEW: CONTINUOUS INFINITE HORIZONTAL MOTION RAIL ── */}
+          {/* ── HOME VIEW: CONTINUOUS INFINITE MOTION RAIL — window aligned to the same content grid as Competitions / News / Gallery ── */}
           {publicSubPage === 'HOME' && (
-            <div style={{ overflow: 'hidden', paddingBottom: '8px' }}>
-              <div className="athletes-motion-track">
-                {[...athleteList, ...athleteList, ...athleteList].map((athlete, idx) => (
-                  <div
-                    key={`${athlete.id || idx}-${idx}`}
-                    className="athlete-motion-card"
-                    onClick={() => setSelectedAthleteDetail(athlete)}
-                    style={{
-                      position: 'relative',
-                      width: '320px',
-                      minWidth: '320px',
-                      height: '420px',
-                      borderRadius: '24px',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'flex-end',
-                      cursor: 'pointer',
-                      boxShadow: '0 14px 34px rgba(15, 23, 42, 0.16)',
-                      border: '1px solid ' + (darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(226, 232, 240, 0.9)'),
-                      background: '#0F172A',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {/* Athlete Portrait Photo */}
-                    <img
-                      src={athlete.img}
-                      alt={athlete.name}
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        objectPosition: 'center top',
-                      }}
-                    />
-
-                    {/* Gradient Overlay for Crisp Legibility */}
+            <div style={{ maxWidth: 1280, margin: '0 auto', paddingLeft: 24, paddingRight: 24 }}>
+              <div
+                ref={athleteScrollRef}
+                style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
+              >
+                {[...athleteList, ...athleteList, ...athleteList].map((athlete, idx) => {
+                  const cardKey = `${athlete.id}-${idx}`;
+                  return (
                     <div
+                      key={cardKey}
+                      className="hover-lift"
+                      onClick={() => setSelectedAthleteDetail(athlete)}
                       style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'linear-gradient(to top, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.6) 45%, rgba(15,23,42,0.1) 100%)',
-                        pointerEvents: 'none',
+                        position: 'relative',
+                        minWidth: 'min(100%, 380px)',
+                        maxWidth: '400px',
+                        minHeight: '360px',
+                        flexShrink: 0,
+                        borderRadius: 24,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'flex-end',
+                        cursor: 'pointer',
+                        boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
+                        border: '1px solid #E2E8F0',
                       }}
-                    />
+                    >
+                      <div style={{
+                        position: 'absolute', inset: 0,
+                        backgroundImage: `url(${athlete.img})`,
+                        backgroundSize: 'cover', backgroundPosition: 'center top',
+                      }} />
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.96) 0%, rgba(15,23,42,0.48) 50%, rgba(15,23,42,0.12) 100%)' }} />
 
-                    {/* Floating Badges Header */}
-                    <div style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{
-                        background: 'rgba(16, 185, 129, 0.92)',
-                        backdropFilter: 'blur(8px)',
-                        color: '#FFFFFF',
-                        fontSize: '0.72rem',
-                        fontWeight: 800,
-                        padding: '4px 10px',
-                        borderRadius: '8px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                      {/* Fayda Badge — mirrors competition status badge */}
+                      <div style={{
+                        position: 'absolute', top: 16, right: 16, zIndex: 3,
+                        background: 'rgba(16, 185, 129, 0.95)', color: '#FFFFFF',
+                        fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.04em',
+                        padding: '4px 12px', borderRadius: 8,
+                        display: 'inline-flex', alignItems: 'center', gap: 4
                       }}>
                         <ShieldCheck size={13} /> Fayda Verified
-                      </span>
-
-                      <span style={{
-                        background: 'rgba(255, 255, 255, 0.22)',
-                        backdropFilter: 'blur(8px)',
-                        color: '#FFFFFF',
-                        fontSize: '0.72rem',
-                        fontWeight: 800,
-                        padding: '4px 10px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                      }}>
-                        {athlete.event}
-                      </span>
-                    </div>
-
-                    {/* Athlete Info Card Bottom */}
-                    <div style={{ position: 'relative', zIndex: 2, padding: '22px' }}>
-                      <h3 style={{ color: '#FFFFFF', fontSize: '1.3rem', fontWeight: 900, marginBottom: 2, lineHeight: 1.25, letterSpacing: '-0.01em' }}>
-                        {athlete.name}
-                      </h3>
-                      <div style={{ color: '#38BDF8', fontSize: '0.85rem', fontWeight: 700, marginBottom: 8 }}>
-                        {athlete.amharicName}
                       </div>
 
-                      {/* PB Badge */}
-                      {athlete.pb && (
-                        <div style={{
-                          background: 'rgba(253, 224, 71, 0.15)',
-                          border: '1px solid rgba(253, 224, 71, 0.35)',
-                          borderRadius: '8px',
-                          padding: '4px 10px',
-                          display: 'inline-block',
-                          marginBottom: '8px',
-                        }}>
-                          <span style={{ color: '#FDE047', fontSize: '0.75rem', fontWeight: 800 }}>
-                            ⚡ PB: {athlete.pb}
+                      <div style={{ position: 'relative', zIndex: 2, padding: '24px' }}>
+                        <h3 style={{ color: '#FFFFFF', fontSize: '1.3rem', fontWeight: 900, marginBottom: 4, lineHeight: 1.3, letterSpacing: '-0.01em' }}>
+                          {athlete.name}
+                        </h3>
+                        <div style={{ color: '#38BDF8', fontSize: '0.85rem', fontWeight: 700, marginBottom: 12 }}>
+                          {athlete.amharicName}
+                        </div>
+
+                        {/* Detail lines — mirrors competition venue/date rows */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
+                            <Award size={14} style={{ flexShrink: 0 }} />
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{athlete.achievement}</span>
+                          </span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
+                            <Trophy size={14} style={{ flexShrink: 0 }} />
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{athlete.event}</span>
+                          </span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
+                            <Building2 size={14} style={{ flexShrink: 0 }} />
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{athlete.club}</span>
                           </span>
                         </div>
-                      )}
 
-                      {/* Achievement Note */}
-                      <p style={{
-                        color: '#E2E8F0',
-                        fontSize: '0.76rem',
-                        fontWeight: 600,
-                        lineHeight: 1.4,
-                        marginBottom: '12px',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}>
-                        {athlete.achievement}
-                      </p>
-
-                      {/* Footer: Club & Action */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.16)', paddingTop: '12px' }}>
-                        <span style={{ color: '#94A3B8', fontSize: '0.74rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '55%' }}>
-                          {athlete.club}
-                        </span>
-                        <span style={{ color: '#38BDF8', fontSize: '0.82rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          View Stats <ChevronRight size={14} />
-                        </span>
+                        {/* Footer row — identical pattern to competition cards */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.18)', paddingTop: '12px' }}>
+                          <span style={{ color: '#E2E8F0', fontSize: '0.74rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '55%' }}>
+                            {athlete.pb ? `PB: ${athlete.pb}` : athlete.event}
+                          </span>
+                          <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            View Stats <ChevronRight size={16} />
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* VIEW ALL ATHLETES BUTTON (Only on HOME view) */}

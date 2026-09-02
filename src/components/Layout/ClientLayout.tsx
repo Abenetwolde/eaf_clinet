@@ -1,7 +1,9 @@
-import React from 'react';
-import { Home, UserCheck, Bell, BookOpen, LogOut, Sun, Moon, ArrowLeft, Calendar, Trophy, Sparkles, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { Home, UserCheck, Bell, BookOpen, LogOut, Sun, Moon, ArrowLeft, Calendar, Trophy, Sparkles, ShieldCheck, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAppSelector } from '../../store/hooks';
+import { useAppSelector, useAppDispatch } from '../../store/hooks';
+import { setAthlete } from '../../store/slices/authSlice';
+import { useGetMyAthleteProfileQuery, mapMyProfileToAthlete } from '../../store/api/athleteApi';
 import { LanguageSelector } from '../../i18n';
 
 interface ClientLayoutProps {
@@ -20,6 +22,50 @@ export default function ClientLayout({
   darkMode, onToggleDarkMode, children
 }: ClientLayoutProps) {
   const currentAthlete = useAppSelector((state) => state.auth.athlete);
+  const userData = useAppSelector((state) => state.auth.userData);
+  // Token presence gates the profile query — `status` is legitimately
+  // 'loading' while the saved session is being validated on app mount.
+  const isAuthenticated = useAppSelector((state) => !!state.auth.token);
+  const dispatch = useAppDispatch();
+
+  // Hydrate the athlete portal with the registered profile from
+  // GET /athletes/profile — the login response only carries identity basics.
+  const {
+    data: myProfile,
+    isSuccess: profileLoaded,
+    error: profileError,
+  } = useGetMyAthleteProfileQuery(undefined, { skip: !isAuthenticated });
+
+  // Accounts created before the registration fix have a login account but
+  // no athlete profile on the backend (GET /athletes/profile → 404).
+  const missingProfile =
+    !!profileError &&
+    (profileError as { status?: number | string }).status === 404;
+
+  // Remembers the last athlete object produced by a server hydration so a
+  // re-run never clobber local edits made in the portal afterwards.
+  const lastHydratedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!profileLoaded || !myProfile?.id) return;
+    const seed = {
+      name: `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || undefined,
+      email: userData?.email || undefined,
+    };
+    const merged = mapMyProfileToAthlete(myProfile, seed);
+    const mergedJSON = JSON.stringify(merged);
+    const currentJSON = JSON.stringify(currentAthlete);
+    if (mergedJSON === currentJSON) {
+      lastHydratedRef.current = mergedJSON;
+      return;
+    }
+    // The athlete in state was changed locally after a hydration (user edits)
+    // — leave it alone.
+    if (lastHydratedRef.current !== null && currentJSON !== lastHydratedRef.current) return;
+    lastHydratedRef.current = mergedJSON;
+    dispatch(setAthlete(merged));
+  }, [profileLoaded, myProfile, currentAthlete, userData, dispatch]);
+
   const tabs = [
     { id: 'OVERVIEW', label: 'Dashboard', icon: Home },
     { id: 'EVENTS', label: 'Competitions', icon: Calendar },
@@ -153,6 +199,21 @@ export default function ClientLayout({
 
       {/* Main Full-Width Desktop Content Area */}
       <main className="client-main flex-1 px-4 sm:px-8 py-5 sm:py-7 max-w-[1400px] mx-auto w-full">
+
+        {/* Account without an athlete profile (legacy registrations) */}
+        {missingProfile && (
+          <div className="mb-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-[14px] px-4 py-3.5 flex items-start gap-3">
+            <AlertCircle size={20} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-[0.85rem] text-amber-900 dark:text-amber-200 leading-relaxed">
+              <strong className="font-extrabold">No athlete profile is linked to this account yet.</strong>{' '}
+              Your registered athletics data (personal bests, club, events) is attached to an athlete
+              profile on the federation server, and this account doesn't have one — it was likely
+              created by an earlier version of the registration form. Please{' '}
+              <strong>register again as an athlete with a different email</strong> (or contact the
+              federation registrar) so your profile is created and your data appears here.
+            </div>
+          </div>
+        )}
 
         {/* Top Breadcrumb & Mobile Tab Bar */}
         <div className="flex justify-between items-center mb-5 flex-wrap gap-3">

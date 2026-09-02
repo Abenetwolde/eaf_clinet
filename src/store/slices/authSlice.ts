@@ -55,6 +55,32 @@ function readInitialAthlete(): Athlete {
     const found = pool.find((a) => a.id === savedId);
     if (found) return found;
   }
+  // Authenticated athlete session restored from storage — never seed the
+  // portal with demo athletes. A minimal placeholder is used until
+  // GET /athletes/profile hydrates the real record (see ClientLayout).
+  const token = readString(STORAGE_KEYS.accessToken);
+  const role = readString(STORAGE_KEYS.role);
+  if (token && role === 'ATHLETE') {
+    const ud = readJSON<UserDataFromApi | null>(STORAGE_KEYS.userData, null);
+    const name = ud ? `${ud.firstName || ''} ${ud.lastName || ''}`.trim() : '';
+    return {
+      id: savedId || 'ATHLETE-SESSION',
+      name: name || 'Athlete',
+      dob: '',
+      gender: '',
+      ageTier: '',
+      photoUrl: '',
+      licenseStatus: 'PENDING',
+      faydaStatus: 'PENDING',
+      email: ud?.email || '',
+      personalBests: [],
+      seasonBests: [],
+      weightLog: [],
+      trainingLog: [],
+      achievements: [],
+      appliedCompetitions: [],
+    };
+  }
   return MOCK_ATHLETES[0];
 }
 
@@ -158,6 +184,14 @@ const authSlice = createSlice({
     setAuthLoading(state) {
       state.status = 'loading';
     },
+    /** Restore an authenticated status after the saved session token has
+     *  been validated (e.g. GET /auth/me on app mount). Without this the
+     *  status stays 'loading' and authenticated queries stay skipped. */
+    sessionRestored(state) {
+      if (state.token && state.role !== 'LANDING') {
+        state.status = 'authenticated';
+      }
+    },
     login(
       state,
       action: PayloadAction<{
@@ -207,5 +241,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setRole, setClub, setAthlete, setToken, setUserData, setAuthLoading, login, logout, refreshTokens } = authSlice.actions;
+export const { setRole, setClub, setAthlete, setToken, setUserData, setAuthLoading, sessionRestored, login, logout, refreshTokens } = authSlice.actions;
 export default authSlice.reducer;

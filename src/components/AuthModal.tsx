@@ -140,15 +140,27 @@ export default function AuthModal({ onClose, onLoginSuccess, initialRole = 'CLUB
       }
     } catch (err: unknown) {
       const apiErr = err as {
-        data?: { message?: string; success?: boolean; error?: string };
+        data?: { message?: string; success?: boolean; error?: string | { code?: string } };
         error?: string;
         status?: string | number;
       };
 
-      const serverMsg = apiErr?.data?.message || apiErr?.data?.error || apiErr?.error;
+      const serverMsg =
+        (typeof apiErr?.data?.error === 'string' ? apiErr?.data?.error : undefined) ||
+        apiErr?.data?.message ||
+        apiErr?.error;
+      const errCode = typeof apiErr?.data?.error === 'object' ? apiErr?.data?.error?.code : undefined;
+      // Backend rejects login for unverified accounts with ACCOUNT_INACTIVE —
+      // surface the verification-code entry instead of a generic failure.
+      const accountInactive =
+        errCode === 'ACCOUNT_INACTIVE' ||
+        /not active|verify your registered contact/i.test(serverMsg || '');
 
       if (apiErr?.status === 'FETCH_ERROR' || !apiErr?.status) {
         setError('Unable to reach authentication server. Please verify your connection.');
+      } else if (accountInactive) {
+        setShowVerifyPrompt(true);
+        setError(serverMsg || 'Your account is not active yet. Please verify your email address.');
       } else if (apiErr?.status === 401 || apiErr?.status === 400) {
         setError(serverMsg || 'Invalid email or password. Please check your credentials.');
       } else if (apiErr?.status === 403) {

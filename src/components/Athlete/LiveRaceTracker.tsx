@@ -128,9 +128,6 @@ export default function LiveRaceTracker({ athlete, onNotify }: LiveRaceTrackerPr
             <div className="text-[0.85rem] text-primary mt-1 font-bold">
               Personal Best: <strong>{athlete.pb}</strong>
             </div>
-            <div className="text-[0.75rem] text-text-muted mt-1">
-              Fayda FIN Hash: {athlete.faydaHash}
-            </div>
           </div>
         </div>
       </div>

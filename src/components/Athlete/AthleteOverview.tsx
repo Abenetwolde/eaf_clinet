@@ -7,7 +7,8 @@ import {
   FileText, Check, Copy, User, Lock, ExternalLink
 } from 'lucide-react';
 import type { Athlete } from '../../types';
-import { MOCK_EVENT_RESULTS, MEET_META, MOCK_ATHLETES } from '../../data/mockData';
+import { formatFaydaId } from '../../utils/formatFaydaId';
+import { MOCK_EVENT_RESULTS, MEET_META } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
 import LicenseQrCode from './LicenseQrCode';
 
@@ -19,7 +20,23 @@ interface AthleteOverviewProps {
 
 export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdateAthlete }: AthleteOverviewProps) {
   const rawAthlete = useAppSelector((state) => state.auth.athlete);
-  const athlete = rawAthlete || MOCK_ATHLETES[0];
+  // Never fall back to demo athletes — an empty record renders as "—"
+  // until the real profile is hydrated from the backend.
+  const athlete: Athlete = rawAthlete || {
+    id: 'ATHLETE-SESSION',
+    name: 'Athlete',
+    dob: '',
+    gender: '',
+    ageTier: '',
+    licenseStatus: 'PENDING',
+    photoUrl: '',
+    personalBests: [],
+    seasonBests: [],
+    weightLog: [],
+    trainingLog: [],
+    achievements: [],
+    appliedCompetitions: [],
+  };
 
   const [activeTab, setActiveTab] = useState('overview');
   const [copiedFin, setCopiedFin] = useState(false);
@@ -45,15 +62,15 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
 
   // Body stats edit
   const [editingStats, setEditingStats] = useState(false);
-  const [editWeight, setEditWeight] = useState<string | number>(athlete?.weight || 58);
-  const [editHeight, setEditHeight] = useState<string | number>(athlete?.height || 172);
-  const [editHR, setEditHR] = useState<string | number>(athlete?.restingHR || 48);
+  const [editWeight, setEditWeight] = useState<string | number>(athlete?.weight ?? '');
+  const [editHeight, setEditHeight] = useState<string | number>(athlete?.height ?? '');
+  const [editHR, setEditHR] = useState<string | number>(athlete?.restingHR ?? '');
 
   useEffect(() => {
     if (athlete) {
-      setEditWeight(athlete.weight || 58);
-      setEditHeight(athlete.height || 172);
-      setEditHR(athlete.restingHR || 48);
+      setEditWeight(athlete.weight ?? '');
+      setEditHeight(athlete.height ?? '');
+      setEditHR(athlete.restingHR ?? '');
     }
   }, [athlete?.id, athlete?.weight, athlete?.height, athlete?.restingHR]);
 
@@ -94,9 +111,9 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
 
     onUpdateAthlete({
       ...athlete,
-      weight: !isNaN(w) && w > 0 ? w : (athlete.weight || 58),
-      height: !isNaN(h) && h > 0 ? h : (athlete.height || 172),
-      restingHR: !isNaN(hr) && hr > 0 ? hr : (athlete.restingHR || 48)
+      weight: !isNaN(w) && w > 0 ? w : athlete.weight,
+      height: !isNaN(h) && h > 0 ? h : athlete.height,
+      restingHR: !isNaN(hr) && hr > 0 ? hr : athlete.restingHR
     });
     setEditingStats(false);
   };
@@ -108,11 +125,11 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
     setTimeout(() => setCopiedFin(false), 2000);
   };
 
-  // BMI Calculation
-  const numW = typeof athlete?.weight === 'number' && athlete.weight > 0 ? athlete.weight : 58;
-  const numH = typeof athlete?.height === 'number' && athlete.height > 0 ? athlete.height : 172;
-  const bmiCalc = numW / Math.pow(numH / 100, 2);
-  const bmi = isFinite(bmiCalc) ? bmiCalc.toFixed(1) : '20.4';
+  // BMI Calculation — only meaningful when height & weight are known
+  const numW = typeof athlete?.weight === 'number' && athlete.weight > 0 ? athlete.weight : null;
+  const numH = typeof athlete?.height === 'number' && athlete.height > 0 ? athlete.height : null;
+  const bmiCalc = numW && numH ? numW / Math.pow(numH / 100, 2) : null;
+  const bmi = bmiCalc && isFinite(bmiCalc) ? bmiCalc.toFixed(1) : null;
 
   // Build competition history for this athlete
   interface CompResult {
@@ -198,7 +215,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                   <ShieldCheck size={12} /> Fayda Verified
                 </span>
                 <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[0.72rem] font-black px-2.5 py-0.5 rounded-full">
-                  🏅 {athlete.ageTier || 'Senior Division'}
+                  🏅 {athlete.ageTier || 'Age Tier Pending'}
                 </span>
                 <span className="inline-flex items-center gap-1 bg-sky-500/20 text-sky-200 border border-sky-400/30 text-[0.72rem] font-bold px-2.5 py-0.5 rounded-full">
                   🇪🇹 Ethiopian Athletics
@@ -208,9 +225,11 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white m-0">
                 {athlete.name}
               </h1>
-              <div className="text-lg sm:text-xl font-extrabold text-[#FCD34D] tracking-wide">
-                {athlete.amharicName || 'አልማዝ በቀለ ነጋሽ'}
-              </div>
+              {athlete.amharicName && (
+                <div className="text-lg sm:text-xl font-extrabold text-[#FCD34D] tracking-wide">
+                  {athlete.amharicName}
+                </div>
+              )}
 
               <div className="flex items-center gap-3 text-[0.82rem] text-slate-200/90 flex-wrap pt-0.5 font-medium">
                 <span className="flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-md">
@@ -218,11 +237,11 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-md">
-                  🏃 <strong className="text-white">{athlete.primaryEvent}</strong>
+                  🏃 <strong className="text-white">{athlete.primaryEvent || '—'}</strong>
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  FIN: <strong className="font-mono text-[#FCD34D] font-bold">{athlete.faydaFin || '7961-3131-0300'}</strong>
+                  FIN: <strong className="font-mono text-[#FCD34D] font-bold">{formatFaydaId(athlete.faydaFin) || '—'}</strong>
                 </span>
               </div>
             </div>
@@ -249,7 +268,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[0.78rem] font-black px-3 py-1 rounded-lg">
                   <CheckCircle2 size={14} /> License Active • {athlete.licenseNumber}
                 </div>
-                <div className="text-[0.74rem] text-slate-300">Valid Through: Dec 31, 2026</div>
+                <div className="text-[0.74rem] text-slate-300">Valid Through: {athlete.licenseExpiry || '—'}</div>
                 <div className="pt-1">
                   <LicenseQrCode athlete={athlete} />
                 </div>
@@ -329,40 +348,40 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                   <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
                     <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Weight</div>
                     <div className="text-2xl font-black text-primary dark:text-sky-400 mt-1">
-                      {athlete.weight || 58} <span className="text-xs font-semibold text-slate-500">kg</span>
+                      {athlete.weight ?? '—'} <span className="text-xs font-semibold text-slate-500">kg</span>
                     </div>
                     <div className="text-[0.7rem] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
-                      BMI: {bmi} (Optimal)
+                      BMI: {bmi ?? '—'}
                     </div>
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
                     <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Height</div>
                     <div className="text-2xl font-black text-slate-800 dark:text-slate-200 mt-1">
-                      {athlete.height || 172} <span className="text-xs font-semibold text-slate-500">cm</span>
+                      {athlete.height ?? '—'} <span className="text-xs font-semibold text-slate-500">cm</span>
                     </div>
                     <div className="text-[0.7rem] text-slate-500 font-semibold mt-1">
-                      Division Standard
+                      Registered with EAF
                     </div>
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
                     <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Resting HR</div>
                     <div className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1">
-                      {athlete.restingHR || 48} <span className="text-xs font-semibold text-slate-500">bpm</span>
+                      {athlete.restingHR ?? '—'} <span className="text-xs font-semibold text-slate-500">bpm</span>
                     </div>
-                    <div className="text-[0.7rem] text-rose-600 dark:text-rose-400 font-bold mt-1">
-                      Elite Athletic
+                    <div className="text-[0.7rem] text-slate-500 font-semibold mt-1">
+                      Self-reported
                     </div>
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
                     <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Weekly Load</div>
                     <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
-                      {athlete.trainingLoad || 60} <span className="text-xs font-semibold text-slate-500">/ 100</span>
+                      {athlete.trainingLoad || '—'} <span className="text-xs font-semibold text-slate-500">/ 100</span>
                     </div>
-                    <div className="text-[0.7rem] text-amber-600 dark:text-amber-400 font-bold mt-1">
-                      Optimal Intensity
+                    <div className="text-[0.7rem] text-slate-500 font-semibold mt-1">
+                      Updated from training log
                     </div>
                   </div>
                 </div>
@@ -483,9 +502,11 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-black text-white truncate">{athlete.name}</div>
-                  <div className="text-xs text-primary-light truncate">{athlete.amharicName}</div>
+                  {athlete.amharicName && (
+                    <div className="text-xs text-primary-light truncate">{athlete.amharicName}</div>
+                  )}
                   <div className="text-[0.72rem] text-slate-400 mt-1.5 flex items-center justify-between">
-                    <span>FIN: <strong className="text-[#FCD34D] font-mono">{athlete.faydaFin || '7961-3131-0300'}</strong></span>
+                    <span>FIN: <strong className="text-[#FCD34D] font-mono">{formatFaydaId(athlete.faydaFin) || '—'}</strong></span>
                     <button
                       onClick={handleCopyFin}
                       title="Copy FIN"
@@ -498,8 +519,12 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
               </div>
 
               <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center text-[0.7rem] text-slate-400">
-                <span>World Athletics ID: <strong className="text-white">ETH-2026-092</strong></span>
-                <span className="text-emerald-400 font-bold">✓ Active License</span>
+                <span>World Athletics ID: <strong className="text-white">{athlete.worldAthleticsId || '—'}</strong></span>
+                {athlete.licenseStatus === 'ACTIVE' ? (
+                  <span className="text-emerald-400 font-bold">✓ Active License</span>
+                ) : (
+                  <span className="text-amber-400 font-bold">License Pending</span>
+                )}
               </div>
             </div>
 

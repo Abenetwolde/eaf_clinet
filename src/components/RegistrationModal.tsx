@@ -3,7 +3,7 @@ import {
   X, Building2, UserCheck, ShieldCheck, RefreshCw, CheckCircle2, ArrowRight,
   Phone, LockKeyhole, Clock, Printer, Copy, Check, QrCode, FileText, Download,
   ExternalLink, Calendar, MapPin, Award, Activity, Sparkles, CheckCheck,
-  FileCheck, Shield, ChevronRight, Mail, Hash
+  FileCheck, Shield, ChevronRight, Mail
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import {
@@ -17,6 +17,7 @@ import {
 } from '../store/api/athleteApi';
 import VerificationModal from './VerificationModal';
 import { useRegisterUserMutation, useVerifyEmailMutation, type RegisterUserResponse } from '../store/api/authApi';
+import { formatFaydaId } from '../utils/formatFaydaId';
 
 // Types for internal use
 interface FaydaResult {
@@ -301,7 +302,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
       gender: demographic.gender || '',
       blood: '',
       region: '',
-      photoUrl: '',
+      photoUrl: demographic.photoUrl || '',
       ageTier: tier,
       fin: demographic.nin || faydaFin,
       hash: finalToken,
@@ -366,6 +367,71 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
     }
 
     setIsCreatingAccount(true);
+
+    // Athletes: POST /athletes/register creates BOTH the login account and
+    // the athlete profile (and emails the verification code). Pre-creating
+    // the account via /auth/register would make this email conflict (409)
+    // and the athlete profile would never be created — the backend has no
+    // endpoint to attach a profile to an existing account.
+    if (!isClub) {
+      if (!faydaVerificationToken) {
+        setAccountError('Please complete Fayda identity verification (Step 1) first.');
+        setStep(0);
+        setIsCreatingAccount(false);
+        return;
+      }
+
+      const validDisciplines = regOptions?.disciplines || [];
+      let selectedSportIds = validDisciplines
+        .filter(d => (Array.isArray(primaryEvent) ? primaryEvent.includes(d.name) : primaryEvent === d.name))
+        .map(d => d.id);
+      if (selectedSportIds.length === 0 && validDisciplines.length > 0) {
+        selectedSportIds = [validDisciplines[0].id];
+      }
+      const club = selectedClubId !== 'NONE'
+        ? (clubsList.find(c => c.id === selectedClubId) || null)
+        : null;
+
+      try {
+        const res = await registerAthlete({
+          email: cleanEmail,
+          password,
+          phoneNumber: (phone || '').trim(),
+          faydaVerificationToken,
+          fanNumber: faydaResult?.fin || (faydaFin ? faydaFin : undefined),
+          sportIds: selectedSportIds.length > 0 ? selectedSportIds : undefined,
+          sportId: selectedSportIds[0] || undefined,
+          clubId: club ? club.id : undefined,
+          clubName: club ? (club.name || club.shortName) : undefined,
+          height,
+          weight,
+          emergencyContactPhone: emergencyContact || undefined,
+        }).unwrap();
+
+        setServerRegistrationId(res?.data?.id || '');
+        setAccountUserId(res?.data?.id || '');
+        setCreatedAccountEmail(cleanEmail);
+        setServerEmailCode(res?.data?.verification?.code || '');
+        setEmailOtp('');
+        setEmailVerified(false);
+        setEmailOtpError('');
+        setStep(3);
+      } catch (err: unknown) {
+        const apiErr = err as { data?: { message?: string; error?: string }; error?: string; status?: string | number };
+        const msg = apiErr?.data?.message || apiErr?.error;
+        if (apiErr?.status === 'FETCH_ERROR' || !apiErr?.status) {
+          setAccountError('Cannot reach the server. Please check your connection and try again.');
+        } else if (apiErr?.status === 409 || /already exists|already registered/i.test(msg || '')) {
+          setAccountError(t('registration.emailExistsError'));
+        } else {
+          setAccountError(msg || 'Could not submit your registration. Please try again.');
+        }
+      } finally {
+        setIsCreatingAccount(false);
+      }
+      return;
+    }
+
     const nameParts = (faydaResult?.name || '').trim().split(/\s+/).filter(Boolean);
     const firstName = nameParts[0] || 'Athlete';
     const lastName = nameParts.slice(1).join(' ') || firstName;
@@ -483,6 +549,10 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
       };
       setPendingRegistrationData({ type: 'CLUB', payload: { club: newClub } });
       setIsSubmittedPending(true);
+      // Club accounts cannot log in until the email is verified — open the
+      // verification modal right away (the backend just emailed the code).
+      setRegisteredEmail((email || '').trim().toLowerCase());
+      setShowVerification(true);
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string }; error?: string; status?: string | number };
       const msg = apiErr?.data?.message || apiErr?.error || 'Club registration failed. Please try again.';
@@ -565,6 +635,14 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
       setIsSubmittedPending(true);
       setShowVerification(false);
     };
+
+    // Registration (account + athlete profile) was already submitted at the
+    // account step — finalize with the server-side athlete id instead of
+    // calling /athletes/register again (the email would now conflict).
+    if (serverRegistrationId) {
+      finishAthleteRegistration(serverRegistrationId);
+      return;
+    }
 
     try {
       const payload: AthleteRegistrationRequest = {
@@ -772,6 +850,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
 
           {isAthleteData && (
             <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {pendingRegistrationData.payload.athlete.photoUrl && (
               <img
                 src={pendingRegistrationData.payload.athlete.photoUrl}
                 alt="Passport Photo"
@@ -783,11 +862,14 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                   boxShadow: '0 4px 14px rgba(0,0,0,0.12)'
                 }}
               />
+              )}
               <div style={{ flex: 1, minWidth: '220px' }}>
                 <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A' }}>{pendingRegistrationData.payload.athlete.name}</div>
-                <div style={{ fontSize: '0.88rem', color: 'var(--primary-dark)', fontWeight: 700, marginTop: '2px' }}>{pendingRegistrationData.payload.athlete.amharicName}</div>
+                {pendingRegistrationData.payload.athlete.amharicName && (
+                  <div style={{ fontSize: '0.88rem', color: 'var(--primary-dark)', fontWeight: 700, marginTop: '2px' }}>{pendingRegistrationData.payload.athlete.amharicName}</div>
+                )}
                 <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '6px' }}>
-                  Fayda FIN: <strong>{pendingRegistrationData.payload.athlete.faydaFin}</strong>
+                  Fayda FIN: <strong>{formatFaydaId(pendingRegistrationData.payload.athlete.faydaFin)}</strong>
                 </div>
                 <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '4px' }}>
                   Primary Event: <strong>{pendingRegistrationData.payload.athlete.primaryEvent}</strong> · Club: <strong>{pendingRegistrationData.payload.athlete.clubName}</strong>
@@ -829,7 +911,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
               <CheckCircle2 size={20} /> {t('registration.emailVerifiedBadge')}
             </div>
           )}
-          {isAthleteData && !emailVerified && (
+          {!emailVerified && (
             <button
               type="button"
               className="btn-accent"
@@ -1218,7 +1300,8 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
 
             {/* Profile Content Layout */}
             <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {/* Formal Passport Photo Frame */}
+              {/* Formal Passport Photo Frame (only when Fayda returned a photo) */}
+              {faydaResult.photoUrl && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                 <div style={{
                   width: '125px',
@@ -1249,6 +1332,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                   {t('registration.passportPhoto')}
                 </span>
               </div>
+              )}
 
               {/* Personal Information List */}
               <div style={{ flex: 1, minWidth: '260px' }}>
@@ -1261,12 +1345,10 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                       {[
                         [t('registration.fullNameEng'), faydaResult.name],
                         [t('registration.fullNameAmh'), faydaResult.amharic],
-                        [t('registration.finLabel'), faydaResult.fin],
+                        [t('athleteProfile.faydaFin'), formatFaydaId(faydaResult.fin)],
                         [t('athleteProfilePortal.dob'), faydaResult.dob],
                         [t('registration.ageDivisionTier'), faydaResult.ageTier],
-                        [t('registration.genderBlood'), faydaResult.gender],
-                        [t('registration.regionalDelegation'), faydaResult.region],
-                        [t('registration.verificationHash'), faydaResult.hash],
+                        [t('athleteProfile.gender'), faydaResult.gender],
                       ].filter(([, v]) => !!v).map(([k, v]) => (
                         <tr key={k}>
                           <td style={{ width: '42%', fontWeight: 700, color: '#64748B', fontSize: '0.82rem', padding: '10px 14px' }}>{k}</td>
@@ -1735,21 +1817,25 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
           <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* Header Passport Card */}
             <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {faydaResult?.photoUrl && (
               <div style={{
                 width: '120px', height: '150px', borderRadius: '14px',
                 border: '4px solid #FFFFFF', boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
                 overflow: 'hidden', flexShrink: 0
               }}>
-                <img src={faydaResult?.photoUrl || ''} alt="Passport Photo" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={faydaResult.photoUrl} alt="Passport Photo" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
+              )}
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#E0F2FE', color: 'var(--primary-dark)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
                   <ShieldCheck size={14} /> {t('registration.faydaIdentityVerified')}
                 </div>
                 <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0F172A' }}>{faydaResult?.name}</div>
-                <div style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 700 }}>{faydaResult?.amharic}</div>
+                {faydaResult?.amharic && (
+                  <div style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 700 }}>{faydaResult.amharic}</div>
+                )}
                 <div style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '6px' }}>
-                  Fayda FIN: <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>{faydaResult?.fin}</strong>
+                  Fayda FIN: <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>{formatFaydaId(faydaResult?.fin)}</strong>
                 </div>
               </div>
             </div>
@@ -1760,15 +1846,13 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                 <tbody>
                   {[
                     [t('registration.fullLegalName'), faydaResult?.name],
-                    [t('registration.finLabel'), faydaResult?.fin],
-                    [t('registration.cryptographicHash'), faydaResult?.hash],
-                    [t('registration.dobDivision'), faydaResult?.dob],
+                    [t('athleteProfile.faydaFin'), formatFaydaId(faydaResult?.fin)],
+                    [t('athleteProfile.dateOfBirth'), faydaResult?.dob],
                     [t('registration.ageDivisionTier'), faydaResult?.ageTier],
-                    [t('registration.genderBlood'), faydaResult?.gender],
+                    [t('athleteProfile.gender'), faydaResult?.gender],
                     [t('registration.physicalStats'), `Height: ${height} cm · Weight: ${weight} kg`],
                     [t('registration.athleticsClub'), club?.shortName],
                     [t('registration.primaryEvents'), eventText],
-                    [t('registration.regionalDelegation'), faydaResult?.region],
                     [t('registration.accountEmail'), email],
                     [t('athleteProfilePortal.phoneNumber'), phone],
                     [t('registration.emergencyContact'), emergencyContact],

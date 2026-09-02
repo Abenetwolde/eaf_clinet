@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Save, User, ShieldCheck, Mail, Phone, MapPin, Activity,
   Calendar, BadgeCheck, CheckCircle2, QrCode, Copy, Check,
   AlertCircle, Heart, Weight, Lock, ArrowLeft, Award
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
+import { formatFaydaId } from '../../utils/formatFaydaId';
 import type { Athlete } from '../../types';
 
 interface AthleteProfileProps {
@@ -29,6 +30,22 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
 
   const [copiedFin, setCopiedFin] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Re-sync editable fields when the backend profile (GET /athletes/profile)
+  // hydrates state.auth.athlete after this screen mounts.
+  useEffect(() => {
+    if (!athlete?.id) return;
+    setRegion(athlete.region || 'Addis Ababa');
+    setPhone(athlete.phone || '+251 911 123456');
+    setEmail(athlete.email || `${(athlete.name || 'athlete').toLowerCase().replace(/ /g, '.')}@eaf.org.et`);
+    setPrimaryEvent(athlete.primaryEvent || '5,000m / 10,000m');
+    setClubName(athlete.clubName || 'Independent');
+    setWeight(athlete.weight || 58);
+    setHeight(athlete.height || 172);
+    setRestingHR(athlete.restingHR || 48);
+    setEmergencyContact(athlete.emergencyContact || '+251 911 000000');
+    setMedicalNotes(athlete.medicalNotes || 'Blood Group O+ · Full Medical Clearance');
+  }, [athlete?.id, athlete?.phone, athlete?.email, athlete?.primaryEvent, athlete?.clubName, athlete?.weight, athlete?.height, athlete?.region]);
 
   const handleCopyFin = () => {
     if (!athlete.faydaFin) return;
@@ -103,7 +120,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
               <div className="text-xs text-slate-300 flex items-center gap-3 pt-0.5 font-medium flex-wrap">
                 <span>EAF ID: <strong className="text-white font-mono">{athlete.id}</strong></span>
                 <span>•</span>
-                <span>FIN: <strong className="text-[#FCD34D] font-mono">{athlete.faydaFin || '7961-3131-0300'}</strong></span>
+                <span>FIN: <strong className="text-[#FCD34D] font-mono">{formatFaydaId(athlete.faydaFin) || '—'}</strong></span>
               </div>
             </div>
           </div>
@@ -184,7 +201,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                   <input
                     className="form-input text-sm bg-slate-100 dark:bg-slate-800/80 font-mono font-bold text-[#0F172A] dark:text-white cursor-not-allowed pr-24"
                     type="text"
-                    value={athlete.faydaFin || '7961-3131-0300'}
+                    value={formatFaydaId(athlete.faydaFin) || '—'}
                     disabled
                   />
                   <button
@@ -389,7 +406,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                 <div className="text-sm font-black text-white truncate">{athlete.name}</div>
                 <div className="text-xs text-primary-light truncate">{athlete.amharicName}</div>
                 <div className="text-[0.72rem] text-slate-400 mt-1.5">
-                  FIN: <strong className="text-[#FCD34D] font-mono">{athlete.faydaFin || '7961-3131-0300'}</strong>
+                  FIN: <strong className="text-[#FCD34D] font-mono">{formatFaydaId(athlete.faydaFin) || '—'}</strong>
                 </div>
               </div>
             </div>

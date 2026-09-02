@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { useAppSelector } from '../../store/hooks';
+import { formatFaydaId } from '../../utils/formatFaydaId';
 import type { Athlete } from '../../types';
 
 interface RosterManagementProps {
@@ -261,7 +262,6 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
             <tbody>
               {filteredAthletes.map(athlete => {
                 const photo = athlete.photoUrl || '/images/runner_marathon.png';
-                const hash = athlete.faydaHash || '0xFAYDA_' + (athlete.id ? String(athlete.id).replace(/\D/g, '') : '892A1');
                 const tier = athlete.ageTier || 'Senior';
                 const event = athlete.primaryEvent || 'Athletics';
                 const pb = athlete.pb || 'N/A';
@@ -289,10 +289,7 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
                           <ShieldCheck size={16} color="var(--primary)" />
                           <div>
                             <div className="font-mono text-[0.85rem] font-bold">
-                              {athlete.faydaFin || 'N/A'}
-                            </div>
-                            <div className="text-[0.65rem] text-text-dim">
-                              {t('club.hashPrefix', { hash: hash.substring(0, 10) + '...' })}
+                              {formatFaydaId(athlete.faydaFin) || 'N/A'}
                             </div>
                           </div>
                         </>
@@ -521,11 +518,9 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
                           [t('club.fullNameAmharic'), faydaVerifiedData.amharicName],
                           [t('club.dateOfBirthLabel'), faydaVerifiedData.dob],
                           [t('club.ageDivisionLabel'), faydaVerifiedData.computedTier],
-                          [t('club.genderLabel'), 'Male'],
-                          [t('club.regionLabel'), 'Oromia Region'],
-                          [t('club.finLabel'), faydaVerifiedData.fin],
-                          [t('club.verificationHashLabel'), faydaVerifiedData.verificationHash.slice(0,18)+'...'],
-                        ].map(([k,v]) => (
+                          [t('club.genderLabel'), faydaVerifiedData.gender],
+                          [t('club.finLabel'), formatFaydaId(faydaVerifiedData.fin)],
+                        ].filter(([k, v]) => !!v).map(([k,v]) => (
                           <li key={k} className="flex gap-[8px] text-[0.82rem] border-b border-[#D1FAE5] pb-[6px]">
                             <span className="font-bold text-[#374151] min-w-[140px]">{k}:</span>
                             <span className="text-[#4B5563]">{v}</span>
@@ -557,9 +552,9 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
                           [t('club.amharicNameShort'), faydaVerifiedData.amharicName],
                           [t('club.dateOfBirthLabel'), faydaVerifiedData.dob],
                           [t('club.ageDivisionLabel'), faydaVerifiedData.computedTier],
-                          [t('club.genderLabel'), 'Male'],
-                          [t('club.finLabel'), faydaVerifiedData.fin],
-                          [t('club.clubLabel'), 'Bekoji AC'],
+                          [t('club.genderLabel'), faydaVerifiedData.gender],
+                          [t('club.finLabel'), formatFaydaId(faydaVerifiedData.fin)],
+                          [t('club.clubLabel'), club.name],
                           [t('club.primaryEventLabel'), newAthleteEvent],
                           [t('club.weightLabel'), newAthleteWeight ? t('club.kgValue', { value: newAthleteWeight }) : t('club.nA')],
                           [t('club.heightLabel'), newAthleteHeight ? t('club.cmValue', { value: newAthleteHeight }) : t('club.nA')],
@@ -629,7 +624,7 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
               <div className="bg-[#F8FAFC] p-[16px] rounded-[12px] border border-[#E2E8F0]">
                 <div className="text-[0.8rem] text-text-muted font-bold mb-[8px]">{t('club.biometricInfo')}</div>
                 <div className="grid gap-[6px] text-[0.9rem]">
-                  <div><strong>{t('club.faydaFinKey')}</strong> {viewingAthlete.faydaFin}</div>
+                  <div><strong>{t('club.faydaFinKey')}</strong> {formatFaydaId(viewingAthlete.faydaFin)}</div>
                   <div><strong>{t('club.statusKey')}</strong> {viewingAthlete.faydaStatus}</div>
                   <div><strong>{t('club.ageTierKey')}</strong> {viewingAthlete.ageTier}</div>
                   <div><strong>{t('club.heightWeightKey')}</strong> {t('club.heightWeightValue', { height: viewingAthlete.height || '-', weight: viewingAthlete.weight || '-' })}</div>

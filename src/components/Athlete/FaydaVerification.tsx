@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Upload, FileCheck, RefreshCw, Info } from 'lucide-react';
+import { formatFaydaId } from '../../utils/formatFaydaId';
 import type { Athlete } from '../../types';
 
 interface FaydaVerificationProps {
@@ -109,12 +110,6 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
             ))}
           </div>
         </div>
-        
-        {athlete.faydaHash && (
-          <div className="mt-4 text-[0.75rem] text-[#64748B] font-mono border-t border-white/10 pt-3">
-            Audit Hash: {athlete.faydaHash}
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
@@ -148,11 +143,8 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
                 <span className="badge badge-green">VERIFIED</span>
               </div>
               <div className="text-[0.83rem] text-text-heading leading-[1.7]">
-                <div>FIN: <strong className="font-mono">{finInput}</strong></div>
+                <div>FIN: <strong className="font-mono">{formatFaydaId(finInput) || '—'}</strong></div>
                 <div>Age Division: <strong className="text-primary">{verifiedResult.ageTier}</strong></div>
-                <div className="text-[0.7rem] text-text-muted font-mono mt-0.5">
-                  Hash: {verifiedResult.hash}
-                </div>
               </div>
             </div>
           )}

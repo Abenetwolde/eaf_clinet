@@ -86,6 +86,7 @@ export interface Athlete {
   licenseStatus: LicenseStatus;
   licenseNumber?: string;
   licenseExpiry?: string;
+  worldAthleticsId?: string;
   primaryEvent?: string;
   pb?: string;
   coach?: string;

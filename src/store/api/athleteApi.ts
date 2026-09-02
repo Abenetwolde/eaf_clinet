@@ -1,4 +1,5 @@
 import { apiSlice } from './apiSlice';
+import type { Athlete } from '../../types';
 
 export interface DisciplineOption {
   id: string;
@@ -90,6 +91,10 @@ export interface AthleteRegistrationResponse {
     id: string;
     status: 'DRAFT' | 'PENDING' | string;
     createdAt: string;
+    verification?: {
+      message?: string;
+      code?: string;
+    };
   };
 }
 
@@ -226,6 +231,14 @@ export interface PublicAthleteDetailResponse {
 }
 
 /** GET /athletes/profile — authenticated athlete's own dashboard profile */
+export interface MyAthletePersonalBest {
+  id?: string;
+  event?: string;
+  mark?: string;
+  date?: string | null;
+  venue?: string | null;
+}
+
 export interface MyAthleteProfileData {
   id: string;
   user?: {
@@ -257,6 +270,11 @@ export interface MyAthleteProfileData {
     weightKg?: number | null;
     ageYears?: number;
   };
+  careerRecords?: { label?: string; value?: string }[];
+  personalBests?: {
+    allTime?: MyAthletePersonalBest[];
+    season?: MyAthletePersonalBest[];
+  };
   summaryCounts?: {
     trainingSessions?: number;
     weightEntries?: number;
@@ -267,6 +285,25 @@ export interface MyAthleteProfileData {
 export interface MyAthleteProfileResponse {
   success: boolean;
   data: MyAthleteProfileData;
+}
+
+/** GET /athletes/applications — the athlete's submitted event entries */
+export interface MyApplicationEntry {
+  id: string;
+  eventId: string;
+  title: string;
+  disciplines: string[];
+  appliedAt: string;
+  statusLabel: string;
+  organizer?: string;
+  location?: string | null;
+  imageUrl?: string | null;
+  clubName?: string | null;
+}
+
+export interface MyApplicationsResponse {
+  success: boolean;
+  data: MyApplicationEntry[];
 }
 
 export const athleteApi = apiSlice.injectEndpoints({
@@ -314,6 +351,13 @@ export const athleteApi = apiSlice.injectEndpoints({
       providesTags: ['Athletes'],
     }),
 
+    /** GET /athletes/applications — my submitted event entries */
+    getMyApplications: builder.query<MyApplicationEntry[], void>({
+      query: () => '/athletes/applications',
+      transformResponse: (response: MyApplicationsResponse) => response.data || [],
+      providesTags: ['Athletes'],
+    }),
+
     initiateFayda: builder.mutation<FaydaInitiateResponse, FaydaInitiateRequest>({
       query: (body) => ({
         url: '/fayda/initiate',
@@ -358,8 +402,71 @@ export const {
   useGetAthletesQuery,
   useGetRegistrationOptionsQuery,
   useGetMyAthleteProfileQuery,
+  useGetMyApplicationsQuery,
   useInitiateFaydaMutation,
   useConfirmFaydaOtpMutation,
   useRegisterAthleteMutation,
   useRegisterClubAdminMutation,
 } = athleteApi;
+
+/** Identity basics carried over from the auth session (login / userData). */
+export interface AthleteProfileSeed {
+  name?: string;
+  email?: string;
+}
+
+/** Build the portal's Athlete object from the backend dashboard profile
+ *  (GET /athletes/profile). Constructs a CLEAN record — it never merges
+ *  with mock/demo data, so a registered athlete only ever sees their own
+ *  information. */
+export function mapMyProfileToAthlete(
+  profile: MyAthleteProfileData,
+  seed?: AthleteProfileSeed,
+): Athlete {
+  const name =
+    profile.name ||
+    `${profile.user?.firstName || ''} ${profile.user?.lastName || ''}`.trim() ||
+    seed?.name ||
+    'Athlete';
+
+  const toPb = (list?: MyAthletePersonalBest[]) =>
+    (list || [])
+      .filter((pb) => pb && (pb.event || pb.mark))
+      .map((pb) => ({
+        event: pb.event || '',
+        mark: pb.mark || undefined,
+        date: pb.date || undefined,
+        venue: pb.venue || undefined,
+        time: pb.mark || undefined,
+      }));
+
+  return {
+    id: profile.id,
+    name,
+    amharicName: profile.amharicName || undefined,
+    dob: profile.dateOfBirth || '',
+    gender: profile.gender || '',
+    ageTier: profile.ageTier || '',
+    clubId: profile.clubId || undefined,
+    clubName: profile.clubName || undefined,
+    region: profile.region || undefined,
+    faydaFin: profile.fanNumber || undefined,
+    faydaStatus: profile.faydaVerified ? 'VERIFIED' : 'PENDING',
+    primaryEvent: profile.primaryEvent || undefined,
+    licenseStatus: 'PENDING',
+    licenseNumber: undefined,
+    licenseExpiry: undefined,
+    photoUrl: profile.photoUrl || '',
+    checkinStatus: 'NOT_CHECKED_IN',
+    email: profile.contact?.email || seed?.email || undefined,
+    phone: profile.contact?.phoneNumber || undefined,
+    height: profile.fitnessStats?.heightCm ?? undefined,
+    weight: profile.fitnessStats?.weightKg ?? undefined,
+    personalBests: toPb(profile.personalBests?.allTime),
+    seasonBests: toPb(profile.personalBests?.season),
+    weightLog: [],
+    trainingLog: [],
+    achievements: [],
+    appliedCompetitions: [],
+  };
+}

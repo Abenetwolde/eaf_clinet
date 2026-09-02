@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, AlertCircle, Clock, X, QrCode, FileCheck } from 'lucide-react';
+import { MapPin, AlertCircle, Clock, X, QrCode, FileCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
+import { useGetMyApplicationsQuery } from '../../store/api/athleteApi';
 
 interface AthleteApplicationsProps {
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
 interface ApplicationDetail {
+  id: string;
   meetId: string;
   meetTitle: string;
   disciplines: string[];
   status: string;
   appliedDate: string;
-  meet?: any;
+  venue?: string | null;
+  imageUrl?: string | null;
+  organizer?: string | null;
 }
 
 // Realistic SVG 2D QR Code Matrix Generator Component
@@ -28,32 +31,27 @@ function EAFQrCode({ code = "EAF-MEET-202-2026-243", size = 150 }: { code?: stri
 
 export default function AthleteApplications({ onNotify }: AthleteApplicationsProps) {
   const athlete = useAppSelector((state) => state.auth.athlete);
+  // Token presence gates the query — `status` is legitimately 'loading'
+  // while the saved session is being validated on app mount.
+  const isAuthenticated = useAppSelector((state) => !!state.auth.token);
   const [selectedApplication, setSelectedApplication] = useState<ApplicationDetail | null>(null);
 
-  // Fallback default applications for display if none are in state
-  const applications = athlete.appliedCompetitions || [
-    {
-      meetId: "MEET-2026-01",
-      meetTitle: "Addis Ababa International Grand Prix 2026",
-      disciplines: ["5,000m"],
-      status: "Approved",
-      appliedDate: "2026-07-15"
-    },
-    {
-      meetId: "MEET-2026-02",
-      meetTitle: "Ethiopian National Youth Olympic Games U18 / U20",
-      disciplines: ["1,500m"],
-      status: "Approved",
-      appliedDate: "2026-07-20"
-    },
-    {
-      meetId: "MEET-2026-03",
-      meetTitle: "Jan Meda National Cross-Country Olympic Trials",
-      disciplines: ["10km Senior Men"],
-      status: "Completed",
-      appliedDate: "2026-06-10"
-    }
-  ];
+  // Submitted event entries from GET /athletes/applications — no demo data.
+  const { data: serverApplications = [], isLoading } = useGetMyApplicationsQuery(undefined, {
+    skip: !isAuthenticated,
+  });
+
+  const applications: ApplicationDetail[] = serverApplications.map((entry) => ({
+    id: entry.id,
+    meetId: entry.eventId,
+    meetTitle: entry.title,
+    disciplines: entry.disciplines || [],
+    status: entry.statusLabel || 'PENDING',
+    appliedDate: (entry.appliedAt || '').split('T')[0] || '—',
+    venue: entry.location,
+    imageUrl: entry.imageUrl,
+    organizer: entry.organizer,
+  }));
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -70,14 +68,7 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
   };
 
   const handleRowClick = (app: ApplicationDetail) => {
-    const meetDetails = MOCK_MEETS.find(m => m.id === app.meetId) || {
-      title: app.meetTitle,
-      venue: "Addis Ababa National Stadium (አዲስ አበባ ስታዲየም)",
-      date: "August 12-14, 2026",
-      bannerUrl: "/images/banner_grand_prix.png",
-      status: "REGISTRATION_OPEN"
-    };
-    setSelectedApplication({ ...app, meet: meetDetails });
+    setSelectedApplication(app);
   };
 
   return (
@@ -105,59 +96,68 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
               </tr>
             </thead>
             <tbody>
-              {applications.map((app, index) => {
-                const meet = MOCK_MEETS.find(m => m.id === app.meetId) || {
-                  bannerUrl: "/images/banner_grand_prix.png",
-                  venue: "Addis Ababa National Stadium"
-                };
-                return (
-                  <tr 
-                    key={index} 
-                    onClick={() => handleRowClick(app)}
-                    className="hover-row cursor-pointer transition-colors duration-150"
-                    onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                  >
-                    <td>
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-16 h-11 rounded-[8px] overflow-hidden shrink-0 border border-[#E2E8F0]">
-                          <img 
-                            src={meet.bannerUrl || "/images/banner_grand_prix.png"} 
-                            alt={app.meetTitle} 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-extrabold text-text-heading text-[0.92rem]">{app.meetTitle}</div>
-                          <div className="text-[0.72rem] text-text-muted">{meet.venue || "Addis Ababa Stadium"}</div>
-                        </div>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-10 text-text-muted text-[0.88rem]">
+                    Loading your applications...
+                  </td>
+                </tr>
+              ) : applications.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-10">
+                    <div className="text-[0.95rem] font-extrabold text-text-heading">No applications yet</div>
+                    <p className="text-[0.82rem] text-text-muted mt-1">
+                      Competitions you apply for will appear here with their approval status.
+                    </p>
+                  </td>
+                </tr>
+              ) : applications.map((app, index) => (
+                <tr
+                  key={app.id || index}
+                  onClick={() => handleRowClick(app)}
+                  className="hover-row cursor-pointer transition-colors duration-150"
+                  onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                >
+                  <td>
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-16 h-11 rounded-[8px] overflow-hidden shrink-0 border border-[#E2E8F0] bg-slate-100">
+                        <img
+                          src={app.imageUrl || "/images/banner_grand_prix.png"}
+                          alt={app.meetTitle}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                    </td>
-                    <td className="text-text-muted text-[0.85rem]">{app.appliedDate}</td>
-                    <td>
-                      <div className="flex flex-wrap gap-1">
-                        {app.disciplines.map((d, i) => (
-                          <span key={i} className="badge badge-primary px-2 py-[3px] text-[0.72rem] font-bold">
-                            {d}
-                          </span>
-                        ))}
+                      <div>
+                        <div className="font-extrabold text-text-heading text-[0.92rem]">{app.meetTitle}</div>
+                        <div className="text-[0.72rem] text-text-muted">{app.venue || app.organizer || '—'}</div>
                       </div>
-                    </td>
-                    <td>{getStatusBadge(app.status)}</td>
-                    <td className="text-right">
-                      <button 
-                        className="btn-gov-secondary text-[0.78rem] px-3 py-1.5 rounded-[8px]"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRowClick(app);
-                        }}
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                    </div>
+                  </td>
+                  <td className="text-text-muted text-[0.85rem]">{app.appliedDate}</td>
+                  <td>
+                    <div className="flex flex-wrap gap-1">
+                      {app.disciplines.map((d, i) => (
+                        <span key={i} className="badge badge-primary px-2 py-[3px] text-[0.72rem] font-bold">
+                          {d}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>{getStatusBadge(app.status)}</td>
+                  <td className="text-right">
+                    <button
+                      className="btn-gov-secondary text-[0.78rem] px-3 py-1.5 rounded-[8px]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRowClick(app);
+                      }}
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -172,9 +172,9 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
           >
             {/* Top Event Banner Image Header */}
             <div className="relative w-full h-[170px] overflow-hidden">
-              <img 
-                src={selectedApplication.meet.bannerUrl || "/images/banner_grand_prix.png"} 
-                alt={selectedApplication.meetTitle} 
+              <img
+                src={selectedApplication.imageUrl || "/images/banner_grand_prix.png"}
+                alt={selectedApplication.meetTitle}
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[rgba(15,23,42,0.95)] via-[rgba(15,23,42,0.4)] to-[rgba(0,0,0,0.2)] px-6 py-5 flex flex-col justify-between">
@@ -182,7 +182,7 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
                   <span className="badge badge-green text-[0.78rem] bg-[#10B981] text-white px-3 py-1.5 font-extrabold">
                     Official Accreditation Pass
                   </span>
-                  <button 
+                  <button
                     onClick={() => setSelectedApplication(null)}
                     className="bg-white/20 border-0 rounded-full w-[34px] h-[34px] flex items-center justify-center cursor-pointer backdrop-blur-[4px]"
                   >
@@ -194,14 +194,13 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
                   <h3 className="text-[1.35rem] font-black text-white m-0 [text-shadow:0_2px_4px_rgba(0,0,0,0.5)]">
                     {selectedApplication.meetTitle}
                   </h3>
-                  <div className="flex items-center gap-3.5 mt-1 text-[#E2E8F0] text-[0.82rem] font-bold">
-                    <span className="flex items-center gap-1">
-                      <MapPin size={13} color="#38BDF8" /> {selectedApplication.meet.venue}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar size={13} color="#38BDF8" /> {selectedApplication.meet.date}
-                    </span>
-                  </div>
+                  {(selectedApplication.venue || selectedApplication.organizer) && (
+                    <div className="flex items-center gap-3.5 mt-1 text-[#E2E8F0] text-[0.82rem] font-bold">
+                      <span className="flex items-center gap-1">
+                        <MapPin size={13} color="#38BDF8" /> {selectedApplication.venue || selectedApplication.organizer}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
