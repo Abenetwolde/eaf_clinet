@@ -23,13 +23,14 @@ interface AppLayoutProps {
   onChangeSubPage: (page: string) => void;
   onSwitchRole: (role: string) => void;
   onLogout: () => void;
+  onGoHome?: () => void;
   darkMode?: boolean;
   onToggleDarkMode?: () => void;
   children: React.ReactNode;
 }
 
 export default function AppLayout({
-  activeSubPage, onChangeSubPage, onSwitchRole, onLogout,
+  activeSubPage, onChangeSubPage, onSwitchRole, onLogout, onGoHome,
   darkMode, onToggleDarkMode, children
 }: AppLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -62,6 +63,15 @@ export default function AppLayout({
   const handleNavClick = (id: string) => {
     onChangeSubPage(id);
     setMobileOpen(false);
+  };
+
+  const handleGoHome = () => {
+    setMobileOpen(false);
+    if (onGoHome) {
+      onGoHome();
+    } else {
+      onSwitchRole('LANDING');
+    }
   };
 
   return (
@@ -161,16 +171,10 @@ export default function AppLayout({
         {/* Footer */}
         <div className="p-3.5 border-t border-[#2D3A5A] flex flex-col gap-2">
           <button
-            onClick={() => { onSwitchRole('LANDING'); setMobileOpen(false); }}
+            onClick={handleGoHome}
             className="btn-gov-secondary w-full text-[0.78rem] px-3 py-2 flex items-center justify-center gap-1.5"
           >
             <Globe size={13} /> Go to Home Page
-          </button>
-          <button
-            onClick={() => { onSwitchRole(isClub ? 'ATHLETE' : 'CLUB'); setMobileOpen(false); }}
-            className="btn-gov-secondary w-full text-[0.78rem] px-3 py-2 flex items-center justify-center gap-1.5"
-          >
-            {isClub ? <><UserCheck size={13} /> Athlete View</> : <><Building2 size={13} /> Club View</>}
           </button>
           <button
             onClick={() => { onLogout(); setMobileOpen(false); }}

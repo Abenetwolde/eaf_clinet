@@ -198,6 +198,7 @@ export default function App() {
       if (data.athlete) dispatch(setAthlete(data.athlete));
       dispatch(setRole('ATHLETE'));
       setAthleteSubPage('OVERVIEW');
+      setPublicSubPage('DASHBOARD');
       handleNotify(`Welcome, ${data.athlete?.name || 'Athlete'}!`, 'success');
     }
   };
@@ -564,6 +565,24 @@ export default function App() {
                       Logout
                     </button>
                   </div>
+                ) : currentRole === 'CLUB' ? (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => { setClubSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); setMobileMenuOpen(false); }}
+                      className="w-full btn-accent text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 border-0 cursor-pointer text-white font-bold"
+                      style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
+                    >
+                      Club Dashboard
+                    </button>
+                    <button
+                      onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                      className={`w-full py-2 rounded-xl cursor-pointer text-[0.85rem] font-bold border text-center ${
+                        darkMode ? 'bg-[#1E293B] border-[#334155] text-[#94A3B8]' : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]'
+                      }`}
+                    >
+                      Logout
+                    </button>
+                  </div>
                 ) : (
                   <div className="flex flex-col gap-2">
                     <button
@@ -651,6 +670,7 @@ export default function App() {
         activeSubPage={clubSubPage}
         onChangeSubPage={setClubSubPage}
         onSwitchRole={handleSwitchRoleDirectly}
+        onGoHome={() => setPublicSubPage('HOME')}
         onLogout={handleLogout}
       >
         {clubSubPage === 'OVERVIEW' && (

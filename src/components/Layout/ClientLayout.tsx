@@ -3,7 +3,7 @@ import { Home, UserCheck, Bell, BookOpen, LogOut, Sun, Moon, ArrowLeft, Calendar
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { setAthlete } from '../../store/slices/authSlice';
-import { useGetMyAthleteProfileQuery, mapMyProfileToAthlete } from '../../store/api/athleteApi';
+import { useGetMyAthleteProfileQuery, useUpdateMyAthleteProfileMutation, mapMyProfileToAthlete } from '../../store/api/athleteApi';
 import { LanguageSelector } from '../../i18n';
 
 interface ClientLayoutProps {
@@ -27,6 +27,7 @@ export default function ClientLayout({
   // 'loading' while the saved session is being validated on app mount.
   const isAuthenticated = useAppSelector((state) => !!state.auth.token);
   const dispatch = useAppDispatch();
+  const [updateProfile] = useUpdateMyAthleteProfileMutation();
 
   // Hydrate the athlete portal with the registered profile from
   // GET /athletes/profile — the login response only carries identity basics.
@@ -47,24 +48,56 @@ export default function ClientLayout({
   const lastHydratedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!profileLoaded || !myProfile?.id) return;
+    const email = (userData?.email || currentAthlete?.email || '').trim().toLowerCase();
+    let cachedAthlete: any = null;
+    try {
+      const raw = (email ? localStorage.getItem(`eaf_registered_athlete_${email}`) : null) ||
+                  (userData?.id ? localStorage.getItem(`eaf_registered_athlete_${userData.id}`) : null) ||
+                  (currentAthlete?.id ? localStorage.getItem(`eaf_registered_athlete_${currentAthlete.id}`) : null);
+      if (raw) cachedAthlete = JSON.parse(raw);
+    } catch (e) {}
+
+    if (!profileLoaded || !myProfile?.id) {
+      if (cachedAthlete && (!currentAthlete || currentAthlete.name === 'Athlete' || !currentAthlete.primaryEvent)) {
+        dispatch(setAthlete({ ...currentAthlete, ...cachedAthlete }));
+      }
+      return;
+    }
+
     const seed = {
       name: `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || undefined,
       email: userData?.email || undefined,
     };
-    const merged = mapMyProfileToAthlete(myProfile, seed);
+    const merged = mapMyProfileToAthlete(myProfile, seed, cachedAthlete || currentAthlete);
     const mergedJSON = JSON.stringify(merged);
     const currentJSON = JSON.stringify(currentAthlete);
     if (mergedJSON === currentJSON) {
       lastHydratedRef.current = mergedJSON;
       return;
     }
-    // The athlete in state was changed locally after a hydration (user edits)
-    // — leave it alone.
     if (lastHydratedRef.current !== null && currentJSON !== lastHydratedRef.current) return;
     lastHydratedRef.current = mergedJSON;
     dispatch(setAthlete(merged));
-  }, [profileLoaded, myProfile, currentAthlete, userData, dispatch]);
+
+    // Auto-sync missing fields to backend if cached registration has them and server does not
+    if (cachedAthlete) {
+      const patchPayload: Record<string, any> = {};
+      if (!myProfile.primaryEvent && cachedAthlete.primaryEvent) patchPayload.primaryEvent = cachedAthlete.primaryEvent;
+      if (!myProfile.amharicName && cachedAthlete.amharicName) patchPayload.amharicName = cachedAthlete.amharicName;
+      if (!myProfile.clubName && cachedAthlete.clubName) patchPayload.clubName = cachedAthlete.clubName;
+      if (!myProfile.region && cachedAthlete.region) patchPayload.region = cachedAthlete.region;
+      if ((!myProfile.fitnessStats?.heightCm || myProfile.fitnessStats.heightCm <= 0) && cachedAthlete.height) patchPayload.height = cachedAthlete.height;
+      if ((!myProfile.fitnessStats?.weightKg || myProfile.fitnessStats.weightKg <= 0) && cachedAthlete.weight) patchPayload.weight = cachedAthlete.weight;
+      if (!myProfile.contact?.phoneNumber && (cachedAthlete.phone || cachedAthlete.emergencyContact)) {
+        patchPayload.phoneNumber = cachedAthlete.phone || cachedAthlete.emergencyContact;
+      }
+      if (Object.keys(patchPayload).length > 0) {
+        updateProfile(patchPayload).catch((err) => {
+          console.warn('[ClientLayout] Auto-syncing registration details to backend returned:', err);
+        });
+      }
+    }
+  }, [profileLoaded, myProfile, currentAthlete, userData, dispatch, updateProfile]);
 
   const tabs = [
     { id: 'OVERVIEW', label: 'Dashboard', icon: Home },

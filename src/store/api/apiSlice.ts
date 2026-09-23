@@ -83,7 +83,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Athletes', 'Clubs', 'Competitions', 'Events', 'News', 'Registrations', 'Results', 'Users', 'Gallery'],
+  tagTypes: ['Athletes', 'Clubs', 'Competitions', 'Events', 'News', 'Registrations', 'Results', 'Users', 'Gallery', 'Coaches'],
   endpoints: (builder) => ({
     getAthletes: builder.query<Athlete[], void>({
       query: () => 'athletes',

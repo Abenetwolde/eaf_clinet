@@ -114,27 +114,48 @@ export default function AuthModal({ onClose, onLoginSuccess, initialRole = 'CLUB
           },
         });
       } else {
-        const athleteName = `${data?.user?.firstName || ''} ${data?.user?.lastName || ''}`.trim() || data?.userName || '';
+        const cleanEmail = (data?.user?.email || email || '').trim().toLowerCase();
+        let cachedAthlete: any = null;
+        try {
+          const raw = localStorage.getItem(`eaf_registered_athlete_${cleanEmail}`) ||
+                      (data?.userId ? localStorage.getItem(`eaf_registered_athlete_${data.userId}`) : null);
+          if (raw) cachedAthlete = JSON.parse(raw);
+        } catch (e) {}
+
+        const athleteName =
+          `${data?.user?.firstName || ''} ${data?.user?.lastName || ''}`.trim() ||
+          data?.userName ||
+          cachedAthlete?.name ||
+          'Athlete';
+
         onLoginSuccess('ATHLETE', {
           athlete: {
-            id: data?.userId || data?.user?.id || '',
+            id: cachedAthlete?.id || data?.userId || data?.user?.id || '',
             name: athleteName,
-            dob: '',
-            gender: '',
-            ageTier: '',
-            clubId: data?.clubId || undefined,
-            clubName: data?.clubName || '',
-            faydaFin: data?.fanNumber || undefined,
-            faydaStatus: 'PENDING',
-            licenseStatus: 'NONE',
-            photoUrl: '',
-            email: data?.user?.email || email,
-            phone: '',
-            personalBests: [],
-            seasonBests: [],
-            weightLog: [],
-            trainingLog: [],
-            achievements: [],
+            amharicName: cachedAthlete?.amharicName || undefined,
+            dob: cachedAthlete?.dob || '',
+            gender: cachedAthlete?.gender || '',
+            ageTier: cachedAthlete?.ageTier || '',
+            clubId: data?.clubId || cachedAthlete?.clubId || undefined,
+            clubName: data?.clubName || cachedAthlete?.clubName || '',
+            region: cachedAthlete?.region || undefined,
+            faydaFin: data?.fanNumber || cachedAthlete?.faydaFin || undefined,
+            faydaStatus: (cachedAthlete?.faydaStatus === 'VERIFIED') ? 'VERIFIED' : 'PENDING',
+            licenseStatus: cachedAthlete?.licenseStatus || 'PENDING',
+            licenseNumber: cachedAthlete?.licenseNumber || undefined,
+            licenseExpiry: cachedAthlete?.licenseExpiry || undefined,
+            photoUrl: cachedAthlete?.photoUrl || '',
+            primaryEvent: cachedAthlete?.primaryEvent || undefined,
+            height: cachedAthlete?.height ?? undefined,
+            weight: cachedAthlete?.weight ?? undefined,
+            email: cleanEmail,
+            phone: cachedAthlete?.phone || data?.user?.phoneNumber || '',
+            emergencyContact: cachedAthlete?.emergencyContact || undefined,
+            personalBests: cachedAthlete?.personalBests || [],
+            seasonBests: cachedAthlete?.seasonBests || [],
+            weightLog: cachedAthlete?.weightLog || [],
+            trainingLog: cachedAthlete?.trainingLog || [],
+            achievements: cachedAthlete?.achievements || [],
           },
         });
       }

@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Save, User, ShieldCheck, Mail, Phone, MapPin, Activity,
   Calendar, BadgeCheck, CheckCircle2, QrCode, Copy, Check,
-  AlertCircle, Heart, Weight, Lock, ArrowLeft, Award
+  AlertCircle, Heart, Weight, Lock, ArrowLeft, Award, Camera, Loader2
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import { formatFaydaId } from '../../utils/formatFaydaId';
+import { useUpdateMyAthleteProfileMutation, useUploadMyProfilePhotoMutation } from '../../store/api/athleteApi';
 import type { Athlete } from '../../types';
 
 interface AthleteProfileProps {
@@ -15,18 +16,22 @@ interface AthleteProfileProps {
 
 export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthleteProfileProps) {
   const athlete = useAppSelector((state) => state.auth.athlete);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [updateProfileApi, { isLoading: isSaving }] = useUpdateMyAthleteProfileMutation();
+  const [uploadPhotoApi, { isLoading: isUploadingPhoto }] = useUploadMyProfilePhotoMutation();
 
   // Editable fields
-  const [region, setRegion] = useState(athlete.region || 'Addis Ababa');
-  const [phone, setPhone] = useState(athlete.phone || '+251 911 123456');
-  const [email, setEmail] = useState(athlete.email || `${(athlete.name || 'athlete').toLowerCase().replace(/ /g, '.')}@eaf.org.et`);
-  const [primaryEvent, setPrimaryEvent] = useState(athlete.primaryEvent || '5,000m / 10,000m');
-  const [clubName, setClubName] = useState(athlete.clubName || 'Independent');
-  const [weight, setWeight] = useState(athlete.weight || 58);
-  const [height, setHeight] = useState(athlete.height || 172);
-  const [restingHR, setRestingHR] = useState(athlete.restingHR || 48);
-  const [emergencyContact, setEmergencyContact] = useState(athlete.emergencyContact || '+251 911 000000');
-  const [medicalNotes, setMedicalNotes] = useState(athlete.medicalNotes || 'Blood Group O+ · Full Medical Clearance');
+  const [region, setRegion] = useState(athlete?.region || 'Addis Ababa');
+  const [phone, setPhone] = useState(athlete?.phone || '');
+  const [email, setEmail] = useState(athlete?.email || '');
+  const [primaryEvent, setPrimaryEvent] = useState(athlete?.primaryEvent || '5,000m Long Distance');
+  const [clubName, setClubName] = useState(athlete?.clubName || '');
+  const [weight, setWeight] = useState<number | ''>(athlete?.weight ?? '');
+  const [height, setHeight] = useState<number | ''>(athlete?.height ?? '');
+  const [restingHR, setRestingHR] = useState<number | ''>(athlete?.restingHR ?? 48);
+  const [emergencyContact, setEmergencyContact] = useState(athlete?.emergencyContact || '');
+  const [medicalNotes, setMedicalNotes] = useState(athlete?.medicalNotes || '');
 
   const [copiedFin, setCopiedFin] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -36,25 +41,81 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
   useEffect(() => {
     if (!athlete?.id) return;
     setRegion(athlete.region || 'Addis Ababa');
-    setPhone(athlete.phone || '+251 911 123456');
-    setEmail(athlete.email || `${(athlete.name || 'athlete').toLowerCase().replace(/ /g, '.')}@eaf.org.et`);
-    setPrimaryEvent(athlete.primaryEvent || '5,000m / 10,000m');
-    setClubName(athlete.clubName || 'Independent');
-    setWeight(athlete.weight || 58);
-    setHeight(athlete.height || 172);
-    setRestingHR(athlete.restingHR || 48);
-    setEmergencyContact(athlete.emergencyContact || '+251 911 000000');
-    setMedicalNotes(athlete.medicalNotes || 'Blood Group O+ · Full Medical Clearance');
-  }, [athlete?.id, athlete?.phone, athlete?.email, athlete?.primaryEvent, athlete?.clubName, athlete?.weight, athlete?.height, athlete?.region]);
+    setPhone(athlete.phone || '');
+    setEmail(athlete.email || '');
+    setPrimaryEvent(athlete.primaryEvent || '5,000m Long Distance');
+    setClubName(athlete.clubName || '');
+    setWeight(athlete.weight ?? '');
+    setHeight(athlete.height ?? '');
+    setRestingHR(athlete.restingHR ?? 48);
+    setEmergencyContact(athlete.emergencyContact || '');
+    setMedicalNotes(athlete.medicalNotes || '');
+  }, [
+    athlete?.id,
+    athlete?.phone,
+    athlete?.email,
+    athlete?.primaryEvent,
+    athlete?.clubName,
+    athlete?.weight,
+    athlete?.height,
+    athlete?.region,
+    athlete?.restingHR,
+    athlete?.emergencyContact,
+    athlete?.medicalNotes,
+  ]);
 
   const handleCopyFin = () => {
-    if (!athlete.faydaFin) return;
+    if (!athlete?.faydaFin) return;
     navigator.clipboard.writeText(athlete.faydaFin);
     setCopiedFin(true);
     setTimeout(() => setCopiedFin(false), 2000);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      onNotify('Photo size should be under 5MB.', 'error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    try {
+      const res = await uploadPhotoApi(formData).unwrap();
+      const newPhotoUrl = res?.data?.photoUrl;
+      if (newPhotoUrl) {
+        const updated: Athlete = {
+          ...athlete,
+          photoUrl: newPhotoUrl,
+        };
+        onUpdateAthlete(updated);
+        if (athlete.email) {
+          localStorage.setItem(`eaf_registered_athlete_${athlete.email.toLowerCase().trim()}`, JSON.stringify(updated));
+        }
+        if (athlete.id) {
+          localStorage.setItem(`eaf_registered_athlete_${athlete.id}`, JSON.stringify(updated));
+        }
+        onNotify('Profile photo updated successfully!', 'success');
+      }
+    } catch (err: any) {
+      // Fallback: preview locally and keep in cache
+      const localPreviewUrl = URL.createObjectURL(file);
+      const updated: Athlete = {
+        ...athlete,
+        photoUrl: localPreviewUrl,
+      };
+      onUpdateAthlete(updated);
+      if (athlete.email) {
+        localStorage.setItem(`eaf_registered_athlete_${athlete.email.toLowerCase().trim()}`, JSON.stringify(updated));
+      }
+      onNotify(err?.data?.message || 'Photo updated locally.', 'info');
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !phone) {
       onNotify('Email and Phone fields are required.', 'error');
@@ -68,12 +129,36 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
       email,
       primaryEvent,
       clubName,
-      weight: Number(weight),
-      height: Number(height),
-      restingHR: Number(restingHR),
+      weight: weight !== '' ? Number(weight) : undefined,
+      height: height !== '' ? Number(height) : undefined,
+      restingHR: restingHR !== '' ? Number(restingHR) : undefined,
       emergencyContact,
       medicalNotes,
     };
+
+    try {
+      await updateProfileApi({
+        phoneNumber: phone,
+        email,
+        primaryEvent,
+        region,
+        clubName,
+        weight: weight !== '' ? Number(weight) : undefined,
+        height: height !== '' ? Number(height) : undefined,
+      }).unwrap();
+    } catch (err: any) {
+      console.warn('Backend profile update failed:', err);
+    }
+
+    // Persist to local storage cache for session resilience
+    try {
+      if (athlete.email) {
+        localStorage.setItem(`eaf_registered_athlete_${athlete.email.toLowerCase().trim()}`, JSON.stringify(updatedAthlete));
+      }
+      if (athlete.id) {
+        localStorage.setItem(`eaf_registered_athlete_${athlete.id}`, JSON.stringify(updatedAthlete));
+      }
+    } catch (_) {}
 
     onUpdateAthlete(updatedAthlete);
     setSavedSuccess(true);
@@ -91,12 +176,29 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
 
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="relative shrink-0">
+            <div className="relative shrink-0 group">
               <img
                 src={athlete.photoUrl || '/images/runner_marathon.png'}
                 alt={athlete.name}
                 className="w-20 h-24 sm:w-24 sm:h-28 rounded-2xl object-cover border-4 border-white/90 shadow-xl bg-slate-800"
               />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handlePhotoUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingPhoto}
+                className="absolute inset-0 bg-black/60 text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-[10px] font-bold cursor-pointer border-none"
+                title="Change profile photo"
+              >
+                {isUploadingPhoto ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+                <span>{isUploadingPhoto ? 'Uploading...' : 'Change'}</span>
+              </button>
               <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white rounded-full p-1 border-2 border-white shadow-md">
                 <CheckCircle2 size={16} />
               </div>
@@ -112,13 +214,15 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                 </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-white m-0 tracking-tight">
-                {athlete.name}
+                {athlete.name || 'Athlete'}
               </h2>
-              <div className="text-lg font-extrabold text-[#FCD34D]">
-                {athlete.amharicName || 'አልማዝ በቀለ ነጋሽ'}
-              </div>
+              {athlete.amharicName && (
+                <div className="text-lg font-extrabold text-[#FCD34D]">
+                  {athlete.amharicName}
+                </div>
+              )}
               <div className="text-xs text-slate-300 flex items-center gap-3 pt-0.5 font-medium flex-wrap">
-                <span>EAF ID: <strong className="text-white font-mono">{athlete.id}</strong></span>
+                <span>EAF ID: <strong className="text-white font-mono">{athlete.id || '—'}</strong></span>
                 <span>•</span>
                 <span>FIN: <strong className="text-[#FCD34D] font-mono">{formatFaydaId(athlete.faydaFin) || '—'}</strong></span>
               </div>
@@ -160,7 +264,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                 <input
                   className="form-input text-sm bg-slate-100 dark:bg-slate-800/80 font-bold text-slate-800 dark:text-slate-200 cursor-not-allowed"
                   type="text"
-                  value={athlete.name}
+                  value={athlete.name || '—'}
                   disabled
                 />
               </div>
@@ -170,7 +274,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                 <input
                   className="form-input text-sm bg-slate-100 dark:bg-slate-800/80 font-bold text-primary dark:text-sky-400 cursor-not-allowed"
                   type="text"
-                  value={athlete.amharicName || 'አልማዝ በቀለ ነጋሽ'}
+                  value={athlete.amharicName || '—'}
                   disabled
                 />
               </div>
@@ -180,7 +284,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                 <input
                   className="form-input text-sm bg-slate-100 dark:bg-slate-800/80 font-medium text-slate-800 dark:text-slate-200 cursor-not-allowed"
                   type="text"
-                  value={`${athlete.dob || '2004-05-12'} (${athlete.ageTier || 'Senior Division'})`}
+                  value={athlete.dob ? `${athlete.dob} (${athlete.ageTier || 'Senior Division'})` : (athlete.ageTier || 'Senior Division')}
                   disabled
                 />
               </div>
@@ -190,7 +294,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                 <input
                   className="form-input text-sm bg-slate-100 dark:bg-slate-800/80 font-medium text-slate-800 dark:text-slate-200 cursor-not-allowed"
                   type="text"
-                  value={athlete.gender || 'Female'}
+                  value={athlete.gender || '—'}
                   disabled
                 />
               </div>
@@ -289,7 +393,8 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                   type="number"
                   step="0.1"
                   value={weight}
-                  onChange={e => setWeight(Number(e.target.value))}
+                  onChange={e => setWeight(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="e.g. 58"
                 />
               </div>
 
@@ -301,7 +406,8 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                   className="form-input text-sm font-semibold"
                   type="number"
                   value={height}
-                  onChange={e => setHeight(Number(e.target.value))}
+                  onChange={e => setHeight(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="e.g. 172"
                 />
               </div>
             </div>
@@ -373,9 +479,11 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="submit"
-              className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-primary to-primary-dark text-white font-extrabold text-sm shadow-md hover:shadow-lg hover:scale-102 active:scale-98 transition-all border-none cursor-pointer flex items-center gap-2"
+              disabled={isSaving}
+              className="px-7 py-3.5 rounded-xl bg-gradient-to-r from-primary to-primary-dark text-white font-extrabold text-sm shadow-md hover:shadow-lg hover:scale-102 active:scale-98 transition-all border-none cursor-pointer flex items-center gap-2 disabled:opacity-60"
             >
-              <Save size={16} /> Save Profile Changes
+              {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              {isSaving ? 'Saving Changes...' : 'Save Profile Changes'}
             </button>
           </div>
 
@@ -403,8 +511,10 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                 <QrCode size={64} className="text-slate-950" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-black text-white truncate">{athlete.name}</div>
-                <div className="text-xs text-primary-light truncate">{athlete.amharicName}</div>
+                <div className="text-sm font-black text-white truncate">{athlete.name || 'Athlete'}</div>
+                {athlete.amharicName && (
+                  <div className="text-xs text-primary-light truncate">{athlete.amharicName}</div>
+                )}
                 <div className="text-[0.72rem] text-slate-400 mt-1.5">
                   FIN: <strong className="text-[#FCD34D] font-mono">{formatFaydaId(athlete.faydaFin) || '—'}</strong>
                 </div>
@@ -412,7 +522,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
             </div>
 
             <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center text-[0.7rem] text-slate-400">
-              <span>WA ID: <strong className="text-white">ETH-2026-092</strong></span>
+              <span>WA ID: <strong className="text-white">{athlete.id ? `ETH-${athlete.id.slice(0, 8).toUpperCase()}` : 'ETH-2026-092'}</strong></span>
               <span className="text-emerald-400 font-bold">✓ Active License</span>
             </div>
           </div>

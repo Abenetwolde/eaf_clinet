@@ -63,6 +63,7 @@ export interface LoginResponse {
     email: string;
     firstName: string;
     lastName: string;
+    phoneNumber?: string | null;
     status: string;
     roles: string[];
   };

@@ -8,12 +8,20 @@ import {
   Clock,
   UserPlus,
   Filter,
-  Edit
+  Edit,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { useAppSelector } from '../../store/hooks';
 import { formatFaydaId } from '../../utils/formatFaydaId';
 import type { Athlete } from '../../types';
+import {
+  useInitiateFaydaMutation,
+  useConfirmFaydaOtpMutation,
+  useRegisterAthleteByAdminMutation,
+  useRegisterAthleteMutation,
+} from '../../store/api/athleteApi';
 
 interface RosterManagementProps {
   onRenewLicense: (athlete: Athlete) => void;
@@ -30,6 +38,7 @@ interface FaydaVerifiedData {
   verificationHash: string;
   photoUrl: string;
   gender?: string;
+  verificationToken?: string;
 }
 
 export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdateAthlete }: RosterManagementProps) {
@@ -41,6 +50,12 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
   const [filterLicense, setFilterLicense] = useState<string>('ALL');
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [editingAthlete, setEditingAthlete] = useState<Athlete | null>(null);
+
+  // RTK Query Hooks
+  const [initiateFayda, { isLoading: isInitiatingFayda }] = useInitiateFaydaMutation();
+  const [confirmFaydaOtp, { isLoading: isConfirmingOtp }] = useConfirmFaydaOtpMutation();
+  const [registerAthleteAdmin] = useRegisterAthleteByAdminMutation();
+  const [registerAthleteSelf] = useRegisterAthleteMutation();
 
   // Edit Athlete form state
   const [editName, setEditName] = useState<string>('');
@@ -60,6 +75,9 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
   const [newAthleteCoach, setNewAthleteCoach] = useState<string>('');
   const [newAthleteEmergency, setNewAthleteEmergency] = useState<string>('');
   const [newAthleteMedical, setNewAthleteMedical] = useState<string>('');
+  const [faydaError, setFaydaError] = useState<string>('');
+  const [verificationId, setVerificationId] = useState<string>('');
+  const [serverOtp, setServerOtp] = useState<string>('');
   
   // State for view detail modal
   const [viewingAthlete, setViewingAthlete] = useState<Athlete | null>(null);
@@ -112,43 +130,95 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
     return matchesSearch && matchesTier && matchesLicense;
   });
 
-  const handleSimulateFaydaLookup = () => {
-    if (!newAthleteFin) return;
-    setFaydaLookupLoading(true);
-    setTimeout(() => {
-      setFaydaLookupLoading(false);
-      const birthYear = new Date(newAthleteDob).getFullYear();
-      const age = 2026 - birthYear;
-      let calculatedTier = 'Senior';
-      if (age <= 16) calculatedTier = 'U16';
-      else if (age <= 18) calculatedTier = 'U18';
-      else if (age <= 20) calculatedTier = 'U20';
-
-      setFaydaVerifiedData({
-        fin: newAthleteFin,
-        fullName: newAthleteName || "Mulugeta Tola Feyisa",
-        amharicName: "ሙሉጌታ ቶላ ፈይሳ",
-        dob: newAthleteDob,
-        computedTier: calculatedTier,
-        verificationHash: "0xFAYDA_" + Math.random().toString(36).substring(2, 10).toUpperCase(),
-        photoUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80"
-      });
-    }, 1000);
+  const handleSendFaydaOtp = async () => {
+    const clean = newAthleteFin.trim();
+    if (!clean || clean.length < 8) {
+      setFaydaError('Enter a valid Fayda FIN or FAN Number');
+      return;
+    }
+    setFaydaError('');
+    try {
+      const res = await initiateFayda({ nin: clean, FAN: clean }).unwrap();
+      if (res?.data?.verificationId) {
+        setVerificationId(res.data.verificationId);
+        setServerOtp(res.data.otp || '');
+        setOtpStep(true);
+      }
+    } catch (err: any) {
+      setFaydaError(err?.data?.message || 'Fayda verification initiation failed.');
+    }
   };
 
-  const handleCreateAthleteSubmit = (e: React.FormEvent) => {
+  const handleVerifyFaydaOtp = async () => {
+    if (otpValue.length < 6) return;
+    setFaydaError('');
+    try {
+      const res = await confirmFaydaOtp({
+        verificationId,
+        otp: otpValue,
+      }).unwrap();
+
+      const demographic = res?.data?.demographicData;
+      const token = res?.data?.verificationToken;
+      if (demographic && token) {
+        const fullName = `${demographic.firstName || ''} ${demographic.lastName || ''}`.trim() || 'Verified Athlete';
+        const dob = demographic.dateOfBirth || newAthleteDob;
+        const birthYear = new Date(dob).getFullYear();
+        const age = 2026 - birthYear;
+        const calculatedTier = age <= 16 ? 'U16' : age <= 18 ? 'U18' : age <= 20 ? 'U20' : 'Senior';
+
+        setFaydaVerifiedData({
+          fin: demographic.nin || newAthleteFin,
+          fullName,
+          amharicName: '',
+          dob,
+          computedTier: calculatedTier,
+          verificationHash: token.slice(0, 16),
+          verificationToken: token,
+          photoUrl: demographic.photoUrl || '/images/runner_marathon.png',
+          gender: demographic.gender || 'Male',
+        });
+        setOtpVerified(true);
+        setOtpStep(false);
+      }
+    } catch (err: any) {
+      setFaydaError(err?.data?.message || 'Invalid or expired OTP passcode.');
+    }
+  };
+
+  const handleCreateAthleteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!faydaVerifiedData) return;
 
+    let athleteId = `ATH-2026-${Math.floor(100 + Math.random() * 900)}`;
+
+    if (faydaVerifiedData.verificationToken) {
+      try {
+        const res = await registerAthleteAdmin({
+          email: `${faydaVerifiedData.fullName.toLowerCase().replace(/\s+/g, '.')}@${(club?.shortName || 'club').toLowerCase().replace(/\s+/g, '')}.et`,
+          password: 'Password123!',
+          phoneNumber: newAthleteEmergency || '+251911000000',
+          faydaVerificationToken: faydaVerifiedData.verificationToken,
+          fanNumber: faydaVerifiedData.fin,
+          clubId: club?.id,
+          clubName: club?.name,
+          height: newAthleteHeight ? Number(newAthleteHeight) : undefined,
+          weight: newAthleteWeight ? Number(newAthleteWeight) : undefined,
+          emergencyContactPhone: newAthleteEmergency || undefined,
+        }).unwrap();
+        if (res?.data?.id) athleteId = res.data.id;
+      } catch (err) {
+        console.warn('Backend athlete registration fallback:', err);
+      }
+    }
+
     const createdAthlete: Athlete = {
-      id: `ATH-2026-${Math.floor(100 + Math.random() * 900)}`,
-      // From Fayda API — not entered manually:
+      id: athleteId,
       name: faydaVerifiedData.fullName,
       amharicName: faydaVerifiedData.amharicName,
       dob: faydaVerifiedData.dob,
       gender: faydaVerifiedData.gender || "Male",
       ageTier: faydaVerifiedData.computedTier,
-      // Sports-specific fields:
       clubId: club.id,
       clubName: club.name,
       faydaFin: faydaVerifiedData.fin,
@@ -158,15 +228,21 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
       licenseStatus: "UNLICENSED",
       licenseNumber: null,
       licenseExpiry: null,
-      photoUrl: "/images/runner_marathon.png",
+      photoUrl: passportPhotoUrl || faydaVerifiedData.photoUrl || "/images/runner_marathon.png",
       checkinStatus: "NOT_CHECKED_IN",
       secondaryDoc: null,
       weight: newAthleteWeight ? Number(newAthleteWeight) : undefined,
       height: newAthleteHeight ? Number(newAthleteHeight) : undefined,
       restingHR: undefined,
       trainingLoad: "0",
-      coach: newAthleteCoach, emergencyContact: newAthleteEmergency, medicalConditions: newAthleteMedical,
-      personalBests: [], seasonBests: [], weightLog: [], trainingLog: [], achievements: []
+      coach: newAthleteCoach,
+      emergencyContact: newAthleteEmergency,
+      medicalConditions: newAthleteMedical,
+      personalBests: [],
+      seasonBests: [],
+      weightLog: [],
+      trainingLog: [],
+      achievements: []
     };
 
     onAddAthlete(createdAthlete);
@@ -378,7 +454,16 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
               {t('club.faydaInfoNote')}
             </div>
 
-            <form onSubmit={(e) => { e.preventDefault(); if(!showConfirmation) { setShowConfirmation(true); } else { setRegistrationSubmitted(true); } }}>
+            <form onSubmit={(e) => { 
+              e.preventDefault(); 
+              if (!faydaVerifiedData) return;
+              if (!showConfirmation) { 
+                setShowConfirmation(true); 
+              } else { 
+                setRegistrationSubmitted(true);
+                handleCreateAthleteSubmit(e);
+              } 
+            }}>
               {!otpStep && !otpVerified && (
               <div className="form-group">
                 <label className="form-label">{t('club.faydaFinLabel')}</label>
@@ -402,13 +487,23 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
                   />
                   <button 
                     type="button" 
-                    onClick={() => { if(newAthleteFin.replace(/-/g,'').length===12){ setOtpStep(true); } }}
+                    onClick={handleSendFaydaOtp}
                     className="btn-gov-primary text-[0.8rem] whitespace-nowrap px-[14px] py-[10px]"
-                    disabled={newAthleteFin.replace(/-/g,'').length!==12}
+                    disabled={isInitiatingFayda || newAthleteFin.replace(/-/g,'').length < 10}
                   >
-                    {t('club.sendOtp')}
+                    {isInitiatingFayda ? (
+                      <><RefreshCw size={14} className="animate-spin" /> Verifying...</>
+                    ) : (
+                      t('club.sendOtp')
+                    )}
                   </button>
                 </div>
+                {faydaError && (
+                  <div className="flex items-center gap-1.5 text-red-500 text-[0.8rem] font-bold mt-1.5">
+                    <AlertCircle size={14} />
+                    <span>{faydaError}</span>
+                  </div>
+                )}
               </div>
               )}
 
@@ -416,6 +511,11 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
                 <div className="form-group bg-[#F0FDF4] border border-[#86EFAC] rounded-[12px] p-[20px]">
                   <div className="font-extrabold text-[#15803D] mb-[8px] text-[0.95rem]">{t('club.otpSentTitle')}</div>
                   <div className="text-[0.82rem] text-[#64748B] mb-[16px]">{t('club.otpSentSub')}</div>
+                  {serverOtp && (
+                    <div className="bg-[#FEF3C7] border border-[#F59E0B] rounded-lg p-2 text-xs text-[#92400E] font-bold mb-3">
+                      💡 Test Mode Passcode: <span className="font-mono text-sm">{serverOtp}</span>
+                    </div>
+                  )}
                   <div className="flex gap-[8px]">
                     <input 
                       type="text" className="form-input flex-1 font-mono text-[1.4rem] text-center tracking-[0.3em]"
@@ -424,14 +524,22 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
                       placeholder="_ _ _ _ _ _" maxLength={6}
                     />
                     <button type="button" className="btn-gov-primary px-[20px] py-[10px]"
-                      onClick={() => {
-                        if(otpValue.length === 6) {
-                          setOtpVerified(true); setOtpStep(false);
-                          handleSimulateFaydaLookup();
-                        }
-                      }}
-                    >{t('club.verifyOtp')}</button>
+                      onClick={handleVerifyFaydaOtp}
+                      disabled={isConfirmingOtp || otpValue.length < 6}
+                    >
+                      {isConfirmingOtp ? (
+                        <><RefreshCw size={14} className="animate-spin" /> Checking...</>
+                      ) : (
+                        t('club.verifyOtp')
+                      )}
+                    </button>
                   </div>
+                  {faydaError && (
+                    <div className="flex items-center gap-1.5 text-red-500 text-[0.8rem] font-bold mt-2">
+                      <AlertCircle size={14} />
+                      <span>{faydaError}</span>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -11,6 +11,15 @@ import { formatFaydaId } from '../../utils/formatFaydaId';
 import { MOCK_EVENT_RESULTS, MEET_META } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
 import LicenseQrCode from './LicenseQrCode';
+import {
+  useGetMyPersonalBestsQuery,
+  useAddMyPersonalBestMutation,
+  useGetMyTrainingLogsQuery,
+  useAddMyTrainingLogMutation,
+  useGetMyWeightLogsQuery,
+  useAddMyWeightLogMutation,
+  useUpdateMyAthleteProfileMutation,
+} from '../../store/api/athleteApi';
 
 interface AthleteOverviewProps {
   onChangeSubPage: (page: string) => void;
@@ -37,6 +46,18 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
     achievements: [],
     appliedCompetitions: [],
   };
+
+  const isAuthenticated = useAppSelector((state) => !!state.auth.token);
+  const { data: serverPbs } = useGetMyPersonalBestsQuery(undefined, { skip: !isAuthenticated });
+  const [addPbApi] = useAddMyPersonalBestMutation();
+
+  const { data: serverTraining } = useGetMyTrainingLogsQuery(undefined, { skip: !isAuthenticated });
+  const [addTrainingApi] = useAddMyTrainingLogMutation();
+
+  const { data: serverWeights } = useGetMyWeightLogsQuery(undefined, { skip: !isAuthenticated });
+  const [addWeightApi] = useAddMyWeightLogMutation();
+
+  const [updateProfileApi] = useUpdateMyAthleteProfileMutation();
 
   const [activeTab, setActiveTab] = useState('overview');
   const [copiedFin, setCopiedFin] = useState(false);
@@ -74,7 +95,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
     }
   }, [athlete?.id, athlete?.weight, athlete?.height, athlete?.restingHR]);
 
-  const handleAddWeight = () => {
+  const handleAddWeight = async () => {
     const w = parseFloat(newWeight);
     if (isNaN(w) || w <= 0) return;
     const updated: Athlete = {
@@ -84,27 +105,73 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
     };
     onUpdateAthlete(updated);
     setNewWeight('');
+
+    if (isAuthenticated) {
+      try {
+        await addWeightApi({ date: newWeightDate, weightKg: w }).unwrap();
+        await updateProfileApi({ weight: w }).unwrap();
+      } catch (err) {
+        console.warn('Failed to save weight entry to backend:', err);
+      }
+    }
   };
 
-  const handleAddTraining = () => {
+  const handleAddTraining = async () => {
     const d = parseFloat(trainDist);
     if (isNaN(d) || !trainDur) return;
     const entry = { date: trainDate, type: trainType, distance: d, duration: trainDur, notes: trainNotes };
     onUpdateAthlete({ ...athlete, trainingLog: [entry, ...(athlete.trainingLog || [])] });
     setShowAddTraining(false);
     setTrainDist(''); setTrainDur(''); setTrainNotes('');
+
+    if (isAuthenticated) {
+      try {
+        let minutes = 45;
+        const hMatch = trainDur.match(/(\d+)\s*h/i);
+        const mMatch = trainDur.match(/(\d+)\s*m/i);
+        if (hMatch || mMatch) {
+          minutes = (hMatch ? parseInt(hMatch[1], 10) * 60 : 0) + (mMatch ? parseInt(mMatch[1], 10) : 0);
+        } else {
+          const num = parseInt(trainDur, 10);
+          if (!isNaN(num)) minutes = num;
+        }
+        await addTrainingApi({
+          date: trainDate,
+          type: trainType,
+          distanceKm: d,
+          durationMinutes: minutes > 0 ? minutes : 45,
+          notes: trainNotes || undefined,
+        }).unwrap();
+      } catch (err) {
+        console.warn('Failed to save training entry to backend:', err);
+      }
+    }
   };
 
-  const handleAddPb = () => {
+  const handleAddPb = async () => {
     if (!pbTime.trim()) return;
-    const newPb = { event: pbEvent, time: pbTime.trim(), date: pbDate, venue: pbVenue.trim() };
+    const newPb = { event: pbEvent, time: pbTime.trim(), mark: pbTime.trim(), date: pbDate, venue: pbVenue.trim() };
     const existing = (athlete.personalBests || []).filter(p => p.event !== pbEvent);
     onUpdateAthlete({ ...athlete, personalBests: [newPb, ...existing] });
     setShowAddPb(false);
     setPbTime(''); setPbVenue('');
+
+    if (isAuthenticated) {
+      try {
+        await addPbApi({
+          event: pbEvent,
+          mark: pbTime.trim(),
+          date: pbDate,
+          venue: pbVenue.trim() || undefined,
+          scope: 'ALL_TIME',
+        }).unwrap();
+      } catch (err) {
+        console.warn('Failed to save PB entry to backend:', err);
+      }
+    }
   };
 
-  const handleSaveStats = () => {
+  const handleSaveStats = async () => {
     const w = parseFloat(String(editWeight));
     const h = parseFloat(String(editHeight));
     const hr = parseFloat(String(editHR));
@@ -116,6 +183,19 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
       restingHR: !isNaN(hr) && hr > 0 ? hr : athlete.restingHR
     });
     setEditingStats(false);
+
+    if (isAuthenticated) {
+      const patchData: Record<string, any> = {};
+      if (!isNaN(w) && w > 0) patchData.weight = w;
+      if (!isNaN(h) && h > 0) patchData.height = h;
+      if (Object.keys(patchData).length > 0) {
+        try {
+          await updateProfileApi(patchData).unwrap();
+        } catch (err) {
+          console.warn('Failed to update stats on backend:', err);
+        }
+      }
+    }
   };
 
   const handleCopyFin = () => {
@@ -175,12 +255,66 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
   const medalCount = goldCount + silverCount + bronzeCount;
   const bestPos = competitionHistory.length > 0 ? Math.min(...competitionHistory.map(r => r.pos)) : null;
 
+  // Combine server PBs with local athlete PBs
+  const combinedPbs = React.useMemo(() => {
+    const list = [...(athlete?.personalBests || [])];
+    if (serverPbs && Array.isArray(serverPbs)) {
+      serverPbs.forEach((spb) => {
+        if (!list.some((p) => p.event === spb.event)) {
+          list.push({
+            event: spb.event,
+            time: spb.mark,
+            mark: spb.mark,
+            date: spb.date || undefined,
+            venue: spb.venue || undefined,
+          });
+        }
+      });
+    }
+    return list;
+  }, [athlete?.personalBests, serverPbs]);
+
+  // Combine server Training logs with local training logs
+  const combinedTrainingLogs = React.useMemo(() => {
+    const list = [...(athlete?.trainingLog || [])];
+    if (serverTraining && Array.isArray(serverTraining)) {
+      serverTraining.forEach((st) => {
+        if (!list.some((t) => t.date === st.date && t.type === st.type)) {
+          list.push({
+            date: st.date,
+            type: st.type,
+            distance: st.distanceKm,
+            duration: `${st.durationMinutes}m`,
+            notes: st.notes || undefined,
+          });
+        }
+      });
+    }
+    return list;
+  }, [athlete?.trainingLog, serverTraining]);
+
+  // Combine server Weight logs with local weight logs
+  const combinedWeightLogs = React.useMemo(() => {
+    const list = [...(athlete?.weightLog || [])];
+    if (serverWeights && Array.isArray(serverWeights)) {
+      serverWeights.forEach((sw) => {
+        if (!list.some((w) => w.date === sw.date)) {
+          list.push({
+            date: sw.date,
+            kg: sw.weightKg,
+          });
+        }
+      });
+    }
+    return list;
+  }, [athlete?.weightLog, serverWeights]);
+
   const tabs = [
     { id: 'overview', label: 'Dashboard Overview', icon: BarChart3 },
     { id: 'competitions', label: `Competition History (${totalRaces})`, icon: Trophy },
-    { id: 'pbs', label: `Personal Bests (${(athlete?.personalBests || []).length})`, icon: Zap },
-    { id: 'weight', label: `Weight & Body (${(athlete?.weightLog || []).length})`, icon: Weight },
-    { id: 'training', label: `Training Log (${(athlete?.trainingLog || []).length})`, icon: Flame },
+    { id: 'pbs', label: `Personal Bests (${combinedPbs.length})`, icon: Zap },
+    { id: 'weight', label: `Weight & Body (${combinedWeightLogs.length})`, icon: Weight },
+    { id: 'training', label: `Training Log (${combinedTrainingLogs.length})`, icon: Flame },
   ];
 
   return (
@@ -724,14 +858,14 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                   </tr>
                 </thead>
                 <tbody>
-                  {(athlete.personalBests || []).length === 0 ? (
+                  {combinedPbs.length === 0 ? (
                     <tr><td colSpan={4} className="text-center text-slate-400 p-8">No personal bests recorded yet</td></tr>
-                  ) : (athlete.personalBests || []).map((pb, i) => (
+                  ) : combinedPbs.map((pb, i) => (
                     <tr key={i}>
                       <td><strong className="text-sm">{pb.event}</strong></td>
-                      <td><span className="font-mono font-black text-primary text-base">{pb.time}</span></td>
-                      <td className="text-slate-500">{pb.date}</td>
-                      <td className="text-slate-500">{pb.venue}</td>
+                      <td><span className="font-mono font-black text-primary text-base">{pb.time || pb.mark}</span></td>
+                      <td className="text-slate-500">{pb.date || '—'}</td>
+                      <td className="text-slate-500">{pb.venue || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -804,9 +938,9 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                   <tr><th>Date</th><th>Weight (kg)</th><th>Change</th></tr>
                 </thead>
                 <tbody>
-                  {(athlete.weightLog || []).length === 0 ? (
+                  {combinedWeightLogs.length === 0 ? (
                     <tr><td colSpan={3} className="text-center text-slate-400 p-8">No weight entries logged yet</td></tr>
-                  ) : (athlete.weightLog || []).map((entry, i, arr) => {
+                  ) : combinedWeightLogs.map((entry, i, arr) => {
                     const prev = arr[i + 1];
                     const change = prev ? (entry.kg - prev.kg).toFixed(1) : null;
                     return (
@@ -850,9 +984,9 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                   <tr><th>Date</th><th>Type</th><th>Distance</th><th>Duration</th><th>Notes</th></tr>
                 </thead>
                 <tbody>
-                  {(athlete.trainingLog || []).length === 0 ? (
+                  {combinedTrainingLogs.length === 0 ? (
                     <tr><td colSpan={5} className="text-center text-slate-400 p-8">No training sessions logged yet</td></tr>
-                  ) : (athlete.trainingLog || []).map((s, i) => (
+                  ) : combinedTrainingLogs.map((s, i) => (
                     <tr key={i}>
                       <td className="font-medium text-slate-600 dark:text-slate-400">{s.date}</td>
                       <td>

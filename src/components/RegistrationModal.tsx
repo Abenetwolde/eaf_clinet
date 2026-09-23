@@ -18,6 +18,8 @@ import {
 import VerificationModal from './VerificationModal';
 import { useRegisterUserMutation, useVerifyEmailMutation, type RegisterUserResponse } from '../store/api/authApi';
 import { formatFaydaId } from '../utils/formatFaydaId';
+import { useAppDispatch } from '../store/hooks';
+import { addAthlete } from '../store/slices/athleteSlice';
 
 // Types for internal use
 interface FaydaResult {
@@ -124,6 +126,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
   const { t } = useI18n();
   const isClub = role === 'CLUB';
   const [step, setStep] = useState(0);
+  const dispatch = useAppDispatch();
 
   // RTK Query API Hooks
   const { data: regOptions } = useGetRegistrationOptionsQuery();
@@ -347,6 +350,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
   const handleAccountContinue = async () => {
     setAccountError('');
     const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPhone = (phone || '').trim();
     if (!cleanEmail || !password) {
       setAccountError('Please provide your email and password.');
       return;
@@ -415,6 +419,43 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
         setEmailOtp('');
         setEmailVerified(false);
         setEmailOtpError('');
+
+        // Cache registration details immediately so that all biometrics & selections are preserved
+        const preAthlete = {
+          id: res?.data?.id || '',
+          name: faydaResult?.name || '',
+          amharicName: faydaResult?.amharic || '',
+          dob: faydaResult?.dob || '',
+          gender: faydaResult?.gender || '',
+          ageTier: faydaResult?.ageTier || '',
+          clubId: club ? club.id : undefined,
+          clubName: club ? (club.name || club.shortName) : undefined,
+          faydaFin: faydaResult?.fin || (faydaFin ? faydaFin : ''),
+          faydaStatus: 'VERIFIED',
+          primaryEvent: Array.isArray(primaryEvent) ? primaryEvent.join(', ') : (primaryEvent || ''),
+          licenseStatus: 'PENDING',
+          photoUrl: faydaResult?.photoUrl || '',
+          weight,
+          height,
+          emergencyContact,
+          region: (club as any)?.region || region || '',
+          email: cleanEmail,
+          phone: cleanPhone || (phone || '').trim(),
+          personalBests: [],
+          seasonBests: [],
+          weightLog: [],
+          trainingLog: [],
+          achievements: [],
+        };
+        try {
+          localStorage.setItem(`eaf_registered_athlete_${cleanEmail}`, JSON.stringify(preAthlete));
+          if (res?.data?.id) {
+            localStorage.setItem(`eaf_registered_athlete_${res.data.id}`, JSON.stringify(preAthlete));
+          }
+        } catch (e) {
+          console.warn('[Registration] Failed to cache athlete details to localStorage:', e);
+        }
+
         setStep(3);
       } catch (err: unknown) {
         const apiErr = err as { data?: { message?: string; error?: string }; error?: string; status?: string | number };
@@ -622,11 +663,27 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
         qrCodeData: null,
         weight, height, restingHR: 0, trainingLoad: '',
         emergencyContact, medicalNotes,
-        region: '',
+        region: (club as any)?.region || region || '',
         email: cleanEmail,
         phone: cleanPhone,
         personalBests: [], seasonBests: [], weightLog: [], trainingLog: [], achievements: [],
       };
+
+      // Persist to localStorage for this user so logging in restores full registration profile
+      try {
+        localStorage.setItem(`eaf_registered_athlete_${cleanEmail}`, JSON.stringify(newAthlete));
+        localStorage.setItem(`eaf_registered_athlete_${serverId}`, JSON.stringify(newAthlete));
+      } catch (e) {
+        console.warn('[Registration] Failed to persist registered athlete to localStorage:', e);
+      }
+
+      // Add to Redux athlete registry
+      dispatch(addAthlete(newAthlete as any));
+
+      // Notify parent app
+      if (onRegisterSuccess) {
+        onRegisterSuccess({ type: 'ATHLETE', payload: { athlete: newAthlete } });
+      }
 
       setPendingRegistrationData({ type: 'ATHLETE', payload: { athlete: newAthlete } });
       setRegisteredEmail(cleanEmail);
