@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Upload, FileCheck, RefreshCw, Info } from 'lucide-react';
+import { ShieldCheck, Upload, FileCheck, RefreshCw, Info, ExternalLink } from 'lucide-react';
 import type { Athlete } from '../../types';
+import { launchFaydaPortal, FAYDA_CONFIG } from '../../constants/fayda';
+import FaydaConsentModal from '../FaydaConsentModal';
 
 interface FaydaVerificationProps {
   athlete: Athlete;
@@ -9,30 +11,25 @@ interface FaydaVerificationProps {
 }
 
 export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }: FaydaVerificationProps) {
-  const [finInput, setFinInput] = useState(athlete.faydaFin || '');
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verifiedResult, setVerifiedResult] = useState(
-    athlete.faydaStatus === 'VERIFIED' ? {
-      status: 'VERIFIED',
-      hash: athlete.faydaHash,
-      ageTier: athlete.ageTier
-    } : null
-  );
-
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState('BIRTH_CERTIFICATE');
   const [docFile, setDocFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleRunFaydaQuery = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsVerifying(true);
-    setTimeout(() => {
-      setIsVerifying(false);
-      const newHash = '0xFAYDA_' + Math.random().toString(36).substring(2, 10).toUpperCase();
-      setVerifiedResult({ status: 'VERIFIED', hash: newHash, ageTier: athlete.ageTier });
-      onUpdateAthlete({ ...athlete, faydaFin: finInput, faydaStatus: 'VERIFIED', faydaHash: newHash });
-      onNotify('Fayda FIN verified against Ethiopian Digital Identity Hash Index.', 'success');
-    }, 1400);
+  // ── Official VeriFayda 2.0 (eSignet) Flow ──
+  // Per documentation, redirects user to the third-party Fayda URL (esignet.fayda.et)
+  // Fayda's own UI renders the login & OTP page.
+  const handleLaunchFayda = async () => {
+    setIsLaunching(true);
+    try {
+      const redirectUri = FAYDA_CONFIG.redirectUri;
+      await launchFaydaPortal(redirectUri, false);
+    } catch (err: any) {
+      console.error('Failed to launch Fayda portal:', err);
+      onNotify('Failed to connect to Fayda identity server. Please try again.', 'error');
+      setIsLaunching(false);
+    }
   };
 
   const handleUploadDoc = (e: React.FormEvent) => {
@@ -61,7 +58,7 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
           Fayda National ID & KYC Verification
         </h3>
         <p className="text-[0.84rem] text-text-muted mt-1">
-          Proclamation No. 1284/2023 —  verification mandatory for all registered athletes
+          Federal Proclamation No. 1284/2023 — VeriFayda 2.0 (eSignet OIDC) authentication mandatory for all athletes
         </p>
       </div>
 
@@ -69,17 +66,27 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
       <div className="bg-primary-light border border-[rgba(0,80,160,0.2)] rounded-[10px] px-4 py-3 mb-6 flex items-start gap-2.5">
         <Info size={18} color="var(--eth-blue)" className="shrink-0 mt-[1px]" />
         <p className="text-[0.83rem] text-primary font-semibold leading-[1.5]">
-          Your full name, date of birth, gender, and age division are sourced directly from the Fayda government database.
-          You only need to provide your FIN below — no personal information needs to be entered manually.
+          Biometric identity verification is conducted directly on the official <strong>VeriFayda 2.0 (eSignet)</strong> government portal.
+          No personal information or OTP is collected within this application.
         </p>
       </div>
 
       {/* Current Fayda profile (read-only, from Fayda) */}
-      <div className="gov-card mb-6 bg-gradient-to-br from-[#1E293B] to-[#0F172A] border-0 rounded-[18px] p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <ShieldCheck size={20} color="var(--primary)" />
-          <span className="font-black text-white text-[0.95rem]">Fayda Government Sourced Profile</span>
-          {athlete.faydaStatus === 'VERIFIED' && <span className="badge badge-green text-[0.7rem] bg-[#10B981] text-white">VERIFIED</span>}
+      <div className="gov-card mb-6 bg-gradient-to-br from-[#1E293B] to-[#0F172A] border-0 rounded-[18px] p-6 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={20} color="#38BDF8" />
+            <span className="font-black text-white text-[0.95rem]">Fayda Government Sourced Profile</span>
+          </div>
+          {athlete.faydaStatus === 'VERIFIED' ? (
+            <span className="badge badge-green text-[0.7rem] bg-[#10B981] text-white font-extrabold px-3 py-1 rounded-full">
+              ✓ VERIFIED
+            </span>
+          ) : (
+            <span className="text-[0.7rem] bg-[#F59E0B] text-black font-extrabold px-3 py-1 rounded-full">
+              PENDING VERIFICATION
+            </span>
+          )}
         </div>
         
         <div className="flex gap-5 items-center flex-wrap">
@@ -87,17 +94,20 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
             <img 
               src={athlete.photoUrl || '/images/runner_marathon.png'} 
               alt={athlete.name} 
-              className="w-[88px] h-[88px] rounded-[16px] object-cover border-[3px] border-primary shadow-[0_8px_16px_rgba(0,0,0,0.2)]"
+              className="w-[88px] h-[88px] rounded-[16px] object-cover border-[3px] border-[#38BDF8] shadow-[0_8px_16px_rgba(0,0,0,0.4)]"
             />
-            <div className="absolute -bottom-1 -right-1 bg-primary text-white rounded-full w-[22px] h-[22px] flex items-center justify-center text-[0.7rem] font-black">
-              ✓
-            </div>
+            {athlete.faydaStatus === 'VERIFIED' && (
+              <div className="absolute -bottom-1 -right-1 bg-[#10B981] text-white rounded-full w-[22px] h-[22px] flex items-center justify-center text-[0.7rem] font-black">
+                ✓
+              </div>
+            )}
           </div>
 
           <div className="flex-1 grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-3.5">
             {[
               { label: 'Full Name', value: athlete.name, color: '#FFFFFF' },
-              { label: 'Amharic Name', value: athlete.amharicName, color: 'var(--primary)' },
+              { label: 'Amharic Name', value: athlete.amharicName || athlete.name, color: '#38BDF8' },
+              { label: 'National ID (NIN)', value: athlete.faydaFin || '—', color: '#FCD34D' },
               { label: 'Date of Birth', value: athlete.dob || '—', color: '#CBD5E1' },
               { label: 'Gender', value: athlete.gender || '—', color: '#CBD5E1' },
               { label: 'Age Division', value: athlete.ageTier, color: '#F59E0B' },
@@ -118,44 +128,36 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
-        {/* Fayda FIN Query */}
+        {/* Official Fayda eSignet Redirect Card */}
         <div className="gov-card">
           <div className="flex items-center gap-2.5 mb-4">
             <ShieldCheck size={20} color="var(--primary)" />
-            <h4 className="text-[1.05rem] font-bold">Re-Verify Fayda FIN</h4>
+            <h4 className="text-[1.05rem] font-bold">
+              {athlete.faydaStatus === 'VERIFIED' ? 'Re-Authenticate with VeriFayda 2.0' : 'Authenticate with VeriFayda 2.0'}
+            </h4>
           </div>
           <p className="text-[0.82rem] text-text-muted mb-4 leading-[1.5]">
-            Run a fresh query against the Fayda government identity server to update your verification status and hash.
+            Redirects directly to the official <strong>VeriFayda 2.0 (eSignet)</strong> authorization portal.
+            Input your Fayda ID and confirm OTP securely on Fayda’s government interface.
           </p>
-          <form onSubmit={handleRunFaydaQuery}>
-            <div className="form-group">
-              <label className="form-label">Fayda FIN (12-Digit National ID Number)</label>
-              <input type="text" className="form-input" value={finInput}
-                onChange={e => setFinInput(e.target.value)} placeholder="e.g. 9840-3920-1124" required />
-            </div>
-            <button type="submit" className="btn-gov-primary w-full mb-4" disabled={isVerifying}>
-              {isVerifying
-                ? <><RefreshCw size={15} className="animate-spin" /> Querying Fayda Server...</>
-                : <><ShieldCheck size={15} /> Execute Verification Query</>
-              }
-            </button>
-          </form>
 
-          {verifiedResult && (
-            <div className="bg-primary-light border border-[rgba(11,87,142,0.25)] rounded-[10px] p-3.5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[0.75rem] font-extrabold text-primary">VERIFICATION RECORD</span>
-                <span className="badge badge-green">VERIFIED</span>
-              </div>
-              <div className="text-[0.83rem] text-text-heading leading-[1.7]">
-                <div>FIN: <strong className="font-mono">{finInput}</strong></div>
-                <div>Age Division: <strong className="text-primary">{verifiedResult.ageTier}</strong></div>
-                <div className="text-[0.7rem] text-text-muted font-mono mt-0.5">
-                  Hash: {verifiedResult.hash}
-                </div>
-              </div>
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowConsentModal(true)}
+            disabled={isLaunching}
+            className="btn-accent w-full py-3.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 mb-4"
+            style={{ background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)' }}
+          >
+            {isLaunching ? (
+              <><RefreshCw size={16} className="animate-spin" /> Redirecting to Fayda Portal...</>
+            ) : (
+              <><ExternalLink size={16} /> Open Official Fayda eSignet Portal →</>
+            )}
+          </button>
+
+          <div className="text-[0.74rem] text-text-muted bg-gray-50 dark:bg-gray-800/40 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+            <strong>OIDC Security:</strong> Authorization Code Flow with PKCE (S256) · Client Assertion JWT (RS256) · eSignet Relying Party.
+          </div>
         </div>
 
         {/* Secondary KYC */}
@@ -178,7 +180,7 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
             </div>
             <div className="form-group">
               <label className="form-label">Upload Scanned File (PDF / JPEG)</label>
-              <input type="file" className="form-input" onChange={e => setDocFile(e.target.files[0])} accept=".pdf,.png,.jpg,.jpeg" />
+              <input type="file" className="form-input" onChange={e => setDocFile(e.target.files ? e.target.files[0] : null)} accept=".pdf,.png,.jpg,.jpeg" />
             </div>
             <button type="submit" className="btn-gov-secondary w-full mb-4" disabled={isUploading}>
               {isUploading
@@ -204,6 +206,16 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
           )}
         </div>
       </div>
-    </div>
+    
+      <FaydaConsentModal
+        isOpen={showConsentModal}
+        onClose={() => setShowConsentModal(false)}
+        onConsent={() => {
+          setShowConsentModal(false);
+          handleLaunchFayda();
+        }}
+        isLaunching={isLaunching}
+      />
+</div>
   );
 }

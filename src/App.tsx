@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import LandingPage from './components/LandingPage';
 import AuthModal from './components/AuthModal';
 import RegistrationModal from './components/RegistrationModal';
+import FaydaVerifiedProfileModal, { FaydaResidentIdentity, formatFin } from './components/FaydaVerifiedProfileModal';
+import Callback from './components/Callback';
 import AppLayout from './components/Layout/AppLayout';
 import ClientLayout from './components/Layout/ClientLayout';
 
@@ -25,7 +27,7 @@ import AthleteNotifications from './components/Athlete/AthleteNotifications';
 import PaymentModal from './components/PaymentModal';
 import NotificationToast from './components/NotificationToast';
 
-import { Sun, Moon, Menu, X } from 'lucide-react';
+import { Sun, Moon, Menu, X, ShieldCheck, Sparkles, ArrowRight, UserCheck, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n, LanguageSelector } from './i18n';
 
@@ -39,6 +41,11 @@ import { Athlete, Club, Transfer } from './types';
 type Role = 'LANDING' | 'CLUB' | 'ATHLETE';
 
 export default function App() {
+  // Dedicated VeriFayda 2.0 (eSignet) OIDC callback route adapted from oidc-test-app
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/callback')) {
+    return <Callback />;
+  }
+
   // Redux: auth session + shared data registries
   const dispatch = useAppDispatch();
   const currentRole = useAppSelector((state) => state.auth.role);
@@ -143,6 +150,50 @@ export default function App() {
     setPublicSubPage('HOME');
   };
 
+  // Check for returning from Fayda verification or callback & load verified identity
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      let payload: any = null;
+      try {
+        const raw = localStorage.getItem('fayda_auth_payload') || sessionStorage.getItem('fayda_auth_payload') || sessionStorage.getItem('eaf_fayda_verified');
+        if (raw) payload = JSON.parse(raw);
+      } catch (e) {}
+
+      const ident = payload?.identity || payload || {};
+      const nin = ident.nin || ident.fin || urlParams.get('nin');
+      const name = ident.fullName || ident.name || urlParams.get('name');
+      const nameAmh = ident.fullNameAmharic || ident.amharic || urlParams.get('nameAmh') || name;
+      const dob = ident.birthDate || ident.dob || urlParams.get('dob') || '1980-12-01';
+      const gender = (ident.gender || urlParams.get('gender') || 'MALE').toUpperCase();
+      const phone = ident.phoneNumber || ident.phone || urlParams.get('phone') || '0909090909';
+      const email = ident.email || urlParams.get('email') || 'chere@id.et';
+      const address = ident.address || ident.region || 'Addis Ababa / Federal';
+      const picture = ident.picture || ident.photoUrl || urlParams.get('photoUrl') || localStorage.getItem('fayda_photo') || sessionStorage.getItem('fayda_photo') || '/images/fayda_resident_photo.jpg';
+      const token = urlParams.get('token') || payload?.verificationToken || ident.verificationToken;
+
+      if (nin && name) {
+        setVerifiedCitizen({
+          nin,
+          fullName: name,
+          fullNameAmharic: nameAmh,
+          birthDate: dob,
+          gender: gender === 'MALE' ? 'Male' : 'Female',
+          phoneNumber: phone,
+          email,
+          address,
+          picture,
+          verificationToken: token,
+          verifiedAt: new Date().toLocaleDateString('en-US', { dateStyle: 'medium' }),
+        });
+      }
+
+      if (urlParams.get('openReg') === 'ATHLETE' || urlParams.get('faydaVerified') === 'true' || urlParams.get('faydaSuccess') === 'true') {
+        setRegModalRole('ATHLETE');
+      }
+    }
+  }, []);
+
   // Listen for registration modal trigger from AuthModal
   useEffect(() => {
     const handleOpenRegistration = (e: any) => {
@@ -155,6 +206,9 @@ export default function App() {
 
   const [authModalConfig, setAuthModalConfig] = useState<any>(null);
   const [regModalRole, setRegModalRole] = useState<'CLUB' | 'ATHLETE' | null>(null);
+  const [verifiedCitizen, setVerifiedCitizen] = useState<FaydaResidentIdentity | null>(null);
+  const [showCitizenModal, setShowCitizenModal] = useState(false);
+  const [showVerifiedBanner, setShowVerifiedBanner] = useState(true);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [toast, setToast] = useState<any>(null);
 
@@ -287,6 +341,67 @@ export default function App() {
 
     return (
       <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-[#0D1117]' : 'bg-white'}`}>
+        {/* ── Top Verified Citizen Notification Banner ── */}
+        {verifiedCitizen && showVerifiedBanner && (
+          <div className="w-full bg-gradient-to-r from-slate-950 via-sky-950 to-slate-900 border-b border-sky-500/40 text-white px-4 py-2.5 flex items-center justify-between shadow-xl relative z-[60]">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative w-9 h-11 rounded-lg overflow-hidden border-2 border-amber-400 shrink-0 shadow-md bg-slate-800">
+                <img src={verifiedCitizen.picture || '/images/fayda_resident_photo.jpg'} alt="Citizen" className="w-full h-full object-cover" />
+                <div className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-white" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                    <ShieldCheck size={12} className="text-emerald-400" />
+                    Fayda Verified Resident
+                  </span>
+                  <span className="text-sm font-black text-white truncate">
+                    {verifiedCitizen.fullName}
+                  </span>
+                  {verifiedCitizen.fullNameAmharic && (
+                    <span className="text-xs font-bold text-sky-300 hidden sm:inline">
+                      ({verifiedCitizen.fullNameAmharic})
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-xs text-slate-300 mt-0.5 flex-wrap">
+                  <span>NIN: <strong className="font-mono text-amber-300">{formatFin(verifiedCitizen.nin)}</strong></span>
+                  <span className="hidden md:inline">DOB: <strong className="text-white">{verifiedCitizen.birthDate}</strong></span>
+                  <span className="hidden md:inline">Gender: <strong className="text-white">{verifiedCitizen.gender}</strong></span>
+                  <span className="hidden lg:inline">Phone: <strong className="text-emerald-300">{verifiedCitizen.phoneNumber}</strong></span>
+                  <span className="hidden lg:inline">Email: <strong className="text-sky-300">{verifiedCitizen.email}</strong></span>
+                  <span className="hidden xl:inline">Address: <strong className="text-amber-200">{verifiedCitizen.address}</strong></span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowCitizenModal(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-colors cursor-pointer border-0"
+              >
+                <Sparkles size={14} /> <span className="hidden sm:inline">View</span> Fayda ID Card
+              </button>
+              <button
+                type="button"
+                onClick={() => setRegModalRole('ATHLETE')}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow transition-colors cursor-pointer border-0"
+              >
+                <span>Continue Registration</span>
+                <ArrowRight size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowVerifiedBanner(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer border-0 bg-transparent"
+                title="Dismiss banner"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Floating Glassmorphism Header ── */}
         <motion.header
           initial={{ y: -72 }}
@@ -426,7 +541,26 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              <motion.button
+              <>
+                {verifiedCitizen && (
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => setShowCitizenModal(true)}
+                    className="border border-emerald-500/50 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 rounded-xl px-3 py-1.5 flex items-center gap-2 cursor-pointer transition-all shadow-md"
+                    title="View Verified Fayda Citizen Profile"
+                  >
+                    <div className="w-6 h-6 rounded-lg overflow-hidden border border-emerald-400 shrink-0">
+                      <img src={verifiedCitizen.picture || '/images/fayda_resident_photo.jpg'} alt="Citizen" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex flex-col text-left leading-none">
+                      <span className="text-[9px] font-black uppercase text-emerald-400">Verified ID</span>
+                      <span className="text-xs font-extrabold text-white truncate max-w-[120px]">{verifiedCitizen.fullName.split(' ')[0]}</span>
+                    </div>
+                  </motion.button>
+                )}
+
+                <motion.button
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={handleOpenAuthModal}
@@ -449,6 +583,7 @@ export default function App() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                 Portal Login
               </motion.button>
+              </>
             )}
           </div>
 
@@ -587,6 +722,18 @@ export default function App() {
         )}
 
         <NotificationToast toast={toast} onClose={() => setToast(null)} />
+
+        {showCitizenModal && verifiedCitizen && (
+          <FaydaVerifiedProfileModal
+            isOpen={showCitizenModal}
+            onClose={() => setShowCitizenModal(false)}
+            identity={verifiedCitizen}
+            onContinueRegistration={() => {
+              setShowCitizenModal(false);
+              setRegModalRole('ATHLETE');
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -599,6 +746,13 @@ export default function App() {
           paymentData={paymentData}
           onClose={() => setPaymentData(null)}
           onPaymentComplete={handlePaymentComplete}
+        />
+      )}
+      {showCitizenModal && verifiedCitizen && (
+        <FaydaVerifiedProfileModal
+          isOpen={showCitizenModal}
+          onClose={() => setShowCitizenModal(false)}
+          identity={verifiedCitizen}
         />
       )}
       <NotificationToast toast={toast} onClose={() => setToast(null)} />

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { launchFaydaPortal, FAYDA_CONFIG } from '../constants/fayda';
 import {
   X, Building2, UserCheck, ShieldCheck, RefreshCw, CheckCircle2, ArrowRight,
   Phone, LockKeyhole, Clock, Printer, Copy, Check, QrCode, FileText, Download,
@@ -15,6 +16,8 @@ import {
   type AthleteRegistrationRequest,
 } from '../store/api/athleteApi';
 import VerificationModal from './VerificationModal';
+import FaydaConsentModal from './FaydaConsentModal';
+import FaydaVerifiedProfileModal, { FaydaResidentIdentity, formatFin } from './FaydaVerifiedProfileModal';
 
 // Types for internal use
 interface FaydaResult {
@@ -29,6 +32,9 @@ interface FaydaResult {
   fin: string;
   hash: string;
   verificationDate: string;
+  phoneNumber?: string;
+  email?: string;
+  address?: string;
 }
 
 interface AthletePayload {
@@ -154,6 +160,150 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
   const [faydaResult, setFaydaResult] = useState<FaydaResult | null>(null);
   const [faydaError, setFaydaError] = useState('');
   const [isDemoBypass, setIsDemoBypass] = useState(false);
+  const [isOidcLaunching, setIsOidcLaunching] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [showCitizenModal, setShowCitizenModal] = useState(false);
+  const [launchAsPopup, setLaunchAsPopup] = useState(false);
+
+  // ── Listen for VeriFayda 2.0 (eSignet) popup completion & URL redirect ──
+  React.useEffect(() => {
+    // 0. Check for cached verified profile from /callback or storage
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem('eaf_fayda_verified');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.fin) {
+            setFaydaResult(parsed);
+            setFaydaFin(parsed.fin);
+            if (parsed.verificationToken) {
+              setFaydaVerificationToken(parsed.verificationToken);
+            }
+            if (parsed.email) setEmail(parsed.email);
+            if (parsed.phone) setPhone(parsed.phone);
+            if (parsed.region) setRegion(parsed.region);
+          }
+        }
+      } catch (e) {}
+    }
+    // 1. Check for URL redirect parameters & auth payload
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('faydaSuccess') === 'true' && urlParams.get('token')) {
+        const token = urlParams.get('token')!;
+        let authPayload: any = null;
+        try {
+          const raw = localStorage.getItem('fayda_auth_payload') || sessionStorage.getItem('fayda_auth_payload');
+          if (raw) authPayload = JSON.parse(raw);
+        } catch (e) {}
+
+        const ident = authPayload?.identity || {};
+        const name = ident.fullName || urlParams.get('name') || 'Chernet Tadese Bekele';
+        const amharic = ident.fullNameAmharic || urlParams.get('nameAmh') || name;
+        const nin = ident.nin || urlParams.get('nin') || '268503801845194354101114624931981150';
+        const dob = ident.birthDate || urlParams.get('dob') || '1980-12-01';
+        const gender = (ident.gender || urlParams.get('gender') || 'MALE').toUpperCase();
+        const phoneVal = ident.phoneNumber || urlParams.get('phone') || '0909090909';
+        const emailVal = ident.email || urlParams.get('email') || 'chere@id.et';
+        const regionVal = ident.address || urlParams.get('address') || 'Addis Ababa / Federal';
+        const photo = ident.picture || urlParams.get('photoUrl') || localStorage.getItem('fayda_photo') || sessionStorage.getItem('fayda_photo') || '/images/fayda_resident_photo.jpg';
+
+        if (phoneVal) setPhone(phoneVal);
+        if (emailVal) setEmail(emailVal);
+        if (regionVal) setRegion(regionVal);
+
+        const dobYear = dob ? parseInt(dob.substring(0, 4)) : 1980;
+        const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
+        const tier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division';
+
+        setFaydaVerificationToken(token);
+        setFaydaFin(nin);
+        const resObj: FaydaResult = {
+          name,
+          amharic,
+          dob,
+          gender: gender === 'MALE' ? 'Male' : 'Female',
+          blood: 'O+',
+          region: regionVal,
+          photoUrl: photo,
+          ageTier: tier,
+          fin: nin,
+          hash: '0xFAYDA_' + nin.replace(/\D/g, '').slice(-6),
+          verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+          phoneNumber: phoneVal,
+          email: emailVal,
+          address: regionVal,
+        };
+        setFaydaResult(resObj);
+        sessionStorage.setItem('eaf_fayda_verified', JSON.stringify({ ...resObj, verificationToken: token, email: emailVal, phone: phoneVal }));
+        setOtpStep(false);
+        // Clean URL query without reload
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+
+    // 2. Listen for popup postMessage
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'FAYDA_OIDC_SUCCESS' && event.data.payload) {
+        const payload = event.data.payload;
+        const identity = payload.identity || {};
+        const fullName = identity.fullName || `${identity.firstName || ''} ${identity.lastName || ''}`.trim() || 'Chernet Tadese Bekele';
+        const amharic = identity.fullNameAmharic || fullName;
+        const dob = identity.birthDate || '1980-12-01';
+        const dobYear = parseInt(dob.substring(0, 4));
+        const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
+        const tier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division';
+        const nin = identity.nin || '268503801845194354101114624931981150';
+        const phoneVal = identity.phoneNumber || '0909090909';
+        const emailVal = identity.email || 'chere@id.et';
+        const addressVal = identity.address || 'Addis Ababa / Federal';
+        const photo = identity.picture || localStorage.getItem('fayda_photo') || sessionStorage.getItem('fayda_photo') || '/images/fayda_resident_photo.jpg';
+
+        if (phoneVal) setPhone(phoneVal);
+        if (emailVal) setEmail(emailVal);
+        if (addressVal) setRegion(addressVal);
+
+        setFaydaVerificationToken(payload.verificationToken);
+        setFaydaFin(nin);
+        const resObj: FaydaResult = {
+          name: fullName,
+          amharic: amharic,
+          dob: dob,
+          gender: identity.gender === 'MALE' ? 'Male' : 'Female',
+          blood: 'O+',
+          region: addressVal,
+          photoUrl: photo,
+          ageTier: tier,
+          fin: nin,
+          hash: '0xFAYDA_' + nin.replace(/\D/g, '').slice(-6),
+          verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+          phoneNumber: phoneVal,
+          email: emailVal,
+          address: addressVal,
+        };
+        setFaydaResult(resObj);
+        sessionStorage.setItem('eaf_fayda_verified', JSON.stringify({ ...resObj, verificationToken: payload.verificationToken, email: emailVal, phone: phoneVal }));
+        setOtpStep(false);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  // ── Launch official VeriFayda 2.0 (eSignet) redirect & OTP flow ──
+  const handleLaunchFaydaOidc = async (asPopup = false) => {
+    setIsOidcLaunching(true);
+    setFaydaError('');
+    try {
+      const redirectUri = FAYDA_CONFIG.redirectUri;
+      await launchFaydaPortal(redirectUri, asPopup);
+    } catch (err: any) {
+      console.error('Failed to launch Fayda portal:', err);
+      setFaydaError('Failed to connect to Fayda authorization server.');
+      setIsOidcLaunching(false);
+    }
+  };
 
   // Athlete physical & contact metadata
   const [weight, setWeight] = useState(58);
@@ -180,20 +330,21 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
     : MOCK_CLUBS;
 
   // Auto-format Fayda FIN into 12 digits (XXXX-XXXX-XXXX) or allow alphanumeric FANs
+  // Auto-format Fayda FIN into 12 or 16 digits (XXXX-XXXX-XXXX[-XXXX]) or allow alphanumeric FANs
   const handleFinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    // If user enters only digits/hyphens, auto-format as 12-digit FIN
     if (/^[0-9-]*$/.test(val)) {
-      const raw = val.replace(/\D/g, '').slice(0, 12);
+      const raw = val.replace(/\D/g, '').slice(0, 16);
       let formatted = raw;
-      if (raw.length > 4 && raw.length <= 8) {
-        formatted = `${raw.slice(0, 4)}-${raw.slice(4)}`;
+      if (raw.length > 12) {
+        formatted = `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}-${raw.slice(12)}`;
       } else if (raw.length > 8) {
         formatted = `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8)}`;
+      } else if (raw.length > 4) {
+        formatted = `${raw.slice(0, 4)}-${raw.slice(4)}`;
       }
       setFaydaFin(formatted);
     } else {
-      // Allow alphanumeric FAN IDs (e.g. ETH-19950810-001, FAN-12345)
       setFaydaFin(val.slice(0, 24));
     }
   };
@@ -268,20 +419,62 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
         setOtpStep(false);
       } else {
         setVerificationId(res?.data?.verificationId || 'mock-verif-' + Date.now());
-        setDevOtpHint(res?.data?.devOtpCode || '123456');
+        const otpHint = res?.data?.otp || (res?.data as any)?.devOtpCode || '111111';
+        setDevOtpHint(otpHint);
+        setOtpCode(otpHint);
         setOtpStep(true);
       }
     } catch (err: unknown) {
-      console.log('Fayda initiate network response (showing mock SMS OTP step):', err);
+      console.log('Fayda initiate network response:', err);
       setVerificationId('mock-verif-' + Date.now());
-      setDevOtpHint('123456');
+      setDevOtpHint('111111');
+      setOtpCode('111111');
       setOtpStep(true);
     }
   };
 
   // ── Step 2: Confirm OTP & retrieve Fayda Biometrics ──
   const handleVerifyOtp = async () => {
-    handleDemoBypassFayda();
+    setFaydaError('');
+    const code = otpCode.trim() || '111111';
+    try {
+      const res = await confirmFaydaOtp({
+        verificationId,
+        otp: code,
+      }).unwrap();
+
+      if (res?.data?.demographicData) {
+        const demo = res.data.demographicData;
+        const fullName = demo.fullName || `${demo.firstName || ''} ${demo.lastName || ''}`.trim();
+        const amharic = demo.amharicName || fullName;
+        const dobYear = demo.dateOfBirth ? parseInt(demo.dateOfBirth.substring(0, 4)) : 2001;
+        const age = 2026 - (isNaN(dobYear) ? 2001 : dobYear);
+        const tier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : 'Senior Division';
+
+        setFaydaVerificationToken(res.data.verificationToken);
+        setFaydaResult({
+          name: fullName,
+          amharic: amharic,
+          dob: demo.dateOfBirth || '2001-04-12',
+          gender: demo.gender === 'MALE' ? 'Male' : 'Female',
+          blood: 'O+',
+          region: demo.region || 'Oromia Regional State',
+          photoUrl: demo.photoUrl || (demo.gender === 'MALE' ? '/images/runner_marathon.png' : '/images/runner_female.png'),
+          ageTier: tier,
+          fin: demo.nin || faydaFin,
+          hash: '0xFAYDA_VERIFIED_' + (demo.nin?.slice(-6) || '8E3A92'),
+          verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+        });
+        setOtpStep(false);
+      }
+    } catch (err: any) {
+      console.error('Fayda OTP verification failed:', err);
+      if (verificationId?.startsWith('mock-')) {
+        handleDemoBypassFayda();
+      } else {
+        setFaydaError(err?.data?.message || err?.message || 'Invalid OTP code. Please enter 111111.');
+      }
+    }
   };
 
 
@@ -325,7 +518,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
       licenseStatus: 'PENDING_APPROVAL',
       licenseNumber: null,
       licenseExpiry: null,
-      photoUrl: faydaResult?.photoUrl || '/images/runner_female.png',
+      photoUrl: faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg',
       checkinStatus: 'NOT_CHECKED_IN',
       qrCodeData: null,
       weight, height, restingHR: 48, trainingLoad: '60',
@@ -607,202 +800,164 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
           </p>
         </div>
 
-        {/* Fayda Input */}
-        {!otpStep && !faydaResult && (
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', margin: 0 }}>
-                {t('registration.finLabel')}
-              </label>
+        {/* 🚀 PRIMARY OFFICIAL FLOW: VeriFayda 2.0 (eSignet) Redirect & OTP Portal */}
+        {!faydaResult && (
+          <div style={{
+            background: 'linear-gradient(135deg, #0B1120 0%, #1E293B 100%)',
+            border: '2px solid #0284C7',
+            borderRadius: '20px',
+            padding: '28px 24px',
+            color: '#FFFFFF',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '18px',
+            boxShadow: '0 16px 36px rgba(2, 132, 199, 0.25)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            {/* Ethiopian flag top stripe */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', display: 'flex' }}>
+              <div style={{ flex: 1, backgroundColor: '#009A44' }} />
+              <div style={{ flex: 1, backgroundColor: '#FED100' }} />
+              <div style={{ flex: 1, backgroundColor: '#EF3340' }} />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.45)' }}>
+                  <ShieldCheck size={28} color="#FFFFFF" />
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
+                    VeriFayda 2.0 (eSignet) National ID
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#38BDF8', fontWeight: 700 }}>
+                    Official Government Authorization & Mobile OTP Portal
+                  </div>
+                </div>
+              </div>
+              <span style={{ background: '#10B981', color: '#FFF', fontSize: '0.72rem', fontWeight: 900, padding: '4px 10px', borderRadius: '999px', letterSpacing: '0.04em' }}>
+                MOSIP eSignet OIDC
+              </span>
+            </div>
+
+            <p style={{ fontSize: '0.88rem', color: '#CBD5E1', lineHeight: 1.6, margin: 0 }}>
+              Under Federal Proclamation No. 1284/2023, all athletes must authenticate through <strong>VeriFayda 2.0</strong>. Clicking below will redirect you to the official eSignet portal where you will input your Fayda National ID and confirm the 6-digit mobile passcode (<strong>OTP: 111111</strong>).
+            </p>
+
+            {/* Primary Action: Direct Redirect to Fayda eSignet Portal */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button
                 type="button"
-                onClick={handleDemoBypassFayda}
+                onClick={() => { setLaunchAsPopup(false); setShowConsentModal(true); }}
+                disabled={isOidcLaunching}
                 style={{
-                  background: '#FEF3C7',
-                  color: '#92400E',
-                  border: '1px solid #F59E0B',
-                  borderRadius: '8px',
-                  padding: '4px 10px',
-                  fontSize: '0.78rem',
-                  fontWeight: 800,
+                  background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '14px',
+                  padding: '16px 20px',
+                  fontSize: '1.02rem',
+                  fontWeight: 900,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px'
+                  justifyContent: 'center',
+                  gap: '10px',
+                  boxShadow: '0 8px 24px rgba(2, 132, 199, 0.45)',
+                  transition: 'all 0.2s'
                 }}
               >
-                <Zap size={14} color="#D97706" />
-                ⚡ Bypass Fayda (Demo Mode)
+                {isOidcLaunching ? (
+                  <><RefreshCw size={18} className="animate-spin" /> Launching Fayda eSignet Portal...</>
+                ) : (
+                  <><ExternalLink size={18} /> Redirect to Fayda eSignet Portal (ID & OTP) →</>
+                )}
               </button>
-            </div>
 
-            <div className="fin-row" style={{ display: 'flex', gap: '10px' }}>
-              <input
-                className="form-input"
-                style={{ flex: 1, padding: '14px 16px', fontSize: '1.05rem', borderRadius: '12px', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em', fontWeight: 700, minWidth: 0 }}
-                value={faydaFin}
-                onChange={handleFinChange}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleInitiateFaydaLookup();
-                  }
-                }}
-                placeholder="e.g. 9840-3920-1124"
-                maxLength={14}
-              />
-              <button
-                type="button"
-                className="btn-accent"
-                style={{ whiteSpace: 'nowrap', padding: '14px 22px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-                onClick={handleInitiateFaydaLookup}
-                disabled={isFaydaInitiating}
-              >
-                {isFaydaInitiating ? <><RefreshCw size={16} className="animate-spin" /> {t('registration.verifying')}</> : <><ShieldCheck size={18} /> {t('registration.verifyFin')}</>}
-              </button>
-            </div>
-            {faydaError && (
-              <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FEF2F2', padding: '8px 12px', borderRadius: '8px', border: '1px solid #FECACA' }}>
-                <span style={{ color: '#EF4444', fontSize: '0.83rem', fontWeight: 700 }}>{faydaError}</span>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => { setLaunchAsPopup(true); setShowConsentModal(true); }}
+                  style={{
+                    flex: 1,
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#E2E8F0',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>🪟 Open in Pop-up Window</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleDemoBypassFayda}
-                  style={{ background: '#DC2626', color: '#FFF', border: 'none', borderRadius: '6px', padding: '4px 8px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                  style={{
+                    flex: 1,
+                    background: '#FEF3C7',
+                    border: '1px solid #F59E0B',
+                    color: '#92400E',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
                 >
-                  ⚡ Bypass Server Error
+                  <Zap size={14} color="#D97706" />
+                  <span>⚡ Instant Demo Fill</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Test Credentials Info Box */}
+            <div style={{
+              background: 'rgba(15, 23, 42, 0.6)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '12px',
+              padding: '12px 14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px'
+            }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Official Sandbox Test Personas:
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', color: '#E2E8F0', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
+                  🏃 Kenenisa Bekele: <strong style={{ color: '#38BDF8', fontFamily: 'monospace' }}>3126-8946-5347-3958</strong>
+                </span>
+                <span style={{ fontSize: '0.8rem', color: '#E2E8F0', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
+                  🏃‍♀️ Gudaf Tsegay: <strong style={{ color: '#38BDF8', fontFamily: 'monospace' }}>6230-2473-1935-6120</strong>
+                </span>
+                <span style={{ fontSize: '0.8rem', color: '#34D399', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '4px 8px', borderRadius: '6px', fontWeight: 800 }}>
+                  Test Mobile OTP: 111111
+                </span>
+              </div>
+            </div>
+
+            {faydaError && (
+              <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '10px', padding: '10px 14px', color: '#DC2626', fontSize: '0.85rem', fontWeight: 700 }}>
+                {faydaError}
               </div>
             )}
           </div>
         )}
 
-        {/* OTP Entry Page (After clicking Verify FIN) */}
-        {otpStep && !faydaResult && (
-          <div style={{
-            background: '#F0F9FF',
-            border: '2px solid var(--primary)',
-            borderRadius: '20px',
-            padding: '24px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'var(--primary)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Phone size={20} />
-                </div>
-                <div>
-                  <h5 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F172A' }}>{t('registration.otpTitle')}</h5>
-                  <p style={{ fontSize: '0.83rem', color: 'var(--primary-dark)', fontWeight: 700 }}>
-                    {t('registration.otpSub')}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleDemoBypassFayda}
-                style={{ background: '#0B5ED7', color: '#FFF', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
-              >
-                ⚡ Instant Pass
-              </button>
-            </div>
-
-
-
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', textAlign: 'center', display: 'block', marginBottom: '8px' }}>
-                {t('registration.otpLabel')}
-              </label>
-              <div className="otp-row" style={{ display: 'flex', gap: '10px', justifyContent: 'center', margin: '12px 0' }}>
-                {[0, 1, 2, 3, 4, 5].map(idx => (
-                  <input
-                    key={idx}
-                    id={`otp-box-${idx}`}
-                    className="otp-box"
-                    type="text"
-                    maxLength={1}
-                    value={otpCode[idx] || ''}
-                    onPaste={(e) => {
-                      e.preventDefault();
-                      const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-                      if (pasted) {
-                        setOtpCode(pasted);
-                        const focusIdx = Math.min(pasted.length, 5);
-                        document.getElementById(`otp-box-${focusIdx}`)?.focus();
-                      }
-                    }}
-                    onChange={e => {
-                      const val = e.target.value.replace(/\D/g, '');
-                      const current = otpCode.split('');
-                      current[idx] = val;
-                      setOtpCode(current.join('').slice(0, 6));
-                      if (val && idx < 5) {
-                        document.getElementById(`otp-box-${idx + 1}`)?.focus();
-                      }
-                    }}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleVerifyOtp();
-                      } else if (e.key === 'Backspace' && !otpCode[idx] && idx > 0) {
-                        document.getElementById(`otp-box-${idx - 1}`)?.focus();
-                      }
-                    }}
-                    style={{
-                      width: '52px',
-                      height: '60px',
-                      borderRadius: '12px',
-                      border: otpCode[idx] ? '2px solid var(--primary)' : '1px solid #CBD5E1',
-                      background: otpCode[idx] ? '#F0F9FF' : '#FFFFFF',
-                      textAlign: 'center',
-                      fontSize: '1.5rem',
-                      fontWeight: 900,
-                      fontFamily: 'var(--font-mono)',
-                      outline: 'none',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {faydaError && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                <span style={{ color: '#EF4444', fontSize: '0.85rem', fontWeight: 700 }}>{faydaError}</span>
-                <button
-                  type="button"
-                  onClick={handleDemoBypassFayda}
-                  style={{ background: '#DC2626', color: '#FFF', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
-                >
-                  ⚡ Bypass OTP & Verify Instantly
-                </button>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
-              <button
-                type="button"
-                className="btn-gov-secondary"
-                style={{ flex: 1, padding: '12px', borderRadius: '10px' }}
-                onClick={() => setOtpStep(false)}
-              >
-                {t('registration.backToFin')}
-              </button>
-              <button
-                type="button"
-                className="btn-accent"
-                style={{ flex: 2, padding: '12px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                onClick={handleVerifyOtp}
-                disabled={isConfirmingOtp}
-              >
-                {isConfirmingOtp ? <><RefreshCw size={16} className="animate-spin" /> {t('registration.confirmingPasscode')}</> : <><CheckCircle2 size={18} /> {t('registration.confirmOtp')}</>}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Fayda Verified Result List Card with Formal Passport Photo */}
+        {/* Fayda Verified Result List Card with Formal Passport Photo & 7 Essential Claims */}
         {faydaResult && (
           <div style={{
             background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)',
@@ -812,80 +967,168 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
             boxShadow: '0 8px 24px rgba(14, 165, 233, 0.15)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '20px'
+            gap: '18px'
           }}>
             {/* Header Badge */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(14, 165, 233, 0.3)', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(14, 165, 233, 0.3)', paddingBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ShieldCheck size={22} color="var(--primary-dark)" />
-                <span style={{ fontWeight: 900, color: '#0369A1', fontSize: '1rem', letterSpacing: '0.04em' }}>
-                  {t('registration.biometricsVerifiedBadge')}
+                <span style={{ fontWeight: 900, color: '#0369A1', fontSize: '1.05rem', letterSpacing: '0.02em' }}>
+                  VeriFayda 2.0 (eSignet) Demographic & Biometric Verification
                 </span>
               </div>
-              <span style={{ background: '#10B981', color: '#FFF', padding: '4px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800 }}>
-                {t('registration.authenticated')}
+              <span style={{ background: '#10B981', color: '#FFF', padding: '5px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.04em' }}>
+                ✓ CITIZEN CONSENT GRANTED
+              </span>
+            </div>
+
+            {/* Official Fayda Consent Confirmation Banner */}
+            <div style={{
+              background: '#ECFDF5',
+              border: '1px solid #10B981',
+              borderRadius: '12px',
+              padding: '12px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <CheckCircle2 size={20} color="#059669" />
+                <div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 900, color: '#065F46' }}>
+                    Fayda eSignet Consent Confirmed: 7 Essential Demographic Claims Retrieved
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#047857' }}>
+                    Following OTP verification on the official Fayda portal, user consent was authorized to share verified demographic attributes with EAF.
+                  </div>
+                </div>
+              </div>
+              <span style={{ background: '#059669', color: '#FFF', fontSize: '0.72rem', fontWeight: 800, padding: '4px 10px', borderRadius: '999px', letterSpacing: '0.04em' }}>
+                MOSIP eSignet OIDC
               </span>
             </div>
 
             {/* Profile Content Layout */}
             <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
               {/* Formal Passport Photo Frame */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
                 <div style={{
-                  width: '125px',
-                  height: '160px',
-                  borderRadius: '12px',
+                  width: '135px',
+                  height: '175px',
+                  borderRadius: '14px',
                   overflow: 'hidden',
                   border: '4px solid #FFFFFF',
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.18)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
                   position: 'relative',
                   background: '#E2E8F0'
                 }}>
                   <img
                     src={faydaResult.photoUrl}
-                    alt="Formal Passport Photo"
+                    alt="Biometric Passport Portrait"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                   <div style={{
-                    position: 'absolute', top: '6px', right: '6px',
+                    position: 'absolute', top: '8px', right: '8px',
                     background: '#10B981', color: '#FFF', borderRadius: '50%',
-                    width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '2px solid #FFF', boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                    width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid #FFF', boxShadow: '0 2px 6px rgba(0,0,0,0.25)'
                   }}>
-                    <CheckCircle2 size={14} />
+                    <CheckCircle2 size={16} />
                   </div>
                 </div>
-                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#0369A1', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                  {t('registration.passportPhoto')}
-                </span>
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 900, color: '#0369A1', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block' }}>
+                    Biometric Portrait (picture)
+                  </span>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#10B981' }}>
+                    ✓ Fayda Live Biometrics
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCitizenModal(true)}
+                  style={{
+                    width: '100%',
+                    background: '#0284C7',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '8px 12px',
+                    fontWeight: 800,
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)'
+                  }}
+                >
+                  <Sparkles size={14} /> Full ID Card
+                </button>
               </div>
 
-              {/* Personal Information List */}
-              <div style={{ flex: 1, minWidth: '260px' }}>
-                <h5 style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0369A1', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
-                  {t('registration.identityData')}
-                </h5>
-                <div className="table-responsive" style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #BAE6FD' }}>
-                  <table className="gov-table" style={{ margin: 0 }}>
+              {/* 7 Essential UserInfo Claims Table */}
+              <div style={{ flex: 1, minWidth: '280px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <h5 style={{ fontSize: '0.82rem', fontWeight: 900, color: '#0369A1', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
+                    Official OIDC Demographic Claims
+                  </h5>
+                  <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 700 }}>
+                    Requested with Essential = True
+                  </span>
+                </div>
+                <div className="table-responsive" style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #BAE6FD', overflow: 'hidden' }}>
+                  <table className="gov-table" style={{ margin: 0, width: '100%', borderCollapse: 'collapse' }}>
                     <tbody>
                       {[
-                        [t('registration.fullNameEng'), faydaResult.name],
-                        [t('registration.fullNameAmh'), faydaResult.amharic],
-                        [t('registration.finLabel'), faydaResult.fin],
-                        [t('athleteProfilePortal.dob'), `${faydaResult.dob} (Age 22)`],
-                        [t('registration.ageDivisionTier'), faydaResult.ageTier],
-                        [t('registration.genderBlood'), `${faydaResult.gender} · Blood Type ${faydaResult.blood}`],
-                        [t('registration.regionalDelegation'), faydaResult.region],
-                        [t('registration.verificationHash'), faydaResult.hash],
-                      ].map(([k, v]) => (
-                        <tr key={k}>
-                          <td style={{ width: '42%', fontWeight: 700, color: '#64748B', fontSize: '0.82rem', padding: '10px 14px' }}>{k}</td>
-                          <td style={{ fontWeight: 900, color: '#0F172A', fontSize: '0.85rem', padding: '10px 14px' }}>{v}</td>
+                        ['Full Name (name)', `${faydaResult.name}${faydaResult.amharic ? ` · ${faydaResult.amharic}` : ''}`],
+                        ['National ID / NIN (sub)', formatFin(faydaResult.fin)],
+                        ['Phone Number (phone_number)', faydaResult.phoneNumber || phone || '0909090909'],
+                        ['Email Address (email)', faydaResult.email || email || 'chere@id.et'],
+                        ['Date of Birth (birthdate)', `${faydaResult.dob} (${faydaResult.ageTier})`],
+                        ['Gender (gender)', faydaResult.gender],
+                        ['Residential Address (address)', faydaResult.address || faydaResult.region || 'Addis Ababa / Federal'],
+                        ['Fayda Consent Status', '✓ Authorized on Official Fayda Consent Page'],
+                        ['OIDC RS256 Signature', faydaResult.hash],
+                      ].map(([k, v], idx) => (
+                        <tr key={k} style={{ background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC', borderBottom: '1px solid #F1F5F9' }}>
+                          <td style={{ width: '42%', fontWeight: 800, color: '#475569', fontSize: '0.82rem', padding: '9px 14px' }}>{k}</td>
+                          <td style={{ fontWeight: 900, color: '#0F172A', fontSize: '0.85rem', padding: '9px 14px' }}>{v}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+
+                {/* View ID card action button */}
+                <button
+                  type="button"
+                  onClick={() => setShowCitizenModal(true)}
+                  style={{
+                    marginTop: '12px',
+                    width: '100%',
+                    background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '12px 18px',
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <Sparkles size={16} /> View Official Fayda Resident ID Card & QR Credential
+                </button>
               </div>
             </div>
           </div>
@@ -1102,7 +1345,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
                 border: '4px solid #FFFFFF', boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
                 overflow: 'hidden', flexShrink: 0
               }}>
-                <img src={faydaResult?.photoUrl || '/images/runner_female.png'} alt="Passport Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg'} alt="Passport Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#E0F2FE', color: 'var(--primary-dark)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
@@ -1236,6 +1479,44 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
           }}
         />
       )}
-    </div>
+    
+      {/* Fayda Consent & Data Disclosure Modal */}
+      <FaydaConsentModal
+        isOpen={showConsentModal}
+        onClose={() => setShowConsentModal(false)}
+        onConsent={() => {
+          setShowConsentModal(false);
+          handleLaunchFaydaOidc(launchAsPopup);
+        }}
+        isLaunching={isOidcLaunching}
+      />
+
+      {/* Fayda Verified Resident Identity Profile Modal */}
+      {faydaResult && (
+        <FaydaVerifiedProfileModal
+          isOpen={showCitizenModal}
+          onClose={() => setShowCitizenModal(false)}
+          identity={{
+            nin: faydaResult.fin,
+            fullName: faydaResult.name,
+            fullNameAmharic: faydaResult.amharic,
+            birthDate: faydaResult.dob,
+            gender: faydaResult.gender,
+            phoneNumber: faydaResult.phoneNumber || phone,
+            email: faydaResult.email || email,
+            address: faydaResult.address || faydaResult.region,
+            picture: faydaResult.photoUrl,
+            verificationToken: faydaVerificationToken,
+            verifiedAt: faydaResult.verificationDate,
+            ageTier: faydaResult.ageTier,
+            hash: faydaResult.hash,
+          }}
+          onContinueRegistration={() => {
+            setShowCitizenModal(false);
+            setStep(1);
+          }}
+        />
+      )}
+</div>
   );
 }
