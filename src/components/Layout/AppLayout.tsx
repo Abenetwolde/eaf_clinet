@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Building2, UserCheck, Users, ArrowRightLeft, Trophy,
+  Building2, UserCheck, Users, ArrowRightLeft, Trophy, ShieldCheck,
   Navigation, Activity, LogOut, Home,
   Bell, ChevronRight, Award, Globe, BookOpen, Sun, Moon, Menu, X
 } from 'lucide-react';
@@ -43,6 +43,7 @@ export default function AppLayout({
     { id: 'ROSTER',     label: 'Athlete Management',  icon: Users },
     { id: 'MEETS',      label: 'Meets',               icon: Trophy },
     { id: 'TRANSFERS',  label: 'Transfers',           icon: ArrowRightLeft },
+    { id: 'RBAC',       label: 'Security & RBAC Matrix', icon: ShieldCheck },
   ];
 
   const athleteNavItems = [

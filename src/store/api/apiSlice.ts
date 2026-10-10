@@ -1,39 +1,51 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { Athlete, Club, Meet } from '../../types';
-import type { RootState } from '../store';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type { RootState } from "../store";
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+const baseUrl = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 export const apiSlice = createApi({
-  reducerPath: 'api',
+  reducerPath: "api",
   baseQuery: fetchBaseQuery({
     baseUrl,
     prepareHeaders: (headers, { getState }) => {
       const state = getState() as RootState;
-      const token = state.auth?.token || (typeof window !== 'undefined' ? localStorage.getItem('token') || localStorage.getItem('eaf_token') : null);
+      const token = state.auth?.token || (typeof window !== "undefined" ? localStorage.getItem("token") || localStorage.getItem("eaf_token") : null);
       if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+        headers.set("Authorization", `Bearer ${token}`);
       }
       return headers;
     },
   }),
-  tagTypes: ['Athletes', 'Clubs', 'Competitions', 'Events', 'News', 'Registrations', 'Results', 'Users'],
+  tagTypes: ["Athletes", "Clubs", "Competitions", "Events", "News", "Registrations", "Results", "Users"],
   endpoints: (builder) => ({
-    getAthletes: builder.query<Athlete[], void>({
-      query: () => 'athletes',
-      providesTags: ['Athletes'],
+    getAthletes: builder.query<any[], void>({
+      query: () => "athletes/public",
+      transformResponse: (response: any) => response?.data || response || [],
+      providesTags: ["Athletes"],
     }),
-    getClubs: builder.query<Club[], void>({
-      query: () => 'clubs',
-      providesTags: ['Clubs'],
+    getClubs: builder.query<any[], void>({
+      query: () => "clubs/verified",
+      transformResponse: (response: any) => response?.data || response || [],
+      providesTags: ["Clubs"],
     }),
-    getCompetitions: builder.query<Meet[], void>({
-      query: () => 'competitions',
-      providesTags: ['Competitions'],
+    getCompetitions: builder.query<any[], void>({
+      query: () => "events/published",
+      transformResponse: (response: any) => response?.data || response || [],
+      providesTags: ["Competitions", "Events"],
+    }),
+    getPublishedEvents: builder.query<any[], void>({
+      query: () => "events/published",
+      transformResponse: (response: any) => response?.data || response || [],
+      providesTags: ["Events"],
+    }),
+    getOverviewStats: builder.query<any, void>({
+      query: () => "admin/overview",
+      transformResponse: (response: any) => response?.data || null,
     }),
     getResults: builder.query<Record<string, unknown>, void>({
-      query: () => 'results',
-      providesTags: ['Results'],
+      query: () => "results/published",
+      transformResponse: (response: any) => response?.data || response || {},
+      providesTags: ["Results"],
     }),
   }),
 });
@@ -42,5 +54,7 @@ export const {
   useGetAthletesQuery,
   useGetClubsQuery,
   useGetCompetitionsQuery,
+  useGetPublishedEventsQuery,
+  useGetOverviewStatsQuery,
   useGetResultsQuery,
 } = apiSlice;

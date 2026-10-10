@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Save, User, ShieldCheck, Mail, Phone, MapPin, Activity,
   Calendar, BadgeCheck, CheckCircle2, QrCode, Copy, Check,
-  AlertCircle, Heart, Weight, Lock, ArrowLeft, Award
+  AlertCircle, Heart, Weight, Lock, ArrowLeft, Award, ExternalLink, Globe, Plane
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import type { Athlete } from '../../types';
@@ -426,6 +426,70 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                   <Award size={14} /> EAF License 2026
                 </span>
                 <span className="font-extrabold">VALID</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. World Athletics Official Database Sync */}
+          <div className="bg-white dark:bg-[#121829] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Globe size={13} className="text-sky-600" />
+                World Athletics Integration
+              </div>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                ✓ WA Synchronized
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-xs space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-bold">World Athletics ID</span>
+                <span className="font-mono font-black text-sky-700 dark:text-sky-400">WA-14207842</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-bold">Global Ranking</span>
+                <span className="font-black text-slate-900 dark:text-white">#1 Women's 5,000m</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500 font-bold">WA Performance Score</span>
+                <span className="font-black text-emerald-600">1,412 Points (Elite)</span>
+              </div>
+            </div>
+
+            <a
+              href="https://worldathletics.org/athletes/ethiopia/14207842"
+              target="_blank"
+              rel="noreferrer"
+              className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
+            >
+              <span>View World Athletics Official Profile</span>
+              <ExternalLink size={12} />
+            </a>
+          </div>
+
+          {/* 4. Passport & FAN Identification */}
+          <div className="bg-white dark:bg-[#121829] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Plane size={13} className="text-purple-600" />
+                Passport & FAN Identification
+              </div>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                International Travel
+              </span>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <div className="text-[10px] text-slate-400 font-bold uppercase">Fayda Access Number (FAN)</div>
+                <div className="font-mono font-black text-slate-900 dark:text-white mt-0.5">{athlete.faydaFan || 'FAN-9842-1084-3310'}</div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <div className="text-[10px] text-slate-400 font-bold uppercase">Passport Number & Country</div>
+                <div className="font-mono font-black text-slate-900 dark:text-white mt-0.5">EP4829104 (ETH - Ethiopia)</div>
+                <div className="text-[10px] text-emerald-600 font-bold mt-1">✓ Valid until 20 Nov 2028 · Visa Cleared</div>
               </div>
             </div>
           </div>

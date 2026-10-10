@@ -1,26 +1,9 @@
 import React, { useState } from "react";
 import {
-  ShieldCheck,
-  CheckCircle2,
-  Copy,
-  Check,
-  X,
-  ExternalLink,
-  Printer,
-  Calendar,
-  Phone,
-  Mail,
-  MapPin,
-  Fingerprint,
-  User,
-  Award,
-  Hash,
-  Download,
-  ArrowRight,
-  ShieldAlert,
-  Sparkles,
+  ShieldCheck, CheckCircle2, Copy, Check, X,
+  Calendar, Phone, Mail, MapPin, User, ArrowRight, Sparkles
 } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export interface FaydaResidentIdentity {
   nin: string;
@@ -50,7 +33,6 @@ export function formatFin(fin: string | undefined): string {
   if (!fin) return "—";
   const clean = fin.replace(/\D/g, "");
   if (clean.length === 0) return fin;
-  // Group in 4s
   return clean.match(/.{1,4}/g)?.join(" ") || fin;
 }
 
@@ -91,52 +73,41 @@ export default function FaydaVerifiedProfileModal({
       ? `Masters Division (${age} yrs)`
       : `Senior Division (${age} yrs)`);
 
-  const qrPayload = JSON.stringify({
-    iss: "https://esignet.ida.fayda.et",
-    sub: identity.nin,
-    name: identity.fullName,
-    name_am: identity.fullNameAmharic || identity.fullName,
-    dob: identity.birthDate,
-    gender: identity.gender,
-    verified_by: "Ethiopian Athletics Federation",
-    status: "VERIFIED",
-    verified_at: identity.verifiedAt || new Date().toISOString(),
-  });
+  const cleanDigits = identity.nin ? identity.nin.replace(/\D/g, "") : "98421084";
+  const fan = "FAN-" + (cleanDigits.slice(-8) || "98421084");
 
   return (
     <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md overflow-y-auto"
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
     >
-      <div
-        className="relative w-full max-w-3xl my-6 bg-slate-900 text-white rounded-3xl shadow-2xl border border-sky-500/30 overflow-hidden flex flex-col max-h-[92vh]"
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+        className="relative w-full max-w-2xl bg-white text-slate-900 rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-6"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Ethiopian Flag Tricolor Accent */}
-        <div className="h-1.5 w-full flex">
-          <div className="flex-1 bg-[#009A44]" />
-          <div className="flex-1 bg-[#FED100]" />
-          <div className="flex-1 bg-[#EF3340]" />
-        </div>
-
         {/* Top Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-              <ShieldCheck size={24} />
-            </div>
+            <img
+              src="/images/fayda_logo.png"
+              alt="Fayda Logo"
+              className="w-8 h-8 rounded-full object-cover shadow-xs bg-white p-0.5 border border-slate-200"
+            />
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">
-                  Fayda Verified Resident Profile
+                <span className="text-xs font-black text-sky-800 uppercase tracking-wider">
+                  Fayda Identity Verified
                 </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  AUTHENTICATED
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                  <CheckCircle2 size={11} className="text-emerald-600" /> Authenticated
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium">
-                Federal Democratic Republic of Ethiopia · National ID Program (NIDP)
+              <p className="text-[11px] text-slate-500 font-medium m-0">
+                National ID Program (NIDP) · Ethiopian Athletics Federation
               </p>
             </div>
           </div>
@@ -144,227 +115,156 @@ export default function FaydaVerifiedProfileModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-9 h-9 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer border-0"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
-        {/* Card Body */}
-        <div className="px-6 py-5 overflow-y-auto space-y-6 flex-1">
-          {/* Main Citizen ID Card Presentation */}
-          <div className="relative rounded-2xl bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900 border border-sky-500/40 p-6 shadow-2xl overflow-hidden">
-            {/* Background watermark seal */}
-            <div className="absolute -right-10 -bottom-10 opacity-5 pointer-events-none">
-              <ShieldCheck size={260} />
-            </div>
-
-            <div className="flex flex-col md:flex-row gap-6 items-start">
-              {/* Photo Frame */}
-              <div className="flex flex-col items-center gap-2.5 shrink-0 mx-auto md:mx-0">
-                <div className="relative w-32 h-40 rounded-xl overflow-hidden border-4 border-amber-400/80 shadow-2xl bg-slate-800">
-                  <img
-                    src={photo}
-                    alt={identity.fullName}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 rounded-full shadow-md border-2 border-white">
-                    <CheckCircle2 size={14} />
-                  </div>
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
-                  Official Portrait
-                </span>
-              </div>
-
-              {/* Citizen Information Block */}
-              <div className="flex-1 min-w-0 space-y-3">
-                <div>
-                  <div className="text-xs font-bold text-sky-400 uppercase tracking-wider mb-0.5">
-                    Resident Citizen Name
-                  </div>
-                  <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2 flex-wrap">
-                    {identity.fullName}
-                  </h2>
-                  {identity.fullNameAmharic && (
-                    <div className="text-base font-bold text-sky-300 mt-0.5">
-                      {identity.fullNameAmharic}
-                    </div>
-                  )}
-                </div>
-
-                {/* NIN badge */}
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-slate-700/80 max-w-fit flex-wrap">
-                  <Fingerprint size={18} className="text-amber-400 shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">
-                      National ID Number (NIN / FAN)
-                    </span>
-                    <span className="font-mono font-black text-sm text-amber-300 tracking-wider">
-                      {formatFin(identity.nin)}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(identity.nin, "NIN")}
-                    className="ml-2 p-1 rounded text-slate-400 hover:text-white transition-colors"
-                    title="Copy NIN"
-                  >
-                    {copied === "NIN" ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-                  </button>
-                </div>
-
-                {/* Demographic Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 mb-0.5">
-                      <Calendar size={11} className="text-sky-400" /> Date of Birth
-                    </div>
-                    <div className="text-xs font-extrabold text-white">
-                      {identity.birthDate || "1980-12-01"}
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 mb-0.5">
-                      <User size={11} className="text-purple-400" /> Gender
-                    </div>
-                    <div className="text-xs font-extrabold text-white">
-                      {identity.gender || "MALE"}
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 mb-0.5">
-                      <Award size={11} className="text-amber-400" /> Age Tier
-                    </div>
-                    <div className="text-xs font-extrabold text-amber-300 truncate">
-                      {tier}
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 mb-0.5">
-                      <Phone size={11} className="text-emerald-400" /> Phone
-                    </div>
-                    <div className="text-xs font-extrabold text-white truncate">
-                      {identity.phoneNumber || "0909090909"}
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 mb-0.5">
-                      <Mail size={11} className="text-blue-400" /> Email
-                    </div>
-                    <div className="text-xs font-extrabold text-white truncate">
-                      {identity.email || "chere@id.et"}
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-slate-900/60 border border-slate-800">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 mb-0.5">
-                      <MapPin size={11} className="text-rose-400" /> Region
-                    </div>
-                    <div className="text-xs font-extrabold text-white truncate">
-                      {identity.address || "Addis Ababa / Federal"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Modal Body */}
+        <div className="p-6 sm:p-8">
+          {/* Subtle Animated Success Banner */}
+          <div className="flex flex-col items-center text-center mb-6">
+            <motion.div
+              initial={{ scale: 0.5, rotate: -30 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", damping: 14, stiffness: 220 }}
+              className="w-16 h-16 rounded-full bg-emerald-50 border-3 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-md relative mb-3"
+            >
+              <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-20 animate-ping" />
+              <CheckCircle2 size={34} className="text-emerald-600 relative z-10" />
+            </motion.div>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight m-0">
+              Identity Verified Successfully
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-md mt-1">
+              Your biometric national identity credentials have been authenticated and matched with official government records.
+            </p>
           </div>
 
-          {/* Cryptographic Verification Details & QR Code */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Claims Audit Box */}
-            <div className="md:col-span-2 p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <ShieldCheck size={15} className="text-emerald-400" />
-                  OIDC Cryptographic Verification
-                </span>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
-                  RS256 VALIDATED
-                </span>
+          {/* User Profile Card */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-5 shadow-xs">
+            <div className="flex items-center gap-4 sm:gap-5 flex-wrap sm:flex-nowrap mb-5">
+              <div className="w-20 h-24 sm:w-22 sm:h-26 rounded-xl overflow-hidden border-2 border-white shadow-sm shrink-0 bg-slate-200">
+                <img
+                  src={photo}
+                  alt="Biometric Portrait"
+                  className="w-full h-full object-cover"
+                />
               </div>
-
-              <div className="space-y-1.5 text-xs">
-                <div className="flex justify-between py-1 border-b border-slate-800/80">
-                  <span className="text-slate-400">Identity Provider:</span>
-                  <span className="font-mono font-bold text-slate-200">esignet.ida.fayda.et</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-800/80">
-                  <span className="text-slate-400">Authentication Flow:</span>
-                  <span className="font-bold text-slate-200">Authorization Code + PKCE (S256)</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-800/80">
-                  <span className="text-slate-400">Verification Date:</span>
-                  <span className="font-bold text-slate-200">
-                    {identity.verifiedAt || new Date().toLocaleDateString("en-US", { dateStyle: "medium" })}
-                  </span>
-                </div>
-                {identity.verificationToken && (
-                  <div className="pt-1">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
-                      EAF Verification Token Hash:
-                    </span>
-                    <div className="p-2 rounded bg-slate-900 border border-slate-800 font-mono text-[10px] text-sky-300 break-all flex items-center justify-between gap-2">
-                      <span className="truncate">{identity.verificationToken}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(identity.verificationToken || "", "TOKEN")}
-                        className="text-slate-400 hover:text-white shrink-0"
-                      >
-                        {copied === "TOKEN" ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                      </button>
-                    </div>
+              <div className="flex-1 min-w-[200px]">
+                <h4 className="text-lg sm:text-xl font-black text-slate-900 m-0 leading-tight">
+                  {identity.fullName}
+                </h4>
+                {identity.fullNameAmharic && (
+                  <div className="text-sm font-bold text-sky-700 mt-0.5">
+                    {identity.fullNameAmharic}
                   </div>
                 )}
+                <div className="text-xs text-slate-600 font-semibold mt-1.5 flex items-center gap-2 flex-wrap">
+                  <span>{identity.birthDate || "1980-12-01"}</span>
+                  <span>•</span>
+                  <span>{identity.gender || "Male"}</span>
+                  <span>•</span>
+                  <span>{tier}</span>
+                </div>
               </div>
             </div>
 
-            {/* QR Code Credential */}
-            <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex flex-col items-center justify-center text-center">
-              <div className="p-2.5 rounded-xl bg-white shadow-md mb-2">
-                <QRCodeSVG value={qrPayload} size={110} level="M" />
+            {/* SEPARATE FIN AND FAN CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              {/* FIN */}
+              <div className="bg-white border-2 border-sky-100 rounded-xl p-3.5 shadow-2xs">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-sky-800">
+                    National ID (FIN)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(identity.nin, 'FIN')}
+                    className="text-[10px] text-sky-700 font-bold bg-sky-50 px-2 py-0.5 rounded border border-sky-200 hover:bg-sky-100 cursor-pointer inline-flex items-center gap-1"
+                  >
+                    {copied === 'FIN' ? <Check size={11} /> : <Copy size={11} />}
+                    <span>{copied === 'FIN' ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+                <div className="text-base font-black text-slate-900 font-mono tracking-tight">
+                  {formatFin(identity.nin)}
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium mt-0.5">
+                  Permanent Citizen Identification
+                </div>
               </div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Digital Verification QR
-              </span>
-              <span className="text-[9px] text-slate-500 font-mono mt-0.5">
-                EAF · Proclamation 1284/2023
-              </span>
+
+              {/* FAN */}
+              <div className="bg-white border-2 border-emerald-100 rounded-xl p-3.5 shadow-2xs">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-emerald-800">
+                    Access Number (FAN)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(fan, 'FAN')}
+                    className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-100 cursor-pointer inline-flex items-center gap-1"
+                  >
+                    {copied === 'FAN' ? <Check size={11} /> : <Copy size={11} />}
+                    <span>{copied === 'FAN' ? 'Copied' : 'Copy'}</span>
+                  </button>
+                </div>
+                <div className="text-base font-black text-slate-900 font-mono tracking-tight">
+                  {fan}
+                </div>
+                <div className="text-[11px] text-slate-500 font-medium mt-0.5">
+                  Tokenized Digital Credential
+                </div>
+              </div>
+            </div>
+
+            {/* Contact details */}
+            <div className="bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between flex-wrap gap-2 text-xs text-slate-700">
+              <div className="flex items-center gap-1.5">
+                <Phone size={13} className="text-slate-400" />
+                <span className="font-bold">Phone:</span>
+                <span className="font-semibold">{identity.phoneNumber || "+251 90 909 0909"}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Mail size={13} className="text-slate-400" />
+                <span className="font-bold">Email:</span>
+                <span className="font-semibold">{identity.email || "chere@id.et"}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <MapPin size={13} className="text-slate-400" />
+                <span className="font-bold">Region:</span>
+                <span className="font-semibold">{identity.address || "Addis Ababa / Federal"}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-bold transition-colors"
-          >
-            Close Viewer
-          </button>
-
-          <div className="flex items-center gap-2">
-            {onContinueRegistration && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
+          {/* Action Buttons */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="py-3 px-5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs cursor-pointer transition-colors"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                if (onContinueRegistration) {
                   onContinueRegistration();
-                }}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30 flex items-center gap-1.5 transition-all"
-              >
-                <span>Continue Registration with Verified ID</span>
-                <ArrowRight size={14} />
-              </button>
-            )}
+                }
+              }}
+              className="flex-1 py-3 px-6 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-black text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer border-0 transition-all"
+            >
+              <span>Continue to Next Step</span>
+              <ArrowRight size={16} />
+            </button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

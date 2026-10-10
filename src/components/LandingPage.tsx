@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Trophy, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share, RefreshCw, Zap } from 'lucide-react';
+import { Trophy, ShieldAlert, Map, Briefcase, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share, RefreshCw, Zap } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 import NewsDetail from './NewsDetail';
 import GalleryDetail from './GalleryDetail';
@@ -7,6 +7,7 @@ import { ResponsiveSeeMoreText } from './ResponsiveSeeMoreText';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '../i18n';
 import { useGetNewsQuery, type NewsArticle } from '../store/api/newsApi';
+import { useGetPublishedEventsQuery, useGetOverviewStatsQuery } from '../store/api/apiSlice';
 import { useGetAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
 import { MOCK_NEWS } from '../data/mockData';
 
@@ -490,13 +491,52 @@ interface LandingPageProps {
   currentAthlete?: any;
   onLoginSuccess?: (role: string, data: any) => void;
   navNonce?: number;
+  isRegistered?: boolean;
+  registeredStatus?: string;
+  isLoggedIn?: boolean;
 }
 
-export default function LandingPage({ onSelectRole, onRegister, language = 'en', publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false, currentRole = 'LANDING', currentAthlete, onLoginSuccess, navNonce }: LandingPageProps) {
+export default function LandingPage({ onSelectRole, onRegister, language = 'en', publicSubPage = 'HOME', onChangePublicSubPage, darkMode = false, currentRole = 'LANDING', currentAthlete, onLoginSuccess, navNonce, isRegistered = false, registeredStatus = '', isLoggedIn = false }: LandingPageProps) {
   const { t: tr } = useI18n();
 
-  // ── Fetch real News from Backend API ──
+  // ── Fetch real News, Events & Overview from Backend API ──
   const { data: apiNews, isLoading: isNewsLoading } = useGetNewsQuery();
+  const { data: apiEvents } = useGetPublishedEventsQuery();
+  const { data: overviewStats } = useGetOverviewStatsQuery();
+
+  const allMeets = useMemo(() => {
+    if (!apiEvents || !Array.isArray(apiEvents) || apiEvents.length === 0) {
+      return ENRICHED_MEETS;
+    }
+    const mapped = apiEvents.map((evt: any, idx: number) => {
+      const scheduleDate = evt.schedule?.[0]?.date || evt.registrationDeadline?.slice(0, 10) || '2026-11-15';
+      const parsedDate = new Date(scheduleDate);
+      const dateStr = !isNaN(parsedDate.getTime())
+        ? parsedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        : 'November 15, 2026';
+
+      return {
+        id: evt.id,
+        title: evt.title || 'National Athletics Competition',
+        amharic: evt.title,
+        venue: evt.venue || 'Meskel Square / National Stadium, Addis Ababa',
+        date: scheduleDate,
+        dateString: dateStr,
+        status: evt.status === 'PUBLISHED' ? 'REGISTRATION_OPEN' : (evt.status || 'REGISTRATION_OPEN'),
+        disciplines: Array.isArray(evt.disciplines) && evt.disciplines.length > 0 ? evt.disciplines : ['10,000m', '5,000m', 'Marathon'],
+        region: evt.venue?.toLowerCase().includes('hawassa') ? 'Sidama' : evt.venue?.toLowerCase().includes('oromia') || evt.venue?.toLowerCase().includes('asella') ? 'Oromia' : 'Addis Ababa',
+        img: evt.bannerUrl || (idx % 2 === 0 ? '/images/banner_grand_prix.png' : '/images/banner_jan_meda.png'),
+        description: evt.description,
+        rules: evt.rules,
+        schedule: evt.schedule,
+        category: evt.category,
+      };
+    });
+
+    const mappedTitles = new Set(mapped.map((m: any) => m.title.toLowerCase()));
+    const extra = ENRICHED_MEETS.filter((m: any) => !mappedTitles.has(m.title.toLowerCase()));
+    return [...mapped, ...extra];
+  }, [apiEvents]);
 
   // ⚡ Instant localStorage cache to eliminate ALL loading delay on page load!
   const [cachedNews, setCachedNews] = useState<NewsItem[]>(() => {
@@ -1045,7 +1085,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     partnersTitle: tr('home.partnersTitle'),
   };
 
-  const filteredMeets = ENRICHED_MEETS.filter(meet => {
+  const filteredMeets = allMeets.filter(meet => {
     if (searchText) {
       const q = searchText.toLowerCase();
       const matchTitle = meet.title.toLowerCase().includes(q) || (meet.amharic && meet.amharic.toLowerCase().includes(q));
@@ -1083,7 +1123,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   }, [galleryLimit, selectedGalleryTab]);
 
   if (selectedMeetId) {
-    const meetObj = ENRICHED_MEETS.find(m => m.id === selectedMeetId);
+    const meetObj = allMeets.find(m => m.id === selectedMeetId);
     return (
       <CompetitionDetail
         meet={meetObj}
@@ -1139,7 +1179,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const t = {
     bg: darkMode ? '#090D16' : '#FFFFFF',
     bgAlt: darkMode ? '#0F1524' : '#F8FAFC',
-    bgHero: darkMode ? 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(14, 165, 233, 0.18), rgba(9, 13, 22, 0))' : 'linear-gradient(180deg,#F0F9FF 0%,#E0F2FE 40%,#FFFFFF 100%)',
+    bgHero: darkMode ? '#0F172A' : '#FFFFFF',
     surface: darkMode ? '#131B2E' : '#FFFFFF',
     surfaceRaised: darkMode ? '#1E294B' : '#F1F5F9',
     text: darkMode ? '#F8FAFC' : '#0F172A',
@@ -1203,9 +1243,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             >
               EAF Digital Athlete Portal: <br />
               <span style={{
-                background: 'linear-gradient(135deg, #0284C7 0%, #10B981 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                color: darkMode ? '#F8FAFC' : '#0F172A',
                 fontWeight: 900
               }}>
                 Verify & Track Live Results
@@ -1220,17 +1258,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               style={{
                 maxWidth: '840px',
                 margin: '0 auto 24px',
-                background: darkMode
-                  ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.65) 0%, rgba(15, 23, 42, 0.45) 100%)'
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(240, 249, 255, 0.45) 100%)',
-                border: darkMode
-                  ? '1px solid rgba(255, 255, 255, 0.18)'
-                  : '1px solid rgba(255, 255, 255, 0.95)',
+                background: darkMode ? '#1E293B' : '#FFFFFF',
+                border: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
                 borderRadius: '20px',
                 padding: '14px 20px',
-                boxShadow: darkMode
-                  ? '0 20px 50px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
-                  : '0 20px 45px -10px rgba(2, 132, 199, 0.18), inset 0 2px 2px rgba(255, 255, 255, 1), 0 0 1px rgba(0, 0, 0, 0.1)',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
                 backdropFilter: 'blur(28px) saturate(200%)',
                 WebkitBackdropFilter: 'blur(28px) saturate(200%)',
                 cursor: 'pointer',
@@ -1385,29 +1417,74 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               transition={{ duration: 0.5, delay: 0.15 }}
               style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', marginBottom: '24px' }}
             >
-              {/* Primary CTA */}
-              <button
-                onClick={() => onRegister('ATHLETE')}
-                className="btn-accent"
-                style={{
-                  background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
-                  color: '#FFFFFF',
-                  fontWeight: 800,
-                  fontSize: '0.98rem',
-                  padding: '14px 28px',
-                  borderRadius: '14px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.35)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  transition: 'all 0.25s ease'
-                }}
-              >
-                <CheckCircle size={20} />
-                Register / Verify EAF ID
-              </button>
+              {/* Primary CTA / Registered Status Badge */}
+              {isLoggedIn || isRegistered ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <div
+                    style={{
+                      background: '#ECFDF5',
+                      border: '2px solid #6EE7B7',
+                      color: '#065F46',
+                      fontWeight: 800,
+                      fontSize: '0.92rem',
+                      padding: '12px 22px',
+                      borderRadius: '14px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
+                    }}
+                  >
+                    <CheckCircle size={18} color="#059669" />
+                    <span>Session: {currentRole === 'CLUB' ? 'Club Administrator' : (registeredStatus && registeredStatus.toUpperCase() !== 'DRAFT' ? registeredStatus : 'Active / Verified Athlete')}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (onChangePublicSubPage) onChangePublicSubPage('DASHBOARD');
+                    }}
+                    style={{
+                      background: '#0F172A',
+                      color: '#FFFFFF',
+                      fontWeight: 800,
+                      fontSize: '0.92rem',
+                      padding: '13px 24px',
+                      borderRadius: '14px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)'
+                    }}
+                  >
+                    <span>Go to {currentRole === 'CLUB' ? 'Club' : 'Athlete'} Portal</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => onRegister('ATHLETE')}
+                  className="btn-accent"
+                  style={{
+                    background: '#0F172A',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '0.98rem',
+                    padding: '14px 28px',
+                    borderRadius: '14px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    transition: 'all 0.25s ease'
+                  }}
+                >
+                  <CheckCircle size={20} />
+                  Register with Fayda National ID
+                </button>
+              )}
 
               {/* Secondary CTA */}
               <button
@@ -1439,6 +1516,159 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </button>
             </motion.div>
 
+          </div>
+        </section>
+      )}
+
+      {/* ── 2.5 FEDERATION DIGITAL PILLARS & INTEGRITY MODULES ── */}
+      {publicSubPage === 'HOME' && (
+        <section style={{ background: t.surface, padding: '50px 24px', borderTop: '1px solid ' + t.border, borderBottom: '1px solid ' + t.border }}>
+          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: '36px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#E0F2FE', color: '#0369A1', padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 800, marginBottom: '8px' }}>
+                <Sparkles size={14} /> EAF Centralized Governance & Integrity Architecture
+              </div>
+              <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.4rem)', fontWeight: 900, color: t.text, margin: 0 }}>
+                Specialized Federation Systems
+              </h2>
+              <p style={{ color: t.textMuted, fontSize: '0.95rem', marginTop: '6px', maxWidth: '680px', marginInline: 'auto' }}>
+                Dedicated digital portals for clean sport compliance, workforce accreditation, regional athletics administration, and international representative rosters.
+              </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+              {/* Card 1: Anti-Doping */}
+              <div
+                className="hover-lift"
+                onClick={() => onChangePublicSubPage('ANTI_DOPING')}
+                style={{
+                  background: t.bgAlt,
+                  border: '1px solid ' + t.border,
+                  borderRadius: '20px',
+                  padding: '24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                }}
+              >
+                <div>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#ECFDF5', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                    <ShieldAlert size={22} color="#059669" />
+                  </div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: t.text, marginBottom: '6px' }}>
+                    Anti-Doping & Clean Sport
+                  </h3>
+                  <p style={{ fontSize: '0.84rem', color: t.textMuted, lineHeight: 1.5, marginBottom: '16px' }}>
+                    Registered testing whereabouts, WADA 2026 prohibited list search, laboratory testing history, and TUE medical exemptions.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#059669', fontSize: '0.85rem', fontWeight: 800 }}>
+                  <span>Access Integrity Hub</span>
+                  <ArrowRight size={14} />
+                </div>
+              </div>
+
+              {/* Card 2: Professionals */}
+              <div
+                className="hover-lift"
+                onClick={() => onChangePublicSubPage('PROFESSIONALS')}
+                style={{
+                  background: t.bgAlt,
+                  border: '1px solid ' + t.border,
+                  borderRadius: '20px',
+                  padding: '24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                }}
+              >
+                <div>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F0F9FF', border: '1px solid #BAE6FD', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                    <Users size={22} color="#0284C7" />
+                  </div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: t.text, marginBottom: '6px' }}>
+                    Athletics Professionals Registry
+                  </h3>
+                  <p style={{ fontSize: '0.84rem', color: t.textMuted, lineHeight: 1.5, marginBottom: '16px' }}>
+                    Accredited directory of World Athletics coaches, technical officials, team physicians, physiotherapists, and massage therapists.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0284C7', fontSize: '0.85rem', fontWeight: 800 }}>
+                  <span>View Professionals</span>
+                  <ArrowRight size={14} />
+                </div>
+              </div>
+
+              {/* Card 3: Regional Hub */}
+              <div
+                className="hover-lift"
+                onClick={() => onChangePublicSubPage('REGIONS')}
+                style={{
+                  background: t.bgAlt,
+                  border: '1px solid ' + t.border,
+                  borderRadius: '20px',
+                  padding: '24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                }}
+              >
+                <div>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#FEF3C7', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                    <Map size={22} color="#D97706" />
+                  </div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: t.text, marginBottom: '6px' }}>
+                    Regional Federations & Structures
+                  </h3>
+                  <p style={{ fontSize: '0.84rem', color: t.textMuted, lineHeight: 1.5, marginBottom: '16px' }}>
+                    Centralized database of 11 regional member federations, altitude camps, grassroots talent projects, and regional results.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#D97706', fontSize: '0.85rem', fontWeight: 800 }}>
+                  <span>Explore Regions & Calendars</span>
+                  <ArrowRight size={14} />
+                </div>
+              </div>
+
+              {/* Card 4: Representatives */}
+              <div
+                className="hover-lift"
+                onClick={() => onChangePublicSubPage('REPRESENTATIVES')}
+                style={{
+                  background: t.bgAlt,
+                  border: '1px solid ' + t.border,
+                  borderRadius: '20px',
+                  padding: '24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                }}
+              >
+                <div>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F3E8FF', border: '1px solid #E9D5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                    <Briefcase size={22} color="#9333EA" />
+                  </div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: t.text, marginBottom: '6px' }}>
+                    Athlete Representatives (Agents)
+                  </h3>
+                  <p style={{ fontSize: '0.84rem', color: t.textMuted, lineHeight: 1.5, marginBottom: '16px' }}>
+                    World Athletics authorized athlete representative registry, licensed international agencies, and represented athlete rosters.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#9333EA', fontSize: '0.85rem', fontWeight: 800 }}>
+                  <span>View Authorized Agents</span>
+                  <ArrowRight size={14} />
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       )}
@@ -1501,7 +1731,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     gap: '6px',
                   }}
                 >
-                  {tr('home.viewAllCompetitions')} ({ENRICHED_MEETS.length}) →
+                  {tr('home.viewAllCompetitions')} ({allMeets.length}) →
                 </button>
               )}
             </div>
@@ -1764,7 +1994,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   onClick={() => onChangePublicSubPage('COMPETITIONS')}
                 >
                   <Trophy size={18} />
-                  {tr('home.viewAllCompetitions')} ({ENRICHED_MEETS.length}) →
+                  {tr('home.viewAllCompetitions')} ({allMeets.length}) →
                 </button>
               </div>
             )}
@@ -2713,7 +2943,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       </section>
 
       {/* ── 9. FOOTER — AppColors.primary background ── */}
-      <footer style={{ background: 'linear-gradient(160deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFFFFF', padding: '60px 24px 30px', borderTop: '4px solid rgba(255,255,255,0.15)' }}>
+      <footer style={{ background: '#0F172A', color: '#FFFFFF', padding: '60px 24px 30px', borderTop: '1px solid #1E293B' }}>
         <div style={{ maxWidth: 1240, margin: '0 auto' }}>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 40, marginBottom: 48 }}>
@@ -2861,6 +3091,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Club Affiliation</td><td style={{ fontWeight: 800, color: 'var(--primary)' }}>{selectedAthleteModal.club}</td></tr>
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Personal Best</td><td style={{ fontWeight: 800, color: '#D97706' }}>{selectedAthleteModal.pb}</td></tr>
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Age Division</td><td style={{ fontWeight: 800, color: '#15803D' }}>{selectedAthleteModal.ageTier}</td></tr>
+                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>World Athletics Sync</td><td style={{ fontWeight: 800, color: '#0284C7' }}>WA-14207842 · Global Ranking #1 · 1,412 pts (Verified)</td></tr>
+                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Passport & FAN Verification</td><td style={{ fontWeight: 800, color: '#475569' }}>EP4829104 (ETH) · FAN-9842-1084-3310 (International Eligible)</td></tr>
                 </tbody>
               </table>
             </div>

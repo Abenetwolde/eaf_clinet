@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { ShieldCheck, Upload, FileCheck, RefreshCw, Info, ExternalLink } from 'lucide-react';
 import type { Athlete } from '../../types';
 import { launchFaydaPortal, FAYDA_CONFIG } from '../../constants/fayda';
-import FaydaConsentModal from '../FaydaConsentModal';
 
 interface FaydaVerificationProps {
   athlete: Athlete;
@@ -12,14 +11,11 @@ interface FaydaVerificationProps {
 
 export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }: FaydaVerificationProps) {
   const [isLaunching, setIsLaunching] = useState(false);
-  const [showConsentModal, setShowConsentModal] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState('BIRTH_CERTIFICATE');
   const [docFile, setDocFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
   // ── Official VeriFayda 2.0 (eSignet) Flow ──
-  // Per documentation, redirects user to the third-party Fayda URL (esignet.fayda.et)
-  // Fayda's own UI renders the login & OTP page.
   const handleLaunchFayda = async () => {
     setIsLaunching(true);
     try {
@@ -58,16 +54,15 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
           Fayda National ID & KYC Verification
         </h3>
         <p className="text-[0.84rem] text-text-muted mt-1">
-          Federal Proclamation No. 1284/2023 — VeriFayda 2.0 (eSignet OIDC) authentication mandatory for all athletes
+          Government biometric identity synchronization and document compliance.
         </p>
       </div>
 
-      {/* Info banner — name/dob from Fayda */}
+      {/* Info banner */}
       <div className="bg-primary-light border border-[rgba(0,80,160,0.2)] rounded-[10px] px-4 py-3 mb-6 flex items-start gap-2.5">
         <Info size={18} color="var(--eth-blue)" className="shrink-0 mt-[1px]" />
         <p className="text-[0.83rem] text-primary font-semibold leading-[1.5]">
-          Biometric identity verification is conducted directly on the official <strong>VeriFayda 2.0 (eSignet)</strong> government portal.
-          No personal information or OTP is collected within this application.
+          Biometric authentication is conducted securely via the official <strong>Fayda eSignet</strong> government portal.
         </p>
       </div>
 
@@ -76,7 +71,7 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ShieldCheck size={20} color="#38BDF8" />
-            <span className="font-black text-white text-[0.95rem]">Fayda Government Sourced Profile</span>
+            <span className="font-black text-white text-[0.95rem]">Fayda Government Profile</span>
           </div>
           {athlete.faydaStatus === 'VERIFIED' ? (
             <span className="badge badge-green text-[0.7rem] bg-[#10B981] text-white font-extrabold px-3 py-1 rounded-full">
@@ -137,13 +132,12 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
             </h4>
           </div>
           <p className="text-[0.82rem] text-text-muted mb-4 leading-[1.5]">
-            Redirects directly to the official <strong>VeriFayda 2.0 (eSignet)</strong> authorization portal.
-            Input your Fayda ID and confirm OTP securely on Fayda’s government interface.
+            Authenticate directly on the official <strong>VeriFayda 2.0 (eSignet)</strong> portal using your National ID and OTP passcode.
           </p>
 
           <button
             type="button"
-            onClick={() => setShowConsentModal(true)}
+            onClick={handleLaunchFayda}
             disabled={isLaunching}
             className="btn-accent w-full py-3.5 rounded-xl font-bold text-white flex items-center justify-center gap-2 mb-4"
             style={{ background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)' }}
@@ -156,7 +150,7 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
           </button>
 
           <div className="text-[0.74rem] text-text-muted bg-gray-50 dark:bg-gray-800/40 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-            <strong>OIDC Security:</strong> Authorization Code Flow with PKCE (S256) · Client Assertion JWT (RS256) · eSignet Relying Party.
+            <strong>OIDC Security:</strong> Authorization Code Flow with PKCE (S256) · Client Assertion JWT (RS256).
           </div>
         </div>
 
@@ -167,7 +161,7 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
             <h4 className="text-[1.05rem] font-bold">Secondary KYC Document</h4>
           </div>
           <p className="text-[0.82rem] text-text-muted mb-4 leading-[1.5]">
-            Required for U16/U18 athletes and foreign nationals — upload a supporting identity document.
+            Upload supporting identity verification document (passport, birth certificate, or student record).
           </p>
           <form onSubmit={handleUploadDoc}>
             <div className="form-group">
@@ -206,16 +200,6 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
           )}
         </div>
       </div>
-    
-      <FaydaConsentModal
-        isOpen={showConsentModal}
-        onClose={() => setShowConsentModal(false)}
-        onConsent={() => {
-          setShowConsentModal(false);
-          handleLaunchFayda();
-        }}
-        isLaunching={isLaunching}
-      />
-</div>
+    </div>
   );
 }

@@ -1,26 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { launchFaydaPortal, FAYDA_CONFIG } from '../constants/fayda';
 import {
-  X, Building2, UserCheck, ShieldCheck, RefreshCw, CheckCircle2, ArrowRight,
-  Phone, LockKeyhole, Clock, Printer, Copy, Check, QrCode, FileText, Download,
-  ExternalLink, Calendar, MapPin, Award, Activity, Sparkles, CheckCheck,
-  FileCheck, Shield, ChevronRight, Mail, Hash, Zap
+  KeyRound, Eye, EyeOff,
+  X, ShieldCheck, RefreshCw, CheckCircle2, ArrowRight,
+  Clock, ExternalLink, Award, Activity, HeartPulse, User,
+  Building2, Check, ArrowLeft, Sparkles, AlertCircle, Home,
+  Phone, Mail, MapPin, Calendar, Hash, FileCheck, ChevronRight
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MOCK_CLUBS } from '../data/mockData';
 import { useI18n } from '../i18n';
 import {
   useGetRegistrationOptionsQuery,
+  useRegisterAthleteMutation,
   useInitiateFaydaMutation,
   useConfirmFaydaOtpMutation,
-  useRegisterAthleteMutation,
   type AthleteRegistrationRequest,
 } from '../store/api/athleteApi';
-import VerificationModal from './VerificationModal';
-import FaydaConsentModal from './FaydaConsentModal';
 import FaydaVerifiedProfileModal, { FaydaResidentIdentity, formatFin } from './FaydaVerifiedProfileModal';
 
 // Types for internal use
-interface FaydaResult {
+export interface FaydaResult {
   name: string;
   amharic: string;
   dob: string;
@@ -30,14 +30,16 @@ interface FaydaResult {
   photoUrl: string;
   ageTier: string;
   fin: string;
+  fan: string;
   hash: string;
   verificationDate: string;
   phoneNumber?: string;
   email?: string;
   address?: string;
+  verificationToken?: string;
 }
 
-interface AthletePayload {
+export interface AthletePayload {
   id: string;
   name: string;
   amharicName: string;
@@ -47,15 +49,16 @@ interface AthletePayload {
   clubId: string;
   clubName: string;
   faydaFin: string;
+  faydaFan: string;
   faydaStatus: string;
   faydaHash: string;
   primaryEvent: string;
   licenseStatus: string;
-  licenseNumber: null;
-  licenseExpiry: null;
+  licenseNumber: null | string;
+  licenseExpiry: null | string;
   photoUrl: string;
   checkinStatus: string;
-  qrCodeData: null;
+  qrCodeData: null | string;
   weight: number;
   height: number;
   restingHR: number;
@@ -65,14 +68,19 @@ interface AthletePayload {
   email: string;
   phone: string;
   region: string;
-  personalBests: unknown[];
+  personalBests: Array<{ event: string; mark: string; isFat: boolean; date: string; venue: string }>;
   seasonBests: unknown[];
   weightLog: unknown[];
   trainingLog: unknown[];
   achievements: unknown[];
+  medicalClearance?: {
+    ecgStatus: string;
+    fitToCompete: boolean;
+    antiDopingCompliance: boolean;
+  };
 }
 
-interface ClubPayload {
+export interface ClubPayload {
   id: string;
   name: string;
   shortName: string;
@@ -87,203 +95,332 @@ interface ClubPayload {
   logo: string;
   clubRank: number;
   totalPoints: number;
+  presidentName?: string;
+  charterSigned?: boolean;
 }
 
-type PendingRegistrationData =
-  | { type: 'ATHLETE'; payload: { athlete: AthletePayload } }
-  | { type: 'CLUB'; payload: { club: ClubPayload } };
+export interface OfficialPayload {
+  id: string;
+  role: 'COACH' | 'MEDICAL_HEAD' | 'OFFICIAL' | 'CLUB_PRESIDENT';
+  name: string;
+  amharicName?: string;
+  faydaFin: string;
+  faydaFan: string;
+  photoUrl: string;
+  email: string;
+  phone: string;
+  clubName?: string;
+  specialization?: string;
+  certificationLevel?: string;
+  licenseNumber?: string;
+  mohLicenseNumber?: string;
+  hospitalAffiliation?: string;
+  tueCoordinator?: boolean;
+  officiatingRole?: string;
+  waOfficialId?: string;
+  charterAuthority?: string;
+}
 
-// Step indicator bar
+export type PendingRegistrationData =
+  | { type: 'ATHLETE'; payload: { athlete: AthletePayload } }
+  | { type: 'CLUB'; payload: { club: ClubPayload } }
+  | { type: 'OFFICIAL'; payload: { official: OfficialPayload } };
+
+export type RegistrationRoleType = 'ATHLETE' | 'CLUB_PRESIDENT' | 'COACH' | 'MEDICAL_HEAD' | 'OFFICIAL';
+
+// Step indicator bar with clean executive light styling (no tricolor)
 function StepBar({ steps, current }: { steps: string[]; current: number }) {
   return (
-    <div className="stepbar" style={{ display: 'flex', gap: '12px', marginBottom: '32px' }}>
-      {steps.map((s, i) => (
-        <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            width: '36px', height: '36px', borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 800, fontSize: '0.9rem',
-            background: i < current ? 'var(--primary)' : i === current ? 'var(--primary)' : '#F1F5F9',
-            color: i <= current ? '#FFFFFF' : '#64748B',
-            boxShadow: i === current ? '0 0 0 4px rgba(14, 165, 233, 0.25)' : 'none',
-            transition: 'all 0.2s'
-          }}>
-            {i < current ? <CheckCircle2 size={18} /> : i + 1}
-          </div>
-          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: i <= current ? 'var(--primary)' : '#64748B', textAlign: 'center' }}>
-            {s}
-          </span>
-        </div>
-      ))}
+    <div className="flex items-center justify-between gap-2 mb-8 relative w-full overflow-x-auto pb-2">
+      {steps.map((s, i) => {
+        const isDone = i < current;
+        const isActive = i === current;
+        return (
+          <React.Fragment key={i}>
+            <div className="flex items-center gap-2.5 shrink-0">
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs transition-all shadow-sm ${
+                  isDone
+                    ? 'bg-emerald-500 text-white'
+                    : isActive
+                    ? 'bg-sky-600 text-white ring-4 ring-sky-100'
+                    : 'bg-slate-100 text-slate-500'
+                }`}
+              >
+                {isDone ? <Check size={16} strokeWidth={3} /> : i + 1}
+              </div>
+              <span
+                className={`text-xs font-bold tracking-tight whitespace-nowrap ${
+                  isActive ? 'text-slate-900 font-extrabold' : isDone ? 'text-emerald-700' : 'text-slate-500'
+                }`}
+              >
+                {s}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div
+                className={`flex-1 h-0.5 mx-2 min-w-[24px] transition-all ${
+                  i < current ? 'bg-emerald-400' : 'bg-slate-200'
+                }`}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }
 
-export default function RegistrationModal({ role, onClose, onRegisterSuccess }: {
-  role: 'CLUB' | 'ATHLETE';
+/**
+ * Synchronous resolver for Fayda National ID identity
+ */
+function resolveStoredFaydaIdentity(propIdentity?: FaydaResidentIdentity | null): FaydaResult | null {
+  if (propIdentity && (propIdentity.nin || propIdentity.fullName)) {
+    const dob = propIdentity.birthDate || '1980-12-01';
+    const dobYear = parseInt(dob.substring(0, 4));
+    const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
+    const tier = propIdentity.ageTier || (age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division');
+    const fin = propIdentity.nin;
+    const cleanDigits = fin.replace(/\D/g, '');
+    const fan = 'FAN-' + (cleanDigits.slice(-8) || '98421084');
+
+    return {
+      name: propIdentity.fullName,
+      amharic: propIdentity.fullNameAmharic || propIdentity.fullName,
+      dob,
+      gender: propIdentity.gender || 'Male',
+      blood: 'O+',
+      region: propIdentity.address || 'Addis Ababa / Federal',
+      photoUrl: propIdentity.picture || '/images/fayda_resident_photo.jpg',
+      ageTier: tier,
+      fin,
+      fan,
+      hash: propIdentity.hash || ('0xFAYDA_' + cleanDigits.slice(-6)),
+      verificationDate: propIdentity.verifiedAt || new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+      phoneNumber: propIdentity.phoneNumber,
+      email: propIdentity.email,
+      address: propIdentity.address,
+      verificationToken: propIdentity.verificationToken,
+    };
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const rawVerified = sessionStorage.getItem('eaf_fayda_verified') || localStorage.getItem('eaf_fayda_verified');
+      if (rawVerified) {
+        const parsed = JSON.parse(rawVerified);
+        if (parsed && (parsed.fin || parsed.nin || parsed.name)) {
+          const fin = parsed.fin || parsed.nin || '268503801845194354101114624931981150';
+          const dob = parsed.dob || parsed.birthDate || '1980-12-01';
+          const dobYear = parseInt(dob.substring(0, 4));
+          const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
+          const tier = parsed.ageTier || (age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division');
+          const cleanDigits = fin.replace(/\D/g, '');
+          const fan = parsed.fan || ('FAN-' + (cleanDigits.slice(-8) || '98421084'));
+
+          return {
+            name: parsed.name || parsed.fullName || 'Chernet Tadese Bekele',
+            amharic: parsed.amharic || parsed.fullNameAmharic || parsed.name || 'Chernet Tadese Bekele',
+            dob,
+            gender: parsed.gender || 'Male',
+            blood: parsed.blood || 'O+',
+            region: parsed.region || parsed.address || 'Addis Ababa / Federal',
+            photoUrl: parsed.photoUrl || parsed.picture || '/images/fayda_resident_photo.jpg',
+            ageTier: tier,
+            fin,
+            fan,
+            hash: parsed.hash || ('0xFAYDA_' + cleanDigits.slice(-6)),
+            verificationDate: parsed.verificationDate || new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+            phoneNumber: parsed.phoneNumber || parsed.phone,
+            email: parsed.email,
+            address: parsed.address || parsed.region,
+            verificationToken: parsed.verificationToken,
+          };
+        }
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
+export default function RegistrationModal({
+  role: initialRole,
+  verifiedIdentity,
+  onClose,
+  onRegisterSuccess,
+}: {
+  role?: 'CLUB' | 'ATHLETE' | 'COACH' | 'MEDICAL_HEAD' | 'OFFICIAL' | string | null;
+  verifiedIdentity?: FaydaResidentIdentity | null;
   onClose: () => void;
   onRegisterSuccess: (data: PendingRegistrationData) => void;
 }) {
   const { t } = useI18n();
-  const isClub = role === 'CLUB';
-  const [step, setStep] = useState(0);
+
+  // Pre-load verified Fayda identity
+  const initialFayda = resolveStoredFaydaIdentity(verifiedIdentity);
+  const [faydaResult, setFaydaResult] = useState<FaydaResult | null>(initialFayda);
+  const [faydaFin, setFaydaFin] = useState<string>(initialFayda?.fin || '');
+  const [faydaFan, setFaydaFan] = useState<string>(initialFayda?.fan || 'FAN-9842-1084-3310');
+  const [faydaVerificationToken, setFaydaVerificationToken] = useState<string | null>(initialFayda?.verificationToken || null);
+
+  // Active registration workflow role
+  const [selectedRole, setSelectedRole] = useState<RegistrationRoleType | null>(() => {
+    if (initialRole === 'CLUB') return 'CLUB_PRESIDENT';
+    if (initialRole === 'COACH') return 'COACH';
+    if (initialRole === 'MEDICAL_HEAD') return 'MEDICAL_HEAD';
+    if (initialRole === 'OFFICIAL') return 'OFFICIAL';
+    return 'ATHLETE';
+  });
+
+  // Step state:
+  // Step 0: Fayda Authentication (the first section / step)
+  // Step 1: Role Selection & Full Fayda User Info (after authenticate)
+  // Step 2: Role Details & Digitization
+  // Step 3: Review & Confirm
+  const [step, setStep] = useState<number>(() => {
+    // If already verified with Fayda, go to step 1 (Role Selection & Full Info)
+    if (initialFayda) return 1;
+    return 0; // First step: Fayda authentication button
+  });
 
   // RTK Query API Hooks
   const { data: regOptions } = useGetRegistrationOptionsQuery();
-  const [initiateFayda, { isLoading: isFaydaInitiating }] = useInitiateFaydaMutation();
-  const [confirmFaydaOtp, { isLoading: isConfirmingOtp }] = useConfirmFaydaOtpMutation();
   const [registerAthlete, { isLoading: isRegistering }] = useRegisterAthleteMutation();
+  const [initiateFayda] = useInitiateFaydaMutation();
+  const [confirmFaydaOtp] = useConfirmFaydaOtpMutation();
+  const [submissionError, setSubmissionError] = useState<string>('');
 
   // Common account fields
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialFayda?.email || 'chere@id.et');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('+251 91 234 5678');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [phone, setPhone] = useState(initialFayda?.phoneNumber || '+251 90 909 0909');
+  const [region, setRegion] = useState(initialFayda?.region || 'Addis Ababa / Federal');
 
-  // Club-specific
-  const [clubName, setClubName] = useState('');
-  const [clubAmharic, setClubAmharic] = useState('');
-  const [region, setRegion] = useState('Addis Ababa / Federal');
-  const [manager, setManager] = useState('');
-  const [clubLogo, setClubLogo] = useState('🏃');
+  // Club President specific
+  const [clubName, setClubName] = useState('Ethiopian Electric Athletics Club');
+  const [charterAuthority, setCharterAuthority] = useState('Executive President & Charter Signatory');
+  const [executiveTerm, setExecutiveTerm] = useState('2024 - 2028 Olympic Quadrennial');
+  const [charterAgreed, setCharterAgreed] = useState(true);
 
-  // Athlete-specific live API tokens & states
-  const [faydaFin, setFaydaFin] = useState('');
-  const [otpStep, setOtpStep] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [verificationId, setVerificationId] = useState('');
-  const [faydaVerificationToken, setFaydaVerificationToken] = useState('');
-  const [devOtpHint, setDevOtpHint] = useState('');
-  const [serverRegistrationId, setServerRegistrationId] = useState('');
+  // Coach specific
+  const [coachSpecialization, setCoachSpecialization] = useState('Endurance & Marathon High Performance');
+  const [waCoachLevel, setWaCoachLevel] = useState('World Athletics Level 3 (High Performance)');
+  const [coachLicenseNumber, setCoachLicenseNumber] = useState('WA-ETH-COA-2026-088');
+  const [assignedTrainingCenter, setAssignedTrainingCenter] = useState('Bekoji High Altitude Center / EEAC');
 
+  // Medical Head specific
+  const [medicalDesignation, setMedicalDesignation] = useState('Team Physician (MD) & Sports Medicine Head');
+  const [mohLicenseNumber, setMohLicenseNumber] = useState('MoH-ET-MD-2019-9482');
+  const [hospitalAffiliation, setHospitalAffiliation] = useState('Tikur Anbessa Hospital / National Sports Clinic');
+  const [isTueCoordinator, setIsTueCoordinator] = useState(true);
+
+  // Technical Official specific
+  const [officiatingRole, setOfficiatingRole] = useState('Technical Delegate & Track Referee');
+  const [waOfficialLevel, setWaOfficialLevel] = useState('World Athletics Level 2 Technical Official');
+  const [waOfficialId, setWaOfficialId] = useState('WA-ETO-ETH-4412');
+
+  // Athlete Digitization: Performance PBs & SBs
+  const [primaryEvent, setPrimaryEvent] = useState<string[]>(['5,000m Long Distance']);
   const [selectedClubId, setSelectedClubId] = useState('NONE');
-  const [primaryEvent, setPrimaryEvent] = useState(['5,000m Long Distance']);
-  const [faydaResult, setFaydaResult] = useState<FaydaResult | null>(null);
+  const [weight, setWeight] = useState(58);
+  const [height, setHeight] = useState(172);
+  const [restingHR, setRestingHR] = useState(44);
+  const [dominantFoot, setDominantFoot] = useState<'RIGHT' | 'LEFT'>('RIGHT');
+  const [nationalRankingTier, setNationalRankingTier] = useState('Senior National Podium Tier (Top 5)');
+
+  // Performance Personal Bests (PBs) list
+  const [personalBests, setPersonalBests] = useState<Array<{ event: string; mark: string; isFat: boolean; date: string; venue: string }>>([
+    { event: '5,000m Track', mark: '12:45.32', isFat: true, date: '2025-06-12', venue: 'FBK Games, Hengelo' },
+    { event: '10,000m Track', mark: '26:54.10', isFat: true, date: '2025-05-24', venue: 'Prefontaine Classic, Eugene' },
+  ]);
+  const [newPbEvent, setNewPbEvent] = useState('Half Marathon');
+  const [newPbMark, setNewPbMark] = useState('59:14');
+  const [newPbVenue, setNewPbVenue] = useState('Valencia Half Marathon');
+
+  // Medical Clearance & Fit-to-Compete
+  const [ecgStatus, setEcgStatus] = useState('NORMAL_ECG_CERTIFIED');
+  const [fitToCompeteAgreed, setFitToCompeteAgreed] = useState(true);
+  const [antiDopingCompliance, setAntiDopingCompliance] = useState(true);
+  const [emergencyContact, setEmergencyContact] = useState('+251 91 123 4567');
+  const [medicalNotes, setMedicalNotes] = useState('Blood Group O+ · Athletic sinus bradycardia resting HR 44 bpm');
+
+  // UI state
+  const [serverRegistrationId, setServerRegistrationId] = useState<string | null>(null);
   const [faydaError, setFaydaError] = useState('');
-  const [isDemoBypass, setIsDemoBypass] = useState(false);
   const [isOidcLaunching, setIsOidcLaunching] = useState(false);
-  const [showConsentModal, setShowConsentModal] = useState(false);
   const [showCitizenModal, setShowCitizenModal] = useState(false);
-  const [launchAsPopup, setLaunchAsPopup] = useState(false);
+  const [isSubmittedPending, setIsSubmittedPending] = useState(false);
+  const [pendingRegistrationData, setPendingRegistrationData] = useState<PendingRegistrationData | null>(null);
 
-  // ── Listen for VeriFayda 2.0 (eSignet) popup completion & URL redirect ──
-  React.useEffect(() => {
-    // 0. Check for cached verified profile from /callback or storage
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = sessionStorage.getItem('eaf_fayda_verified');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.fin) {
-            setFaydaResult(parsed);
-            setFaydaFin(parsed.fin);
-            if (parsed.verificationToken) {
-              setFaydaVerificationToken(parsed.verificationToken);
-            }
-            if (parsed.email) setEmail(parsed.email);
-            if (parsed.phone) setPhone(parsed.phone);
-            if (parsed.region) setRegion(parsed.region);
-          }
-        }
-      } catch (e) {}
-    }
-    // 1. Check for URL redirect parameters & auth payload
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('faydaSuccess') === 'true' && urlParams.get('token')) {
-        const token = urlParams.get('token')!;
-        let authPayload: any = null;
-        try {
-          const raw = localStorage.getItem('fayda_auth_payload') || sessionStorage.getItem('fayda_auth_payload');
-          if (raw) authPayload = JSON.parse(raw);
-        } catch (e) {}
-
-        const ident = authPayload?.identity || {};
-        const name = ident.fullName || urlParams.get('name') || 'Chernet Tadese Bekele';
-        const amharic = ident.fullNameAmharic || urlParams.get('nameAmh') || name;
-        const nin = ident.nin || urlParams.get('nin') || '268503801845194354101114624931981150';
-        const dob = ident.birthDate || urlParams.get('dob') || '1980-12-01';
-        const gender = (ident.gender || urlParams.get('gender') || 'MALE').toUpperCase();
-        const phoneVal = ident.phoneNumber || urlParams.get('phone') || '0909090909';
-        const emailVal = ident.email || urlParams.get('email') || 'chere@id.et';
-        const regionVal = ident.address || urlParams.get('address') || 'Addis Ababa / Federal';
-        const photo = ident.picture || urlParams.get('photoUrl') || localStorage.getItem('fayda_photo') || sessionStorage.getItem('fayda_photo') || '/images/fayda_resident_photo.jpg';
-
-        if (phoneVal) setPhone(phoneVal);
-        if (emailVal) setEmail(emailVal);
-        if (regionVal) setRegion(regionVal);
-
-        const dobYear = dob ? parseInt(dob.substring(0, 4)) : 1980;
-        const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
-        const tier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division';
-
-        setFaydaVerificationToken(token);
-        setFaydaFin(nin);
-        const resObj: FaydaResult = {
-          name,
-          amharic,
-          dob,
-          gender: gender === 'MALE' ? 'Male' : 'Female',
-          blood: 'O+',
-          region: regionVal,
-          photoUrl: photo,
-          ageTier: tier,
-          fin: nin,
-          hash: '0xFAYDA_' + nin.replace(/\D/g, '').slice(-6),
-          verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-          phoneNumber: phoneVal,
-          email: emailVal,
-          address: regionVal,
-        };
-        setFaydaResult(resObj);
-        sessionStorage.setItem('eaf_fayda_verified', JSON.stringify({ ...resObj, verificationToken: token, email: emailVal, phone: phoneVal }));
-        setOtpStep(false);
-        // Clean URL query without reload
-        window.history.replaceState({}, '', window.location.pathname);
+  // Sync with prop changes
+  useEffect(() => {
+    if (verifiedIdentity) {
+      const resolved = resolveStoredFaydaIdentity(verifiedIdentity);
+      if (resolved) {
+        setFaydaResult(resolved);
+        setFaydaFin(resolved.fin);
+        setFaydaFan(resolved.fan);
+        if (resolved.phoneNumber) setPhone(resolved.phoneNumber);
+        if (resolved.email) setEmail(resolved.email);
+        if (resolved.region) setRegion(resolved.region);
+        if (resolved.verificationToken) setFaydaVerificationToken(resolved.verificationToken);
+        setStep(1); // Advance to Role Selection & Full Info
       }
     }
+  }, [verifiedIdentity]);
 
-    // 2. Listen for popup postMessage
+  // Listen for popup messages & session storage updates
+  useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'FAYDA_OIDC_SUCCESS' && event.data.payload) {
         const payload = event.data.payload;
-        const identity = payload.identity || {};
-        const fullName = identity.fullName || `${identity.firstName || ''} ${identity.lastName || ''}`.trim() || 'Chernet Tadese Bekele';
-        const amharic = identity.fullNameAmharic || fullName;
-        const dob = identity.birthDate || '1980-12-01';
+        const identity = payload.userInfo || payload.identity || {};
+        const fullName = identity['name#en'] || identity.fullName || identity.name || 'Chernet Tadese Bekele';
+        const amharic = identity['name#am'] || identity.fullNameAmharic || fullName;
+        const dob = identity.birthdate || identity.birthDate || '1980-12-01';
         const dobYear = parseInt(dob.substring(0, 4));
         const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
         const tier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division';
-        const nin = identity.nin || '268503801845194354101114624931981150';
-        const phoneVal = identity.phoneNumber || '0909090909';
+        const nin = identity.nin || identity.national_id || identity.sub || '268503801845194354101114624931981150';
+        const cleanDigits = nin.replace(/\D/g, '');
+        const fan = 'FAN-' + (cleanDigits.slice(-8) || '98421084');
+        const phoneVal = identity.phone_number || identity.phoneNumber || '0909090909';
         const emailVal = identity.email || 'chere@id.et';
-        const addressVal = identity.address || 'Addis Ababa / Federal';
-        const photo = identity.picture || localStorage.getItem('fayda_photo') || sessionStorage.getItem('fayda_photo') || '/images/fayda_resident_photo.jpg';
+        const photo = identity.picture || localStorage.getItem('fayda_photo') || '/images/fayda_resident_photo.jpg';
 
-        if (phoneVal) setPhone(phoneVal);
-        if (emailVal) setEmail(emailVal);
-        if (addressVal) setRegion(addressVal);
-
-        setFaydaVerificationToken(payload.verificationToken);
-        setFaydaFin(nin);
         const resObj: FaydaResult = {
           name: fullName,
-          amharic: amharic,
-          dob: dob,
-          gender: identity.gender === 'MALE' ? 'Male' : 'Female',
+          amharic,
+          dob,
+          gender: (identity.gender || 'MALE').toUpperCase() === 'MALE' ? 'Male' : 'Female',
           blood: 'O+',
-          region: addressVal,
+          region: 'Addis Ababa / Federal',
           photoUrl: photo,
           ageTier: tier,
           fin: nin,
-          hash: '0xFAYDA_' + nin.replace(/\D/g, '').slice(-6),
+          fan,
+          hash: '0xFAYDA_' + cleanDigits.slice(-6),
           verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
           phoneNumber: phoneVal,
           email: emailVal,
-          address: addressVal,
+          address: 'Addis Ababa / Federal',
+          verificationToken: payload.verificationToken || payload.access_token,
         };
+
         setFaydaResult(resObj);
-        sessionStorage.setItem('eaf_fayda_verified', JSON.stringify({ ...resObj, verificationToken: payload.verificationToken, email: emailVal, phone: phoneVal }));
-        setOtpStep(false);
+        setFaydaFin(nin);
+        setFaydaFan(fan);
+        setPhone(phoneVal);
+        setEmail(emailVal);
+        try {
+          sessionStorage.setItem('eaf_fayda_verified', JSON.stringify(resObj));
+          localStorage.setItem('eaf_fayda_verified', JSON.stringify(resObj));
+        } catch (e) {}
+
+        // Proceed to Step 1 (Role Selection & Full Info)
+        setStep(1);
       }
     };
 
@@ -291,7 +428,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // ── Launch official VeriFayda 2.0 (eSignet) redirect & OTP flow ──
+  // Launch official Fayda portal
   const handleLaunchFaydaOidc = async (asPopup = false) => {
     setIsOidcLaunching(true);
     setFaydaError('');
@@ -300,948 +437,744 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
       await launchFaydaPortal(redirectUri, asPopup);
     } catch (err: any) {
       console.error('Failed to launch Fayda portal:', err);
-      setFaydaError('Failed to connect to Fayda authorization server.');
+      setFaydaError('Failed to connect to Fayda identity server. You can use the Quick Test fill below.');
+    } finally {
       setIsOidcLaunching(false);
     }
   };
 
-  // Athlete physical & contact metadata
-  const [weight, setWeight] = useState(58);
-  const [height, setHeight] = useState(172);
-  const [emergencyContact, setEmergencyContact] = useState('+251911000000');
-  const [medicalNotes, setMedicalNotes] = useState('Blood Group O+ | No known allergies');
-
-  // Pending approval screen state
-  const [isSubmittedPending, setIsSubmittedPending] = useState(false);
-  const [pendingRegistrationData, setPendingRegistrationData] = useState<PendingRegistrationData | null>(null);
-  const [copiedRef, setCopiedRef] = useState(false);
-
-  // Verification modal state (shown after registration)
-  const [showVerification, setShowVerification] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState('');
-
-  const clubSteps = [t('registration.stepAccount'), t('registration.stepClubInfo'), t('registration.stepConfirm')];
-  const athleteSteps = [t('registration.stepFayda'), t('registration.stepSports'), t('registration.stepAccount'), t('registration.stepConfirm')];
-  const steps = isClub ? clubSteps : athleteSteps;
-
-  // Live or fallback clubs & disciplines lists
-  const clubsList = regOptions?.clubs && regOptions.clubs.length > 0
-    ? regOptions.clubs.map(c => ({ id: c.id, name: c.name, shortName: c.name, region: c.region || 'Addis Ababa' }))
-    : MOCK_CLUBS;
-
-  // Auto-format Fayda FIN into 12 digits (XXXX-XXXX-XXXX) or allow alphanumeric FANs
-  // Auto-format Fayda FIN into 12 or 16 digits (XXXX-XXXX-XXXX[-XXXX]) or allow alphanumeric FANs
-  const handleFinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    if (/^[0-9-]*$/.test(val)) {
-      const raw = val.replace(/\D/g, '').slice(0, 16);
-      let formatted = raw;
-      if (raw.length > 12) {
-        formatted = `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}-${raw.slice(12)}`;
-      } else if (raw.length > 8) {
-        formatted = `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8)}`;
-      } else if (raw.length > 4) {
-        formatted = `${raw.slice(0, 4)}-${raw.slice(4)}`;
-      }
-      setFaydaFin(formatted);
-    } else {
-      setFaydaFin(val.slice(0, 24));
-    }
-  };
-
-  // ⚡ Instant Fayda Biometrics Bypass Handler (Demo Mode)
+  // Instant demo fill for sandbox testing
   const handleDemoBypassFayda = () => {
-    setIsDemoBypass(true);
     setFaydaError('');
-    setFaydaVerificationToken('demo_fayda_token_' + Date.now());
-    const usedFin = faydaFin || '9840-3920-1124';
+    const usedFin = '268503801845194354101114624931981150';
+    const usedFan = 'FAN-9842-1084-3310';
     setFaydaFin(usedFin);
-    setFaydaResult({
-      name: 'Almaz Bekele Negash',
-      amharic: 'አልማዝ በቀለ ነጋሽ',
-      dob: '2003-06-18',
-      gender: 'Female',
+    setFaydaFan(usedFan);
+    const resObj: FaydaResult = {
+      name: 'Chernet Tadese Bekele',
+      amharic: 'ቸርነት ታደሰ በቀለ',
+      dob: '1980-12-01',
+      gender: 'Male',
       blood: 'O+',
-      region: 'Oromia Regional State',
-      photoUrl: '/images/runner_female.png',
-      ageTier: 'Senior Division',
+      region: 'Addis Ababa / Federal',
+      photoUrl: '/images/fayda_resident_photo.jpg',
+      ageTier: 'Masters Division (45 yrs)',
       fin: usedFin,
-      hash: '0xFAYDA_DEMO_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+      fan: usedFan,
+      hash: '0xFAYDA_AUTHENTICATED_7849',
       verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-    });
-    setOtpStep(false);
-  };
-
-  // ── Step 1: Initiate Fayda lookup & trigger SMS OTP code entry step ──
-  const handleInitiateFaydaLookup = async () => {
-    const usedFin = faydaFin.trim() || '9840-3920-1124';
-    if (!faydaFin) {
-      setFaydaFin(usedFin);
-    }
-    const cleanDigits = usedFin.replace(/\D/g, '');
-    
-    // Validate: At least 10 digits for numeric FIN, or at least 6 chars for alphanumeric FAN
-    if (cleanDigits.length > 0 && cleanDigits.length < 10 && usedFin.length < 8) {
-      setFaydaError(t('registration.finError'));
-      return;
-    }
-
-    // Reset error and previous hints before attempt
-    setFaydaError('');
-    setDevOtpHint('');
-
-    try {
-      const res = await initiateFayda({
-        nin: usedFin,
-        FAN: usedFin,
-      }).unwrap();
-
-      if (res?.data?.demographicData) {
-        const demographic = res.data.demographicData;
-        const fullName = `${demographic.firstName || ''} ${demographic.lastName || ''}`.trim() || 'Almaz Bekele Negash';
-        const dobYear = demographic.dateOfBirth ? parseInt(demographic.dateOfBirth.substring(0, 4)) : 2003;
-        const age = 2026 - (isNaN(dobYear) ? 2003 : dobYear);
-        const tier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : 'Senior Division';
-
-        setFaydaResult({
-          name: fullName,
-          amharic: demographic.firstName ? `${demographic.firstName} ${demographic.lastName}` : 'አልማዝ በቀለ ነጋሽ',
-          dob: demographic.dateOfBirth || '2003-06-18',
-          gender: demographic.gender || 'Female',
-          blood: 'O+',
-          region: 'Oromia Regional State',
-          photoUrl: demographic.photoUrl || '/images/runner_female.png',
-          ageTier: tier,
-          fin: demographic.nin || usedFin,
-          hash: '0xFAYDA_VERIFIED_' + Math.random().toString(36).substring(2, 10).toUpperCase(),
-          verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-        });
-        setOtpStep(false);
-      } else {
-        setVerificationId(res?.data?.verificationId || 'mock-verif-' + Date.now());
-        const otpHint = res?.data?.otp || (res?.data as any)?.devOtpCode || '111111';
-        setDevOtpHint(otpHint);
-        setOtpCode(otpHint);
-        setOtpStep(true);
-      }
-    } catch (err: unknown) {
-      console.log('Fayda initiate network response:', err);
-      setVerificationId('mock-verif-' + Date.now());
-      setDevOtpHint('111111');
-      setOtpCode('111111');
-      setOtpStep(true);
-    }
-  };
-
-  // ── Step 2: Confirm OTP & retrieve Fayda Biometrics ──
-  const handleVerifyOtp = async () => {
-    setFaydaError('');
-    const code = otpCode.trim() || '111111';
-    try {
-      const res = await confirmFaydaOtp({
-        verificationId,
-        otp: code,
-      }).unwrap();
-
-      if (res?.data?.demographicData) {
-        const demo = res.data.demographicData;
-        const fullName = demo.fullName || `${demo.firstName || ''} ${demo.lastName || ''}`.trim();
-        const amharic = demo.amharicName || fullName;
-        const dobYear = demo.dateOfBirth ? parseInt(demo.dateOfBirth.substring(0, 4)) : 2001;
-        const age = 2026 - (isNaN(dobYear) ? 2001 : dobYear);
-        const tier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : 'Senior Division';
-
-        setFaydaVerificationToken(res.data.verificationToken);
-        setFaydaResult({
-          name: fullName,
-          amharic: amharic,
-          dob: demo.dateOfBirth || '2001-04-12',
-          gender: demo.gender === 'MALE' ? 'Male' : 'Female',
-          blood: 'O+',
-          region: demo.region || 'Oromia Regional State',
-          photoUrl: demo.photoUrl || (demo.gender === 'MALE' ? '/images/runner_marathon.png' : '/images/runner_female.png'),
-          ageTier: tier,
-          fin: demo.nin || faydaFin,
-          hash: '0xFAYDA_VERIFIED_' + (demo.nin?.slice(-6) || '8E3A92'),
-          verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-        });
-        setOtpStep(false);
-      }
-    } catch (err: any) {
-      console.error('Fayda OTP verification failed:', err);
-      if (verificationId?.startsWith('mock-')) {
-        handleDemoBypassFayda();
-      } else {
-        setFaydaError(err?.data?.message || err?.message || 'Invalid OTP code. Please enter 111111.');
-      }
-    }
-  };
-
-
-  // ── Submit Handlers ──
-  const handleClubSubmit = () => {
-    const newClub = {
-      id: 'CLUB-' + Math.floor(100 + Math.random() * 900),
-      name: `${clubName} (${clubAmharic})`,
-      shortName: clubName,
-      region, manager, email, phone,
-      licensedAthletes: 0, pendingVerifications: 0,
-      unlicensedAthletes: 0, transfersCount: 0,
-      logo: clubLogo, clubRank: 99, totalPoints: 0
+      phoneNumber: '0909090909',
+      email: 'chere@id.et',
+      address: 'Addis Ababa / Federal',
+      verificationToken: 'demo_fayda_token_2026',
     };
-    setPendingRegistrationData({ type: 'CLUB', payload: { club: newClub } });
+    setFaydaResult(resObj);
+    setEmail(resObj.email || 'chere@id.et');
+    setPhone(resObj.phoneNumber || '0909090909');
+    try {
+      sessionStorage.setItem('eaf_fayda_verified', JSON.stringify(resObj));
+      localStorage.setItem('eaf_fayda_verified', JSON.stringify(resObj));
+    } catch (e) {}
+
+    // Advance to Step 1 (Role Selection & Full Info display)
+    setStep(1);
+  };
+
+  const handleAddPersonalBest = () => {
+    if (!newPbEvent || !newPbMark) return;
+    setPersonalBests(prev => [
+      ...prev,
+      {
+        event: newPbEvent,
+        mark: newPbMark,
+        isFat: true,
+        date: new Date().toISOString().split('T')[0],
+        venue: newPbVenue || 'National Stadium'
+      }
+    ]);
+    setNewPbEvent('');
+    setNewPbMark('');
+    setNewPbVenue('');
+  };
+
+  const steps = ['1. National ID', '2. Role Selection', '3. Profile Details', '4. Review & Confirm'];
+
+  // Submission handler
+  const handleSubmit = async () => {
+    setSubmissionError('');
+
+    // Club resolution
+    const apiClubs = regOptions?.clubs || [];
+    const matchedApiClub = apiClubs.find(c => c.id === selectedClubId);
+    const fallbackClub = MOCK_CLUBS.find(c => c.id === selectedClubId);
+    const club = selectedClubId === 'NONE'
+      ? { id: 'NONE', name: 'Independent Athlete', shortName: 'Independent' }
+      : (matchedApiClub ? { id: matchedApiClub.id, name: matchedApiClub.name, shortName: matchedApiClub.name.split(' ')[0] } : (fallbackClub || MOCK_CLUBS[0]));
+
+    if (selectedRole === 'ATHLETE' || !selectedRole) {
+      // Validate inputs
+      const athleteEmail = (email || faydaResult?.email || '').trim();
+      if (!athleteEmail || !athleteEmail.includes('@')) {
+        setSubmissionError('Please provide a valid email address for your official federation account.');
+        return;
+      }
+
+      if (!password || password.length < 8) {
+        setSubmissionError('Password must be at least 8 characters long.');
+        return;
+      }
+
+      const displayEvent = Array.isArray(primaryEvent) ? primaryEvent.join(', ') : primaryEvent;
+      const fallbackId = 'ATH-2026-' + Math.floor(100 + Math.random() * 900);
+
+      const newAthlete: AthletePayload = {
+        id: fallbackId,
+        name: faydaResult?.name || 'Chernet Tadese Bekele',
+        amharicName: faydaResult?.amharic || 'ቸርነት ታደሰ በቀለ',
+        dob: faydaResult?.dob || '1980-12-01',
+        gender: faydaResult?.gender || 'Male',
+        ageTier: faydaResult?.ageTier || 'Masters Division (45 yrs)',
+        clubId: club.id,
+        clubName: club.shortName || club.name,
+        faydaFin: faydaResult?.fin || faydaFin || '2685038018451943',
+        faydaFan: faydaResult?.fan || faydaFan || 'FAN-9842-1084-3310',
+        faydaStatus: 'VERIFIED',
+        faydaHash: faydaResult?.hash || '0xFAYDA_7849',
+        primaryEvent: displayEvent,
+        licenseStatus: 'PENDING_APPROVAL',
+        licenseNumber: 'ETH-LIC-2026-8842',
+        licenseExpiry: '2027-10-31',
+        photoUrl: faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg',
+        checkinStatus: 'NOT_CHECKED_IN',
+        qrCodeData: null,
+        weight, height, restingHR,
+        trainingLoad: '85',
+        emergencyContact, medicalNotes,
+        email: athleteEmail,
+        phone: phone || faydaResult?.phoneNumber || '+251911000000',
+        region: faydaResult?.region || region || 'Addis Ababa',
+        personalBests,
+        seasonBests: personalBests.map(p => ({ event: p.event, mark: p.mark, year: 2026 })),
+        weightLog: [{ date: '2026-10-10', kg: weight }],
+        trainingLog: [],
+        achievements: [],
+        medicalClearance: {
+          ecgStatus,
+          fitToCompete: fitToCompeteAgreed,
+          antiDopingCompliance,
+        }
+      };
+
+      try {
+        // Resolve a valid Fayda token
+        let tokenToUse = faydaVerificationToken || faydaResult?.verificationToken;
+        if (!tokenToUse) {
+          const cleanNin = (newAthlete.faydaFin).replace(/\D/g, '') || '2685038018451943';
+          try {
+            const initRes = await initiateFayda({ nin: cleanNin }).unwrap();
+            if (initRes.data?.verificationId) {
+              const confirmRes = await confirmFaydaOtp({
+                verificationId: initRes.data.verificationId,
+                otp: initRes.data.otp || '111111',
+              }).unwrap();
+              tokenToUse = confirmRes.data.verificationToken;
+              setFaydaVerificationToken(tokenToUse);
+            }
+          } catch (tokErr) {
+            console.warn('Could not auto-generate token from initiate/confirm, proceeding with token fallback');
+          }
+        }
+
+        // Match discipline from backend API
+        const availableSports = regOptions?.disciplines || [];
+        const matchedSport = availableSports.find(s =>
+          primaryEvent.some(p => p.toLowerCase().includes(s.name.toLowerCase()) || s.name.toLowerCase().includes(p.toLowerCase()))
+        ) || availableSports[0];
+
+        const regPayload: AthleteRegistrationRequest = {
+          email: athleteEmail,
+          password,
+          phoneNumber: newAthlete.phone,
+          faydaVerificationToken: tokenToUse || 'demo_token_athlete_2026',
+          fanNumber: newAthlete.faydaFan,
+          sportIds: matchedSport ? [matchedSport.id] : undefined,
+          sportId: matchedSport?.id,
+          clubId: matchedApiClub ? matchedApiClub.id : (selectedClubId !== 'NONE' ? selectedClubId : undefined),
+          clubName: matchedApiClub ? matchedApiClub.name : (club.name !== 'Independent Athlete' ? club.name : undefined),
+          region: newAthlete.region,
+          height: Number(height),
+          weight: Number(weight),
+          emergencyContactPhone: emergencyContact,
+        };
+
+        const apiResponse = await registerAthlete(regPayload).unwrap();
+        const serverId = apiResponse.data?.id || fallbackId;
+        const serverStatus = apiResponse.data?.status || 'PENDING';
+
+        setServerRegistrationId(serverId);
+        newAthlete.id = serverId;
+        newAthlete.licenseStatus = serverStatus;
+
+        // Persist registration status marker
+        try {
+          const regMarker = {
+            athleteId: serverId,
+            status: serverStatus,
+            email: athleteEmail,
+            name: newAthlete.name,
+            faydaFin: newAthlete.faydaFin,
+            fanNumber: newAthlete.faydaFan,
+            isRegistered: true,
+            registeredAt: new Date().toISOString(),
+          };
+          localStorage.setItem('eaf_registered_athlete', JSON.stringify(regMarker));
+          sessionStorage.setItem('eaf_registered_athlete', JSON.stringify(regMarker));
+        } catch (e) {}
+
+        setPendingRegistrationData({ type: 'ATHLETE', payload: { athlete: newAthlete } });
+        setIsSubmittedPending(true);
+        return;
+      } catch (apiErr: any) {
+        console.error('Registration API Error:', apiErr);
+        const errMsg = apiErr?.data?.message || apiErr?.error || 'Registration failed. Please check your data or try again.';
+        setSubmissionError(errMsg);
+        return;
+      }
+    }
+
+    if (selectedRole === 'CLUB_PRESIDENT') {
+      try {
+        const clubAdminPayload = {
+          email: email.trim(),
+          password,
+          firstName: (faydaResult?.name || 'Club President').split(' ')[0],
+          lastName: (faydaResult?.name || 'Club President').split(' ').slice(1).join(' ') || 'Admin',
+          phoneNumber: phone.trim(),
+          clubName: clubName.trim(),
+          clubShortName: clubName.split(' ')[0] || 'Club',
+          clubRegion: region,
+          clubCity: region,
+          licenseNumber: 'ETH-CL-2026-' + Math.floor(100 + Math.random() * 900),
+        };
+
+        const res = await fetch('http://localhost:3000/api/v1/clubs/register-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(clubAdminPayload),
+        });
+        const json = await res.json();
+        const serverId = json?.data?.club?.id || ('CLUB-PRES-2026-' + Math.floor(100 + Math.random() * 900));
+
+        const newClub: ClubPayload = {
+          id: serverId,
+          name: clubName,
+          shortName: clubName.split(' ')[0] || 'Club',
+          region,
+          manager: faydaResult?.name || 'Club President',
+          email,
+          phone,
+          licensedAthletes: 1,
+          pendingVerifications: 1,
+          unlicensedAthletes: 0,
+          transfersCount: 0,
+          logo: '🏃',
+          clubRank: 1,
+          totalPoints: 100,
+          presidentName: faydaResult?.name || 'Club President',
+          charterSigned: charterAgreed,
+        };
+        setServerRegistrationId(serverId);
+        setPendingRegistrationData({ type: 'CLUB', payload: { club: newClub } });
+        setIsSubmittedPending(true);
+        return;
+      } catch (err: any) {
+        setSubmissionError(err?.message || 'Club registration failed.');
+        return;
+      }
+    }
+
+    const officialPayload: OfficialPayload = {
+      id: `${selectedRole}-2026-` + Math.floor(100 + Math.random() * 900),
+      role: selectedRole,
+      name: faydaResult?.name || 'Chernet Tadese Bekele',
+      amharicName: faydaResult?.amharic,
+      faydaFin: faydaResult?.fin || faydaFin,
+      faydaFan: faydaResult?.fan || faydaFan,
+      photoUrl: faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg',
+      email,
+      phone,
+      clubName: selectedRole === 'COACH' ? clubName : undefined,
+      specialization: selectedRole === 'COACH' ? coachSpecialization : undefined,
+      certificationLevel: selectedRole === 'COACH' ? waCoachLevel : selectedRole === 'OFFICIAL' ? waOfficialLevel : undefined,
+      licenseNumber: selectedRole === 'COACH' ? coachLicenseNumber : undefined,
+      mohLicenseNumber: selectedRole === 'MEDICAL_HEAD' ? mohLicenseNumber : undefined,
+      hospitalAffiliation: selectedRole === 'MEDICAL_HEAD' ? hospitalAffiliation : undefined,
+      tueCoordinator: selectedRole === 'MEDICAL_HEAD' ? isTueCoordinator : undefined,
+      officiatingRole: selectedRole === 'OFFICIAL' ? officiatingRole : undefined,
+      waOfficialId: selectedRole === 'OFFICIAL' ? waOfficialId : undefined,
+      charterAuthority: selectedRole === 'CLUB_PRESIDENT' ? charterAuthority : undefined,
+    };
+
+    setServerRegistrationId(officialPayload.id);
+    setPendingRegistrationData({ type: 'OFFICIAL', payload: { official: officialPayload } });
     setIsSubmittedPending(true);
   };
 
-  const handleAthleteSubmit = async () => {
-    const club = selectedClubId === 'NONE'
-      ? { id: 'NONE', name: 'Independent / Unaffiliated Athlete', shortName: 'Independent' }
-      : (clubsList.find(c => c.id === selectedClubId) || clubsList[0]);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STEP 0: FIRST SECTION / STEP OF THE FORM — FAYDA AUTHENTICATION BUTTON
+  // ─────────────────────────────────────────────────────────────────────────────
+  const renderStep0FaydaAuth = () => {
+    return (
+      <div className="flex flex-col items-center text-center max-w-xl mx-auto py-6">
+        <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+          National ID Verification
+        </h3>
+        <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-8 max-w-md">
+          Verify your identity with your Fayda National ID to begin your official athletics registration.
+        </p>
 
-    const displayEvent = Array.isArray(primaryEvent) ? primaryEvent.join(', ') : primaryEvent;
-    const fallbackId = 'ATH-2026-' + Math.floor(100 + Math.random() * 900);
-    const athleteEmail = email || 'athlete@athletics.et';
+        {/* Primary Blue Button with User's Uploaded Fayda Logo Image */}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          type="button"
+          onClick={() => handleLaunchFaydaOidc(false)}
+          disabled={isOidcLaunching}
+          className="w-full sm:w-auto min-w-[340px] px-8 py-4 rounded-2xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-extrabold text-lg flex items-center justify-center gap-4 shadow-lg shadow-sky-500/25 transition-all cursor-pointer border-0"
+        >
+          <img
+            src="/images/fayda_logo.png"
+            alt="Fayda National ID Logo"
+            className="w-10 h-10 rounded-full object-cover shadow-sm bg-white p-0.5"
+          />
+          <div className="flex flex-col text-left">
+            <span className="text-base sm:text-lg font-black leading-tight text-white flex items-center gap-2">
+              {isOidcLaunching ? 'Connecting to Fayda...' : 'Authenticate with Fayda ID'}
+              <ArrowRight size={18} />
+            </span>
+            <span className="text-xs text-sky-100 font-semibold opacity-90">
+              National ID Digital Authentication
+            </span>
+          </div>
+        </motion.button>
 
-    const newAthlete: AthletePayload = {
-      id: fallbackId,
-      name: faydaResult?.name || 'Almaz Bekele Negash',
-      amharicName: faydaResult?.amharic || 'አልማዝ በቀለ ነጋሽ',
-      dob: faydaResult?.dob || '2003-06-18',
-      gender: faydaResult?.gender || 'Female',
-      ageTier: faydaResult?.ageTier || 'Senior Division',
-      clubId: club.id,
-      clubName: club.shortName || club.name,
-      faydaFin: faydaResult?.fin || faydaFin || '9840-3920-1124',
-      faydaStatus: 'VERIFIED',
-      faydaHash: faydaResult?.hash || '0xFAYDA_DEMO_HASH',
-      primaryEvent: displayEvent,
-      licenseStatus: 'PENDING_APPROVAL',
-      licenseNumber: null,
-      licenseExpiry: null,
-      photoUrl: faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg',
-      checkinStatus: 'NOT_CHECKED_IN',
-      qrCodeData: null,
-      weight, height, restingHR: 48, trainingLoad: '60',
-      emergencyContact, medicalNotes,
-      email: athleteEmail,
-      phone: phone || '+251 91 234 5678',
-      region: faydaResult?.region || 'Oromia Regional State',
-      personalBests: [], seasonBests: [], weightLog: [], trainingLog: [], achievements: []
-    };
+        {/* Discrete Test Option */}
+        <div className="mt-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleDemoBypassFayda}
+            className="text-xs font-bold text-slate-500 hover:text-sky-700 underline cursor-pointer bg-transparent border-0"
+          >
+            ⚡ Quick Test Auto-Fill (Demo Mode)
+          </button>
+        </div>
 
-    if (isDemoBypass) {
-      setServerRegistrationId(fallbackId);
-      setPendingRegistrationData({ type: 'ATHLETE', payload: { athlete: newAthlete } });
-      setRegisteredEmail(athleteEmail);
-      setIsSubmittedPending(true);
-      return;
-    }
-
-    try {
-      const payload: AthleteRegistrationRequest = {
-        email: athleteEmail,
-        password: password || 'Password123!',
-        phoneNumber: phone || '+251911000000',
-        faydaVerificationToken,
-        fanNumber: faydaResult?.fin || faydaFin || null,
-        clubId: selectedClubId === 'NONE' ? null : selectedClubId,
-        clubName: club.name || club.shortName,
-        region: faydaResult?.region || 'Addis Ababa',
-        height,
-        weight,
-        emergencyContactPhone: emergencyContact,
-        position: displayEvent,
-        dominantHand: 'RIGHT',
-        dominantFoot: 'RIGHT',
-        bloodType: 'O_POSITIVE',
-        nationality: 'Ethiopian',
-      };
-
-      const res = await registerAthlete(payload).unwrap();
-      const serverId = res?.data?.id || fallbackId;
-      setServerRegistrationId(serverId);
-      newAthlete.id = serverId;
-
-      setPendingRegistrationData({ type: 'ATHLETE', payload: { athlete: newAthlete } });
-      setRegisteredEmail(athleteEmail);
-      setIsSubmittedPending(true);
-    } catch (err: unknown) {
-      console.warn('Backend athlete registration API response (falling back to demo mode):', err);
-      // Fallback for any backend error (including HTTP 400 Validation Failed)
-      setServerRegistrationId(fallbackId);
-      setPendingRegistrationData({ type: 'ATHLETE', payload: { athlete: newAthlete } });
-      setRegisteredEmail(athleteEmail);
-      setIsSubmittedPending(true);
-    }
+        {faydaError && (
+          <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold max-w-md">
+            {faydaError}
+          </div>
+        )}
+      </div>
+    );
   };
 
-  // ── Pending Approval View ──
-  const renderPendingApprovalScreen = () => {
-    if (!pendingRegistrationData) return null;
-    const refNumber = serverRegistrationId || ('EAF-REG-2026-' + Math.floor(100000 + Math.random() * 900000));
-    const isAthleteData = pendingRegistrationData.type === 'ATHLETE';
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STEP 1: SECOND STEP / SECTION — ROLE SELECTION & FULL FAYDA USER INFO
+  // ─────────────────────────────────────────────────────────────────────────────
+  const renderStep1RoleSelectionAndUserInfo = () => {
+    const rolesConfig = [
+      {
+        id: 'ATHLETE',
+        title: 'Athlete',
+        subtitle: 'Competitors & Runners',
+        desc: 'Track & field competitors, marathon runners, youth & senior divisions.',
+        icon: <Activity size={24} className="text-sky-600" />,
+        badge: 'Biometrics & PBs',
+        badgeBg: 'bg-sky-50 text-sky-700 border-sky-200',
+      },
+      {
+        id: 'CLUB_PRESIDENT',
+        title: 'Club President',
+        subtitle: 'Executive Leadership',
+        desc: 'Club leadership, federation charter contracts & athlete transfers.',
+        icon: <Building2 size={24} className="text-blue-600" />,
+        badge: 'Charter Signatory',
+        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+      },
+      {
+        id: 'COACH',
+        title: 'Coach & Technical',
+        subtitle: 'Training & Conditioning',
+        desc: 'Endurance, sprint and field coaches with World Athletics certifications.',
+        icon: <Clock size={24} className="text-amber-600" />,
+        badge: 'WA Accredited',
+        badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
+      },
+      {
+        id: 'MEDICAL_HEAD',
+        title: 'Health & Medical Head',
+        subtitle: 'Sports Medicine & Cardiac',
+        desc: 'Team physicians, sports medicine, cardiac ECG clearances & TUE liaison.',
+        icon: <HeartPulse size={24} className="text-purple-600" />,
+        badge: 'MoH Licensed',
+        badgeBg: 'bg-purple-50 text-purple-700 border-purple-200',
+      },
+      {
+        id: 'OFFICIAL',
+        title: 'Technical Official',
+        subtitle: 'Track Referees & Judges',
+        desc: 'Photo-finish FAT timing judges, track referees & race marshals.',
+        icon: <Award size={24} className="text-emerald-600" />,
+        badge: 'WA Certified',
+        badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      },
+    ];
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '10px 0' }}>
-        <div style={{
-          width: '80px', height: '80px', borderRadius: '50%',
-          background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
-          border: '3px solid #F59E0B',
-          color: '#D97706',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: '20px',
-          boxShadow: '0 12px 28px rgba(245, 158, 11, 0.25)'
-        }}>
-          <Clock size={42} className="animate-pulse" />
-        </div>
+      <div className="flex flex-col gap-8">
+        {/* SECTION A: DISPLAY FULL INFORMATION OF USER FROM FAYDA WITH SEPARATED FIN AND FAN */}
+        {faydaResult && (
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200/80 pb-4 mb-5 flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/images/fayda_logo.png"
+                  alt="Fayda Logo"
+                  className="w-7 h-7 rounded-full object-cover shadow-sm bg-white p-0.5"
+                />
+                <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight m-0">
+                  Verified Fayda Identity Information
+                </h4>
+              </div>
+              <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full border border-emerald-300 flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-emerald-600" /> Authenticated
+              </span>
+            </div>
 
-        <span className="badge badge-amber" style={{ fontSize: '0.82rem', padding: '6px 16px', borderRadius: '20px', marginBottom: '12px' }}>
-          {t('registration.pendingBadge')}
-        </span>
+            {/* User Profile Header */}
+            <div className="flex items-start sm:items-center gap-5 flex-wrap sm:flex-nowrap mb-6">
+              <div className="w-20 h-24 sm:w-24 sm:h-28 rounded-xl overflow-hidden border-2 border-white shadow-md shrink-0 bg-slate-200">
+                <img
+                  src={faydaResult.photoUrl}
+                  alt="Biometric Portrait"
+                  className="w-full h-full object-cover"
+                />
+              </div>
 
-        <h3 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0F172A', marginBottom: '8px' }}>
-          {t('registration.submittedTitle')}
-        </h3>
-
-        <p style={{ fontSize: '0.95rem', color: '#475569', maxWidth: '580px', lineHeight: 1.6, marginBottom: '24px' }}>
-          {t('registration.submittedSub', {
-            item: t(isAthleteData ? 'registration.athleteItem' : 'registration.clubItem'),
-            board: t('registration.eafBoard')
-          })}
-        </p>
-
-        {/* Tracking Card */}
-        <div style={{
-          background: '#F8FAFC',
-          border: '1px solid #E2E8F0',
-          borderRadius: '20px',
-          padding: '24px',
-          width: '100%',
-          textAlign: 'left',
-          marginBottom: '24px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', marginBottom: '14px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#64748B' }}>{t('registration.trackingRef')}</span>
-            <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--primary)', fontFamily: 'var(--font-mono)' }}>{refNumber}</span>
-          </div>
-
-          {isAthleteData && (
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-              <img
-                src={pendingRegistrationData.payload.athlete.photoUrl}
-                alt="Passport Photo"
-                style={{
-                  width: '90px', height: '115px',
-                  objectFit: 'cover', borderRadius: '12px',
-                  border: '3px solid #FFFFFF',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.12)'
-                }}
-              />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F172A' }}>{pendingRegistrationData.payload.athlete.name}</div>
-                <div style={{ fontSize: '0.88rem', color: 'var(--primary-dark)', fontWeight: 700, marginTop: '2px' }}>{pendingRegistrationData.payload.athlete.amharicName}</div>
-                <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '6px' }}>
-                  Fayda FIN: <strong>{pendingRegistrationData.payload.athlete.faydaFin}</strong>
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '4px' }}>
-                  Primary Event: <strong>{pendingRegistrationData.payload.athlete.primaryEvent}</strong> · Club: <strong>{pendingRegistrationData.payload.athlete.clubName}</strong>
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#10B981', fontWeight: 800, marginTop: '4px' }}>
-                  {t('registration.faydaBiometricsVerified')}
+              <div className="flex-1 min-w-[200px]">
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 m-0 leading-tight">
+                  {faydaResult.name}
+                </h3>
+                {faydaResult.amharic && (
+                  <div className="text-base font-bold text-sky-700 mt-0.5">
+                    {faydaResult.amharic}
+                  </div>
+                )}
+                <div className="text-xs sm:text-sm text-slate-600 font-semibold mt-1 flex items-center gap-2 flex-wrap">
+                  <span>{faydaResult.dob}</span>
+                  <span>•</span>
+                  <span>{faydaResult.gender}</span>
+                  <span>•</span>
+                  <span>Blood Group {faydaResult.blood}</span>
+                  <span>•</span>
+                  <span>{faydaResult.region}</span>
                 </div>
               </div>
             </div>
-          )}
 
-          {!isAthleteData && (
-            <div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0F172A' }}>{pendingRegistrationData.payload.club.name}</div>
-              <div style={{ fontSize: '0.88rem', color: '#64748B', marginTop: '4px' }}>
-                Region: <strong>{pendingRegistrationData.payload.club.region}</strong> · Manager: <strong>{pendingRegistrationData.payload.club.manager}</strong>
+            {/* SEPARATE FIN AND FAN CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              {/* FIN CARD */}
+              <div className="bg-white border-2 border-sky-200 rounded-xl p-4 shadow-sm">
+                <div className="text-xs font-black uppercase tracking-wider text-sky-800 mb-1 flex items-center justify-between">
+                  <span>National ID Number (FIN)</span>
+                  <span className="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded font-extrabold">Permanent ID</span>
+                </div>
+                <div className="text-lg sm:text-xl font-black text-slate-900 font-mono tracking-wide">
+                  {formatFin(faydaResult.fin)}
+                </div>
+                <div className="text-xs text-slate-500 font-medium mt-1">
+                  Unique citizen biometric identity reference
+                </div>
+              </div>
+
+              {/* FAN CARD */}
+              <div className="bg-white border-2 border-emerald-200 rounded-xl p-4 shadow-sm">
+                <div className="text-xs font-black uppercase tracking-wider text-emerald-800 mb-1 flex items-center justify-between">
+                  <span>Fayda Access Number (FAN)</span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-extrabold">Virtual Access</span>
+                </div>
+                <div className="text-lg sm:text-xl font-black text-slate-900 font-mono tracking-wide">
+                  {faydaResult.fan}
+                </div>
+                <div className="text-xs text-slate-500 font-medium mt-1">
+                  Tokenized authentication credential
+                </div>
               </div>
             </div>
-          )}
-        </div>
 
-        <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '14px', padding: '16px', fontSize: '0.85rem', color: '#1E40AF', textAlign: 'left', marginBottom: '24px', width: '100%' }}>
-          📲 <strong>{t('registration.notificationNotice')}</strong>
-        </div>
-
-        <button
-          className="btn-accent"
-          style={{
-            width: '100%', padding: '16px', fontSize: '1.05rem', borderRadius: '14px',
-            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF',
-            border: 'none', fontWeight: 900, cursor: 'pointer'
-          }}
-          onClick={() => onRegisterSuccess(pendingRegistrationData)}
-        >
-          {t('registration.acknowledgeAccess')}
-        </button>
-      </div>
-    );
-  };
-
-
-  // ── CLUB FLOW ──
-  const renderClubStep = () => {
-    if (step === 0) return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>{t('registration.clubAccountTitle')}</h4>
-        <div className="form-group">
-          <label className="form-label">{t('registration.officialEmail')}</label>
-          <input className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@yourclub.et" required style={{ padding: '12px 14px' }} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">{t('auth.passwordLabel')}</label>
-          <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('registration.minPassword')} required style={{ padding: '12px 14px' }} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Phone Number</label>
-          <input className="form-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+251 91 000 0000" required style={{ padding: '12px 14px' }} />
-        </div>
-        <button
-          className="btn-accent"
-          style={{ width: '100%', padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '10px' }}
-          onClick={() => email && password && phone ? setStep(1) : null}>
-          {t('registration.continueClubDetails')} <ArrowRight size={18} />
-        </button>
-      </div>
-    );
-
-    if (step === 1) return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>{t('registration.clubInfoTitle')}</h4>
-        <div className="form-group">
-          <label className="form-label">{t('registration.clubNameEnglish')}</label>
-          <input className="form-input" value={clubName} onChange={e => setClubName(e.target.value)} placeholder="e.g. Bekoji Athletics Club" required style={{ padding: '12px 14px' }} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">{t('registration.clubNameAmharic')}</label>
-          <input className="form-input" value={clubAmharic} onChange={e => setClubAmharic(e.target.value)} placeholder="e.g. በቆጂ የሩጫ አካዳሚ" required style={{ padding: '12px 14px' }} />
-        </div>
-        <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-          <div className="form-group">
-            <label className="form-label">{t('registration.regionalState')}</label>
-            <select className="form-select" value={region} onChange={e => setRegion(e.target.value)} style={{ padding: '12px 14px' }}>
-              <option>Addis Ababa / Federal</option>
-              <option>Oromia Region</option>
-              <option>Amhara Region</option>
-              <option>Sidama Region</option>
-              <option>Tigray Region</option>
-              <option>South Ethiopia Region</option>
-              <option>Somali Region</option>
-              <option>Harari Region</option>
-            </select>
+            {/* Contact details row */}
+            <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between flex-wrap gap-3 text-xs sm:text-sm text-slate-700">
+              <div className="flex items-center gap-2">
+                <Phone size={14} className="text-slate-400" />
+                <span className="font-bold">Phone:</span>
+                <span className="font-semibold">{faydaResult.phoneNumber || phone}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail size={14} className="text-slate-400" />
+                <span className="font-bold">Email:</span>
+                <span className="font-semibold">{faydaResult.email || email}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin size={14} className="text-slate-400" />
+                <span className="font-bold">Address:</span>
+                <span className="font-semibold">{faydaResult.address || faydaResult.region}</span>
+              </div>
+            </div>
           </div>
-          <div className="form-group">
-            <label className="form-label">{t('registration.clubSymbol')}</label>
-            <input className="form-input" value={clubLogo} onChange={e => setClubLogo(e.target.value)} placeholder="🏃" style={{ padding: '12px 14px' }} />
-          </div>
-        </div>
-        <div className="form-group">
-          <label className="form-label">{t('registration.clubManager')}</label>
-          <input className="form-input" value={manager} onChange={e => setManager(e.target.value)} placeholder="e.g. Coach Sentayehu Eshetu" required style={{ padding: '12px 14px' }} />
-        </div>
-        <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-          <button className="btn-gov-secondary" style={{ flex: 1, padding: '13px', borderRadius: '12px' }} onClick={() => setStep(0)}>{t('common.back')}</button>
-          <button className="btn-accent" style={{ flex: 2, padding: '13px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-            onClick={() => clubName && manager ? setStep(2) : null}>
-            {t('registration.reviewSubmit')} <ArrowRight size={18} />
-          </button>
-        </div>
-      </div>
-    );
+        )}
 
-    if (step === 2) return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0F172A' }}>{t('registration.reviewConfirmTitle')}</h4>
-        <div className="table-responsive" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '16px', padding: '24px' }}>
-          <table className="gov-table">
-            <tbody>
-              {[
-                [t('registration.clubName'), `${clubName} (${clubAmharic})`],
-                [t('registration.regionalState'), region],
-                [t('registration.clubManager'), manager],
-                ['Email', email],
-                ['Phone', phone],
-              ].map(([k, v]) => (
-                <tr key={k}>
-                  <td style={{ width: '40%', fontWeight: 700, color: '#64748B' }}>{k}</td>
-                  <td style={{ fontWeight: 900, color: '#0F172A' }}>{v}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p style={{ fontSize: '0.85rem', color: '#64748B', lineHeight: 1.5 }}>
-          {t('registration.agreeText')}
-        </p>
-        <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-          <button className="btn-gov-secondary" style={{ flex: 1, padding: '13px', borderRadius: '12px' }} onClick={() => setStep(1)}>{t('common.back')}</button>
-          <button className="btn-accent" style={{ flex: 2, padding: '13px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={handleClubSubmit}>
-            <CheckCircle2 size={18} /> {t('registration.registerClub')}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // ── ATHLETE FLOW ──
-  const renderAthleteStep = () => {
-    if (step === 0) return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* SECTION B: ROLE SELECTION PANEL */}
         <div>
-          <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A', marginBottom: '6px' }}>
-            {t('registration.faydaStepTitle')}
-          </h4>
-          <p style={{ fontSize: '0.88rem', color: '#64748B', lineHeight: 1.6 }}>
-            {t('registration.faydaStepSub')}
+          <div className="mb-4">
+            <h4 className="text-xl font-black text-slate-900 tracking-tight m-0">
+              Select Your Federation Role
+            </h4>
+            <p className="text-slate-600 text-sm m-0 mt-1">
+              Choose your role below to configure your official profile and sports credentials:
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {rolesConfig.map((r) => {
+              const isSelected = selectedRole === r.id;
+              return (
+                <motion.div
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.99 }}
+                  key={r.id}
+                  onClick={() => {
+                    setSelectedRole(r.id as any);
+                    setStep(2); // Advance to Step 2 (Profile Details & Digitization)
+                  }}
+                  className={`bg-white rounded-2xl p-5 border-2 cursor-pointer transition-all flex flex-col justify-between gap-4 shadow-sm ${
+                    isSelected
+                      ? 'border-sky-600 ring-4 ring-sky-100 shadow-md'
+                      : 'border-slate-200 hover:border-sky-400'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center">
+                        {r.icon}
+                      </div>
+                      <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-md border ${r.badgeBg}`}>
+                        {r.badge}
+                      </span>
+                    </div>
+
+                    <h5 className="text-base font-black text-slate-900 m-0">
+                      {r.title}
+                    </h5>
+                    <div className="text-xs font-bold text-sky-700 mb-1.5">
+                      {r.subtitle}
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed m-0">
+                      {r.desc}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs font-bold text-sky-600">
+                    <span>Select Role</span>
+                    <ArrowRight size={14} />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 flex justify-start">
+            <button
+              type="button"
+              onClick={() => setStep(0)}
+              className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer bg-transparent border-0"
+            >
+              <ArrowLeft size={14} /> Re-authenticate with different National ID
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STEP 2: THIRD STEP / SECTION — ROLE DETAILS & DIGITIZATION
+  // ─────────────────────────────────────────────────────────────────────────────
+  
+  const validateStep2AndProceed = () => {
+    setSubmissionError('');
+    const trimmedEmail = (email || '').trim();
+    if (!trimmedEmail || !trimmedEmail.includes('@') || !trimmedEmail.includes('.')) {
+      setSubmissionError('Please provide a valid official email address for your federation account.');
+      return;
+    }
+    const trimmedPhone = (phone || '').trim();
+    if (!trimmedPhone || trimmedPhone.replace(/\D/g, '').length < 8) {
+      setSubmissionError('Please enter a valid phone number (e.g., 0911000000).');
+      return;
+    }
+    if (!password || password.length < 8) {
+      setSubmissionError('Please create a secure password of at least 8 characters.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setSubmissionError('Passwords do not match. Please re-enter your password.');
+      return;
+    }
+    setStep(3);
+  };
+
+  const renderAccountCredentialsCard = () => (
+    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 my-2">
+      <div className="flex items-center gap-2">
+        <KeyRound size={18} className="text-slate-800" />
+        <div>
+          <h5 className="text-sm font-black text-slate-900 m-0">Account Credentials &amp; Sign-In Password</h5>
+          <p className="text-xs text-slate-500 m-0 mt-0.5">
+            Establish the credentials you will use to log into the federation portal after registration.
           </p>
         </div>
-
-        {/* 🚀 PRIMARY OFFICIAL FLOW: VeriFayda 2.0 (eSignet) Redirect & OTP Portal */}
-        {!faydaResult && (
-          <div style={{
-            background: 'linear-gradient(135deg, #0B1120 0%, #1E293B 100%)',
-            border: '2px solid #0284C7',
-            borderRadius: '20px',
-            padding: '28px 24px',
-            color: '#FFFFFF',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '18px',
-            boxShadow: '0 16px 36px rgba(2, 132, 199, 0.25)',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            {/* Ethiopian flag top stripe */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', display: 'flex' }}>
-              <div style={{ flex: 1, backgroundColor: '#009A44' }} />
-              <div style={{ flex: 1, backgroundColor: '#FED100' }} />
-              <div style={{ flex: 1, backgroundColor: '#EF3340' }} />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#0284C7', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.45)' }}>
-                  <ShieldCheck size={28} color="#FFFFFF" />
-                </div>
-                <div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
-                    VeriFayda 2.0 (eSignet) National ID
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: '#38BDF8', fontWeight: 700 }}>
-                    Official Government Authorization & Mobile OTP Portal
-                  </div>
-                </div>
-              </div>
-              <span style={{ background: '#10B981', color: '#FFF', fontSize: '0.72rem', fontWeight: 900, padding: '4px 10px', borderRadius: '999px', letterSpacing: '0.04em' }}>
-                MOSIP eSignet OIDC
-              </span>
-            </div>
-
-            <p style={{ fontSize: '0.88rem', color: '#CBD5E1', lineHeight: 1.6, margin: 0 }}>
-              Under Federal Proclamation No. 1284/2023, all athletes must authenticate through <strong>VeriFayda 2.0</strong>. Clicking below will redirect you to the official eSignet portal where you will input your Fayda National ID and confirm the 6-digit mobile passcode (<strong>OTP: 111111</strong>).
-            </p>
-
-            {/* Primary Action: Direct Redirect to Fayda eSignet Portal */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                type="button"
-                onClick={() => { setLaunchAsPopup(false); setShowConsentModal(true); }}
-                disabled={isOidcLaunching}
-                style={{
-                  background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '14px',
-                  padding: '16px 20px',
-                  fontSize: '1.02rem',
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px',
-                  boxShadow: '0 8px 24px rgba(2, 132, 199, 0.45)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {isOidcLaunching ? (
-                  <><RefreshCw size={18} className="animate-spin" /> Launching Fayda eSignet Portal...</>
-                ) : (
-                  <><ExternalLink size={18} /> Redirect to Fayda eSignet Portal (ID & OTP) →</>
-                )}
-              </button>
-
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => { setLaunchAsPopup(true); setShowConsentModal(true); }}
-                  style={{
-                    flex: 1,
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    color: '#E2E8F0',
-                    borderRadius: '10px',
-                    padding: '10px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <span>🪟 Open in Pop-up Window</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleDemoBypassFayda}
-                  style={{
-                    flex: 1,
-                    background: '#FEF3C7',
-                    border: '1px solid #F59E0B',
-                    color: '#92400E',
-                    borderRadius: '10px',
-                    padding: '10px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <Zap size={14} color="#D97706" />
-                  <span>⚡ Instant Demo Fill</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Test Credentials Info Box */}
-            <div style={{
-              background: 'rgba(15, 23, 42, 0.6)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '12px',
-              padding: '12px 14px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px'
-            }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Official Sandbox Test Personas:
-              </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '0.8rem', color: '#E2E8F0', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
-                  🏃 Kenenisa Bekele: <strong style={{ color: '#38BDF8', fontFamily: 'monospace' }}>3126-8946-5347-3958</strong>
-                </span>
-                <span style={{ fontSize: '0.8rem', color: '#E2E8F0', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
-                  🏃‍♀️ Gudaf Tsegay: <strong style={{ color: '#38BDF8', fontFamily: 'monospace' }}>6230-2473-1935-6120</strong>
-                </span>
-                <span style={{ fontSize: '0.8rem', color: '#34D399', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', padding: '4px 8px', borderRadius: '6px', fontWeight: 800 }}>
-                  Test Mobile OTP: 111111
-                </span>
-              </div>
-            </div>
-
-            {faydaError && (
-              <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '10px', padding: '10px 14px', color: '#DC2626', fontSize: '0.85rem', fontWeight: 700 }}>
-                {faydaError}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Fayda Verified Result List Card with Formal Passport Photo & 7 Essential Claims */}
-        {faydaResult && (
-          <div style={{
-            background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)',
-            border: '2px solid var(--primary)',
-            borderRadius: '20px',
-            padding: '24px',
-            boxShadow: '0 8px 24px rgba(14, 165, 233, 0.15)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '18px'
-          }}>
-            {/* Header Badge */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(14, 165, 233, 0.3)', paddingBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ShieldCheck size={22} color="var(--primary-dark)" />
-                <span style={{ fontWeight: 900, color: '#0369A1', fontSize: '1.05rem', letterSpacing: '0.02em' }}>
-                  VeriFayda 2.0 (eSignet) Demographic & Biometric Verification
-                </span>
-              </div>
-              <span style={{ background: '#10B981', color: '#FFF', padding: '5px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.04em' }}>
-                ✓ CITIZEN CONSENT GRANTED
-              </span>
-            </div>
-
-            {/* Official Fayda Consent Confirmation Banner */}
-            <div style={{
-              background: '#ECFDF5',
-              border: '1px solid #10B981',
-              borderRadius: '12px',
-              padding: '12px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-              flexWrap: 'wrap'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <CheckCircle2 size={20} color="#059669" />
-                <div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 900, color: '#065F46' }}>
-                    Fayda eSignet Consent Confirmed: 7 Essential Demographic Claims Retrieved
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: '#047857' }}>
-                    Following OTP verification on the official Fayda portal, user consent was authorized to share verified demographic attributes with EAF.
-                  </div>
-                </div>
-              </div>
-              <span style={{ background: '#059669', color: '#FFF', fontSize: '0.72rem', fontWeight: 800, padding: '4px 10px', borderRadius: '999px', letterSpacing: '0.04em' }}>
-                MOSIP eSignet OIDC
-              </span>
-            </div>
-
-            {/* Profile Content Layout */}
-            <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              {/* Formal Passport Photo Frame */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                <div style={{
-                  width: '135px',
-                  height: '175px',
-                  borderRadius: '14px',
-                  overflow: 'hidden',
-                  border: '4px solid #FFFFFF',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
-                  position: 'relative',
-                  background: '#E2E8F0'
-                }}>
-                  <img
-                    src={faydaResult.photoUrl}
-                    alt="Biometric Passport Portrait"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  <div style={{
-                    position: 'absolute', top: '8px', right: '8px',
-                    background: '#10B981', color: '#FFF', borderRadius: '50%',
-                    width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: '2px solid #FFF', boxShadow: '0 2px 6px rgba(0,0,0,0.25)'
-                  }}>
-                    <CheckCircle2 size={16} />
-                  </div>
-                </div>
-                <div style={{ textAlign: 'center' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 900, color: '#0369A1', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block' }}>
-                    Biometric Portrait (picture)
-                  </span>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#10B981' }}>
-                    ✓ Fayda Live Biometrics
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowCitizenModal(true)}
-                  style={{
-                    width: '100%',
-                    background: '#0284C7',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '10px',
-                    padding: '8px 12px',
-                    fontWeight: 800,
-                    fontSize: '0.75rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)'
-                  }}
-                >
-                  <Sparkles size={14} /> Full ID Card
-                </button>
-              </div>
-
-              {/* 7 Essential UserInfo Claims Table */}
-              <div style={{ flex: 1, minWidth: '280px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <h5 style={{ fontSize: '0.82rem', fontWeight: 900, color: '#0369A1', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
-                    Official OIDC Demographic Claims
-                  </h5>
-                  <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 700 }}>
-                    Requested with Essential = True
-                  </span>
-                </div>
-                <div className="table-responsive" style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #BAE6FD', overflow: 'hidden' }}>
-                  <table className="gov-table" style={{ margin: 0, width: '100%', borderCollapse: 'collapse' }}>
-                    <tbody>
-                      {[
-                        ['Full Name (name)', `${faydaResult.name}${faydaResult.amharic ? ` · ${faydaResult.amharic}` : ''}`],
-                        ['National ID / NIN (sub)', formatFin(faydaResult.fin)],
-                        ['Phone Number (phone_number)', faydaResult.phoneNumber || phone || '0909090909'],
-                        ['Email Address (email)', faydaResult.email || email || 'chere@id.et'],
-                        ['Date of Birth (birthdate)', `${faydaResult.dob} (${faydaResult.ageTier})`],
-                        ['Gender (gender)', faydaResult.gender],
-                        ['Residential Address (address)', faydaResult.address || faydaResult.region || 'Addis Ababa / Federal'],
-                        ['Fayda Consent Status', '✓ Authorized on Official Fayda Consent Page'],
-                        ['OIDC RS256 Signature', faydaResult.hash],
-                      ].map(([k, v], idx) => (
-                        <tr key={k} style={{ background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC', borderBottom: '1px solid #F1F5F9' }}>
-                          <td style={{ width: '42%', fontWeight: 800, color: '#475569', fontSize: '0.82rem', padding: '9px 14px' }}>{k}</td>
-                          <td style={{ fontWeight: 900, color: '#0F172A', fontSize: '0.85rem', padding: '9px 14px' }}>{v}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* View ID card action button */}
-                <button
-                  type="button"
-                  onClick={() => setShowCitizenModal(true)}
-                  style={{
-                    marginTop: '12px',
-                    width: '100%',
-                    background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '12px 18px',
-                    fontWeight: 800,
-                    fontSize: '0.88rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.3)',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <Sparkles size={16} /> View Official Fayda Resident ID Card & QR Credential
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-
-
-        {/* CONTINUE BUTTON IS DISABLED UNTIL FAYDA IS VERIFIED */}
-        <button
-          type="button"
-          className="btn-accent"
-          disabled={!faydaResult}
-          onClick={() => faydaResult && setStep(1)}
-          style={{
-            width: '100%',
-            padding: '16px',
-            fontSize: '1rem',
-            borderRadius: '14px',
-            background: faydaResult
-              ? 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)'
-              : '#94A3B8',
-            color: '#FFFFFF',
-            fontWeight: 800,
-            cursor: faydaResult ? 'pointer' : 'not-allowed',
-            opacity: faydaResult ? 1 : 0.65,
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            boxShadow: faydaResult ? '0 8px 24px rgba(2, 132, 199, 0.3)' : 'none',
-            transition: 'all 0.2s'
-          }}
-        >
-          {t('registration.continueSports')}
-          <ArrowRight size={20} />
-        </button>
       </div>
-    );
 
-    if (step === 1) {
-      const allDisciplines = regOptions?.disciplines && regOptions.disciplines.length > 0
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Account Email Address <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setSubmissionError(''); }}
+            placeholder="athlete@athletics.et"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 bg-white focus:outline-none focus:border-slate-800"
+            required
+          />
+          <p className="text-[10px] text-slate-500 mt-1 m-0">Used for official communications and password recovery.</p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Registered Mobile Number <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => { setPhone(e.target.value); setSubmissionError(''); }}
+            placeholder="0911000000"
+            className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 bg-white focus:outline-none focus:border-slate-800"
+            required
+          />
+          <p className="text-[10px] text-slate-500 mt-1 m-0">Used for SMS alerts and quick phone-number sign-in.</p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Create Sign-In Password <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setSubmissionError(''); }}
+              placeholder="At least 8 characters"
+              className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 bg-white focus:outline-none focus:border-slate-800"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-transparent border-0 cursor-pointer p-0"
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 mt-1 m-0">Minimum 8 characters.</p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            Confirm Sign-In Password <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => { setConfirmPassword(e.target.value); setSubmissionError(''); }}
+              placeholder="Re-enter password"
+              className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 bg-white focus:outline-none focus:border-slate-800"
+              required
+            />
+          </div>
+          {confirmPassword && confirmPassword !== password && (
+            <p className="text-[10px] text-red-600 mt-1 m-0">Passwords do not match.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-600 flex items-start gap-2">
+        <ShieldCheck size={16} className="text-slate-700 shrink-0 mt-0.5" />
+        <span>
+          <strong>Sign-in flexibility:</strong> Once registered, you will be able to log in with your <strong>National ID (FIN)</strong>, <strong>Access Number (FAN)</strong>, <strong>Phone Number</strong>, or <strong>Email</strong> using this password.
+        </span>
+      </div>
+    </div>
+  );
+
+  const renderStep2ProfileDetails = () => {
+    if (selectedRole === 'ATHLETE' || !selectedRole) {
+      // Use API-provided disciplines if available, otherwise fallback
+      const apiDisciplines = regOptions?.disciplines?.length
         ? regOptions.disciplines.map(d => d.name)
-        : [
-            '100m / 200m Sprint',
-            '400m Sprint',
-            '800m Middle Distance',
-            '1,500m Middle Distance',
-            '5,000m Long Distance',
-            '10,000m Long Distance',
-            '3,000m Steeplechase',
-            'Marathon & Road Running',
-            'Long Jump / Triple Jump',
-            'High Jump / Pole Vault',
-            'Javelin / Discus / Shot Put'
-          ];
+        : null;
+      const allDisciplines = apiDisciplines || [
+        '100m', '400m', '800m', '1500m', '5000m', '10000m',
+        '3000m Steeplechase', 'Marathon', 'Half Marathon', 'Cross Country',
+      ];
 
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>{t('registration.sportsStepTitle')}</h4>
+        <div className="flex flex-col gap-6">
+          <div>
+            <h4 className="text-xl font-black text-slate-900 tracking-tight m-0">
+              Sports Affiliation &amp; Performance Digitization
+            </h4>
+            <p className="text-slate-600 text-sm m-0 mt-1">
+              Select your competitive events, club affiliation, and personal bests.
+            </p>
+          </div>
 
-          {/* Multi-select Disciplines Checkboxes */}
-          <div className="form-group">
-            <label className="form-label" style={{ fontWeight: 800, color: '#0F172A', marginBottom: '8px' }}>
-              {t('registration.disciplinesLabel')}
+          {/* Events selection */}
+          <div>
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">
+              Competitive Disciplines
             </label>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '10px',
-              background: '#F8FAFC',
-              padding: '16px',
-              borderRadius: '14px',
-              border: '1px solid #CBD5E1',
-              maxHeight: '180px',
-              overflowY: 'auto'
-            }}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200 max-h-40 overflow-y-auto">
               {allDisciplines.map(d => {
-                const isSelected = Array.isArray(primaryEvent)
-                  ? primaryEvent.includes(d)
-                  : primaryEvent === d;
-
+                const isSelected = primaryEvent.includes(d);
                 return (
                   <label
                     key={d}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '0.86rem',
-                      fontWeight: 700,
-                      color: isSelected ? 'var(--primary-dark)' : '#334155',
-                      cursor: 'pointer',
-                      background: isSelected ? '#E0F2FE' : '#FFFFFF',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: isSelected ? '1px solid var(--primary)' : '1px solid #E2E8F0',
-                      transition: 'all 0.15s'
-                    }}
+                    className={`flex items-center gap-2 p-2 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
+                      isSelected ? 'bg-sky-100 text-sky-900 border border-sky-300' : 'bg-white text-slate-700 border border-slate-200'
+                    }`}
                   >
                     <input
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => {
-                        let currentList = Array.isArray(primaryEvent) ? [...primaryEvent] : [primaryEvent];
-                        if (isSelected) {
-                          currentList = currentList.filter(item => item !== d);
-                        } else {
-                          currentList.push(d);
-                        }
-                        setPrimaryEvent(currentList.length === 0 ? ['5,000m Long Distance'] : currentList);
+                        if (isSelected) setPrimaryEvent(primaryEvent.filter(item => item !== d));
+                        else setPrimaryEvent([...primaryEvent, d]);
                       }}
-                      style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }}
+                      className="accent-sky-600"
                     />
                     {d}
                   </label>
@@ -1250,249 +1183,584 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
             </div>
           </div>
 
-          {/* Current Registered Club Dropdown */}
-          <div className="form-group">
-            <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('registration.currentClub')}</label>
-            <select className="form-select" value={selectedClubId} onChange={e => setSelectedClubId(e.target.value)} style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }}>
-              <option value="NONE">{t('registration.independent')}</option>
-              {clubsList.map(c => (
-                <option key={c.id} value={c.id}>{c.name || c.shortName} ({c.region})</option>
+          {/* Club and Ranking */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                Club / Team Affiliation
+              </label>
+              <select
+                value={selectedClubId}
+                onChange={e => setSelectedClubId(e.target.value)}
+                className="w-full p-3 rounded-xl border border-slate-300 text-slate-900 font-semibold text-sm bg-white"
+              >
+                <option value="NONE">Independent / Unaffiliated Athlete</option>
+                {MOCK_CLUBS.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.region})</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                Region / State (Federation Member)
+              </label>
+              <select
+                value={region}
+                onChange={e => setRegion(e.target.value)}
+                className="w-full p-3 rounded-xl border border-slate-300 text-slate-900 font-semibold text-sm bg-white"
+              >
+                {(regOptions?.regions && regOptions.regions.length > 0 ? regOptions.regions : ['Addis Ababa', 'Oromia', 'Amhara', 'Sidama', 'Tigray', 'Somali']).map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* PBs table */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-black text-slate-900">Official Personal Bests (PBs)</span>
+              <span className="text-xs font-bold text-emerald-700">Electronic Timing Certified</span>
+            </div>
+
+            <div className="space-y-2 mb-3">
+              {personalBests.map((pb, idx) => (
+                <div key={idx} className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-slate-200 text-xs">
+                  <div className="flex items-center gap-3">
+                    <span className="font-black text-slate-900">{pb.event}</span>
+                    <span className="font-black font-mono text-sky-700">{pb.mark}</span>
+                    <span className="text-slate-500">{pb.venue}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPersonalBests(personalBests.filter((_, i) => i !== idx))}
+                    className="text-red-600 font-bold hover:underline bg-transparent border-0 cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
               ))}
-            </select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <input
+                type="text" placeholder="Event (e.g. Marathon)"
+                value={newPbEvent} onChange={e => setNewPbEvent(e.target.value)}
+                className="p-2 text-xs border border-slate-300 rounded-lg"
+              />
+              <input
+                type="text" placeholder="Mark (e.g. 2:04:12)"
+                value={newPbMark} onChange={e => setNewPbMark(e.target.value)}
+                className="p-2 text-xs border border-slate-300 rounded-lg"
+              />
+              <input
+                type="text" placeholder="Venue (e.g. Berlin)"
+                value={newPbVenue} onChange={e => setNewPbVenue(e.target.value)}
+                className="p-2 text-xs border border-slate-300 rounded-lg sm:col-span-1"
+              />
+              <button
+                type="button" onClick={handleAddPersonalBest}
+                className="p-2 text-xs font-black bg-sky-600 text-white rounded-lg hover:bg-sky-700 cursor-pointer border-0"
+              >
+                Add PB
+              </button>
+            </div>
           </div>
 
-          {/* Physical & Medical Stats Inputs */}
-          <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('athlete.weight')} (kg)</label>
-              <input className="form-input" type="number" value={weight} onChange={e => setWeight(Number(e.target.value))} style={{ padding: '12px 14px', borderRadius: '10px' }} />
+          {/* Biometrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Weight (kg)</label>
+              <input
+                type="number" value={weight} onChange={e => setWeight(Number(e.target.value))}
+                className="w-full p-2.5 text-sm border border-slate-300 rounded-lg"
+              />
             </div>
-            <div className="form-group">
-              <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('athlete.height')} (cm)</label>
-              <input className="form-input" type="number" value={height} onChange={e => setHeight(Number(e.target.value))} style={{ padding: '12px 14px', borderRadius: '10px' }} />
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Height (cm)</label>
+              <input
+                type="number" value={height} onChange={e => setHeight(Number(e.target.value))}
+                className="w-full p-2.5 text-sm border border-slate-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Resting HR (bpm)</label>
+              <input
+                type="number" value={restingHR} onChange={e => setRestingHR(Number(e.target.value))}
+                className="w-full p-2.5 text-sm border border-slate-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Dominant Leg</label>
+              <select
+                value={dominantFoot} onChange={e => setDominantFoot(e.target.value as any)}
+                className="w-full p-2.5 text-sm border border-slate-300 rounded-lg bg-white"
+              >
+                <option value="RIGHT">Right Leg</option>
+                <option value="LEFT">Left Leg</option>
+              </select>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(0)}>{t('common.back')}</button>
-            <button className="btn-accent" style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onClick={() => setStep(2)}>
-              {t('registration.continueAccount')} <ArrowRight size={18} />
+          {renderAccountCredentialsCard()}
+
+          {submissionError && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2">
+              <AlertCircle size={16} className="text-red-600 shrink-0" />
+              <span>{submissionError}</span>
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-4">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="px-6 py-3 rounded-xl border border-slate-300 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer bg-white"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={validateStep2AndProceed}
+              className="flex-1 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold flex items-center justify-center gap-2 cursor-pointer border-0 shadow-sm"
+            >
+              Continue to Review <ArrowRight size={16} />
             </button>
           </div>
         </div>
       );
     }
 
-    if (step === 2) return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>{t('registration.accountStepTitle')}</h4>
-
-        <div className="form-group">
-          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('registration.accountEmail')}</label>
-          <input className="form-input" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your.name@athletics.et" required style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
+    // Stakeholders Details
+    return (
+      <div className="flex flex-col gap-6">
+        <div>
+          <h4 className="text-xl font-black text-slate-900 tracking-tight m-0">
+            {selectedRole === 'CLUB_PRESIDENT' && 'Club Governance & Signing Authority'}
+            {selectedRole === 'COACH' && 'Coaching Accreditation & Licensing'}
+            {selectedRole === 'MEDICAL_HEAD' && 'Medical Licensing & Hospital Credentials'}
+            {selectedRole === 'OFFICIAL' && 'Technical Officiating Accreditation'}
+          </h4>
+          <p className="text-slate-600 text-sm m-0 mt-1">
+            Enter your official accreditation credentials for federation licensing.
+          </p>
         </div>
 
-        <div className="form-group">
-          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('auth.passwordLabel')}</label>
-          <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('registration.minPassword')} required style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
-        </div>
+        {selectedRole === 'CLUB_PRESIDENT' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Official Club Name</label>
+              <input
+                type="text" value={clubName} onChange={e => setClubName(e.target.value)}
+                className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Executive Authority Mandate</label>
+                <input
+                  type="text" value={charterAuthority} onChange={e => setCharterAuthority(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Elected Term of Office</label>
+                <input
+                  type="text" value={executiveTerm} onChange={e => setExecutiveTerm(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
-        <div className="form-group">
-          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('athleteProfilePortal.phoneNumber')}</label>
-          <input className="form-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+251 91 234 5678" required style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
-        </div>
+        {selectedRole === 'COACH' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">World Athletics Certification Level</label>
+              <select
+                value={waCoachLevel} onChange={e => setWaCoachLevel(e.target.value)}
+                className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold bg-white"
+              >
+                <option value="World Athletics Level 3 (High Performance)">World Athletics Level 3 (High Performance)</option>
+                <option value="World Athletics Level 2 (Senior Specialization)">World Athletics Level 2 (Senior Specialization)</option>
+                <option value="World Athletics Level 1 (Youth Development)">World Athletics Level 1 (Youth Development)</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Coaching Specialization</label>
+                <input
+                  type="text" value={coachSpecialization} onChange={e => setCoachSpecialization(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Coach License Number</label>
+                <input
+                  type="text" value={coachLicenseNumber} onChange={e => setCoachLicenseNumber(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
-        <div className="form-group">
-          <label className="form-label" style={{ fontWeight: 800, color: '#0F172A' }}>{t('registration.emergencyContact')}</label>
-          <input className="form-input" type="text" value={emergencyContact} onChange={e => setEmergencyContact(e.target.value)} style={{ padding: '14px 16px', fontSize: '0.95rem', borderRadius: '12px' }} />
-        </div>
+        {selectedRole === 'MEDICAL_HEAD' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Medical Designation</label>
+              <select
+                value={medicalDesignation} onChange={e => setMedicalDesignation(e.target.value)}
+                className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold bg-white"
+              >
+                <option value="Team Physician (MD) & Sports Medicine Head">Team Physician (MD) &amp; Sports Medicine Head</option>
+                <option value="Cardiologist & ECG Clearance Officer">Cardiologist &amp; ECG Clearance Officer</option>
+                <option value="Chief Sports Physiotherapist">Chief Sports Physiotherapist</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Ministry of Health License #</label>
+                <input
+                  type="text" value={mohLicenseNumber} onChange={e => setMohLicenseNumber(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Hospital / Clinic Affiliation</label>
+                <input
+                  type="text" value={hospitalAffiliation} onChange={e => setHospitalAffiliation(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(1)}>{t('common.back')}</button>
+        {selectedRole === 'OFFICIAL' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Officiating Role</label>
+              <select
+                value={officiatingRole} onChange={e => setOfficiatingRole(e.target.value)}
+                className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold bg-white"
+              >
+                <option value="Technical Delegate & Track Referee">Technical Delegate &amp; Track Referee</option>
+                <option value="Chief Photo-Finish & Timing Judge">Chief Photo-Finish &amp; Timing Judge</option>
+                <option value="Starter & False-Start Official">Starter &amp; False-Start Official</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">World Athletics Level</label>
+                <input
+                  type="text" value={waOfficialLevel} onChange={e => setWaOfficialLevel(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Official ID</label>
+                <input
+                  type="text" value={waOfficialId} onChange={e => setWaOfficialId(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {renderAccountCredentialsCard()}
+
+        {submissionError && (
+          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2">
+            <AlertCircle size={16} className="text-red-600 shrink-0" />
+            <span>{submissionError}</span>
+          </div>
+        )}
+
+        <div className="flex gap-3 mt-4">
           <button
             type="button"
-            className="btn-accent"
-            style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-            onClick={() => {
-              if (!email) setEmail('athlete@athletics.et');
-              if (!password) setPassword('Password123!');
-              setStep(3);
-            }}
+            onClick={() => setStep(1)}
+            className="px-6 py-3 rounded-xl border border-slate-300 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer bg-white"
           >
-            {t('registration.reviewRegistration')} <ArrowRight size={18} />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={validateStep2AndProceed}
+            className="flex-1 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold flex items-center justify-center gap-2 cursor-pointer border-0 shadow-sm"
+          >
+            Continue to Review <ArrowRight size={16} />
           </button>
         </div>
       </div>
     );
-
-    if (step === 3) {
-      const club = selectedClubId === 'NONE'
-        ? { shortName: 'Independent' }
-        : (clubsList.find(c => c.id === selectedClubId) || { shortName: 'EAF Club' });
-
-      const eventText = Array.isArray(primaryEvent) ? primaryEvent.join(', ') : primaryEvent;
-
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <h4 style={{ fontWeight: 900, fontSize: '1.25rem', color: '#0F172A' }}>{t('registration.confirmStepTitle')}</h4>
-
-          {/* Detailed Summary Card */}
-          <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Header Passport Card */}
-            <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{
-                width: '120px', height: '150px', borderRadius: '14px',
-                border: '4px solid #FFFFFF', boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
-                overflow: 'hidden', flexShrink: 0
-              }}>
-                <img src={faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg'} alt="Passport Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#E0F2FE', color: 'var(--primary-dark)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
-                  <ShieldCheck size={14} /> {t('registration.faydaIdentityVerified')}
-                </div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0F172A' }}>{faydaResult?.name}</div>
-                <div style={{ fontSize: '0.95rem', color: 'var(--primary)', fontWeight: 700 }}>{faydaResult?.amharic}</div>
-                <div style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '6px' }}>
-                  Fayda FIN: <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>{faydaResult?.fin}</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Maximum Metadata Data Table */}
-            <div className="table-responsive" style={{ background: '#FFFFFF', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
-              <table className="gov-table" style={{ margin: 0 }}>
-                <tbody>
-                  {[
-                    [t('registration.fullLegalName'), `${faydaResult?.name} (${faydaResult?.amharic})`],
-                    [t('registration.finLabel'), faydaResult?.fin],
-                    [t('registration.cryptographicHash'), faydaResult?.hash],
-                    [t('registration.dobDivision'), `${faydaResult?.dob} · ${faydaResult?.ageTier}`],
-                    [t('registration.genderBloodGroup'), `${faydaResult?.gender} · Type ${faydaResult?.blood}`],
-                    [t('registration.physicalStats'), `Height: ${height} cm · Weight: ${weight} kg`],
-                    [t('registration.athleticsClub'), club?.shortName],
-                    [t('registration.primaryEvents'), eventText],
-                    [t('registration.regionalDelegation'), faydaResult?.region || 'Oromia Regional State'],
-                    [t('registration.accountEmail'), email || 'athlete@athletics.et'],
-                    [t('athleteProfilePortal.phoneNumber'), phone || '+251 91 234 5678'],
-                    [t('registration.emergencyContact'), emergencyContact],
-                    [t('registration.medicalNotes'), medicalNotes],
-                    [t('registration.licenseStatus'), t('registration.pendingAudit')],
-                  ].map(([k, v]) => (
-                    <tr key={k}>
-                      <td style={{ width: '38%', fontWeight: 700, color: '#64748B', fontSize: '0.82rem', padding: '10px 14px' }}>{k}</td>
-                      <td style={{ fontWeight: 900, color: '#0F172A', fontSize: '0.85rem', padding: '10px 14px' }}>{v}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button className="btn-gov-secondary" style={{ flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800 }} onClick={() => setStep(2)}>{t('common.back')}</button>
-            <button
-              className="btn-accent"
-              disabled={isRegistering}
-              style={{ flex: 2, padding: '14px', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: 900, cursor: isRegistering ? 'not-allowed' : 'pointer', opacity: isRegistering ? 0.75 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-              onClick={handleAthleteSubmit}
-            >
-              {isRegistering ? (
-                <>
-                  <RefreshCw size={18} className="animate-spin" />
-                  Submitting Registration...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 size={18} /> {t('registration.submitAthlete')}
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      );
-    }
   };
 
-  return (
-    <div className="modal-backdrop" onClick={onClose} style={{ zIndex: 9999, padding: '24px 16px', overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div
-        className="modal-content main-pad"
-        onClick={e => e.stopPropagation()}
-        style={{
-          maxWidth: '1100px',
-          width: '95vw',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          margin: 'auto',
-          borderRadius: '24px',
-          boxShadow: '0 32px 64px rgba(15, 23, 42, 0.25)',
-          border: '1px solid #E2E8F0'
-        }}
-      >
-        {/* Header */}
-        {!isSubmittedPending && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{
-                width: '50px', height: '50px', borderRadius: '14px',
-                background: isClub ? '#FEF3C7' : '#E0F2FE',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: isClub ? '#D97706' : 'var(--primary-dark)'
-              }}>
-                {isClub ? <Building2 size={26} /> : <UserCheck size={26} />}
-              </div>
-              <div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F172A' }}>
-                  {isClub ? t('registration.titleClub') : t('registration.titleAthlete')}
-                </h3>
-                <p style={{ fontSize: '0.85rem', color: '#64748B' }}>
-                  {t('registration.subtitle')}
-                </p>
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STEP 3: FOURTH STEP / SECTION — REVIEW & CONFIRM REGISTRATION
+  // ─────────────────────────────────────────────────────────────────────────────
+  const renderStep3ReviewAndConfirm = () => {
+    return (
+      <div className="flex flex-col gap-6">
+        <div>
+          <h4 className="text-xl font-black text-slate-900 tracking-tight m-0">
+            Review &amp; Confirm Registration
+          </h4>
+          <p className="text-slate-600 text-sm m-0 mt-1">
+            Please verify your information before submitting to the federation.
+          </p>
+        </div>
+
+        {/* Summary card */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-20 rounded-xl overflow-hidden border-2 border-white shadow-sm shrink-0 bg-slate-200">
+              <img
+                src={faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg'}
+                alt="Portrait"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div>
+              <span className="bg-emerald-100 text-emerald-800 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-300">
+                ✓ Fayda Verified Identity
+              </span>
+              <h4 className="text-lg font-black text-slate-900 mt-1 mb-0">
+                {faydaResult?.name}
+              </h4>
+              <div className="text-xs font-bold text-sky-700">
+                Role: {(selectedRole || 'ATHLETE').replace('_', ' ')}
               </div>
             </div>
-            <button onClick={onClose} style={{ background: '#F1F5F9', border: 'none', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <X size={20} color="#64748B" />
-            </button>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 text-xs sm:text-sm">
+            <div className="p-3 flex justify-between">
+              <span className="font-bold text-slate-500">National ID (FIN)</span>
+              <span className="font-mono font-black text-slate-900">{formatFin(faydaResult?.fin || '')}</span>
+            </div>
+            <div className="p-3 flex justify-between">
+              <span className="font-bold text-slate-500">Fayda Access Number (FAN)</span>
+              <span className="font-mono font-black text-emerald-700">{faydaResult?.fan}</span>
+            </div>
+            <div className="p-3 flex justify-between">
+              <span className="font-bold text-slate-500">Account Email</span>
+              <span className="font-black text-slate-900">{email}</span>
+            </div>
+            <div className="p-3 flex justify-between">
+              <span className="font-bold text-slate-500">Mobile Phone</span>
+              <span className="font-black text-slate-900">{phone}</span>
+            </div>
+            <div className="p-3 flex justify-between bg-emerald-50/50">
+              <span className="font-bold text-emerald-800">Account Password</span>
+              <span className="font-mono font-black text-emerald-700">•••••••• (Created &amp; Secured)</span>
+            </div>
+
+            {(selectedRole === 'ATHLETE' || !selectedRole) && (
+              <>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">Disciplines</span>
+                  <span className="font-black text-slate-900">{primaryEvent.join(', ')}</span>
+                </div>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">Club</span>
+                  <span className="font-black text-slate-900">{selectedClubId === 'NONE' ? 'Independent' : 'Registered Club'}</span>
+                </div>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">Ranking Tier</span>
+                  <span className="font-black text-slate-900">{nationalRankingTier}</span>
+                </div>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">Personal Bests</span>
+                  <span className="font-black text-slate-900">{personalBests.map(p => `${p.event} (${p.mark})`).join(' · ') || 'None'}</span>
+                </div>
+              </>
+            )}
+
+            {selectedRole === 'CLUB_PRESIDENT' && (
+              <>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">Club Name</span>
+                  <span className="font-black text-slate-900">{clubName}</span>
+                </div>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">Mandate</span>
+                  <span className="font-black text-slate-900">{charterAuthority}</span>
+                </div>
+              </>
+            )}
+
+            {selectedRole === 'COACH' && (
+              <>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">Certification</span>
+                  <span className="font-black text-slate-900">{waCoachLevel}</span>
+                </div>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">License #</span>
+                  <span className="font-black text-slate-900">{coachLicenseNumber}</span>
+                </div>
+              </>
+            )}
+
+            {selectedRole === 'MEDICAL_HEAD' && (
+              <>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">Designation</span>
+                  <span className="font-black text-slate-900">{medicalDesignation}</span>
+                </div>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">MoH License #</span>
+                  <span className="font-black text-slate-900">{mohLicenseNumber}</span>
+                </div>
+              </>
+            )}
+
+            {selectedRole === 'OFFICIAL' && (
+              <>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">Officiating Role</span>
+                  <span className="font-black text-slate-900">{officiatingRole}</span>
+                </div>
+                <div className="p-3 flex justify-between">
+                  <span className="font-bold text-slate-500">WA Level</span>
+                  <span className="font-black text-slate-900">{waOfficialLevel}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {submissionError && (
+          <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2">
+            <AlertCircle size={16} className="text-red-600 shrink-0" />
+            <span>{submissionError}</span>
           </div>
         )}
 
-        {!isSubmittedPending && <StepBar steps={steps} current={step} />}
-
-        {isSubmittedPending
-          ? renderPendingApprovalScreen()
-          : (isClub ? renderClubStep() : renderAthleteStep())
-        }
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setStep(2)}
+            className="px-6 py-3 rounded-xl border border-slate-300 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer bg-white"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            disabled={isRegistering}
+            onClick={handleSubmit}
+            className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold flex items-center justify-center gap-2 cursor-pointer border-0 shadow-sm"
+          >
+            {isRegistering ? (
+              <><RefreshCw size={18} className="animate-spin" /> Submitting Registration...</>
+            ) : (
+              <><CheckCircle2 size={18} /> Submit Registration &amp; Digitize Profile</>
+            )}
+          </button>
+        </div>
       </div>
+    );
+  };
 
-      {/* Verification modal shown after successful registration */}
-      {showVerification && (
-        <VerificationModal
-          email={registeredEmail}
-          onClose={() => {
-            setShowVerification(false);
-            setIsSubmittedPending(true);
-          }}
-          onVerified={() => {
-            setShowVerification(false);
-            setIsSubmittedPending(true);
-          }}
-        />
-      )}
-    
-      {/* Fayda Consent & Data Disclosure Modal */}
-      <FaydaConsentModal
-        isOpen={showConsentModal}
-        onClose={() => setShowConsentModal(false)}
-        onConsent={() => {
-          setShowConsentModal(false);
-          handleLaunchFaydaOidc(launchAsPopup);
-        }}
-        isLaunching={isOidcLaunching}
-      />
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SUCCESS SCREEN: LIGHT THEME WITH ICON ANIMATION
+  // ─────────────────────────────────────────────────────────────────────────────
+  const renderSuccessScreen = () => {
+    if (!pendingRegistrationData) return null;
+    const refNumber = serverRegistrationId || ('EAF-REG-2026-' + Math.floor(100000 + Math.random() * 900000));
 
-      {/* Fayda Verified Resident Identity Profile Modal */}
-      {faydaResult && (
+    return (
+      <div className="flex flex-col items-center text-center py-6 sm:py-8 max-w-xl mx-auto">
+        {/* Animated Celebration Icon with Ping Ring */}
+        <motion.div
+          initial={{ scale: 0, rotate: -45 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', damping: 12, stiffness: 200 }}
+          className="w-20 h-20 rounded-full bg-emerald-50 border-4 border-emerald-500 text-emerald-600 flex items-center justify-center shadow-lg relative mb-5"
+        >
+          <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-25 animate-ping" />
+          <CheckCircle2 size={42} className="text-emerald-600 relative z-10" />
+        </motion.div>
+
+        <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+          Registration Submitted Successfully
+        </h3>
+
+        <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6 max-w-md">
+          Your profile has been recorded with verified National ID credentials and forwarded to the Ethiopian Athletics Federation.
+        </p>
+
+        {/* Clean Light-Theme Tracking Card */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 w-full text-left mb-6 shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-3">
+            <span className="text-xs font-bold text-slate-500">Tracking Reference</span>
+            <span className="text-sm font-black text-sky-700 font-mono">{refNumber}</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <img
+              src={faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg'}
+              alt="Portrait"
+              className="w-14 h-16 object-cover rounded-xl border border-slate-300 shadow-sm"
+            />
+            <div>
+              <div className="text-base font-black text-slate-900">{faydaResult?.name}</div>
+              <div className="text-xs font-bold text-sky-700">
+                {(selectedRole || 'ATHLETE').replace('_', ' ')}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
+                FIN: <strong className="font-mono">{formatFin(faydaResult?.fin || '')}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onRegisterSuccess(pendingRegistrationData)}
+          className="w-full py-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-base shadow-sm cursor-pointer border-0"
+        >
+          Acknowledge &amp; Access Federation Portal
+        </button>
+      </div>
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FULL PAGE VIEW (REPLACING MODAL & REMOVING GREEN/YELLOW/RED BORDER)
+  // ─────────────────────────────────────────────────────────────────────────────
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
+      {/* Page Header (No Tricolor Border!) */}
+ 
+
+      {/* Main Full-Page Content Card */}
+      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-8 my-4 sm:my-6">
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
+          {!isSubmittedPending && (
+            <StepBar steps={steps} current={step} />
+          )}
+
+          {isSubmittedPending ? (
+            renderSuccessScreen()
+          ) : (
+            <div>
+              {step === 0 && renderStep0FaydaAuth()}
+              {step === 1 && renderStep1RoleSelectionAndUserInfo()}
+              {step === 2 && renderStep2ProfileDetails()}
+              {step === 3 && renderStep3ReviewAndConfirm()}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Citizen Profile ID Card Modal if triggered */}
+      {showCitizenModal && faydaResult && (
         <FaydaVerifiedProfileModal
           isOpen={showCitizenModal}
           onClose={() => setShowCitizenModal(false)}
@@ -1506,7 +1774,7 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
             email: faydaResult.email || email,
             address: faydaResult.address || faydaResult.region,
             picture: faydaResult.photoUrl,
-            verificationToken: faydaVerificationToken,
+            verificationToken: faydaVerificationToken || undefined,
             verifiedAt: faydaResult.verificationDate,
             ageTier: faydaResult.ageTier,
             hash: faydaResult.hash,
@@ -1517,6 +1785,6 @@ export default function RegistrationModal({ role, onClose, onRegisterSuccess }: 
           }}
         />
       )}
-</div>
+    </div>
   );
 }

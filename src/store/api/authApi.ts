@@ -3,7 +3,8 @@ import { apiSlice } from './apiSlice';
 // ── Request Types ──
 
 export interface LoginRequest {
-  email: string;
+  email?: string;
+  identifier?: string;
   password: string;
 }
 
@@ -144,8 +145,17 @@ export const authApi = apiSlice.injectEndpoints({
       query: (body) => ({
         url: '/auth/login',
         method: 'POST',
-        body,
+        body: {
+          identifier: body.identifier || body.email,
+          password: body.password,
+        },
       }),
+      transformResponse: (response: any) => {
+        if (response && response.token && !response.data) {
+          return { success: true, data: response };
+        }
+        return response;
+      },
     }),
 
     // POST /auth/register

@@ -4,83 +4,68 @@
 @tailwind components;
 @tailwind utilities;
 :root {
-  /* ── AppColors Brand System (mirrors mobile Flutter AppColors) ── */
+  /* ── Clean Neutral Institutional Design System ── */
 
-  /* Brand / Primary */
-  --primary: #0140A7;
-  /* AppColors.primary      */
-  --primary-dark: #0A4870;
-  /* AppColors.primaryDark  */
-  --primary-light: #DCEBF6;
-  /* AppColors.primaryLight */
-  /* Derived shades for internal use */
-  --primary-mid: #0155CC;
-  --primary-darker: #012E7A;
-  --primary-border: #0A50C2;
+  /* Neutral Dark Text / Primary */
+  --primary: #0F172A;
+  --primary-dark: #020617;
+  --primary-light: #F8FAFC;
+  --primary-mid: #1E293B;
+  --primary-darker: #020617;
+  --primary-border: #E2E8F0;
 
-  /* Brand / Secondary */
-  --secondary: #E6A500;
-  /* AppColors.secondary      */
-  --secondary-dark: #C98F00;
-  /* AppColors.secondaryDark  */
-  --secondary-light: #FFF3CC;
-  /* AppColors.secondaryLight */
+  /* Neutral Slate / Secondary */
+  --secondary: #334155;
+  --secondary-dark: #1E293B;
+  --secondary-light: #F1F5F9;
 
-  /* Accent (alias secondary for legacy styles) */
-  --accent: #E6A500;
-  --accent-light: #FFF3CC;
+  /* Accent */
+  --accent: #0F172A;
+  --accent-light: #F8FAFC;
 
-  /* Background */
-  --bg-app: #F7F8FA;
-  /* AppColors.backgroundDefault        */
+  /* Pure Clean Backgrounds */
+  --bg-app: #FFFFFF;
   --bg-card: #FFFFFF;
-  /* AppColors.backgroundSurface        */
-  --bg-surface-variant: #F1F3F5;
-  /* AppColors.backgroundSurfaceVariant */
+  --bg-surface-variant: #F8FAFC;
+  --border-card: #E2E8F0;
 
+  /* Neutral Typography */
+  --text-main: #0F172A;
+  --text-body: #334155;
+  --text-muted: #64748B;
 
+  /* Functional Status Colors Only */
+  --status-success: #15803D;
+  --status-warning: #B45309;
+  --status-error: #B91C1C;
+  --status-info: #0F172A;
 
-  /* Status */
-  --status-success: #2E7D32;
-  /* AppColors.statusSuccess */
-  --status-warning: #F59E0B;
-  /* AppColors.statusWarning */
-  --status-error: #D32F2F;
-  /* AppColors.statusError   */
-  --status-info: #0288D1;
-  /* AppColors.statusInfo    */
+  --status-success-bg: #F0FDF4;
+  --status-warning-bg: #FFFBEB;
+  --status-error-bg: #FEF2F2;
+  --status-info-bg: #F8FAFC;
 
-  /* Status backgrounds */
-  --status-success-bg: #E8F5E9;
-  /* AppColors.statusSuccessBg */
-  --status-warning-bg: #FFF8E1;
-  /* AppColors.statusWarningBg */
-  --status-error-bg: #FFEBEE;
-  /* AppColors.statusErrorBg   */
-  --status-info-bg: #E1F5FE;
-  /* AppColors.statusInfoBg    */
-
-  /* Legacy aliases — kept so old classes still resolve */
-  --eaf-green: #0140A7;
-  --eaf-green-mid: #0155CC;
-  --eaf-green-light: #DCEBF6;
-  --eaf-gold: #E6A500;
-  --eaf-gold-light: #FFF3CC;
-  --eaf-red: #D32F2F;
+  /* Neutralized legacy aliases */
+  --eaf-green: #0F172A;
+  --eaf-green-mid: #1E293B;
+  --eaf-green-light: #F8FAFC;
+  --eaf-gold: #334155;
+  --eaf-gold-light: #F1F5F9;
+  --eaf-red: #B91C1C;
   --eaf-red-light: #FFEBEE;
-  --eaf-dark: #0A4870;
-  --eaf-navy: #012E7A;
-  --eaf-navy-border: #0A50C2;
-  --eth-green: #0140A7;
-  --eth-green-light: #DCEBF6;
-  --eth-amber: #E6A500;
-  --eth-amber-light: #FFF3CC;
-  --eth-red: #D32F2F;
-  --eth-red-light: #FFEBEE;
-  --eth-blue: #0140A7;
-  --eth-blue-light: #DCEBF6;
-  --olympic-blue: #0140A7;
-  --olympic-green: #0140A7;
+  --eaf-dark: #0F172A;
+  --eaf-navy: #020617;
+  --eaf-navy-border: #E2E8F0;
+  --eth-green: #0F172A;
+  --eth-green-light: #F8FAFC;
+  --eth-amber: #334155;
+  --eth-amber-light: #F1F5F9;
+  --eth-red: #B91C1C;
+  --eth-red-light: #FEF2F2;
+  --eth-blue: #0F172A;
+  --eth-blue-light: #F8FAFC;
+  --olympic-blue: #0F172A;
+  --olympic-green: #0F172A;
 
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -250,7 +235,7 @@ h6 {
 
 /* Primary button — AppColors.primary (#0140A7) */
 .btn-gov-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: #0F172A;
   color: var(--text-main);
   /* AppColors.textOnPrimary resolved via contrast */
   color: #FFFFFF;
@@ -265,12 +250,12 @@ h6 {
   justify-content: center;
   gap: 8px;
   transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
-  box-shadow: 0 4px 12px rgba(1, 64, 167, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .btn-gov-primary:hover {
-  background: linear-gradient(135deg, var(--primary-mid) 0%, var(--primary) 100%);
-  box-shadow: 0 6px 18px rgba(1, 64, 167, 0.4);
+  background: #1E293B;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .btn-gov-primary:active {
@@ -302,7 +287,7 @@ h6 {
 /* Secondary accent button — AppColors.secondary (#E6A500) */
 .btn-gold,
 .btn-accent {
-  background: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-dark) 100%);
+  background: #0F172A;
   color: #FFFFFF;
   font-weight: 800;
   font-size: 0.95rem;
@@ -315,12 +300,12 @@ h6 {
   justify-content: center;
   gap: 8px;
   transition: opacity 0.15s ease, transform 0.1s ease;
-  box-shadow: 0 4px 12px rgba(1, 64, 167, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .btn-accent:hover {
   opacity: 0.9;
-  box-shadow: 0 6px 18px rgba(1, 64, 167, 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .btn-accent:active {
@@ -329,7 +314,7 @@ h6 {
 
 /* General .btn-primary — same as .btn-gov-primary */
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: #0F172A;
   color: #FFFFFF;
   font-weight: 800;
   font-size: 0.95rem;
@@ -342,7 +327,7 @@ h6 {
   justify-content: center;
   gap: 8px;
   transition: opacity 0.15s ease, transform 0.1s ease;
-  box-shadow: 0 4px 12px rgba(1, 64, 167, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .btn-primary:hover {
@@ -355,7 +340,7 @@ h6 {
 
 /* Telebirr / payment button — uses primary brand color */
 .btn-telebirr {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: #0F172A;
   color: #FFFFFF;
   font-weight: 700;
   font-size: 0.9rem;

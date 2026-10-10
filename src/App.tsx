@@ -3,6 +3,7 @@ import LandingPage from './components/LandingPage';
 import AuthModal from './components/AuthModal';
 import RegistrationModal from './components/RegistrationModal';
 import FaydaVerifiedProfileModal, { FaydaResidentIdentity, formatFin } from './components/FaydaVerifiedProfileModal';
+import RBACSecurityMatrix from './components/Security/RBACSecurityMatrix';
 import Callback from './components/Callback';
 import AppLayout from './components/Layout/AppLayout';
 import ClientLayout from './components/Layout/ClientLayout';
@@ -25,9 +26,13 @@ import AthleteProfile from './components/Athlete/AthleteProfile';
 import AthleteNotifications from './components/Athlete/AthleteNotifications';
 
 import PaymentModal from './components/PaymentModal';
+import AntiDopingHub from './components/AntiDopingHub';
+import ProfessionalsRegistry from './components/ProfessionalsRegistry';
+import RegionalFederationsHub from './components/RegionalFederationsHub';
+import AthleteRepresentativesHub from './components/AthleteRepresentativesHub';
 import NotificationToast from './components/NotificationToast';
 
-import { Sun, Moon, Menu, X, ShieldCheck, Sparkles, ArrowRight, UserCheck, Eye } from 'lucide-react';
+import { Sun, Moon, Menu, X, ShieldCheck, Sparkles, ArrowRight, UserCheck, Eye, CheckCircle2, User, Building2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n, LanguageSelector } from './i18n';
 
@@ -77,6 +82,12 @@ export default function App() {
               roles: res.data.roles,
               permissions: res.data.permissions,
             }));
+            if (res.data.athlete) {
+              dispatch(setAthlete(res.data.athlete));
+            }
+            if (res.data.club) {
+              dispatch(setClub(res.data.club));
+            }
           }
         })
         .catch(() => {
@@ -135,6 +146,22 @@ export default function App() {
     } catch (e) {}
   }, [currentRole, currentAthlete]);
 
+  const handleClearNationalId = () => {
+    try {
+      sessionStorage.removeItem('eaf_fayda_verified');
+      sessionStorage.removeItem('fayda_auth_payload');
+      sessionStorage.removeItem('fayda_photo');
+      sessionStorage.removeItem('fayda_token');
+      localStorage.removeItem('fayda_auth_payload');
+      localStorage.removeItem('fayda_photo');
+      localStorage.removeItem('fayda_token');
+      localStorage.removeItem('eaf_fayda_verified');
+    } catch (e) {}
+    setVerifiedCitizen(null);
+    setShowCitizenModal(false);
+    handleNotify('National ID session logged out successfully.', 'info');
+  };
+
   const handleLogout = () => {
     // Call logout API (fire-and-forget — it's stateless on the server)
     if (authToken) {
@@ -143,11 +170,22 @@ export default function App() {
     try {
       sessionStorage.removeItem('eaf_currentRole');
       sessionStorage.removeItem('eaf_currentAthleteId');
+      sessionStorage.removeItem('eaf_fayda_verified');
+      sessionStorage.removeItem('fayda_auth_payload');
+      sessionStorage.removeItem('fayda_photo');
+      sessionStorage.removeItem('fayda_token');
       localStorage.removeItem('eaf_currentRole');
       localStorage.removeItem('eaf_currentAthleteId');
+      localStorage.removeItem('fayda_auth_payload');
+      localStorage.removeItem('fayda_photo');
+      localStorage.removeItem('fayda_token');
+      localStorage.removeItem('eaf_fayda_verified');
     } catch (e) {}
     dispatch(logout());
+    setVerifiedCitizen(null);
+    setShowCitizenModal(false);
     setPublicSubPage('HOME');
+    handleNotify('Logged out successfully.', 'info');
   };
 
   // Check for returning from Fayda verification or callback & load verified identity
@@ -173,7 +211,10 @@ export default function App() {
       const token = urlParams.get('token') || payload?.verificationToken || ident.verificationToken;
 
       if (nin && name) {
-        setVerifiedCitizen({
+        const dobYear = dob ? parseInt(dob.substring(0, 4)) : 1980;
+        const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
+        const ageTier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division';
+        const citizenObj: FaydaResidentIdentity = {
           nin,
           fullName: name,
           fullNameAmharic: nameAmh,
@@ -185,11 +226,56 @@ export default function App() {
           picture,
           verificationToken: token,
           verifiedAt: new Date().toLocaleDateString('en-US', { dateStyle: 'medium' }),
-        });
+          ageTier,
+          hash: '0xFAYDA_' + nin.replace(/\D/g, '').slice(-6),
+        };
+        setVerifiedCitizen(citizenObj);
+
+        try {
+          const serialized = JSON.stringify({
+            name,
+            amharic: nameAmh,
+            dob,
+            gender: gender === 'MALE' ? 'Male' : 'Female',
+            blood: 'O+',
+            region: address,
+            photoUrl: picture,
+            ageTier,
+            fin: nin,
+            hash: citizenObj.hash,
+            verificationDate: citizenObj.verifiedAt,
+            phoneNumber: phone,
+            email,
+            address,
+            verificationToken: token,
+          });
+          sessionStorage.setItem('eaf_fayda_verified', serialized);
+          localStorage.setItem('eaf_fayda_verified', serialized);
+          localStorage.setItem('fayda_auth_payload', JSON.stringify({ identity: citizenObj, verificationToken: token }));
+        } catch (e) {}
       }
 
-      if (urlParams.get('openReg') === 'ATHLETE' || urlParams.get('faydaVerified') === 'true' || urlParams.get('faydaSuccess') === 'true') {
-        setRegModalRole('ATHLETE');
+      const isCurrentlyAuth = Boolean(
+        localStorage.getItem('token') ||
+        localStorage.getItem('eaf_token') ||
+        sessionStorage.getItem('eaf_currentRole') === 'ATHLETE' ||
+        sessionStorage.getItem('eaf_currentRole') === 'CLUB' ||
+        localStorage.getItem('eaf_registered_athlete')
+      );
+      if (
+        urlParams.get('openReg') === 'ATHLETE' ||
+        urlParams.get('faydaVerified') === 'true' ||
+        urlParams.get('faydaSuccess') === 'true' ||
+        window.location.pathname.startsWith('/register')
+      ) {
+        if (!isCurrentlyAuth) {
+          setRegModalRole('ATHLETE');
+        } else {
+          window.history.replaceState({}, '', '/');
+        }
+      }
+      if (urlParams.get('faydaSuccess') === 'true' || urlParams.get('token')) {
+        window.history.replaceState({}, '', window.location.pathname);
       }
     }
   }, []);
@@ -197,6 +283,11 @@ export default function App() {
   // Listen for registration modal trigger from AuthModal
   useEffect(() => {
     const handleOpenRegistration = (e: any) => {
+      if (isLoggedIn) {
+        setPublicSubPage('DASHBOARD');
+        handleNotify('You are already logged in to your portal.', 'info');
+        return;
+      }
       setAuthModalConfig(null); // Close auth modal
       setRegModalRole(e.detail.role); // Open registration modal
     };
@@ -208,13 +299,73 @@ export default function App() {
   const [regModalRole, setRegModalRole] = useState<'CLUB' | 'ATHLETE' | null>(null);
   const [verifiedCitizen, setVerifiedCitizen] = useState<FaydaResidentIdentity | null>(null);
   const [showCitizenModal, setShowCitizenModal] = useState(false);
+  const [showRbacMatrix, setShowRbacMatrix] = useState(false);
   const [showVerifiedBanner, setShowVerifiedBanner] = useState(true);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [toast, setToast] = useState<any>(null);
 
+  // Compute actual backend registration status
+  const registeredInfo = (() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('eaf_registered_athlete');
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return null;
+  })();
+
+  const isUserRegistered = Boolean(
+    (currentRole === 'ATHLETE' && currentAthlete) ||
+    (currentRole === 'CLUB' && currentClub) ||
+    Boolean((userData as any)?.isRegistered && (userData as any)?.status === 'ACTIVE') ||
+    Boolean(registeredInfo?.isRegistered && registeredInfo?.athleteId)
+  );
+
+  const isLoggedIn = Boolean(
+    (authToken && (currentRole === 'ATHLETE' || currentRole === 'CLUB')) ||
+    currentRole === 'ATHLETE' ||
+    currentRole === 'CLUB' ||
+    Boolean(currentAthlete) ||
+    Boolean(currentClub) ||
+    isUserRegistered
+  );
+
+  const rawStatus = (userData as any)?.registrationStatus || registeredInfo?.status;
+  const registeredStatusText = (() => {
+    if (!rawStatus) return isUserRegistered ? 'Active / Registered' : null;
+    const upper = String(rawStatus).toUpperCase();
+    if (upper === 'DRAFT') {
+      // Never show Draft to users!
+      return null;
+    }
+    if (upper === 'PENDING' || upper === 'PENDING_APPROVAL' || upper === 'SUBMITTED') {
+      return 'Registration Under Review';
+    }
+    if (upper === 'FAYDA_VERIFIED') {
+      return 'Verified';
+    }
+    if (upper === 'ACTIVE' || upper === 'APPROVED') {
+      return 'Active';
+    }
+    return rawStatus;
+  })();
+
+  // User profile avatar only created and activated when registration is complete
+  const userProfileAvatar = isUserRegistered
+    ? (currentAthlete?.photoUrl || registeredInfo?.photoUrl || (typeof window !== 'undefined' ? localStorage.getItem('eaf_user_avatar') : null) || '/images/runner_female.png')
+    : null;
+
   const handleNotify = (message: string, type = 'info') => setToast({ message, type });
 
-  const handleOpenAuthModal = () => setAuthModalConfig({ isOpen: true });
+  const handleOpenAuthModal = () => {
+    if (isLoggedIn) {
+      setPublicSubPage('DASHBOARD');
+      handleNotify('You are already logged in to your portal.', 'info');
+      return;
+    }
+    setAuthModalConfig({ isOpen: true });
+  };
 
   const handleLoginSuccess = (role: string, data: any) => {
     setAuthModalConfig(null);
@@ -232,7 +383,7 @@ export default function App() {
     }
   };
 
-  const handleRegisterSuccess = (registrationData: { type: 'CLUB' | 'ATHLETE'; payload: Record<string, any> }) => {
+  const handleRegisterSuccess = (registrationData: { type: 'CLUB' | 'ATHLETE' | 'OFFICIAL'; payload: Record<string, any> }) => {
     setRegModalRole(null);
     if (registrationData.type === 'CLUB') {
       const newClub = registrationData.payload.club as Club;
@@ -245,7 +396,7 @@ export default function App() {
       window.scrollTo(0, 0);
       setTimeout(() => window.scrollTo(0, 0), 50);
       handleNotify(`Club "${newClub.shortName}" registered successfully! Welcome to EAF.`, 'success');
-    } else {
+    } else if (registrationData.type === 'ATHLETE') {
       const newAthlete = registrationData.payload.athlete as Athlete;
       dispatch(addAthlete(newAthlete));
       dispatch(setAthlete(newAthlete));
@@ -256,6 +407,12 @@ export default function App() {
       window.scrollTo(0, 0);
       setTimeout(() => window.scrollTo(0, 0), 50);
       handleNotify(`Athlete "${newAthlete.name}" registered successfully! Welcome to EAF.`, 'success');
+    } else {
+      setPublicSubPage('PROFESSIONALS');
+      setNavNonce(prev => prev + 1);
+      window.scrollTo(0, 0);
+      setTimeout(() => window.scrollTo(0, 0), 50);
+      handleNotify('Accreditation registered successfully in the official EAF National Registry.', 'success');
     }
   };
 
@@ -329,6 +486,10 @@ export default function App() {
       { label: t('nav.home'), page: 'HOME' },
       { label: t('nav.competitions'), page: 'COMPETITIONS' },
       { label: t('nav.athletes'), page: 'ATHLETES' },
+      { label: 'Anti-Doping', page: 'ANTI_DOPING' },
+      { label: 'Professionals', page: 'PROFESSIONALS' },
+      { label: 'Regional Hub', page: 'REGIONS' },
+      { label: 'Representatives', page: 'REPRESENTATIVES' },
       { label: t('nav.media'), page: 'MEDIA' },
     ];
 
@@ -341,67 +502,6 @@ export default function App() {
 
     return (
       <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-[#0D1117]' : 'bg-white'}`}>
-        {/* ── Top Verified Citizen Notification Banner ── */}
-        {verifiedCitizen && showVerifiedBanner && (
-          <div className="w-full bg-gradient-to-r from-slate-950 via-sky-950 to-slate-900 border-b border-sky-500/40 text-white px-4 py-2.5 flex items-center justify-between shadow-xl relative z-[60]">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative w-9 h-11 rounded-lg overflow-hidden border-2 border-amber-400 shrink-0 shadow-md bg-slate-800">
-                <img src={verifiedCitizen.picture || '/images/fayda_resident_photo.jpg'} alt="Citizen" className="w-full h-full object-cover" />
-                <div className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-white" />
-              </div>
-              <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                    <ShieldCheck size={12} className="text-emerald-400" />
-                    Fayda Verified Resident
-                  </span>
-                  <span className="text-sm font-black text-white truncate">
-                    {verifiedCitizen.fullName}
-                  </span>
-                  {verifiedCitizen.fullNameAmharic && (
-                    <span className="text-xs font-bold text-sky-300 hidden sm:inline">
-                      ({verifiedCitizen.fullNameAmharic})
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 text-xs text-slate-300 mt-0.5 flex-wrap">
-                  <span>NIN: <strong className="font-mono text-amber-300">{formatFin(verifiedCitizen.nin)}</strong></span>
-                  <span className="hidden md:inline">DOB: <strong className="text-white">{verifiedCitizen.birthDate}</strong></span>
-                  <span className="hidden md:inline">Gender: <strong className="text-white">{verifiedCitizen.gender}</strong></span>
-                  <span className="hidden lg:inline">Phone: <strong className="text-emerald-300">{verifiedCitizen.phoneNumber}</strong></span>
-                  <span className="hidden lg:inline">Email: <strong className="text-sky-300">{verifiedCitizen.email}</strong></span>
-                  <span className="hidden xl:inline">Address: <strong className="text-amber-200">{verifiedCitizen.address}</strong></span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowCitizenModal(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 shadow transition-colors cursor-pointer border-0"
-              >
-                <Sparkles size={14} /> <span className="hidden sm:inline">View</span> Fayda ID Card
-              </button>
-              <button
-                type="button"
-                onClick={() => setRegModalRole('ATHLETE')}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow transition-colors cursor-pointer border-0"
-              >
-                <span>Continue Registration</span>
-                <ArrowRight size={14} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowVerifiedBanner(false)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer border-0 bg-transparent"
-                title="Dismiss banner"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* ── Floating Glassmorphism Header ── */}
         <motion.header
           initial={{ y: -72 }}
@@ -446,7 +546,7 @@ export default function App() {
                 whileTap={{ scale: 0.97 }}
                 className={`border-0 cursor-pointer font-extrabold text-[clamp(0.78rem,1vw,0.85rem)] px-[clamp(0.5rem,0.9vw,0.95rem)] py-2 rounded-full transition-all duration-200 font-sans whitespace-nowrap
                   ${publicSubPage === link.page
-                    ? `text-primary ${darkMode ? 'bg-sky-950/60 text-sky-400 border border-sky-500/30' : 'bg-sky-50 text-sky-700 font-black'}`
+                    ? `${darkMode ? 'bg-slate-800 text-white font-black' : 'bg-slate-100 text-slate-900 font-black'}`
                     : `${darkMode ? 'text-[#94A3B8] hover:bg-[#1E293B]' : 'text-[#64748B] hover:bg-[#F1F5F9]'} bg-transparent`
                   }`}
               >
@@ -483,7 +583,7 @@ export default function App() {
               {darkMode ? <Sun size={18} color="#FDE047" /> : <Moon size={18} color="#475569" />}
             </motion.button>
 
-            {currentRole === 'ATHLETE' ? (
+            {currentRole === 'ATHLETE' || (isLoggedIn && currentRole !== 'CLUB') ? (
               <div className="flex gap-2 items-center">
                 {publicSubPage === 'DASHBOARD' ? (
                   <button
@@ -500,12 +600,33 @@ export default function App() {
                   <motion.button
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
-                    onClick={() => { setAthleteSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); }}
-                    className="btn-accent text-[0.78rem] px-3.5 py-1.5 rounded-xl inline-flex items-center gap-1.5 border-0 cursor-pointer"
-                    style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF' }}
+                    onClick={() => {
+                      if (currentRole !== 'ATHLETE') dispatch(setRole('ATHLETE'));
+                      setAthleteSubPage('OVERVIEW');
+                      setPublicSubPage('DASHBOARD');
+                    }}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 transition-all cursor-pointer shadow-sm group"
+                    title="Access Verified Athlete Portal"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    {t('nav.myDashboard')}
+                    <div className="w-7 h-7 rounded-full overflow-hidden border border-slate-300 shrink-0 shadow-sm relative bg-slate-800 flex items-center justify-center">
+                      {userProfileAvatar ? (
+                        <img
+                          src={userProfileAvatar}
+                          alt="Profile Avatar"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User size={14} className="text-slate-300" />
+                      )}
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="text-[0.78rem] font-black text-white leading-tight group-hover:text-emerald-200 truncate max-w-[120px]">
+                        {(verifiedCitizen?.fullName || currentAthlete?.name || 'Athlete').split(' ')[0]}
+                      </span>
+                      <span className="text-[0.62rem] font-extrabold text-emerald-400 flex items-center gap-0.5">
+                        <CheckCircle2 size={9} /> Verified ID
+                      </span>
+                    </div>
                   </motion.button>
                 )}
                 <button
@@ -518,20 +639,36 @@ export default function App() {
               </div>
             ) : currentRole === 'CLUB' ? (
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => {
                     setClubSubPage('OVERVIEW');
                     setPublicSubPage('DASHBOARD');
                   }}
-                  className="btn-accent"
-                  style={{
-                    fontSize: '0.78rem', padding: '7px 14px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '5px',
-                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer'
-                  }}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 transition-all cursor-pointer shadow-sm group"
+                  title="Access Club Admin Portal"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
-                  My Dashboard
-                </button>
+                  <div className="w-7 h-7 rounded-full overflow-hidden border border-slate-300 shrink-0 shadow-sm relative bg-slate-800 flex items-center justify-center">
+                    {userProfileAvatar ? (
+                      <img
+                        src={userProfileAvatar}
+                        alt="Profile Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Building2 size={14} className="text-slate-300" />
+                    )}
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-[0.78rem] font-black text-white leading-tight group-hover:text-emerald-200 truncate max-w-[120px]">
+                      {(verifiedCitizen?.fullName || currentClub?.manager || 'Club President').split(' ')[0]}
+                    </span>
+                    <span className="text-[0.62rem] font-extrabold text-emerald-400 flex items-center gap-0.5">
+                      <CheckCircle2 size={9} /> Verified ID
+                    </span>
+                  </div>
+                </motion.button>
                 <button
                   onClick={handleLogout}
                   className={`px-3 py-1.5 rounded-lg cursor-pointer text-[0.78rem] font-bold border
@@ -542,22 +679,28 @@ export default function App() {
               </div>
             ) : (
               <>
-                {verifiedCitizen && (
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    onClick={() => setShowCitizenModal(true)}
-                    className="border border-emerald-500/50 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 rounded-xl px-3 py-1.5 flex items-center gap-2 cursor-pointer transition-all shadow-md"
-                    title="View Verified Fayda Citizen Profile"
-                  >
-                    <div className="w-6 h-6 rounded-lg overflow-hidden border border-emerald-400 shrink-0">
-                      <img src={verifiedCitizen.picture || '/images/fayda_resident_photo.jpg'} alt="Citizen" className="w-full h-full object-cover" />
+                {verifiedCitizen && !isUserRegistered && (
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-bold">
+                      <ShieldCheck size={14} className="text-emerald-500" />
+                      <span>ID Verified · Incomplete Registration</span>
                     </div>
-                    <div className="flex flex-col text-left leading-none">
-                      <span className="text-[9px] font-black uppercase text-emerald-400">Verified ID</span>
-                      <span className="text-xs font-extrabold text-white truncate max-w-[120px]">{verifiedCitizen.fullName.split(' ')[0]}</span>
-                    </div>
-                  </motion.button>
+                    <button
+                      type="button"
+                      onClick={() => setRegModalRole('ATHLETE')}
+                      className="px-3.5 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer border-0"
+                    >
+                      Complete Registration
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearNationalId}
+                      className="text-xs font-medium text-slate-400 hover:text-slate-600 bg-transparent border-0 cursor-pointer"
+                      title="Clear National ID session"
+                    >
+                      Clear
+                    </button>
+                  </div>
                 )}
 
                 <motion.button
@@ -573,8 +716,8 @@ export default function App() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
-                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
+                  background: '#0F172A',
+                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.12)',
                   color: '#FFF',
                   border: 'none',
                   cursor: 'pointer'
@@ -652,10 +795,26 @@ export default function App() {
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => { setAthleteSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); setMobileMenuOpen(false); }}
-                      className="w-full btn-accent text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 border-0 cursor-pointer text-white font-bold"
-                      style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
+                      className="w-full p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/40 bg-emerald-950/30 text-emerald-300 font-bold"
                     >
-                      My Dashboard
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-300 shrink-0 bg-slate-800 flex items-center justify-center">
+                          {userProfileAvatar ? (
+                            <img
+                              src={userProfileAvatar}
+                              alt="Avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User size={16} className="text-slate-300" />
+                          )}
+                        </div>
+                        <div className="text-left">
+                          <div className="text-xs font-black text-white">{verifiedCitizen?.fullName || currentAthlete?.name || 'Athlete'}</div>
+                          <div className="text-[0.68rem] text-emerald-400 font-bold">✓ Verified National ID Portal</div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-extrabold text-white bg-emerald-600 px-2.5 py-1 rounded-lg">Enter →</span>
                     </button>
                     <button
                       onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
@@ -668,19 +827,80 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => { setRegModalRole('ATHLETE'); setMobileMenuOpen(false); }}
-                      className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 border-0 cursor-pointer text-white font-bold"
-                      style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
-                    >
-                      {t('nav.registerAsAthlete')}
-                    </button>
-                    <button
-                      onClick={() => { handleOpenAuthModal(); setMobileMenuOpen(false); }}
-                      className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 cursor-pointer font-bold bg-white text-[#0F172A] border border-[#CBD5E1]"
-                    >
-                      {t('nav.clubPortalLogin')}
-                    </button>
+                    {verifiedCitizen && !isUserRegistered && (
+                      <div className="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                        <div className="flex items-center gap-2">
+                          <ShieldCheck size={16} className="text-emerald-500 shrink-0" />
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">ID Verified</span>
+                            <span className="text-[10px] text-slate-500">Registration incomplete</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setRegModalRole('ATHLETE'); setMobileMenuOpen(false); }}
+                            className="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded-lg border-0 cursor-pointer"
+                          >
+                            Register
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { handleClearNationalId(); setMobileMenuOpen(false); }}
+                            className="text-xs font-medium text-slate-400 hover:text-slate-600 bg-transparent border-0 cursor-pointer"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {isLoggedIn ? (
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() => {
+                            if (currentRole !== 'ATHLETE' && currentRole !== 'CLUB') {
+                              dispatch(setRole('ATHLETE'));
+                            }
+                            setPublicSubPage('DASHBOARD');
+                            setMobileMenuOpen(false);
+                          }}
+                          className="w-full p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/40 bg-emerald-950/30 text-emerald-300 font-bold cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 size={16} className="text-emerald-400" />
+                            <span className="text-xs font-bold text-white">Go to {currentRole === 'CLUB' ? 'Club' : 'Athlete'} Portal</span>
+                          </div>
+                          <span className="text-xs font-black text-white bg-emerald-600 px-2 py-0.5 rounded-md">Open →</span>
+                        </button>
+                        <button
+                          onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                          className="w-full py-2 rounded-xl cursor-pointer text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => {
+                            setRegModalRole('ATHLETE');
+                            setMobileMenuOpen(false);
+                            window.history.pushState(null, '', '/register');
+                          }}
+                          className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 border-0 cursor-pointer text-white font-bold"
+                          style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
+                        >
+                          {t('nav.registerAsAthlete')}
+                        </button>
+                        <button
+                          onClick={() => { handleOpenAuthModal(); setMobileMenuOpen(false); }}
+                          className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 cursor-pointer font-bold bg-white text-[#0F172A] border border-[#CBD5E1]"
+                        >
+                          {t('nav.clubPortalLogin')}
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -694,30 +914,56 @@ export default function App() {
           }
         `}</style>
 
-        <LandingPage
-          publicSubPage={publicSubPage}
-          onChangePublicSubPage={setPublicSubPage}
-          darkMode={darkMode}
-          currentRole={currentRole}
-          currentAthlete={currentAthlete}
-          onLoginSuccess={handleLoginSuccess}
-          navNonce={navNonce}
-          onSelectRole={(role: string) => {
-            if (role === 'CLUB') handleLoginSuccess('CLUB', { club: currentClub });
-            else handleLoginSuccess('ATHLETE', { athlete: currentAthlete });
-          }}
-          onRegister={(role: 'CLUB' | 'ATHLETE') => setRegModalRole(role)}
-        />
-
-        {authModalConfig?.isOpen && (
-          <AuthModal onClose={() => setAuthModalConfig(null)} onLoginSuccess={handleLoginSuccess} />
-        )}
-
-        {regModalRole && (
+        {regModalRole && !isLoggedIn ? (
           <RegistrationModal
             role={regModalRole}
-            onClose={() => setRegModalRole(null)}
+            verifiedIdentity={verifiedCitizen}
+            onClose={() => {
+              setRegModalRole(null);
+              window.history.pushState(null, '', '/');
+            }}
             onRegisterSuccess={handleRegisterSuccess}
+          />
+        ) : publicSubPage === 'ANTI_DOPING' ? (
+          <AntiDopingHub darkMode={darkMode} />
+        ) : publicSubPage === 'PROFESSIONALS' ? (
+          <ProfessionalsRegistry darkMode={darkMode} />
+        ) : publicSubPage === 'REGIONS' ? (
+          <RegionalFederationsHub darkMode={darkMode} />
+        ) : publicSubPage === 'REPRESENTATIVES' ? (
+          <AthleteRepresentativesHub darkMode={darkMode} />
+        ) : (
+          <LandingPage
+            publicSubPage={publicSubPage}
+            onChangePublicSubPage={setPublicSubPage}
+            darkMode={darkMode}
+            currentRole={currentRole}
+            currentAthlete={currentAthlete}
+            onLoginSuccess={handleLoginSuccess}
+            navNonce={navNonce}
+            isRegistered={isLoggedIn || isUserRegistered}
+            registeredStatus={registeredStatusText}
+            isLoggedIn={isLoggedIn}
+            onSelectRole={(role: string) => {
+              if (role === 'CLUB') handleLoginSuccess('CLUB', { club: currentClub });
+              else handleLoginSuccess('ATHLETE', { athlete: currentAthlete });
+            }}
+            onRegister={(role: 'CLUB' | 'ATHLETE') => {
+              setRegModalRole(role);
+              window.history.pushState(null, '', '/register');
+            }}
+          />
+        )}
+
+        {authModalConfig?.isOpen && !isLoggedIn && (
+          <AuthModal
+            onClose={() => setAuthModalConfig(null)}
+            onLoginSuccess={handleLoginSuccess}
+            onOpenRegistration={() => {
+              setAuthModalConfig(null);
+              setRegModalRole('ATHLETE');
+              window.history.pushState(null, '', '/register');
+            }}
           />
         )}
 
@@ -755,6 +1001,15 @@ export default function App() {
           identity={verifiedCitizen}
         />
       )}
+      {regModalRole && (
+        <RegistrationModal
+          role={regModalRole}
+          verifiedIdentity={verifiedCitizen}
+          onClose={() => setRegModalRole(null)}
+          onRegisterSuccess={handleRegisterSuccess}
+        />
+      )}
+      <RBACSecurityMatrix isOpen={showRbacMatrix} onClose={() => setShowRbacMatrix(false)} />
       <NotificationToast toast={toast} onClose={() => setToast(null)} />
     </>
   );
@@ -796,6 +1051,13 @@ export default function App() {
         {clubSubPage === 'TRANSFERS' && (
           <TransferRegistry
             onInitiateTransfer={handleInitiateTransfer}
+          />
+        )}
+        {clubSubPage === 'RBAC' && (
+          <RBACSecurityMatrix
+            isOpen={true}
+            isInline={true}
+            onClose={() => setClubSubPage('OVERVIEW')}
           />
         )}
         {sharedModals}

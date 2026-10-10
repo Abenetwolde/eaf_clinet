@@ -226,6 +226,10 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 <span className="flex items-center gap-1">
                   FIN: <strong className="font-mono text-[#FCD34D] font-bold">{athlete.faydaFin || '7961-3131-0300'}</strong>
                 </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  FAN: <strong className="font-mono text-emerald-300 font-bold">{athlete.faydaFan || 'FAN-9842-1084-3310'}</strong>
+                </span>
               </div>
             </div>
           </div>
@@ -522,6 +526,9 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                       >
                         {copiedFin ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
                       </button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      FAN: <strong className="text-emerald-300 font-mono text-[0.72rem]">{athlete.faydaFan || 'FAN-9842-1084-3310'}</strong>
                     </div>
                   </div>
                 </div>
