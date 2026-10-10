@@ -17,20 +17,24 @@ export default function Navbar({
   currentRole, currentAthlete, currentClub, onSwitchRole, onLogout, onOpenAuthModal
 }: NavbarProps) {
   const authState = useAppSelector(state => state.auth);
-  const isAuthenticated = authState.isAuthenticated || !!authState.token;
+  const isAuthenticated = Boolean(authState.token && authState.role !== 'LANDING');
   const userRole = authState.role || "ATHLETE";
 
   // Check if user has a completed registration
-  const isRegistered = (() => {
-    try {
-      const regRaw = localStorage.getItem("eaf_registered_athlete");
-      if (regRaw) {
-        const parsed = JSON.parse(regRaw);
-        if (parsed.isRegistered) return true;
-      }
-    } catch (e) {}
-    return Boolean(authState.userData && (authState.userData as any).status === "ACTIVE" && (authState.userData as any).isRegistered);
-  })();
+  const isRegistered = Boolean(
+    isAuthenticated &&
+    ((() => {
+      try {
+        const regRaw = localStorage.getItem("eaf_registered_athlete");
+        if (regRaw) {
+          const parsed = JSON.parse(regRaw);
+          if (parsed.isRegistered) return true;
+        }
+      } catch (e) {}
+      return false;
+    })() ||
+    Boolean(authState.userData && (authState.userData as any).status === "ACTIVE" && (authState.userData as any).isRegistered))
+  );
 
   const userAvatar = isRegistered ? (currentAthlete?.photoUrl || "/images/runner_female.png") : null;
 

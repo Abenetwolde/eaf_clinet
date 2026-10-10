@@ -59,6 +59,7 @@ export default function App() {
   const athletes = useAppSelector((state) => state.athletes);
   const authToken = useAppSelector((state) => state.auth.token);
   const userData = useAppSelector((state) => state.auth.userData);
+  const authStatus = useAppSelector((state) => state.auth.status);
 
   // API hooks
   const [fetchMe] = useLazyGetMeQuery();
@@ -168,14 +169,19 @@ export default function App() {
       logoutApi().catch(() => {});
     }
     try {
-      sessionStorage.removeItem('eaf_currentRole');
-      sessionStorage.removeItem('eaf_currentAthleteId');
-      sessionStorage.removeItem('eaf_fayda_verified');
-      sessionStorage.removeItem('fayda_auth_payload');
-      sessionStorage.removeItem('fayda_photo');
-      sessionStorage.removeItem('fayda_token');
+      sessionStorage.clear();
       localStorage.removeItem('eaf_currentRole');
       localStorage.removeItem('eaf_currentAthleteId');
+      localStorage.removeItem('eaf_currentClubId');
+      localStorage.removeItem('eaf_registered_athlete');
+      localStorage.removeItem('eaf_registered_info');
+      localStorage.removeItem('eaf_user_avatar');
+      localStorage.removeItem('token');
+      localStorage.removeItem('eaf_token');
+      localStorage.removeItem('eaf_accessToken');
+      localStorage.removeItem('eaf_refreshToken');
+      localStorage.removeItem('eaf_userId');
+      localStorage.removeItem('eaf_userData');
       localStorage.removeItem('fayda_auth_payload');
       localStorage.removeItem('fayda_photo');
       localStorage.removeItem('fayda_token');
@@ -184,7 +190,15 @@ export default function App() {
     dispatch(logout());
     setVerifiedCitizen(null);
     setShowCitizenModal(false);
+    setRegModalRole(null);
     setPublicSubPage('HOME');
+    setAthleteSubPage('OVERVIEW');
+    setClubSubPage('OVERVIEW');
+    setMobileMenuOpen(false);
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     handleNotify('Logged out successfully.', 'info');
   };
 
@@ -315,20 +329,16 @@ export default function App() {
     return null;
   })();
 
-  const isUserRegistered = Boolean(
-    (currentRole === 'ATHLETE' && currentAthlete) ||
-    (currentRole === 'CLUB' && currentClub) ||
-    Boolean((userData as any)?.isRegistered && (userData as any)?.status === 'ACTIVE') ||
-    Boolean(registeredInfo?.isRegistered && registeredInfo?.athleteId)
+  const isLoggedIn = Boolean(
+    (currentRole === 'ATHLETE' || currentRole === 'CLUB') &&
+    (Boolean(authToken) || authStatus === 'authenticated' || Boolean(userData))
   );
 
-  const isLoggedIn = Boolean(
-    (authToken && (currentRole === 'ATHLETE' || currentRole === 'CLUB')) ||
-    currentRole === 'ATHLETE' ||
-    currentRole === 'CLUB' ||
-    Boolean(currentAthlete) ||
-    Boolean(currentClub) ||
-    isUserRegistered
+  const isUserRegistered = Boolean(
+    isLoggedIn && (
+      Boolean((userData as any)?.isRegistered && (userData as any)?.status === 'ACTIVE') ||
+      Boolean(registeredInfo?.isRegistered && registeredInfo?.athleteId)
+    )
   );
 
   const rawStatus = (userData as any)?.registrationStatus || registeredInfo?.status;
@@ -583,7 +593,7 @@ export default function App() {
               {darkMode ? <Sun size={18} color="#FDE047" /> : <Moon size={18} color="#475569" />}
             </motion.button>
 
-            {currentRole === 'ATHLETE' || (isLoggedIn && currentRole !== 'CLUB') ? (
+            {isLoggedIn && currentRole === 'ATHLETE' ? (
               <div className="flex gap-2 items-center">
                 {publicSubPage === 'DASHBOARD' ? (
                   <button
@@ -637,7 +647,7 @@ export default function App() {
                   Logout
                 </button>
               </div>
-            ) : currentRole === 'CLUB' ? (
+            ) : isLoggedIn && currentRole === 'CLUB' ? (
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <motion.button
                   whileHover={{ scale: 1.03 }}
@@ -791,7 +801,7 @@ export default function App() {
                   </button>
                 </div>
 
-                {currentRole === 'ATHLETE' ? (
+                {isLoggedIn && currentRole === 'ATHLETE' ? (
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => { setAthleteSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); setMobileMenuOpen(false); }}
@@ -812,6 +822,40 @@ export default function App() {
                         <div className="text-left">
                           <div className="text-xs font-black text-white">{verifiedCitizen?.fullName || currentAthlete?.name || 'Athlete'}</div>
                           <div className="text-[0.68rem] text-emerald-400 font-bold">✓ Verified National ID Portal</div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-extrabold text-white bg-emerald-600 px-2.5 py-1 rounded-lg">Enter →</span>
+                    </button>
+                    <button
+                      onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                      className={`w-full py-2 rounded-xl cursor-pointer text-[0.85rem] font-bold border text-center ${
+                        darkMode ? 'bg-[#1E293B] border-[#334155] text-[#94A3B8]' : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]'
+                      }`}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                ) : isLoggedIn && currentRole === 'CLUB' ? (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => { setClubSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); setMobileMenuOpen(false); }}
+                      className="w-full p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/40 bg-emerald-950/30 text-emerald-300 font-bold"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-300 shrink-0 bg-slate-800 flex items-center justify-center">
+                          {userProfileAvatar ? (
+                            <img
+                              src={userProfileAvatar}
+                              alt="Avatar"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Building2 size={16} className="text-slate-300" />
+                          )}
+                        </div>
+                        <div className="text-left">
+                          <div className="text-xs font-black text-white">{currentClub?.shortName || 'Club Admin'}</div>
+                          <div className="text-[0.68rem] text-emerald-400 font-bold">✓ Club Administration</div>
                         </div>
                       </div>
                       <span className="text-xs font-extrabold text-white bg-emerald-600 px-2.5 py-1 rounded-lg">Enter →</span>
@@ -855,52 +899,23 @@ export default function App() {
                       </div>
                     )}
 
-                    {isLoggedIn ? (
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => {
-                            if (currentRole !== 'ATHLETE' && currentRole !== 'CLUB') {
-                              dispatch(setRole('ATHLETE'));
-                            }
-                            setPublicSubPage('DASHBOARD');
-                            setMobileMenuOpen(false);
-                          }}
-                          className="w-full p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/40 bg-emerald-950/30 text-emerald-300 font-bold cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 size={16} className="text-emerald-400" />
-                            <span className="text-xs font-bold text-white">Go to {currentRole === 'CLUB' ? 'Club' : 'Athlete'} Portal</span>
-                          </div>
-                          <span className="text-xs font-black text-white bg-emerald-600 px-2 py-0.5 rounded-md">Open →</span>
-                        </button>
-                        <button
-                          onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                          className="w-full py-2 rounded-xl cursor-pointer text-xs font-bold border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300"
-                        >
-                          Logout
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => {
-                            setRegModalRole('ATHLETE');
-                            setMobileMenuOpen(false);
-                            window.history.pushState(null, '', '/register');
-                          }}
-                          className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 border-0 cursor-pointer text-white font-bold"
-                          style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
-                        >
-                          {t('nav.registerAsAthlete')}
-                        </button>
-                        <button
-                          onClick={() => { handleOpenAuthModal(); setMobileMenuOpen(false); }}
-                          className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 cursor-pointer font-bold bg-white text-[#0F172A] border border-[#CBD5E1]"
-                        >
-                          {t('nav.clubPortalLogin')}
-                        </button>
-                      </>
-                    )}
+                    <button
+                      onClick={() => {
+                        setRegModalRole('ATHLETE');
+                        setMobileMenuOpen(false);
+                        window.history.pushState(null, '', '/register');
+                      }}
+                      className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 border-0 cursor-pointer text-white font-bold"
+                      style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)' }}
+                    >
+                      {t('nav.registerAsAthlete')}
+                    </button>
+                    <button
+                      onClick={() => { handleOpenAuthModal(); setMobileMenuOpen(false); }}
+                      className="w-full text-[0.85rem] py-2.5 rounded-xl inline-flex items-center justify-center gap-2 cursor-pointer font-bold bg-white text-[#0F172A] border border-[#CBD5E1]"
+                    >
+                      {t('nav.clubPortalLogin')}
+                    </button>
                   </div>
                 )}
               </div>
@@ -941,7 +956,7 @@ export default function App() {
             currentAthlete={currentAthlete}
             onLoginSuccess={handleLoginSuccess}
             navNonce={navNonce}
-            isRegistered={isLoggedIn || isUserRegistered}
+            isRegistered={isLoggedIn && isUserRegistered}
             registeredStatus={registeredStatusText}
             isLoggedIn={isLoggedIn}
             onSelectRole={(role: string) => {
@@ -1072,7 +1087,7 @@ export default function App() {
         onChangeSubPage={setAthleteSubPage}
         currentAthlete={currentAthlete}
         onLogout={handleLogout}
-        onGoHome={() => handleSwitchRoleDirectly('LANDING')}
+        onGoHome={() => { setPublicSubPage('HOME'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         onBackToLanding={() => setPublicSubPage('HOME')}
       >
         {athleteSubPage === 'OVERVIEW' && (
