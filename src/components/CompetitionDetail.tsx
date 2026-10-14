@@ -181,22 +181,62 @@ export default function CompetitionDetail({
   if (!meet) return null;
 
 
-  // Ethiopian Fayda National ID Mock Profile Data
-  const faydaNationalIdData = {
-    fullName: 'Haile Demisse Tadesse',
-    amharicName: 'ኃይሌ ደሚሴ ታደሰ',
-    faydaFin: '9840-3920-1124',
-    dob: '2002-04-12 (Age 24)',
-    gender: 'Male / ወንድ',
-    region: 'Addis Ababa City Administration (አዲስ አበባ ከተማ አስተዳደር)',
-    subcity: 'Bole Sub-City, Woreda 03',
-    houseNo: 'House No. 482/09',
-    photoUrl: '/images/athlete_haile.jpeg',
-    faydaVerified: true,
-    club: 'Independent / Unaffiliated Athlete'
-  };
+  // Dynamic Real Athlete Profile Data
+  const realAthleteData = useMemo(() => {
+    let savedCitizen: any = null;
+    try {
+      const raw = localStorage.getItem('eaf_fayda_verified') || sessionStorage.getItem('eaf_fayda_verified');
+      if (raw) savedCitizen = JSON.parse(raw);
+    } catch {}
 
-  const handleToggleDiscipline = (disc) => {
+    const athleteName = currentAthlete?.name || savedCitizen?.name || savedCitizen?.fullName || 'Registered Athlete';
+    const amharicName = currentAthlete?.amharicName || savedCitizen?.amharic || savedCitizen?.fullNameAmharic || athleteName;
+    const faydaFin = currentAthlete?.faydaFin || savedCitizen?.fin || savedCitizen?.nin || 'Verified Fayda ID';
+    const dob = currentAthlete?.dob || savedCitizen?.dob || savedCitizen?.birthDate || '1998-05-12';
+    const gender = currentAthlete?.gender || savedCitizen?.gender || 'Male';
+    const region = currentAthlete?.region || savedCitizen?.region || 'Addis Ababa';
+    const clubName = currentAthlete?.clubName || 'Independent / Unaffiliated Athlete';
+    const primaryEvent = currentAthlete?.primaryEvent || (meet?.disciplines?.[0] || '10,000m');
+    const photoUrl = currentAthlete?.photoUrl || savedCitizen?.photoUrl || '/images/fayda_resident_photo.jpg';
+    const emergencyContact = currentAthlete?.emergencyContact || '+251 91 111 2233';
+    const seasonBest = currentAthlete?.seasonBests?.[0]?.mark || currentAthlete?.personalBests?.[0]?.mark || '13:12.40';
+
+    return {
+      fullName: athleteName,
+      amharicName,
+      faydaFin,
+      dob,
+      gender,
+      region,
+      subcity: 'Bole / Central',
+      houseNo: 'EAF-REG-2026',
+      club: clubName,
+      primaryEvent,
+      photoUrl,
+      emergencyContact,
+      seasonBest,
+      faydaVerified: true,
+      licenseNumber: currentAthlete?.licenseNumber || 'ETH-LIC-2026-PENDING',
+      status: currentAthlete?.status || currentAthlete?.licenseStatus || 'PENDING',
+    };
+  }, [currentAthlete, meet]);
+
+  const faydaNationalIdData = realAthleteData;
+
+  // Registration approval check: users must complete registration and wait for admin approval
+  const isRegistrationApproved = currentAthlete?.status === 'APPROVED' ||
+    currentAthlete?.status === 'ACTIVE' ||
+    currentAthlete?.licenseStatus === 'ACTIVE' ||
+    currentAthlete?.licenseStatus === 'APPROVED';
+
+  const isRegistrationPending = !isRegistrationApproved && Boolean(
+    currentAthlete?.status === 'PENDING' ||
+    currentAthlete?.licenseStatus === 'PENDING_APPROVAL' ||
+    currentAthlete?.licenseStatus === 'PENDING' ||
+    (typeof window !== 'undefined' && (localStorage.getItem('eaf_registered_athlete') || localStorage.getItem('eaf_registration_status')))
+  );
+
+  const handleToggleDiscipline = (disc: string) => {
     if (selectedDisciplines.includes(disc)) {
       if (selectedDisciplines.length > 1) {
         setSelectedDisciplines(selectedDisciplines.filter(d => d !== disc));
@@ -206,17 +246,48 @@ export default function CompetitionDetail({
     }
   };
 
-  const handleSubmitMeetRegistration = () => {
+  const handleSubmitMeetRegistration = async () => {
+    if (isRegistrationPending) return;
+    setIsPendingApproval(true);
+    const token = localStorage.getItem('token') || localStorage.getItem('eaf_token');
+    const disciplinesToApply = selectedDisciplines.length > 0 ? selectedDisciplines : (meet.disciplines || ['General Entry']);
+
+    try {
+      const endpoints = [
+        `http://localhost:3000/api/v1/events/${meet.id}/apply`,
+        `/api/v1/events/${meet.id}/apply`,
+      ];
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({
+              eventId: meet.id,
+              disciplines: disciplinesToApply,
+            }),
+          });
+          if (res.ok) break;
+        } catch {}
+      }
+    } catch (e) {
+      console.warn('Event entry API notice:', e);
+    }
+
     const pass = {
       passId: `EAF-PASS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      bib: `BIB-9042`,
+      bib: `BIB-${Math.floor(1000 + Math.random() * 9000)}`,
       meetTitle: meet.title,
       venue: meet.venue,
       date: meet.date,
       bannerUrl: getBannerUrl(meet.id),
-      athlete: faydaNationalIdData,
-      events: selectedDisciplines,
-      registeredAt: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      athlete: realAthleteData,
+      events: disciplinesToApply,
+      registeredAt: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+      status: 'Pending',
     };
     setRegistrationPass(pass);
   };
@@ -567,27 +638,49 @@ export default function CompetitionDetail({
                 <ChevronRight size={18} color="#991B1B" />
               </button>
             ) : currentRole === 'ATHLETE' ? (
-              <button
-                onClick={() => setShowIndividualModal(true)}
-                className="btn-accent"
-                style={{
-                  flex: 1,
-                  padding: '16px 20px',
-                  borderRadius: '14px',
-                  justifyContent: 'space-between',
-                  background: '#FFFFFF',
-                  color: 'var(--primary-dark)',
-                  fontWeight: 900,
-                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)',
-                  cursor: 'pointer',
-                  border: 'none'
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.98rem' }}>
-                  <UserCheck size={20} color="var(--primary-dark)" /> Register for Competition
-                </span>
-                <ChevronRight size={18} color="var(--primary-dark)" />
-              </button>
+              isRegistrationPending ? (
+                <div
+                  style={{
+                    flex: 1,
+                    padding: '16px 20px',
+                    borderRadius: '14px',
+                    background: '#FEF3C7',
+                    border: '1px solid #FCD34D',
+                    color: '#92400E',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '0.9rem',
+                    boxShadow: '0 4px 12px rgba(217, 119, 6, 0.1)'
+                  }}
+                >
+                  <AlertTriangle size={20} color="#D97706" style={{ flexShrink: 0 }} />
+                  <span>Registration Pending Approval — Applications Locked</span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowIndividualModal(true)}
+                  className="btn-accent"
+                  style={{
+                    flex: 1,
+                    padding: '16px 20px',
+                    borderRadius: '14px',
+                    justifyContent: 'space-between',
+                    background: '#FFFFFF',
+                    color: 'var(--primary-dark)',
+                    fontWeight: 900,
+                    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)',
+                    cursor: 'pointer',
+                    border: 'none'
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.98rem' }}>
+                    <UserCheck size={20} color="var(--primary-dark)" /> Apply for Competition
+                  </span>
+                  <ChevronRight size={18} color="var(--primary-dark)" />
+                </button>
+              )
             ) : (
               <button
                 onClick={() => setShowAuthModal(true)}
@@ -1017,6 +1110,17 @@ export default function CompetitionDetail({
 
             {/* Modal Content Body */}
             <div className="modal-bleed-body" style={{ padding: '32px 40px' }}>
+              {isRegistrationPending && (
+                <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '16px', padding: '16px 20px', color: '#92400E', marginBottom: '24px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                  <AlertTriangle size={22} color="#D97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <h4 style={{ fontWeight: 900, fontSize: '0.95rem', marginBottom: '4px' }}>Registration Pending Admin Approval</h4>
+                    <p style={{ fontSize: '0.85rem', color: '#B45309', margin: 0, lineHeight: 1.5 }}>
+                      Your registration has been submitted and is currently pending approval by the Ethiopian Athletics Federation Admin. You must wait for admin approval before applying for competitions. Once approved, you can select disciplines and submit your entries.
+                    </p>
+                  </div>
+                </div>
+              )}
               {isPendingApproval ? (
                 /* Application Submitted — Waiting EAF Approval Screen */
                 <div style={{ textAlign: 'center', padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -1174,17 +1278,17 @@ export default function CompetitionDetail({
 
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>{t('competitionDetail.targetSeedTime')}</label>
-                        <input className="form-input" defaultValue="12:54.20" style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.9rem' }} />
+                        <input className="form-input" defaultValue={realAthleteData.seasonBest} style={{ padding: '10px 12px', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.9rem' }} />
                       </div>
 
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>{t('competitionDetail.primaryClub')}</label>
-                        <input className="form-input" defaultValue="Bekoji Athletics Club" style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.9rem' }} />
+                        <input className="form-input" defaultValue={realAthleteData.club} style={{ padding: '10px 12px', fontWeight: 700, fontSize: '0.9rem' }} />
                       </div>
 
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>{t('competitionDetail.emergencyContact')}</label>
-                        <input className="form-input" defaultValue="Ato Bekele Negash (+251 91 111 2233)" style={{ padding: '10px 12px', fontWeight: 600, fontSize: '0.85rem' }} />
+                        <input className="form-input" defaultValue={realAthleteData.emergencyContact} style={{ padding: '10px 12px', fontWeight: 600, fontSize: '0.85rem' }} />
                       </div>
                     </div>
 

@@ -53,7 +53,14 @@ export default function AthleteEvents({ onUpdateAthlete, onNotify }: AthleteEven
   const [enrollModal, setEnrollModal] = useState<{ [key: string]: any } | null>(null); // { meet }
   const [selectedDisc, setSelectedDisc] = useState('');
 
-  const canEnroll = athlete.faydaStatus === 'VERIFIED' && athlete.licenseStatus === 'ACTIVE';
+  const isRegistrationApproved = athlete.status === 'APPROVED' || athlete.status === 'ACTIVE' || athlete.licenseStatus === 'ACTIVE' || athlete.licenseStatus === 'APPROVED';
+  const isRegistrationPending = !isRegistrationApproved && (
+    athlete.status === 'PENDING' ||
+    athlete.licenseStatus === 'PENDING_APPROVAL' ||
+    athlete.licenseStatus === 'PENDING' ||
+    (typeof window !== 'undefined' && Boolean(localStorage.getItem('eaf_registered_athlete') || localStorage.getItem('eaf_registration_status')))
+  );
+  const canEnroll = isRegistrationApproved;
 
   const handleEnroll = async () => {
     if (!selectedDisc) { onNotify('Please select a discipline.', 'error'); return; }
@@ -81,7 +88,7 @@ export default function AthleteEvents({ onUpdateAthlete, onNotify }: AthleteEven
       meetId: enrollModal.id,
       meetTitle: enrollModal.title,
       disciplines: [selectedDisc],
-      status: "Approved",
+      status: "Pending",
       appliedDate: new Date().toISOString().split('T')[0]
     };
 
@@ -107,25 +114,37 @@ export default function AthleteEvents({ onUpdateAthlete, onNotify }: AthleteEven
       </div>
 
       {/* Eligibility banner */}
-      {!canEnroll && (
+      {isRegistrationPending && (
+        <div className="bg-amber-50 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-800 rounded-2xl p-5 mb-6 flex items-start gap-3.5 shadow-sm">
+          <AlertTriangle size={22} className="text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <div className="font-extrabold text-sm text-amber-900 dark:text-amber-200">
+              Registration Pending Federation Admin Approval
+            </div>
+            <div className="text-xs text-amber-700 dark:text-amber-300 mt-1 leading-relaxed">
+              Your registration has been submitted and is currently pending approval by the Ethiopian Athletics Federation Admin. You must wait for admin approval before applying for competitions. Once approved, you can access and submit applications for all official competitions.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isRegistrationPending && !canEnroll && (
         <div className="bg-[#FEF9EC] border border-[#F5D76E] rounded-xl px-[18px] py-3.5 mb-6 flex items-center gap-2.5">
           <AlertTriangle size={18} color="#D97706" />
           <div>
             <div className="font-bold text-[0.9rem] text-[#92600A]">Eligibility Requirements Not Met</div>
             <div className="text-[0.8rem] text-[#B45309] mt-0.5">
-              You need a verified Fayda ID and an active license to register for events.
-              {athlete.faydaStatus !== 'VERIFIED' && ' → Complete Fayda verification.'}
-              {athlete.licenseStatus !== 'ACTIVE' && ' → Renew your EAF license (500 ETB).'}
+              You need a verified Fayda ID and an approved federation account to register for events.
             </div>
           </div>
         </div>
       )}
 
       {canEnroll && (
-        <div className="bg-primary-light border border-[rgba(11,87,142,0.2)] rounded-xl px-[18px] py-3 mb-6 flex items-center gap-2.5">
-          <ShieldCheck size={18} color="var(--primary)" />
-          <div className="text-[0.85rem] text-primary font-semibold">
-            Fayda verified &amp; license active — you are eligible to register for events below.
+        <div className="bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 rounded-2xl px-5 py-3.5 mb-6 flex items-center gap-3 shadow-sm">
+          <ShieldCheck size={20} className="text-emerald-600 shrink-0" />
+          <div className="text-xs font-bold text-emerald-800 dark:text-emerald-200">
+            Registration Approved &amp; License Active — You are eligible to apply for official EAF competitions below.
           </div>
         </div>
       )}

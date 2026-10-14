@@ -506,9 +506,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   const allMeets = useMemo(() => {
     if (!apiEvents || !Array.isArray(apiEvents) || apiEvents.length === 0) {
-      return ENRICHED_MEETS;
+      return [];
     }
-    const mapped = apiEvents.map((evt: any, idx: number) => {
+    return apiEvents.map((evt: any, idx: number) => {
       const scheduleDate = evt.schedule?.[0]?.date || evt.registrationDeadline?.slice(0, 10) || '2026-11-15';
       const parsedDate = new Date(scheduleDate);
       const dateStr = !isNaN(parsedDate.getTime())
@@ -532,10 +532,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         category: evt.category,
       };
     });
-
-    const mappedTitles = new Set(mapped.map((m: any) => m.title.toLowerCase()));
-    const extra = ENRICHED_MEETS.filter((m: any) => !mappedTitles.has(m.title.toLowerCase()));
-    return [...mapped, ...extra];
   }, [apiEvents]);
 
   // ⚡ Instant localStorage cache to eliminate ALL loading delay on page load!
@@ -1461,6 +1457,31 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     <ArrowRight size={16} />
                   </button>
                 </div>
+              ) : isRegistered ? (
+                <button
+                  onClick={() => {
+                    if (onSelectRole) onSelectRole('ATHLETE');
+                  }}
+                  className="btn-accent"
+                  style={{
+                    background: '#1D4ED8',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '0.98rem',
+                    padding: '14px 28px',
+                    borderRadius: '14px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    transition: 'all 0.25s ease'
+                  }}
+                >
+                  <CheckCircle size={20} />
+                  Registration Completed · Access Portal
+                </button>
               ) : (
                 <button
                   onClick={() => onRegister('ATHLETE')}
@@ -1570,38 +1591,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 </div>
               </div>
 
-              {/* Card 2: Professionals */}
-              <div
-                className="hover-lift"
-                onClick={() => onChangePublicSubPage('PROFESSIONALS')}
-                style={{
-                  background: t.bgAlt,
-                  border: '1px solid ' + t.border,
-                  borderRadius: '20px',
-                  padding: '24px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
-                }}
-              >
-                <div>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F0F9FF', border: '1px solid #BAE6FD', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                    <Users size={22} color="#0284C7" />
-                  </div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: t.text, marginBottom: '6px' }}>
-                    Athletics Professionals Registry
-                  </h3>
-                  <p style={{ fontSize: '0.84rem', color: t.textMuted, lineHeight: 1.5, marginBottom: '16px' }}>
-                    Accredited directory of World Athletics coaches, technical officials, team physicians, physiotherapists, and massage therapists.
-                  </p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0284C7', fontSize: '0.85rem', fontWeight: 800 }}>
-                  <span>View Professionals</span>
-                  <ArrowRight size={14} />
-                </div>
-              </div>
+
 
               {/* Card 3: Regional Hub */}
               <div

@@ -124,17 +124,6 @@ export default function ClientLayout({
             </motion.button>
           )}
 
-          {/* Sign Out */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onLogout}
-            title="Sign Out"
-            className={`client-signout ${darkMode ? 'bg-[#1E293B] text-[#94A3B8] hover:bg-[#2A3756]' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} border-0 px-3 py-2 rounded-xl text-[0.8rem] font-bold flex items-center gap-1.5 cursor-pointer transition-colors`}
-          >
-            <LogOut size={14} />
-            <span className="hidden sm:inline">Sign Out</span>
-          </motion.button>
 
           {/* Avatar - Clickable to open Profile Management */}
           {currentAthlete && (

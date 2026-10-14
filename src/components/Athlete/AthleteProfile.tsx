@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   Save, User, ShieldCheck, Mail, Phone, MapPin, Activity,
   Calendar, BadgeCheck, CheckCircle2, QrCode, Copy, Check,
-  AlertCircle, Heart, Weight, Lock, ArrowLeft, Award, ExternalLink, Globe, Plane
+  AlertCircle, Heart, Weight, Lock, ArrowLeft, Award, ExternalLink, Globe, Plane, LogOut
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import type { Athlete } from '../../types';
@@ -10,9 +10,10 @@ import type { Athlete } from '../../types';
 interface AthleteProfileProps {
   onUpdateAthlete: (athlete: Athlete) => void;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
+  onLogout?: () => void;
 }
 
-export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthleteProfileProps) {
+export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: AthleteProfileProps) {
   const athlete = useAppSelector((state) => state.auth.athlete);
 
   // Editable fields
@@ -492,6 +493,30 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify }: AthletePro
                 <div className="text-[10px] text-emerald-600 font-bold mt-1">✓ Valid until 20 Nov 2028 · Visa Cleared</div>
               </div>
             </div>
+          </div>
+
+          {/* 5. Account Session & Security */}
+          <div className="bg-white dark:bg-[#121829] rounded-2xl border border-red-200/80 dark:border-red-900/50 p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <LogOut size={14} className="text-red-500" />
+                Account Session & Security
+              </div>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+                Session Active
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Sign out of your active Ethiopian Athletics Federation digital session on this device.
+            </p>
+            <button
+              type="button"
+              onClick={onLogout}
+              className="w-full py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-red-600/20 cursor-pointer border-0"
+            >
+              <LogOut size={16} />
+              <span>Log Out / Sign Out</span>
+            </button>
           </div>
 
         </div>

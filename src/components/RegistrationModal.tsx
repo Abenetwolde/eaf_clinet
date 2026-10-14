@@ -286,6 +286,13 @@ export default function RegistrationModal({
   // Step 3: Review & Confirm
   const [step, setStep] = useState<number>(0);
 
+  const isAlreadyCompleted = Boolean(
+    typeof window !== 'undefined' && (
+      localStorage.getItem('eaf_registration_status') === 'completed' ||
+      sessionStorage.getItem('eaf_registration_status') === 'completed'
+    )
+  );
+
   // Already-registered Fayda check state
   const [isCheckingRegistered, setIsCheckingRegistered] = useState(false);
   const [registeredAccountInfo, setRegisteredAccountInfo] = useState<{
@@ -724,6 +731,8 @@ export default function RegistrationModal({
             isRegistered: true,
             registeredAt: new Date().toISOString(),
           };
+          localStorage.setItem('eaf_registration_status', 'completed');
+          sessionStorage.setItem('eaf_registration_status', 'completed');
           localStorage.setItem('eaf_registered_athlete', JSON.stringify(regMarker));
           sessionStorage.setItem('eaf_registered_athlete', JSON.stringify(regMarker));
         } catch (e) {}
@@ -1860,6 +1869,41 @@ export default function RegistrationModal({
   // ─────────────────────────────────────────────────────────────────────────────
   // SUCCESS SCREEN: LIGHT THEME WITH ICON ANIMATION
   // ─────────────────────────────────────────────────────────────────────────────
+  const renderAlreadyCompletedScreen = () => (
+    <div className="flex flex-col items-center text-center max-w-lg mx-auto py-8">
+      <div className="w-16 h-16 rounded-2xl bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center text-emerald-600 mb-4 shadow-sm">
+        <CheckCircle2 size={36} />
+      </div>
+      <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+        Registration Already Completed
+      </h3>
+      <p className="text-slate-600 text-sm leading-relaxed mb-6">
+        Your registration has already been completed and recorded with the Ethiopian Athletics Federation. Registered members cannot submit duplicate registrations.
+      </p>
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { method: 'FIN' } }));
+            }
+          }}
+          className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm cursor-pointer border-0 shadow-md shadow-blue-500/20"
+        >
+          Sign In to Portal
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-5 py-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold text-sm cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+
   const renderSuccessScreen = () => {
     if (!pendingRegistrationData) return null;
     const refNumber = serverRegistrationId || ('EAF-REG-2026-' + Math.floor(100000 + Math.random() * 900000));
@@ -1936,7 +1980,9 @@ export default function RegistrationModal({
             <StepBar steps={steps} current={step} />
           )}
 
-          {isSubmittedPending ? (
+          {isAlreadyCompleted ? (
+            renderAlreadyCompletedScreen()
+          ) : isSubmittedPending ? (
             renderSuccessScreen()
           ) : (
             <div>

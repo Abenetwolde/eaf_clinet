@@ -28,7 +28,6 @@ import AthleteNotifications from './components/Athlete/AthleteNotifications';
 
 import PaymentModal from './components/PaymentModal';
 import AntiDopingHub from './components/AntiDopingHub';
-import ProfessionalsRegistry from './components/ProfessionalsRegistry';
 import RegionalFederationsHub from './components/RegionalFederationsHub';
 import AthleteRepresentativesHub from './components/AthleteRepresentativesHub';
 import NotificationToast from './components/NotificationToast';
@@ -278,6 +277,11 @@ export default function App() {
         sessionStorage.getItem('eaf_currentRole') === 'CLUB' ||
         localStorage.getItem('eaf_registered_athlete')
       );
+      const isAlreadyRegisteredMarker = Boolean(
+        localStorage.getItem('eaf_registration_status') === 'completed' ||
+        localStorage.getItem('eaf_registered_athlete')
+      );
+
       if (
         urlParams.get('openReg') === 'ATHLETE' ||
         urlParams.get('faydaVerified') === 'true' ||
@@ -285,10 +289,11 @@ export default function App() {
         window.location.pathname.startsWith('/register') ||
         (nin && name && !isCurrentlyAuth && !sessionStorage.getItem('eaf_skip_auto_reg'))
       ) {
-        if (!isCurrentlyAuth) {
-          setRegModalRole('ATHLETE');
-        } else {
+        if (isAlreadyRegisteredMarker || isCurrentlyAuth) {
           window.history.replaceState({}, '', '/');
+        } else {
+          window.history.pushState(null, '', '/register');
+          setRegModalRole('ATHLETE');
         }
       }
       if (urlParams.get('faydaSuccess') === 'true' || urlParams.get('token')) {
@@ -300,17 +305,18 @@ export default function App() {
   // Listen for registration modal trigger from AuthModal
   useEffect(() => {
     const handleOpenRegistration = (e: any) => {
-      if (isLoggedIn) {
+      if (isUserRegistered || isLoggedIn) {
         setPublicSubPage('DASHBOARD');
-        handleNotify('You are already logged in to your portal.', 'info');
+        handleNotify('You have already completed registration with the Ethiopian Athletics Federation.', 'info');
         return;
       }
       setAuthModalConfig(null); // Close auth modal
+      window.history.pushState(null, '', '/register');
       setRegModalRole(e.detail.role); // Open registration modal
     };
     window.addEventListener('openRegistrationModal', handleOpenRegistration);
     return () => window.removeEventListener('openRegistrationModal', handleOpenRegistration);
-  }, []);
+  }, [isUserRegistered, isLoggedIn]);
 
   // Listen for openAuthModal event
   useEffect(() => {
@@ -329,12 +335,18 @@ export default function App() {
   useEffect(() => {
     const handleFaydaMessage = (e: MessageEvent) => {
       if (e.data?.type === 'FAYDA_OIDC_SUCCESS' && e.data.payload?.userInfo) {
+        if (isUserRegistered) {
+          handleNotify('You have already completed registration with the Ethiopian Athletics Federation.', 'info');
+          setPublicSubPage('DASHBOARD');
+          return;
+        }
+        window.history.pushState(null, '', '/register');
         setRegModalRole('ATHLETE');
       }
     };
     window.addEventListener('message', handleFaydaMessage);
     return () => window.removeEventListener('message', handleFaydaMessage);
-  }, []);
+  }, [isUserRegistered]);
 
   const [authModalConfig, setAuthModalConfig] = useState<any>(null);
   const [regModalRole, setRegModalRole] = useState<'CLUB' | 'ATHLETE' | null>(null);
@@ -426,6 +438,7 @@ export default function App() {
 
   const handleRegisterSuccess = (registrationData: { type: 'CLUB' | 'ATHLETE' | 'OFFICIAL'; payload: Record<string, any> }) => {
     setRegModalRole(null);
+    localStorage.setItem('eaf_registration_status', 'completed');
     if (registrationData.type === 'CLUB') {
       const newClub = registrationData.payload.club as Club;
       dispatch(addClub(newClub));
@@ -678,13 +691,6 @@ export default function App() {
                     </div>
                   </motion.button>
                 )}
-                <button
-                  onClick={handleLogout}
-                  className={`px-3 py-1.5 rounded-lg cursor-pointer text-[0.78rem] font-bold border
-                    ${darkMode ? 'bg-[#1E293B] border-[#334155] text-[#94A3B8]' : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]'}`}
-                >
-                  Logout
-                </button>
               </div>
             ) : isLoggedIn && currentRole === 'CLUB' ? (
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -718,13 +724,6 @@ export default function App() {
                     </span>
                   </div>
                 </motion.button>
-                <button
-                  onClick={handleLogout}
-                  className={`px-3 py-1.5 rounded-lg cursor-pointer text-[0.78rem] font-bold border
-                    ${darkMode ? 'bg-[#1E293B] border-[#334155] text-[#94A3B8]' : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#475569]'}`}
-                >
-                  Logout
-                </button>
               </div>
             ) : (
               <>
@@ -982,7 +981,35 @@ export default function App() {
         ) : publicSubPage === 'ANTI_DOPING' ? (
           <AntiDopingHub darkMode={darkMode} />
         ) : publicSubPage === 'PROFESSIONALS' ? (
-          <ProfessionalsRegistry darkMode={darkMode} />
+          <LandingPage
+            darkMode={darkMode}
+            onToggleDarkMode={() => setDarkMode(!darkMode)}
+            onLogin={() => setAuthModalConfig({ isOpen: true, method: 'FIN', credential: '' })}
+            onRegister={(role: 'CLUB' | 'ATHLETE') => {
+              if (isUserRegistered) {
+                handleNotify('You have already completed registration with the Ethiopian Athletics Federation.', 'info');
+                setPublicSubPage('DASHBOARD');
+                return;
+              }
+              setRegModalRole(role);
+              window.history.pushState(null, '', '/register');
+            }}
+            onChangePublicSubPage={setPublicSubPage}
+            publicSubPage="HOME"
+            onNotify={handleNotify}
+            currentRole={currentRole}
+            currentClub={currentClub}
+            currentAthlete={currentAthlete}
+            onLoginSuccess={handleLoginSuccess}
+            navNonce={navNonce}
+            isRegistered={isLoggedIn && isUserRegistered}
+            registeredStatus={registeredStatusText}
+            isLoggedIn={isLoggedIn}
+            onSelectRole={(role: string) => {
+              if (role === 'CLUB') handleLoginSuccess('CLUB', { club: currentClub });
+              else handleLoginSuccess('ATHLETE', { athlete: currentAthlete });
+            }}
+          />
         ) : publicSubPage === 'REGIONS' ? (
           <RegionalFederationsHub darkMode={darkMode} />
         ) : publicSubPage === 'REPRESENTATIVES' ? (
@@ -1143,7 +1170,7 @@ export default function App() {
           <AthleteApplications onNotify={handleNotify} />
         )}
         {athleteSubPage === 'PROFILE' && (
-          <AthleteProfile onUpdateAthlete={handleUpdateAthlete} onNotify={handleNotify} />
+          <AthleteProfile onUpdateAthlete={handleUpdateAthlete} onNotify={handleNotify} onLogout={handleLogout} />
         )}
         {athleteSubPage === 'NOTIFICATIONS' && (
           <AthleteNotifications onNotify={handleNotify} />

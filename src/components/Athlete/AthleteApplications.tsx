@@ -34,41 +34,21 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
   // Fetch real applications from backend API
   const { data: backendApps = [], isLoading: isLoadingApps } = useGetAthleteApplicationsQuery();
 
-  // Combine backend applications with fallback state
+  // Pure dynamic backend applications with fallback only to athlete.appliedCompetitions
   const applications = (backendApps && backendApps.length > 0)
     ? backendApps.map(a => ({
         meetId: a.eventId,
         meetTitle: a.title,
         disciplines: Array.isArray(a.disciplines) ? a.disciplines : [a.disciplines || 'General Entry'],
-        status: a.statusLabel === 'CONFIRMED' ? 'Approved' : a.statusLabel,
-        appliedDate: a.appliedAt ? a.appliedAt.split('T')[0] : '2026-10-13',
+        status: a.statusLabel === 'CONFIRMED' || a.statusLabel === 'Approved' ? 'Approved' : a.statusLabel === 'REJECTED' || a.statusLabel === 'Rejected' ? 'Rejected' : 'Pending',
+        appliedDate: a.appliedAt ? a.appliedAt.split('T')[0] : '2026-10-14',
         location: a.location || 'Addis Ababa Stadium',
         organizer: a.organizer || 'EAF Competitions Department',
         qrCode: a.qrCodeValue || a.id,
       }))
-    : athlete.appliedCompetitions || [
-    {
-      meetId: "MEET-2026-01",
-      meetTitle: "Addis Ababa International Grand Prix 2026",
-      disciplines: ["5,000m"],
-      status: "Approved",
-      appliedDate: "2026-07-15"
-    },
-    {
-      meetId: "MEET-2026-02",
-      meetTitle: "Ethiopian National Youth Olympic Games U18 / U20",
-      disciplines: ["1,500m"],
-      status: "Approved",
-      appliedDate: "2026-07-20"
-    },
-    {
-      meetId: "MEET-2026-03",
-      meetTitle: "Jan Meda National Cross-Country Olympic Trials",
-      disciplines: ["10km Senior Men"],
-      status: "Completed",
-      appliedDate: "2026-06-10"
-    }
-  ];
+    : (athlete.appliedCompetitions && athlete.appliedCompetitions.length > 0)
+    ? athlete.appliedCompetitions
+    : [];
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
