@@ -272,23 +272,120 @@ export default function RegistrationModal({
     return 'ATHLETE';
   });
 
-  // Step state:
-  // Step 0: Fayda Authentication (the first section / step)
-  // Step 1: Role Selection & Full Fayda User Info (after authenticate)
-  // Step 2: Role Details & Digitization
-  // Step 3: Review & Confirm
-  const [step, setStep] = useState<number>(() => {
-    // If already verified with Fayda, go to step 1 (Role Selection & Full Info)
-    if (initialFayda) return 1;
-    return 0; // First step: Fayda authentication button
-  });
-
   // RTK Query API Hooks
   const { data: regOptions } = useGetRegistrationOptionsQuery();
   const [registerAthlete, { isLoading: isRegistering }] = useRegisterAthleteMutation();
   const [initiateFayda] = useInitiateFaydaMutation();
   const [confirmFaydaOtp] = useConfirmFaydaOtpMutation();
   const [submissionError, setSubmissionError] = useState<string>('');
+
+  // Step state:
+  // Step 0: Fayda Authentication (the first section / step)
+  // Step 1: Role Selection & Full Fayda User Info (after authenticate)
+  // Step 2: Role Details & Digitization
+  // Step 3: Review & Confirm
+  const [step, setStep] = useState<number>(0);
+
+  // Already-registered Fayda check state
+  const [isCheckingRegistered, setIsCheckingRegistered] = useState(false);
+  const [registeredAccountInfo, setRegisteredAccountInfo] = useState<{
+    isRegistered: boolean;
+    message?: string;
+    email?: string;
+    fullName?: string;
+    athleteId?: string;
+    clubId?: string;
+  } | null>(null);
+
+  // Check if verified Fayda ID is already registered
+  useEffect(() => {
+    if (!faydaResult?.fin) {
+      setRegisteredAccountInfo(null);
+      return;
+    }
+
+    const checkFaydaRegistered = async () => {
+      setIsCheckingRegistered(true);
+      try {
+        const cleanFin = (faydaResult.fin || '').replace(/\s+/g, '').trim();
+        const endpoints = [
+          `/api/v1/fayda/check-registered/${cleanFin}`,
+          `/api/fayda/check-registered/${cleanFin}`,
+        ];
+
+        let foundData: any = null;
+        for (const ep of endpoints) {
+          try {
+            const res = await fetch(ep);
+            if (res.ok) {
+              const json = await res.json();
+              if (json?.data) {
+                foundData = json.data;
+                break;
+              }
+            }
+          } catch {}
+        }
+
+        if (foundData && foundData.isRegistered) {
+          setRegisteredAccountInfo(foundData);
+        } else {
+          // Check against regOptions or local mock athletes
+          const registeredFin = (regOptions as any)?.athletes?.some((a: any) => {
+            const aFin = (a.faydaFin || a.fin || a.nin || '').replace(/\s+/g, '');
+            return aFin && aFin === cleanFin;
+          });
+          if (registeredFin) {
+            setRegisteredAccountInfo({
+              isRegistered: true,
+              message: 'This Fayda National ID is already registered in the Ethiopian Athletics Federation registry.',
+            });
+          } else {
+            setRegisteredAccountInfo({ isRegistered: false });
+          }
+        }
+      } catch {
+        setRegisteredAccountInfo({ isRegistered: false });
+      } finally {
+        setIsCheckingRegistered(false);
+      }
+    };
+
+    checkFaydaRegistered();
+  }, [faydaResult?.fin, regOptions]);
+
+  const handleOpenLoginModal = () => {
+    onClose();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('openAuthModal', {
+          detail: {
+            method: 'FIN',
+            credential: faydaResult?.fin || '',
+          },
+        })
+      );
+    }
+  };
+
+  const handleClearFaydaVerification = () => {
+    setFaydaResult(null);
+    setFaydaFin('');
+    setFaydaFan('');
+    setFaydaVerificationToken(null);
+    setRegisteredAccountInfo(null);
+    try {
+      sessionStorage.removeItem('eaf_fayda_verified');
+      sessionStorage.removeItem('fayda_auth_payload');
+      sessionStorage.removeItem('fayda_photo');
+      sessionStorage.removeItem('fayda_token');
+      localStorage.removeItem('fayda_auth_payload');
+      localStorage.removeItem('fayda_photo');
+      localStorage.removeItem('fayda_token');
+      localStorage.removeItem('eaf_fayda_verified');
+    } catch {}
+    setStep(0);
+  };
 
   // Common account fields
   const [email, setEmail] = useState(initialFayda?.email || 'chere@id.et');
@@ -366,7 +463,7 @@ export default function RegistrationModal({
         if (resolved.email) setEmail(resolved.email);
         if (resolved.region) setRegion(resolved.region);
         if (resolved.verificationToken) setFaydaVerificationToken(resolved.verificationToken);
-        setStep(1); // Advance to Role Selection & Full Info
+        setStep(0); // Display retrieved information in Section 1
       }
     }
   }, [verifiedIdentity]);
@@ -419,8 +516,8 @@ export default function RegistrationModal({
           localStorage.setItem('eaf_fayda_verified', JSON.stringify(resObj));
         } catch (e) {}
 
-        // Proceed to Step 1 (Role Selection & Full Info)
-        setStep(1);
+        // Stay on Step 0 to display retrieved information in Section 1
+        setStep(0);
       }
     };
 
@@ -476,8 +573,8 @@ export default function RegistrationModal({
       localStorage.setItem('eaf_fayda_verified', JSON.stringify(resObj));
     } catch (e) {}
 
-    // Advance to Step 1 (Role Selection & Full Info display)
-    setStep(1);
+    // Stay on Step 0 to display retrieved information in Section 1
+    setStep(0);
   };
 
   const handleAddPersonalBest = () => {
@@ -497,7 +594,7 @@ export default function RegistrationModal({
     setNewPbVenue('');
   };
 
-  const steps = ['1. National ID', '2. Role Selection', '3. Profile Details', '4. Review & Confirm'];
+  const steps = ['1. Fayda Identity', '2. Role Selection', '3. Profile Details', '4. Review & Confirm'];
 
   // Submission handler
   const handleSubmit = async () => {
@@ -723,55 +820,249 @@ export default function RegistrationModal({
   // ─────────────────────────────────────────────────────────────────────────────
   // STEP 0: FIRST SECTION / STEP OF THE FORM — FAYDA AUTHENTICATION BUTTON
   // ─────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
+  // STAGE 1: FIRST SECTION OF REGISTRATION — DISPLAY USER'S RETRIEVED INFO
+  // ─────────────────────────────────────────────────────────────────────────────
   const renderStep0FaydaAuth = () => {
-    return (
-      <div className="flex flex-col items-center text-center max-w-xl mx-auto py-6">
-        <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
-          National ID Verification
-        </h3>
-        <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-8 max-w-md">
-          Verify your identity with your Fayda National ID to begin your official athletics registration.
-        </p>
+    // If not verified with Fayda yet, show the official authentication action
+    if (!faydaResult) {
+      return (
+        <div className="flex flex-col items-center text-center max-w-xl mx-auto py-6">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 border-2 border-blue-200 flex items-center justify-center text-blue-600 mb-4 shadow-sm">
+            <ShieldCheck size={36} />
+          </div>
 
-        {/* Primary Blue Button with User's Uploaded Fayda Logo Image */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          type="button"
-          onClick={() => handleLaunchFaydaOidc(false)}
-          disabled={isOidcLaunching}
-          className="w-full sm:w-auto min-w-[340px] px-8 py-4 rounded-2xl bg-[#0284C7] hover:bg-[#0369A1] text-white font-extrabold text-lg flex items-center justify-center gap-4 shadow-lg shadow-sky-500/25 transition-all cursor-pointer border-0"
-        >
-          <img
-            src="/images/fayda_logo.png"
-            alt="Fayda National ID Logo"
-            className="w-10 h-10 rounded-full object-cover shadow-sm bg-white p-0.5"
-          />
-          <div className="flex flex-col text-left">
-            <span className="text-base sm:text-lg font-black leading-tight text-white flex items-center gap-2">
-              {isOidcLaunching ? 'Connecting to Fayda...' : 'Authenticate with Fayda ID'}
-              <ArrowRight size={18} />
-            </span>
-            <span className="text-xs text-sky-100 font-semibold opacity-90">
-              National ID Digital Authentication
+          <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+            National ID Verification
+          </h3>
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-8 max-w-md">
+            Verify your official identity with your Fayda National ID to begin your athletics registration. Your verified information will be retrieved securely.
+          </p>
+
+          {/* Primary Blue Button with Fayda Logo */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            type="button"
+            onClick={() => handleLaunchFaydaOidc(false)}
+            disabled={isOidcLaunching}
+            className="w-full sm:w-auto min-w-[340px] px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-lg flex items-center justify-center gap-4 shadow-lg shadow-blue-500/25 transition-all cursor-pointer border-0"
+          >
+            <img
+              src="/images/fayda_logo.png"
+              alt="Fayda National ID Logo"
+              className="w-10 h-10 rounded-full object-cover shadow-sm bg-white p-0.5"
+            />
+            <div className="flex flex-col text-left">
+              <span className="text-base sm:text-lg font-black leading-tight text-white flex items-center gap-2">
+                {isOidcLaunching ? 'Connecting to Fayda...' : 'Authenticate with Fayda ID'}
+                <ArrowRight size={18} />
+              </span>
+              <span className="text-xs text-blue-100 font-semibold opacity-90">
+                National ID Digital Authentication
+              </span>
+            </div>
+          </motion.button>
+
+          {/* Discrete Demo Test Option */}
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleDemoBypassFayda}
+              className="text-xs font-bold text-slate-500 hover:text-blue-700 underline cursor-pointer bg-transparent border-0"
+            >
+              ⚡ Quick Test Auto-Fill (Demo Mode)
+            </button>
+          </div>
+
+          {faydaError && (
+            <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold max-w-md">
+              {faydaError}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // When verified: DISPLAY USER'S RETRIEVED INFORMATION IN THE FIRST SECTION
+    const isDuplicate = registeredAccountInfo?.isRegistered;
+
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm">
+          {/* Header Badge */}
+          <div className="flex items-center justify-between border-b border-slate-200/80 pb-4 mb-6 flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <img
+                src="/images/fayda_logo.png"
+                alt="Fayda Logo"
+                className="w-8 h-8 rounded-full object-cover shadow-sm bg-white p-0.5"
+              />
+              <div>
+                <h4 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight m-0">
+                  Verified Fayda Identity Information
+                </h4>
+                <p className="text-xs text-slate-500 m-0 mt-0.5 font-semibold">
+                  Official identity details retrieved from the National ID Program (eSignet)
+                </p>
+              </div>
+            </div>
+            <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-3.5 py-1.5 rounded-full border border-emerald-300 flex items-center gap-1.5 shadow-xs">
+              <CheckCircle2 size={14} className="text-emerald-600" /> Authenticated Citizen
             </span>
           </div>
-        </motion.button>
 
-        {/* Discrete Test Option */}
-        <div className="mt-6 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleDemoBypassFayda}
-            className="text-xs font-bold text-slate-500 hover:text-sky-700 underline cursor-pointer bg-transparent border-0"
-          >
-            ⚡ Quick Test Auto-Fill (Demo Mode)
-          </button>
+          {/* User Profile Header Card */}
+          <div className="flex items-start sm:items-center gap-5 flex-wrap sm:flex-nowrap mb-6">
+            <div className="w-20 h-24 sm:w-24 sm:h-28 rounded-2xl overflow-hidden border-2 border-white shadow-md shrink-0 bg-slate-200 relative group">
+              <img
+                src={faydaResult.photoUrl}
+                alt="Biometric Portrait"
+                className="w-full h-full object-cover"
+              />
+              <span className="absolute bottom-1 right-1 bg-emerald-500 w-3 h-3 rounded-full border-2 border-white shadow-xs" />
+            </div>
+
+            <div className="flex-1 min-w-[200px]">
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 m-0 leading-tight">
+                {faydaResult.name}
+              </h3>
+              {faydaResult.amharic && (
+                <div className="text-base font-bold text-blue-700 mt-0.5">
+                  {faydaResult.amharic}
+                </div>
+              )}
+              <div className="text-xs sm:text-sm text-slate-600 font-semibold mt-2 flex items-center gap-2 flex-wrap">
+                <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                  DOB: <strong>{faydaResult.dob}</strong>
+                </span>
+                <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                  Gender: <strong>{faydaResult.gender}</strong>
+                </span>
+                <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                  Blood: <strong>{faydaResult.blood}</strong>
+                </span>
+                <span className="bg-white px-2.5 py-1 rounded-md border border-slate-200">
+                  Region: <strong>{faydaResult.region}</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* SEPARATE FIN AND FAN CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            {/* FIN CARD */}
+            <div className="bg-white border-2 border-blue-200 rounded-2xl p-4.5 shadow-sm">
+              <div className="text-xs font-black uppercase tracking-wider text-blue-800 mb-1 flex items-center justify-between">
+                <span>National ID Number (FIN)</span>
+                <span className="text-[10px] bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full font-black">Permanent ID</span>
+              </div>
+              <div className="text-lg sm:text-xl font-black text-slate-900 font-mono tracking-wide mt-1">
+                {formatFin(faydaResult.fin)}
+              </div>
+              <div className="text-xs text-slate-500 font-medium mt-1">
+                Unique citizen biometric identity reference
+              </div>
+            </div>
+
+            {/* FAN CARD */}
+            <div className="bg-white border-2 border-emerald-200 rounded-2xl p-4.5 shadow-sm">
+              <div className="text-xs font-black uppercase tracking-wider text-emerald-800 mb-1 flex items-center justify-between">
+                <span>Fayda Access Number (FAN)</span>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-black">Virtual Access</span>
+              </div>
+              <div className="text-lg sm:text-xl font-black text-slate-900 font-mono tracking-wide mt-1">
+                {faydaResult.fan}
+              </div>
+              <div className="text-xs text-slate-500 font-medium mt-1">
+                Tokenized authentication credential
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Details Row */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3 text-xs sm:text-sm text-slate-700">
+            <div className="flex items-center gap-2">
+              <Phone size={15} className="text-blue-500" />
+              <span className="font-bold">Phone:</span>
+              <span className="font-semibold">{faydaResult.phoneNumber || phone}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail size={15} className="text-blue-500" />
+              <span className="font-bold">Email:</span>
+              <span className="font-semibold">{faydaResult.email || email}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <MapPin size={15} className="text-blue-500" />
+              <span className="font-bold">Address:</span>
+              <span className="font-semibold">{faydaResult.address || faydaResult.region}</span>
+            </div>
+          </div>
         </div>
 
-        {faydaError && (
-          <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold max-w-md">
-            {faydaError}
+        {/* ── DUPLICATE FAYDA ID ALERT / PROCEED ACTIONS ── */}
+        {isCheckingRegistered ? (
+          <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center gap-3">
+            <RefreshCw size={18} className="animate-spin text-blue-600" />
+            <span className="text-xs sm:text-sm font-bold">Verifying National ID status in federation registry...</span>
+          </div>
+        ) : isDuplicate ? (
+          <div className="p-6 rounded-3xl bg-amber-50 border-2 border-amber-300 text-amber-950 flex flex-col sm:flex-row items-center justify-between gap-5 shadow-sm">
+            <div className="flex items-start gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 text-amber-600 shadow-xs">
+                <AlertCircle size={26} />
+              </div>
+              <div>
+                <h5 className="text-base sm:text-lg font-black text-amber-900 m-0 leading-tight">
+                  This Fayda National ID is Already Registered
+                </h5>
+                <p className="text-xs sm:text-sm text-amber-800 font-medium m-0 mt-1 max-w-lg leading-relaxed">
+                  A user profile with National ID Number ({formatFin(faydaResult.fin)}) is already registered in the Ethiopian Athletics Federation. You cannot create a duplicate registration with this National ID.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleOpenLoginModal}
+                className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm whitespace-nowrap cursor-pointer border-0 shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all"
+              >
+                <span>Login to Existing Account</span>
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-4 flex-wrap pt-2">
+            <button
+              type="button"
+              onClick={handleClearFaydaVerification}
+              className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer bg-transparent border-0"
+            >
+              <RefreshCw size={14} /> Re-verify with different National ID
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStep(1)} // Advance to Stage 2: Role Selection
+              className="px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 cursor-pointer border-0 transition-all ml-auto"
+            >
+              <span>Proceed to Stage 2: Select Role</span>
+              <ArrowRight size={18} />
+            </button>
+          </div>
+        )}
+
+        {isDuplicate && (
+          <div className="flex justify-start">
+            <button
+              type="button"
+              onClick={handleClearFaydaVerification}
+              className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer bg-transparent border-0"
+            >
+              <RefreshCw size={14} /> Re-verify with a different National ID
+            </button>
           </div>
         )}
       </div>
@@ -779,18 +1070,18 @@ export default function RegistrationModal({
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // STEP 1: SECOND STEP / SECTION — ROLE SELECTION & FULL FAYDA USER INFO
+  // STAGE 2: SECOND SECTION OF REGISTRATION — ROLE SELECTION
   // ─────────────────────────────────────────────────────────────────────────────
-  const renderStep1RoleSelectionAndUserInfo = () => {
+  const renderStep1RoleSelection = () => {
     const rolesConfig = [
       {
         id: 'ATHLETE',
         title: 'Athlete',
         subtitle: 'Competitors & Runners',
         desc: 'Track & field competitors, marathon runners, youth & senior divisions.',
-        icon: <Activity size={24} className="text-sky-600" />,
+        icon: <Activity size={24} className="text-blue-600" />,
         badge: 'Biometrics & PBs',
-        badgeBg: 'bg-sky-50 text-sky-700 border-sky-200',
+        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
       },
       {
         id: 'CLUB_PRESIDENT',
@@ -806,211 +1097,110 @@ export default function RegistrationModal({
         title: 'Coach & Technical',
         subtitle: 'Training & Conditioning',
         desc: 'Endurance, sprint and field coaches with World Athletics certifications.',
-        icon: <Clock size={24} className="text-amber-600" />,
+        icon: <Clock size={24} className="text-blue-600" />,
         badge: 'WA Accredited',
-        badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
+        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
       },
       {
         id: 'MEDICAL_HEAD',
         title: 'Health & Medical Head',
         subtitle: 'Sports Medicine & Cardiac',
         desc: 'Team physicians, sports medicine, cardiac ECG clearances & TUE liaison.',
-        icon: <HeartPulse size={24} className="text-purple-600" />,
+        icon: <HeartPulse size={24} className="text-blue-600" />,
         badge: 'MoH Licensed',
-        badgeBg: 'bg-purple-50 text-purple-700 border-purple-200',
+        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
       },
       {
         id: 'OFFICIAL',
         title: 'Technical Official',
         subtitle: 'Track Referees & Judges',
         desc: 'Photo-finish FAT timing judges, track referees & race marshals.',
-        icon: <Award size={24} className="text-emerald-600" />,
+        icon: <Award size={24} className="text-blue-600" />,
         badge: 'WA Certified',
-        badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
       },
     ];
 
     return (
-      <div className="flex flex-col gap-8">
-        {/* SECTION A: DISPLAY FULL INFORMATION OF USER FROM FAYDA WITH SEPARATED FIN AND FAN */}
-        {faydaResult && (
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 sm:p-7 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-200/80 pb-4 mb-5 flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src="/images/fayda_logo.png"
-                  alt="Fayda Logo"
-                  className="w-7 h-7 rounded-full object-cover shadow-sm bg-white p-0.5"
-                />
-                <h4 className="text-base sm:text-lg font-black text-slate-900 tracking-tight m-0">
-                  Verified Fayda Identity Information
-                </h4>
-              </div>
-              <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-3 py-1 rounded-full border border-emerald-300 flex items-center gap-1.5">
-                <CheckCircle2 size={13} className="text-emerald-600" /> Authenticated
-              </span>
-            </div>
-
-            {/* User Profile Header */}
-            <div className="flex items-start sm:items-center gap-5 flex-wrap sm:flex-nowrap mb-6">
-              <div className="w-20 h-24 sm:w-24 sm:h-28 rounded-xl overflow-hidden border-2 border-white shadow-md shrink-0 bg-slate-200">
-                <img
-                  src={faydaResult.photoUrl}
-                  alt="Biometric Portrait"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              <div className="flex-1 min-w-[200px]">
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 m-0 leading-tight">
-                  {faydaResult.name}
-                </h3>
-                {faydaResult.amharic && (
-                  <div className="text-base font-bold text-sky-700 mt-0.5">
-                    {faydaResult.amharic}
-                  </div>
-                )}
-                <div className="text-xs sm:text-sm text-slate-600 font-semibold mt-1 flex items-center gap-2 flex-wrap">
-                  <span>{faydaResult.dob}</span>
-                  <span>•</span>
-                  <span>{faydaResult.gender}</span>
-                  <span>•</span>
-                  <span>Blood Group {faydaResult.blood}</span>
-                  <span>•</span>
-                  <span>{faydaResult.region}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* SEPARATE FIN AND FAN CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              {/* FIN CARD */}
-              <div className="bg-white border-2 border-sky-200 rounded-xl p-4 shadow-sm">
-                <div className="text-xs font-black uppercase tracking-wider text-sky-800 mb-1 flex items-center justify-between">
-                  <span>National ID Number (FIN)</span>
-                  <span className="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded font-extrabold">Permanent ID</span>
-                </div>
-                <div className="text-lg sm:text-xl font-black text-slate-900 font-mono tracking-wide">
-                  {formatFin(faydaResult.fin)}
-                </div>
-                <div className="text-xs text-slate-500 font-medium mt-1">
-                  Unique citizen biometric identity reference
-                </div>
-              </div>
-
-              {/* FAN CARD */}
-              <div className="bg-white border-2 border-emerald-200 rounded-xl p-4 shadow-sm">
-                <div className="text-xs font-black uppercase tracking-wider text-emerald-800 mb-1 flex items-center justify-between">
-                  <span>Fayda Access Number (FAN)</span>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-extrabold">Virtual Access</span>
-                </div>
-                <div className="text-lg sm:text-xl font-black text-slate-900 font-mono tracking-wide">
-                  {faydaResult.fan}
-                </div>
-                <div className="text-xs text-slate-500 font-medium mt-1">
-                  Tokenized authentication credential
-                </div>
-              </div>
-            </div>
-
-            {/* Contact details row */}
-            <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between flex-wrap gap-3 text-xs sm:text-sm text-slate-700">
-              <div className="flex items-center gap-2">
-                <Phone size={14} className="text-slate-400" />
-                <span className="font-bold">Phone:</span>
-                <span className="font-semibold">{faydaResult.phoneNumber || phone}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail size={14} className="text-slate-400" />
-                <span className="font-bold">Email:</span>
-                <span className="font-semibold">{faydaResult.email || email}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin size={14} className="text-slate-400" />
-                <span className="font-bold">Address:</span>
-                <span className="font-semibold">{faydaResult.address || faydaResult.region}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* SECTION B: ROLE SELECTION PANEL */}
+      <div className="flex flex-col gap-6">
         <div>
-          <div className="mb-4">
-            <h4 className="text-xl font-black text-slate-900 tracking-tight m-0">
-              Select Your Federation Role
-            </h4>
-            <p className="text-slate-600 text-sm m-0 mt-1">
-              Choose your role below to configure your official profile and sports credentials:
-            </p>
-          </div>
+          <h4 className="text-2xl font-black text-slate-900 tracking-tight m-0">
+            Stage 2: Select Your Federation Role
+          </h4>
+          <p className="text-slate-600 text-sm m-0 mt-1">
+            Choose the capacity in which you are registering with the Ethiopian Athletics Federation:
+          </p>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {rolesConfig.map((r) => {
-              const isSelected = selectedRole === r.id;
-              return (
-                <motion.div
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.99 }}
-                  key={r.id}
-                  onClick={() => {
-                    setSelectedRole(r.id as any);
-                    setStep(2); // Advance to Step 2 (Profile Details & Digitization)
-                  }}
-                  className={`bg-white rounded-2xl p-5 border-2 cursor-pointer transition-all flex flex-col justify-between gap-4 shadow-sm ${
-                    isSelected
-                      ? 'border-sky-600 ring-4 ring-sky-100 shadow-md'
-                      : 'border-slate-200 hover:border-sky-400'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-11 h-11 rounded-xl bg-slate-100 flex items-center justify-center">
-                        {r.icon}
-                      </div>
-                      <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-md border ${r.badgeBg}`}>
-                        {r.badge}
-                      </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {rolesConfig.map((r) => {
+            const isSelected = selectedRole === r.id;
+            return (
+              <motion.div
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.99 }}
+                key={r.id}
+                onClick={() => {
+                  setSelectedRole(r.id as any);
+                }}
+                className={`bg-white rounded-2xl p-5 border-2 cursor-pointer transition-all flex flex-col justify-between gap-4 shadow-sm ${
+                  isSelected
+                    ? 'border-blue-600 ring-4 ring-blue-100 shadow-md'
+                    : 'border-slate-200 hover:border-blue-400'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
+                      {r.icon}
                     </div>
-
-                    <h5 className="text-base font-black text-slate-900 m-0">
-                      {r.title}
-                    </h5>
-                    <div className="text-xs font-bold text-sky-700 mb-1.5">
-                      {r.subtitle}
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed m-0">
-                      {r.desc}
-                    </p>
+                    <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-md border ${r.badgeBg}`}>
+                      {r.badge}
+                    </span>
                   </div>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs font-bold text-sky-600">
-                    <span>Select Role</span>
-                    <ArrowRight size={14} />
+                  <h5 className="text-base font-black text-slate-900 m-0">
+                    {r.title}
+                  </h5>
+                  <div className="text-xs font-bold text-blue-700 mb-1.5">
+                    {r.subtitle}
                   </div>
-                </motion.div>
-              );
-            })}
-          </div>
+                  <p className="text-xs text-slate-600 leading-relaxed m-0">
+                    {r.desc}
+                  </p>
+                </div>
 
-          <div className="mt-6 flex justify-start">
-            <button
-              type="button"
-              onClick={() => setStep(0)}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer bg-transparent border-0"
-            >
-              <ArrowLeft size={14} /> Re-authenticate with different National ID
-            </button>
-          </div>
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs font-bold text-blue-600">
+                  <span>{isSelected ? '✓ Selected Role' : 'Select Role'}</span>
+                  <ArrowRight size={14} />
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Stage 2 Navigation Buttons */}
+        <div className="flex items-center justify-between gap-4 mt-4 pt-4 border-t border-slate-200">
+          <button
+            type="button"
+            onClick={() => setStep(0)}
+            className="px-6 py-3 rounded-xl border border-slate-300 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer bg-white flex items-center gap-2"
+          >
+            <ArrowLeft size={16} /> Back to Fayda Info
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStep(2)} // Advance to Stage 3: Profile Details
+            className="px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm flex items-center gap-2 cursor-pointer border-0 shadow-sm"
+          >
+            <span>Continue to Profile Details</span>
+            <ArrowRight size={16} />
+          </button>
         </div>
       </div>
     );
   };
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // STEP 2: THIRD STEP / SECTION — ROLE DETAILS & DIGITIZATION
-  // ─────────────────────────────────────────────────────────────────────────────
-  
   const validateStep2AndProceed = () => {
     setSubmissionError('');
     const trimmedEmail = (email || '').trim();
@@ -1751,7 +1941,7 @@ export default function RegistrationModal({
           ) : (
             <div>
               {step === 0 && renderStep0FaydaAuth()}
-              {step === 1 && renderStep1RoleSelectionAndUserInfo()}
+              {step === 1 && renderStep1RoleSelection()}
               {step === 2 && renderStep2ProfileDetails()}
               {step === 3 && renderStep3ReviewAndConfirm()}
             </div>

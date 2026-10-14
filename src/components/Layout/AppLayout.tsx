@@ -89,8 +89,15 @@ export default function AppLayout({
           </button>
         </div>
 
-        {/* EAF Brand Header */}
-        <div className="px-4.5 py-5 border-b border-[#2D3A5A] flex items-center gap-3" style={{ padding: '20px 18px' }}>
+        {/* EAF Brand Header - Clickable redirect to Home */}
+        <div
+          className="px-4.5 py-5 border-b border-[#2D3A5A] flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-90"
+          style={{ padding: '20px 18px' }}
+          onClick={() => onSwitchRole('LANDING')}
+          role="button"
+          tabIndex={0}
+          title="Return to Home Page"
+        >
           <div className="w-[42px] h-[42px] rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.3)] shrink-0">
             <EAFLogo size={36} />
           </div>

@@ -134,6 +134,41 @@ export interface GetAthletesParams {
   page?: number;
 }
 
+export interface PublishedEvent {
+  id: string;
+  title: string;
+  description?: string | null;
+  category: string;
+  venue?: string | null;
+  organizerName: string;
+  status: string;
+  disciplines?: string[] | null;
+  bannerUrl?: string | null;
+  schedule?: any;
+  totalAthletesEnrolled?: number;
+}
+
+export interface EventApplicationResponse {
+  id: string;
+  eventId: string;
+  title: string;
+  disciplines: string[];
+  appliedAt: string;
+  statusLabel: string;
+  organizer?: string;
+  location?: string;
+  city?: string | null;
+  imageUrl?: string | null;
+  athleteCount?: number;
+  qrCodeValue?: string;
+  qrCodeStatus?: string;
+  registeredMemberName?: string;
+  registeredMemberType?: string;
+  registrationType?: string;
+  clubName?: string | null;
+  submissionStatus?: string;
+}
+
 export const athleteApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getAthletes: builder.query<BackendAthleteItem[], GetAthletesParams | void>({
@@ -177,6 +212,30 @@ export const athleteApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Athletes'],
     }),
 
+    getPublishedEvents: builder.query<PublishedEvent[], void>({
+      query: () => '/events/published',
+      transformResponse: (response: { success: boolean; data: PublishedEvent[] }) => response.data || [],
+      providesTags: ['Athletes'],
+    }),
+
+    getAthleteApplications: builder.query<EventApplicationResponse[], void>({
+      query: () => '/athletes/profile/applications',
+      transformResponse: (response: { success: boolean; data: EventApplicationResponse[] }) => response.data || [],
+      providesTags: ['Athletes'],
+    }),
+
+    applyForEvent: builder.mutation<
+      { success: boolean; message: string; data: any },
+      { eventId: string; disciplines?: string[] }
+    >({
+      query: ({ eventId, disciplines }) => ({
+        url: `/events/${eventId}/apply`,
+        method: 'POST',
+        body: { eventId, disciplines },
+      }),
+      invalidatesTags: ['Athletes'],
+    }),
+
   }),
   overrideExisting: false,
 });
@@ -187,4 +246,7 @@ export const {
   useInitiateFaydaMutation,
   useConfirmFaydaOtpMutation,
   useRegisterAthleteMutation,
+  useGetPublishedEventsQuery,
+  useGetAthleteApplicationsQuery,
+  useApplyForEventMutation,
 } = athleteApi;

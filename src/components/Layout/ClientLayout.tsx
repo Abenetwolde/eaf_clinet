@@ -35,8 +35,17 @@ export default function ClientLayout({
         className={`client-header sticky top-0 z-50 px-4 sm:px-8 py-3 flex justify-between items-center shadow-[0_4px_24px_rgba(0,0,0,0.04)]
           ${darkMode ? 'bg-[#0F172A]/95 border-[#1E293B]' : 'bg-white/90 border-slate-200/80'} backdrop-blur-[16px] border-b`}
       >
-        {/* Brand & Federation Title */}
-        <div className="flex items-center gap-3 cursor-pointer min-w-0 shrink-0" onClick={() => onChangeSubPage('OVERVIEW')}>
+        {/* Brand & Federation Title - Clickable redirect to Home */}
+        <div
+          className="flex items-center gap-3 cursor-pointer min-w-0 shrink-0 transition-transform active:scale-95"
+          onClick={() => {
+            if (onGoHome) onGoHome();
+            else if (onBackToLanding) onBackToLanding();
+          }}
+          role="button"
+          tabIndex={0}
+          title="Return to Home Page"
+        >
           <img src="/images/logo.jpeg" alt="EAF" className="client-brand-img w-10 h-10 rounded-xl object-cover shrink-0 shadow-sm border border-slate-200" />
           <div className="min-w-0">
             <h1 className={`text-base sm:text-lg font-black m-0 tracking-tight leading-tight whitespace-nowrap ${darkMode ? 'text-white' : 'text-[#0F172A]'}`}>

@@ -6,22 +6,23 @@
 :root {
   /* ── Clean Neutral Institutional Design System ── */
 
-  /* Neutral Dark Text / Primary */
-  --primary: #0F172A;
-  --primary-dark: #020617;
-  --primary-light: #F8FAFC;
-  --primary-mid: #1E293B;
-  --primary-darker: #020617;
-  --primary-border: #E2E8F0;
+  /* Ethiopian Athletics Federation Blue Palette / Primary */
+  --primary: #1D4ED8;
+  --primary-dark: #1E3A8A;
+  --primary-light: #EFF6FF;
+  --primary-mid: #2563EB;
+  --primary-darker: #172554;
+  --primary-border: #3B82F6;
+  --primary-hover: #1E40AF;
 
-  /* Neutral Slate / Secondary */
-  --secondary: #334155;
-  --secondary-dark: #1E293B;
-  --secondary-light: #F1F5F9;
+  /* Secondary / Accent */
+  --secondary: #1D4ED8;
+  --secondary-dark: #1E40AF;
+  --secondary-light: #DBEAFE;
 
   /* Accent */
-  --accent: #0F172A;
-  --accent-light: #F8FAFC;
+  --accent: #1D4ED8;
+  --accent-light: #EFF6FF;
 
   /* Pure Clean Backgrounds */
   --bg-app: #FFFFFF;
@@ -235,27 +236,25 @@ h6 {
 
 /* Primary button — AppColors.primary (#0140A7) */
 .btn-gov-primary {
-  background: #0F172A;
-  color: var(--text-main);
-  /* AppColors.textOnPrimary resolved via contrast */
+  background: #1D4ED8;
   color: #FFFFFF;
   font-weight: 700;
   font-size: 0.9rem;
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(29, 78, 216, 0.25);
 }
 
 .btn-gov-primary:hover {
-  background: #1E293B;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  background: #1E40AF;
+  box-shadow: 0 6px 20px rgba(29, 78, 216, 0.35);
 }
 
 .btn-gov-primary:active {
@@ -286,55 +285,35 @@ h6 {
 
 /* Secondary accent button — AppColors.secondary (#E6A500) */
 .btn-gold,
-.btn-accent {
-  background: #0F172A;
-  color: #FFFFFF;
-  font-weight: 800;
-  font-size: 0.95rem;
-  padding: 11px 22px;
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: opacity 0.15s ease, transform 0.1s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.btn-accent:hover {
-  opacity: 0.9;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-}
-
-.btn-accent:active {
-  transform: scale(0.98);
-}
-
-/* General .btn-primary — same as .btn-gov-primary */
+.btn-accent,
 .btn-primary {
-  background: #0F172A;
+  background: #1D4ED8;
   color: #FFFFFF;
   font-weight: 800;
   font-size: 0.95rem;
   padding: 11px 22px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: opacity 0.15s ease, transform 0.1s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(29, 78, 216, 0.25);
 }
 
-.btn-primary:hover {
-  opacity: 0.9;
+.btn-accent:hover,
+.btn-primary:hover,
+.btn-gold:hover {
+  background: #1E40AF;
+  box-shadow: 0 6px 20px rgba(29, 78, 216, 0.35);
+  transform: translateY(-1px);
 }
 
-.btn-primary:active {
+.btn-accent:active,
+.btn-primary:active,
+.btn-gold:active {
   transform: scale(0.98);
 }
 

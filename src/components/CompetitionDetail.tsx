@@ -1192,7 +1192,27 @@ export default function CompetitionDetail({
 
                   {/* Submit Enrollment Button */}
                   <button
-                    onClick={() => setIsPendingApproval(true)}
+                    onClick={async () => {
+                      setIsPendingApproval(true);
+                      const token = localStorage.getItem('token') || localStorage.getItem('eaf_token');
+                      if (token && meet?.id) {
+                        try {
+                          await fetch(`/api/v1/events/${meet.id}/apply`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                              eventId: meet.id,
+                              disciplines: selectedEvents.length > 0 ? selectedEvents : ['General Entry'],
+                            })
+                          });
+                        } catch (e) {
+                          console.warn('Event entry API notice:', e);
+                        }
+                      }
+                    }}
                     className="btn-accent"
                     style={{ width: '100%', padding: '16px', borderRadius: '14px', fontSize: '1rem', fontWeight: 900, justifyContent: 'center', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer', boxShadow: '0 8px 20px rgba(14, 165, 233, 0.3)' }}
                   >

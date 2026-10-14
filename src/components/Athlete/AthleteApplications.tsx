@@ -3,6 +3,7 @@ import { Calendar, MapPin, AlertCircle, Clock, X, QrCode, FileCheck, Download } 
 import { QRCodeSVG } from 'qrcode.react';
 import { MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
+import { useGetAthleteApplicationsQuery } from '../../store/api/athleteApi';
 
 interface AthleteApplicationsProps {
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -30,8 +31,22 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
   const athlete = useAppSelector((state) => state.auth.athlete);
   const [selectedApplication, setSelectedApplication] = useState<ApplicationDetail | null>(null);
 
-  // Fallback default applications for display if none are in state
-  const applications = athlete.appliedCompetitions || [
+  // Fetch real applications from backend API
+  const { data: backendApps = [], isLoading: isLoadingApps } = useGetAthleteApplicationsQuery();
+
+  // Combine backend applications with fallback state
+  const applications = (backendApps && backendApps.length > 0)
+    ? backendApps.map(a => ({
+        meetId: a.eventId,
+        meetTitle: a.title,
+        disciplines: Array.isArray(a.disciplines) ? a.disciplines : [a.disciplines || 'General Entry'],
+        status: a.statusLabel === 'CONFIRMED' ? 'Approved' : a.statusLabel,
+        appliedDate: a.appliedAt ? a.appliedAt.split('T')[0] : '2026-10-13',
+        location: a.location || 'Addis Ababa Stadium',
+        organizer: a.organizer || 'EAF Competitions Department',
+        qrCode: a.qrCodeValue || a.id,
+      }))
+    : athlete.appliedCompetitions || [
     {
       meetId: "MEET-2026-01",
       meetTitle: "Addis Ababa International Grand Prix 2026",

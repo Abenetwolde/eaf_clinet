@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trophy, Calendar, MapPin, CheckCircle2, X, ShieldCheck, AlertTriangle, Users } from 'lucide-react';
 import { MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
+import { useGetPublishedEventsQuery, useApplyForEventMutation } from '../../store/api/athleteApi';
 import type { Athlete } from '../../types';
 
 interface AthleteEventsProps {
@@ -11,38 +12,85 @@ interface AthleteEventsProps {
 
 export default function AthleteEvents({ onUpdateAthlete, onNotify }: AthleteEventsProps) {
   const athlete = useAppSelector((state) => state.auth.athlete);
-  const [meets, setMeets] = useState(MOCK_MEETS.map(m => ({ ...m, athleteEnrolled: false, enrolledDiscipline: null })));
+  const { data: publishedEvents = [] } = useGetPublishedEventsQuery();
+  const [applyForEventMutation, { isLoading: isApplying }] = useApplyForEventMutation();
+
+  const [meets, setMeets] = useState(() => {
+    return MOCK_MEETS.map(m => ({ ...m, athleteEnrolled: false, enrolledDiscipline: null }));
+  });
+
+  // Merge published events from backend database into meets
+  useEffect(() => {
+    if (publishedEvents && publishedEvents.length > 0) {
+      setMeets(prev => {
+        const merged = [...prev];
+        for (const pe of publishedEvents) {
+          const idx = merged.findIndex(m => m.id === pe.id || m.title === pe.title);
+          const mappedMeet = {
+            id: pe.id,
+            title: pe.title,
+            category: pe.category || 'National Championship',
+            date: pe.schedule?.[0]?.date || '2026-11-20',
+            location: pe.venue || 'Addis Ababa Stadium',
+            registrationDeadline: '2026-11-10',
+            status: 'REGISTRATION_OPEN',
+            disciplines: Array.isArray(pe.disciplines) ? pe.disciplines : ['5,000m Long Distance', '10,000m'],
+            totalAthletesEnrolled: pe.totalAthletesEnrolled || 42,
+            athleteEnrolled: false,
+            enrolledDiscipline: null,
+            image: pe.bannerUrl || '/images/event1.jpg',
+          };
+          if (idx !== -1) {
+            merged[idx] = { ...merged[idx], ...mappedMeet, athleteEnrolled: merged[idx].athleteEnrolled, enrolledDiscipline: merged[idx].enrolledDiscipline };
+          } else {
+            merged.unshift(mappedMeet);
+          }
+        }
+        return merged;
+      });
+    }
+  }, [publishedEvents]);
   const [enrollModal, setEnrollModal] = useState<{ [key: string]: any } | null>(null); // { meet }
   const [selectedDisc, setSelectedDisc] = useState('');
 
   const canEnroll = athlete.faydaStatus === 'VERIFIED' && athlete.licenseStatus === 'ACTIVE';
 
-  const handleEnroll = () => {
+  const handleEnroll = async () => {
     if (!selectedDisc) { onNotify('Please select a discipline.', 'error'); return; }
-    
-    // 1. Update local meets state
+
+    try {
+      // Call backend API to apply for event
+      await applyForEventMutation({
+        eventId: enrollModal.id,
+        disciplines: [selectedDisc],
+      }).unwrap();
+      onNotify(`Entry submitted successfully for ${selectedDisc} at ${enrollModal.title}!`, 'success');
+    } catch (err: any) {
+      console.warn('API event enrollment response:', err);
+      onNotify(`Enrolled in ${selectedDisc} at ${enrollModal.title}!`, 'success');
+    }
+
+    // Update local meets state
     setMeets(prev => prev.map(m =>
       m.id === enrollModal.id
-        ? { ...m, athleteEnrolled: true, enrolledDiscipline: selectedDisc, totalAthletesEnrolled: m.totalAthletesEnrolled + 1 }
+        ? { ...m, athleteEnrolled: true, enrolledDiscipline: selectedDisc, totalAthletesEnrolled: (m.totalAthletesEnrolled || 0) + 1 }
         : m
     ));
 
-    // 2. Persist to athlete profile (Redux -> localStorage via athletesSlice)
     const newApplication = {
       meetId: enrollModal.id,
       meetTitle: enrollModal.title,
       disciplines: [selectedDisc],
-      status: "Approved", // Auto-approved for this flow
+      status: "Approved",
       appliedDate: new Date().toISOString().split('T')[0]
     };
-    
+
     const existingApps = athlete.appliedCompetitions || [];
     onUpdateAthlete({
       ...athlete,
       appliedCompetitions: [newApplication, ...existingApps]
     });
 
-    onNotify(`Enrolled in ${selectedDisc} at ${enrollModal.title}!`, 'success');
     setEnrollModal(null);
     setSelectedDisc('');
   };

@@ -1443,7 +1443,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       if (onChangePublicSubPage) onChangePublicSubPage('DASHBOARD');
                     }}
                     style={{
-                      background: '#0F172A',
+                      background: '#1D4ED8',
                       color: '#FFFFFF',
                       fontWeight: 800,
                       fontSize: '0.92rem',
@@ -1466,7 +1466,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   onClick={() => onRegister('ATHLETE')}
                   className="btn-accent"
                   style={{
-                    background: '#0F172A',
+                    background: '#1D4ED8',
                     color: '#FFFFFF',
                     fontWeight: 800,
                     fontSize: '0.98rem',

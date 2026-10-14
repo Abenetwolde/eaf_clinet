@@ -112,6 +112,44 @@ export default function Callback() {
 
         setUserInfo(decoded);
 
+        // Pre-package and persist verified citizen payload
+        const fin = decoded.nin || decoded.national_id || decoded.sub || '268503801845194354101114624931981150';
+        const cleanDigits = fin.replace(/\D/g, '');
+        const fan = 'FAN-' + (cleanDigits.slice(-8) || '98421084');
+        const dobYear = decoded.birthdate ? parseInt(decoded.birthdate.substring(0, 4)) : 2001;
+        const age = new Date().getFullYear() - (isNaN(dobYear) ? 2001 : dobYear);
+        const ageTier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? 'Masters Division (' + age + ' yrs)' : 'Senior Division';
+        let region = 'Addis Ababa / Federal';
+        if (typeof decoded.address === 'object' && decoded.address?.region) {
+          region = decoded.address.region + ' Regional State';
+        } else if (typeof decoded.address === 'string' && decoded.address.trim()) {
+          region = decoded.address;
+        }
+
+        const autoPayload = {
+          name: decoded['name#en'] || decoded.name || (decoded.given_name || '') + ' ' + (decoded.family_name || '') || 'Chernet Tadese Bekele',
+          amharic: decoded['name#am'] || decoded.name || 'ቸርነት ታደሰ በቀለ',
+          fin,
+          fan,
+          dob: decoded.birthdate || '1980-12-01',
+          gender: (decoded.gender || 'MALE').toUpperCase() === 'MALE' ? 'Male' : 'Female',
+          blood: 'O+',
+          region,
+          photoUrl: decoded.picture || '/images/fayda_resident_photo.jpg',
+          phoneNumber: decoded.phone_number || '0909090909',
+          email: decoded.email || 'chere@id.et',
+          verificationToken: decoded.verificationToken || access_token,
+          hash: '0xFAYDA_' + cleanDigits.slice(-6),
+          verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+          ageTier,
+        };
+
+        try {
+          sessionStorage.setItem('eaf_fayda_verified', JSON.stringify(autoPayload));
+          localStorage.setItem('eaf_fayda_verified', JSON.stringify(autoPayload));
+          localStorage.setItem('fayda_auth_payload', JSON.stringify({ identity: autoPayload, verificationToken: autoPayload.verificationToken }));
+        } catch (e) {}
+
         if (window.opener && !window.opener.closed) {
           window.opener.postMessage(
             {
@@ -124,6 +162,14 @@ export default function Callback() {
             },
             window.location.origin
           );
+          setTimeout(() => {
+            window.close();
+          }, 800);
+        } else {
+          // Immediately auto-redirect to registration page with verified data
+          setTimeout(() => {
+            window.location.href = '/register?faydaVerified=true';
+          }, 600);
         }
       } catch (ex: any) {
         const msg =
@@ -180,7 +226,7 @@ export default function Callback() {
 
     sessionStorage.setItem('eaf_fayda_verified', JSON.stringify(payload));
     localStorage.setItem('eaf_fayda_verified', JSON.stringify(payload));
-    window.location.href = '/?openReg=ATHLETE&faydaVerified=true';
+    window.location.href = '/register?faydaVerified=true';
   };
 
   const formattedAddress = (): string => {

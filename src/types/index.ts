@@ -2,7 +2,7 @@
 // Shared TypeScript types for EAF Client
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type Role = 'LANDING' | 'CLUB' | 'ATHLETE';
+export type Role = 'LANDING' | 'CLUB' | 'ATHLETE' | 'COACH';
 export type ToastType = 'success' | 'error' | 'info';
 export type LicenseStatus = 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'NONE' | 'UNLICENSED';
 export type TransferStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -176,4 +176,20 @@ export interface AuthModalConfig {
 export interface LoginData {
   club?: Club;
   athlete?: Athlete;
+}
+
+export interface Coach {
+  id: string;
+  name: string;
+  email?: string;
+  phoneNumber?: string;
+  licenseNumber?: string;
+  specialization?: string;
+  yearsOfExperience?: number;
+  clubName?: string;
+  status?: string;
+  photoUrl?: string;
+  user?: any;
+  faydaFin?: string;
+  faydaFan?: string;
 }

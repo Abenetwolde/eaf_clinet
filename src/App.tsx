@@ -7,6 +7,7 @@ import RBACSecurityMatrix from './components/Security/RBACSecurityMatrix';
 import Callback from './components/Callback';
 import AppLayout from './components/Layout/AppLayout';
 import ClientLayout from './components/Layout/ClientLayout';
+import CoachPortal from './components/Coach/CoachPortal';
 
 import ClubOverview from './components/ClubAdmin/ClubOverview';
 import RosterManagement from './components/ClubAdmin/RosterManagement';
@@ -37,13 +38,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n, LanguageSelector } from './i18n';
 
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { setRole, setClub, setAthlete, logout, setAuthLoading, setUserData } from './store/slices/authSlice';
+import { setRole, setClub, setAthlete, setCoach, logout, setAuthLoading, setUserData } from './store/slices/authSlice';
 import { addAthlete, updateAthlete, setAthletes } from './store/slices/athleteSlice';
 import { addClub, addTransfer } from './store/slices/clubSlice';
 import { useLazyGetMeQuery, useLogoutApiMutation } from './store/api/authApi';
 import { Athlete, Club, Transfer } from './types';
 
-type Role = 'LANDING' | 'CLUB' | 'ATHLETE';
+type Role = 'LANDING' | 'CLUB' | 'ATHLETE' | 'COACH';
 
 export default function App() {
   // Dedicated VeriFayda 2.0 (eSignet) OIDC callback route adapted from oidc-test-app
@@ -56,6 +57,7 @@ export default function App() {
   const currentRole = useAppSelector((state) => state.auth.role);
   const currentClub = useAppSelector((state) => state.auth.club);
   const currentAthlete = useAppSelector((state) => state.auth.athlete);
+  const currentCoach = useAppSelector((state) => state.auth.coach);
   const athletes = useAppSelector((state) => state.athletes);
   const authToken = useAppSelector((state) => state.auth.token);
   const userData = useAppSelector((state) => state.auth.userData);
@@ -280,7 +282,8 @@ export default function App() {
         urlParams.get('openReg') === 'ATHLETE' ||
         urlParams.get('faydaVerified') === 'true' ||
         urlParams.get('faydaSuccess') === 'true' ||
-        window.location.pathname.startsWith('/register')
+        window.location.pathname.startsWith('/register') ||
+        (nin && name && !isCurrentlyAuth && !sessionStorage.getItem('eaf_skip_auto_reg'))
       ) {
         if (!isCurrentlyAuth) {
           setRegModalRole('ATHLETE');
@@ -307,6 +310,30 @@ export default function App() {
     };
     window.addEventListener('openRegistrationModal', handleOpenRegistration);
     return () => window.removeEventListener('openRegistrationModal', handleOpenRegistration);
+  }, []);
+
+  // Listen for openAuthModal event
+  useEffect(() => {
+    const handleOpenAuth = (e: any) => {
+      setAuthModalConfig({
+        isOpen: true,
+        method: e.detail?.method || 'FIN',
+        credential: e.detail?.credential || '',
+      });
+    };
+    window.addEventListener('openAuthModal', handleOpenAuth);
+    return () => window.removeEventListener('openAuthModal', handleOpenAuth);
+  }, []);
+
+  // Listen for Fayda OIDC completion from popup window
+  useEffect(() => {
+    const handleFaydaMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'FAYDA_OIDC_SUCCESS' && e.data.payload?.userInfo) {
+        setRegModalRole('ATHLETE');
+      }
+    };
+    window.addEventListener('message', handleFaydaMessage);
+    return () => window.removeEventListener('message', handleFaydaMessage);
   }, []);
 
   const [authModalConfig, setAuthModalConfig] = useState<any>(null);
@@ -385,6 +412,10 @@ export default function App() {
       setClubSubPage('OVERVIEW');
       setPublicSubPage('DASHBOARD'); // Reset to dashboard so club admin sees their dashboard first
       handleNotify(`Welcome back, ${data.club?.shortName || 'Club Admin'}!`, 'success');
+    } else if (role === 'COACH') {
+      if (data.coach) dispatch(setCoach(data.coach));
+      dispatch(setRole('COACH'));
+      handleNotify(`Welcome back, Coach ${data.coach?.name || 'Coach'}!`, 'success');
     } else {
       if (data.athlete) dispatch(setAthlete(data.athlete));
       dispatch(setRole('ATHLETE'));
@@ -496,10 +527,6 @@ export default function App() {
       { label: t('nav.home'), page: 'HOME' },
       { label: t('nav.competitions'), page: 'COMPETITIONS' },
       { label: t('nav.athletes'), page: 'ATHLETES' },
-      { label: 'Anti-Doping', page: 'ANTI_DOPING' },
-      { label: 'Professionals', page: 'PROFESSIONALS' },
-      { label: 'Regional Hub', page: 'REGIONS' },
-      { label: 'Representatives', page: 'REPRESENTATIVES' },
       { label: t('nav.media'), page: 'MEDIA' },
     ];
 
@@ -526,8 +553,20 @@ export default function App() {
         >
           {/* Logo + brand */}
           <div
-            className="flex items-center gap-[clamp(0.4rem,0.8vw,0.75rem)] cursor-pointer min-w-0 shrink-0"
-            onClick={() => handleNavClick('HOME')}
+            className="flex items-center gap-[clamp(0.4rem,0.8vw,0.75rem)] cursor-pointer min-w-0 shrink-0 transition-transform active:scale-95"
+            onClick={() => {
+              setPublicSubPage('HOME');
+              setRegModalRole(null);
+              setMobileMenuOpen(false);
+              setNavNonce((prev) => prev + 1);
+              if (typeof window !== 'undefined') {
+                window.history.pushState(null, '', '/');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            title="Return to Home Page"
           >
             <div className="w-[clamp(2.1rem,3.4vw,2.75rem)] h-[clamp(2.1rem,3.4vw,2.75rem)] bg-white rounded-xl flex items-center justify-center overflow-hidden shrink-0 border border-[#E2E8F0] p-0.5">
               <img
@@ -726,8 +765,8 @@ export default function App() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: '#0F172A',
-                  boxShadow: '0 2px 6px rgba(15, 23, 42, 0.12)',
+                  background: '#1D4ED8',
+                  boxShadow: '0 4px 14px rgba(29, 78, 216, 0.25)',
                   color: '#FFF',
                   border: 'none',
                   cursor: 'pointer'
@@ -934,6 +973,7 @@ export default function App() {
             role={regModalRole}
             verifiedIdentity={verifiedCitizen}
             onClose={() => {
+              sessionStorage.setItem('eaf_skip_auto_reg', 'true');
               setRegModalRole(null);
               window.history.pushState(null, '', '/');
             }}
@@ -974,6 +1014,8 @@ export default function App() {
           <AuthModal
             onClose={() => setAuthModalConfig(null)}
             onLoginSuccess={handleLoginSuccess}
+            initialMethod={authModalConfig?.method}
+            initialCredential={authModalConfig?.credential}
             onOpenRegistration={() => {
               setAuthModalConfig(null);
               setRegModalRole('ATHLETE');
@@ -1123,6 +1165,20 @@ export default function App() {
         )}
         {sharedModals}
       </ClientLayout>
+    );
+  }
+
+  if (currentRole === 'COACH') {
+    return (
+      <CoachPortal
+        currentCoach={currentCoach}
+        onLogout={handleLogout}
+        onNotify={handleNotify}
+        onGoHome={() => {
+          setPublicSubPage('HOME');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
     );
   }
 

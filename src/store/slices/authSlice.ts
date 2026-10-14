@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { Role, Club, Athlete } from '../../types';
+import type { Role, Club, Athlete, Coach } from '../../types';
 import { MOCK_CLUBS, MOCK_ATHLETES } from '../../data/mockData';
 import {
   STORAGE_KEYS,
@@ -26,6 +26,7 @@ export interface AuthState {
   status: 'idle' | 'authenticated' | 'loading';
   club: Club;
   athlete: Athlete;
+  coach?: Coach | null;
   token: string | null;
   refreshToken: string | null;
   userId: string | null;
@@ -34,7 +35,7 @@ export interface AuthState {
 
 function readInitialRole(): Role {
   const saved = readString(STORAGE_KEYS.role);
-  if (saved === 'CLUB' || saved === 'ATHLETE' || saved === 'LANDING') return saved;
+  if (saved === 'CLUB' || saved === 'ATHLETE' || saved === 'COACH' || saved === 'LANDING') return saved;
   return 'LANDING';
 }
 
@@ -82,6 +83,7 @@ const initialState: AuthState = {
   status: savedToken && initialRole !== 'LANDING' ? 'authenticated' : initialRole === 'LANDING' ? 'idle' : 'idle',
   club: readInitialClub(),
   athlete: readInitialAthlete(),
+  coach: null,
   token: savedToken,
   refreshToken: readInitialRefreshToken(),
   userId: readInitialUserId(),
@@ -135,6 +137,9 @@ const authSlice = createSlice({
       state.athlete = action.payload;
       writeString(STORAGE_KEYS.currentAthleteId, action.payload.id);
     },
+    setCoach(state, action: PayloadAction<Coach | null>) {
+      state.coach = action.payload;
+    },
     setToken(state, action: PayloadAction<string | null>) {
       state.token = action.payload;
       if (action.payload) writeString(STORAGE_KEYS.accessToken, action.payload);
@@ -154,17 +159,19 @@ const authSlice = createSlice({
         role: Role;
         club?: Club;
         athlete?: Athlete;
+        coach?: Coach;
         token?: string;
         refreshToken?: string;
         userId?: string;
         userData?: UserDataFromApi;
       }>
     ) {
-      const { role, club, athlete, token, refreshToken, userId, userData } = action.payload;
+      const { role, club, athlete, coach, token, refreshToken, userId, userData } = action.payload;
       state.role = role;
       state.status = role === 'LANDING' ? 'idle' : 'authenticated';
       if (club) state.club = club;
       if (athlete) state.athlete = athlete;
+      if (coach) state.coach = coach;
       if (token !== undefined) state.token = token;
       if (refreshToken !== undefined) state.refreshToken = refreshToken;
       if (userId !== undefined) state.userId = userId;
@@ -197,5 +204,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setRole, setClub, setAthlete, setToken, setUserData, setAuthLoading, login, logout } = authSlice.actions;
+export const { setRole, setClub, setAthlete, setCoach, setToken, setUserData, setAuthLoading, login, logout } = authSlice.actions;
 export default authSlice.reducer;
