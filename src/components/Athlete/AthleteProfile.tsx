@@ -4,6 +4,9 @@ import {
   Calendar, BadgeCheck, CheckCircle2, QrCode, Copy, Check,
   AlertCircle, Heart, Weight, Lock, ArrowLeft, Award, ExternalLink, Globe, Plane, LogOut
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { Download, Clock } from 'lucide-react';
+import { useGetAthleteApplicationsQuery } from '../../store/api/athleteApi';
 import { useAppSelector } from '../../store/hooks';
 import type { Athlete } from '../../types';
 
@@ -15,6 +18,92 @@ interface AthleteProfileProps {
 
 export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: AthleteProfileProps) {
   const athlete = useAppSelector((state) => state.auth.athlete);
+
+  // Real-time backend applications query with polling
+  const { data: backendApps = [] } = useGetAthleteApplicationsQuery(undefined, { pollingInterval: 5000 });
+
+  // Combined applications list (backend + local)
+  const applications = (backendApps && backendApps.length > 0)
+    ? backendApps.map(a => ({
+        id: a.id || a.eventId,
+        meetId: a.eventId,
+        title: a.title,
+        disciplines: Array.isArray(a.disciplines) ? a.disciplines : [a.disciplines || 'General Entry'],
+        status: (a.statusLabel === 'CONFIRMED' || a.statusLabel === 'Approved' || a.qrCodeStatus === 'APPROVED') ? 'Approved' : (a.statusLabel === 'REJECTED' || a.statusLabel === 'Rejected') ? 'Rejected' : 'Pending',
+        appliedDate: a.appliedAt ? a.appliedAt.split('T')[0] : '2026-10-14',
+        location: a.location || 'Addis Ababa National Stadium',
+        qrCodeValue: a.qrCodeValue || a.id,
+      }))
+    : (athlete.appliedCompetitions && athlete.appliedCompetitions.length > 0)
+    ? athlete.appliedCompetitions.map((c: any) => ({
+        id: c.meetId,
+        meetId: c.meetId,
+        title: c.meetTitle,
+        disciplines: c.disciplines || ['5,000m'],
+        status: c.status || 'Pending',
+        appliedDate: c.appliedDate || '2026-10-14',
+        location: 'Addis Ababa National Stadium',
+        qrCodeValue: `EAF-${c.meetId}-${athlete.id}`,
+      }))
+    : [];
+
+  const approvedCompetitions = applications.filter(a => a.status === 'Approved');
+  const pendingCompetitions = applications.filter(a => a.status === 'Pending');
+
+  const handleDownloadCompetitionPass = (app: any) => {
+    const meetName = app.title || 'EAF Competition';
+    const venue = app.location || 'Addis Ababa National Stadium';
+    const date = app.appliedDate || '2026';
+    const disciplinesStr = app.disciplines.join(', ');
+    const codeId = `EAF-${app.meetId?.substring(0, 8) || 'PASS'}-${athlete.id?.substring(0, 8) || 'ATH'}`;
+
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="850" viewBox="0 0 600 850">
+      <defs>
+        <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#06152B"/>
+          <stop offset="50%" stop-color="#0A2540"/>
+          <stop offset="100%" stop-color="#0F172A"/>
+        </linearGradient>
+        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#F59E0B"/>
+          <stop offset="50%" stop-color="#FCD34D"/>
+          <stop offset="100%" stop-color="#D97706"/>
+        </linearGradient>
+      </defs>
+      <rect width="600" height="850" rx="32" fill="url(#bgGrad)" stroke="#F59E0B" stroke-width="3"/>
+      <rect x="0" y="0" width="600" height="12" rx="6" fill="url(#goldGrad)"/>
+      <text x="300" y="55" font-family="sans-serif" font-size="14" font-weight="900" fill="#FCD34D" text-anchor="middle" letter-spacing="3">ETHIOPIAN ATHLETICS FEDERATION</text>
+      <text x="300" y="82" font-family="sans-serif" font-size="20" font-weight="900" fill="#FFFFFF" text-anchor="middle">OFFICIAL COMPETITION ACCREDITATION PASS</text>
+      <rect x="50" y="115" width="500" height="95" rx="16" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+      <text x="75" y="145" font-family="sans-serif" font-size="16" font-weight="900" fill="#FFFFFF">${meetName.replace(/&/g, '&amp;')}</text>
+      <text x="75" y="172" font-family="sans-serif" font-size="12" font-weight="600" fill="#94A3B8">Venue: ${venue.replace(/&/g, '&amp;')} | Date: ${date}</text>
+      <text x="75" y="194" font-family="sans-serif" font-size="12" font-weight="700" fill="#38BDF8">Disciplines: ${disciplinesStr.replace(/&/g, '&amp;')}</text>
+      <rect x="50" y="230" width="500" height="230" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+      <circle cx="120" cy="310" r="50" fill="#006633" stroke="#FCD34D" stroke-width="3"/>
+      <text x="120" y="318" font-family="sans-serif" font-size="32" font-weight="900" fill="#FFFFFF" text-anchor="middle">ETH</text>
+      <text x="195" y="275" font-family="sans-serif" font-size="18" font-weight="900" fill="#FFFFFF">${athlete.name}</text>
+      <text x="195" y="298" font-family="sans-serif" font-size="13" font-weight="700" fill="#FCD34D">${athlete.amharicName || 'የኢትዮጵያ አትሌቲክስ ፌዴሬሽን'}</text>
+      <text x="195" y="325" font-family="sans-serif" font-size="12" font-weight="600" fill="#94A3B8">National FIN: <tspan fill="#FFFFFF" font-family="monospace">${athlete.faydaFin || '7961-3131-0300'}</tspan></text>
+      <text x="195" y="347" font-family="sans-serif" font-size="12" font-weight="600" fill="#94A3B8">EAF License: <tspan fill="#10B981" font-weight="700">${athlete.eafLicenseNo || 'EAF-LIC-2026'}</tspan></text>
+      <rect x="195" y="365" width="220" height="28" rx="8" fill="#065F46"/>
+      <text x="305" y="384" font-family="sans-serif" font-size="11" font-weight="900" fill="#A7F3D0" text-anchor="middle">✓ ELIGIBLE TO PARTICIPATE</text>
+      <rect x="175" y="485" width="250" height="250" rx="20" fill="#FFFFFF"/>
+      <text x="300" y="620" font-family="sans-serif" font-size="14" font-weight="900" fill="#0F172A" text-anchor="middle">[ SECURE VERIFIED QR MATRIX ]</text>
+      <text x="300" y="760" font-family="monospace" font-size="14" font-weight="900" fill="#FCD34D" text-anchor="middle" letter-spacing="2">PASS ID: ${codeId}</text>
+      <text x="300" y="810" font-family="sans-serif" font-size="10" font-weight="600" fill="#64748B" text-anchor="middle">ISSUED BY ETHIOPIAN ATHLETICS FEDERATION · CALL ROOM ACCREDITATION</text>
+    </svg>`;
+
+    const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `EAF_Accreditation_Pass_${meetName.replace(/\s+/g, '_')}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    onNotify(`Accreditation Pass downloaded for ${meetName}`, 'success');
+  };
 
   // Editable fields
   const [region, setRegion] = useState(athlete.region || 'Addis Ababa');
@@ -399,6 +488,100 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
               <span>WA ID: <strong className="text-white">ETH-2026-092</strong></span>
               <span className="text-emerald-400 font-bold">✓ Active License</span>
             </div>
+          </div>
+
+          {/* 1B. Official Competition Accreditation Passes (Feature 6) */}
+          <div className="bg-white dark:bg-[#121829] rounded-2xl border-2 border-emerald-500/40 dark:border-emerald-500/30 p-5 shadow-lg space-y-4 relative overflow-hidden">
+            <div className="flex justify-between items-center pb-2.5 border-b border-slate-200 dark:border-slate-800">
+              <div>
+                <div className="text-[0.68rem] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheck size={14} /> Competition Accreditations
+                </div>
+                <div className="text-sm font-extrabold text-slate-900 dark:text-white">Approved Entry Passes</div>
+              </div>
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                {approvedCompetitions.length} Approved
+              </span>
+            </div>
+
+            {approvedCompetitions.length > 0 ? (
+              <div className="space-y-4">
+                {approvedCompetitions.map((app, idx) => (
+                  <div key={idx} className="p-3.5 rounded-xl bg-gradient-to-br from-emerald-50/80 to-slate-50 dark:from-emerald-950/20 dark:to-slate-800/40 border border-emerald-200 dark:border-emerald-800/60 space-y-3">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <div className="text-xs font-black text-slate-900 dark:text-white leading-snug">
+                          {app.title}
+                        </div>
+                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+                          {app.disciplines.join(' · ')}
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded bg-emerald-500 text-white shrink-0">
+                        ELIGIBLE
+                      </span>
+                    </div>
+
+                    {/* Verified 2D QR Code Matrix */}
+                    <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <div className="bg-white p-1 rounded-lg shrink-0 shadow-sm border border-slate-100">
+                        <QRCodeSVG 
+                          value={app.qrCodeValue || JSON.stringify({
+                            athlete: athlete.name,
+                            license: athlete.eafLicenseNo || 'EAF-LIC-2026',
+                            faydaFin: athlete.faydaFin || '',
+                            competition: app.title,
+                            disciplines: app.disciplines,
+                            eligibility: 'OFFICIAL_ATHLETE_ELIGIBLE',
+                            approvalRef: app.id,
+                            federation: 'Ethiopian Athletics Federation',
+                            status: 'APPROVED'
+                          })}
+                          size={76}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 text-[11px]">
+                        <div className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">
+                          REF: EAF-{app.meetId.substring(0, 8)}
+                        </div>
+                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
+                          ✓ Call Room Pass Generated
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-1">
+                          Scan for lane assignment &amp; entry check-in
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadCompetitionPass(app)}
+                      className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer border-0"
+                    >
+                      <Download size={13} />
+                      <span>Download Official Accreditation Pass (SVG)</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-200 dark:border-slate-800 text-center space-y-1.5">
+                <QrCode size={24} className="text-slate-400 mx-auto" />
+                <div className="text-xs font-bold text-slate-700 dark:text-slate-300">No Approved Passes Yet</div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  When you register for competitions and the federation admin approves your entry, your verified accreditation QR pass will appear here automatically.
+                </p>
+              </div>
+            )}
+
+            {pendingCompetitions.length > 0 && (
+              <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 text-xs flex items-center justify-between">
+                <span className="font-bold flex items-center gap-1.5">
+                  <Clock size={13} /> {pendingCompetitions.length} Entry Pending Approval
+                </span>
+                <span className="text-[10px] font-extrabold uppercase">QR Locked</span>
+              </div>
+            )}
           </div>
 
           {/* 2. Security & Compliance Status */}

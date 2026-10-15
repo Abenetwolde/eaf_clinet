@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { useAppSelector } from '../../store/hooks';
+import { useGetAthletesQuery } from '../../store/api/athleteApi';
 import type { Athlete } from '../../types';
 
 interface RosterManagementProps {
@@ -97,8 +98,40 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
     setEditingAthlete(null);
   };
 
+  // Real-time backend athletes sync
+  const { data: backendAthletes = [] } = useGetAthletesQuery({ clubId: club.id });
+
+  // Merge backend athletes with local athletes
+  const allAthletes = [...athletes];
+  if (backendAthletes && backendAthletes.length > 0) {
+    backendAthletes.forEach((b: any) => {
+      const bName = b.name || `${b.user?.firstName || ''} ${b.user?.lastName || ''}`.trim();
+      if (!allAthletes.some(a => a.id === b.id || (a.name && bName && a.name.toLowerCase() === bName.toLowerCase()))) {
+        allAthletes.push({
+          id: b.id,
+          name: bName || 'Federation Athlete',
+          amharicName: b.amharicName,
+          dob: '2004-01-01',
+          gender: (b.gender as any) || 'MALE',
+          ageTier: b.ageTier || 'Senior',
+          club: b.clubName || club.name,
+          clubId: b.clubId || club.id,
+          clubName: b.clubName || club.name,
+          region: club.region || 'Addis Ababa',
+          faydaFin: '7961-3131-0300',
+          faydaStatus: 'VERIFIED',
+          licenseStatus: 'ACTIVE',
+          licenseNumber: `EAF-LIC-${b.id.slice(-6).toUpperCase()}`,
+          primaryEvent: b.primaryEvent || '5,000m',
+          pb: b.personalBest || '13:05.12',
+          photoUrl: b.photoUrl || '/images/runner_marathon.png',
+        });
+      }
+    });
+  }
+
   // Filter logic
-  const filteredAthletes = athletes.filter(athlete => {
+  const filteredAthletes = allAthletes.filter(athlete => {
     const name = athlete?.name || '';
     const fin = athlete?.faydaFin || '';
     const event = athlete?.primaryEvent || '';

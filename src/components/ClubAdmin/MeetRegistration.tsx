@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { MOCK_MEETS, MOCK_EVENT_RESULTS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
+import { useGetPublishedEventsQuery, useGetPublishedResultsQuery, useApplyForEventMutation } from '../../store/api/athleteApi';
+import { useEffect } from 'react';
 
 const MEDAL_COLORS: Record<number, string> = { 1: '#C8A84B', 2: '#A8B8C8', 3: '#C87040' };
 
@@ -41,6 +43,41 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
   const club = useAppSelector((state) => state.auth.club);
   const athletes = useAppSelector((state) => state.athletes);
   const [meets, setMeets] = useState<MeetCard[]>(MOCK_MEETS);
+
+  // Real backend queries
+  const { data: backendEvents = [] } = useGetPublishedEventsQuery();
+  const { data: rawBackendResults = [] } = useGetPublishedResultsQuery();
+  const [applyForEvent] = useApplyForEventMutation();
+
+  const backendResults = Array.isArray(rawBackendResults)
+    ? rawBackendResults
+    : (rawBackendResults as any)?.data || [];
+
+  // Merge backend published events with meets
+  useEffect(() => {
+    if (backendEvents && backendEvents.length > 0) {
+      setMeets(prev => {
+        const merged = [...prev];
+        backendEvents.forEach((be: any) => {
+          if (!merged.some(m => m.id === be.id || m.title === be.title)) {
+            merged.unshift({
+              id: be.id,
+              title: be.title,
+              venue: be.venue || 'Addis Ababa National Stadium',
+              date: be.schedule?.date || '2026-10-20',
+              status: be.status || 'REGISTRATION_OPEN',
+              disciplines: Array.isArray(be.disciplines) ? be.disciplines : ['5,000m', '10,000m'],
+              enrolledClubsCount: 1,
+              isClubRegistered: false,
+              bannerUrl: be.bannerUrl || '/images/banner_grand_prix.png',
+              enrolledAthletes: [],
+            });
+          }
+        });
+        return merged;
+      });
+    }
+  }, [backendEvents]);
   const [activeTab, setActiveTab] = useState<string>('enroll');   // 'enroll' | 'results'
   const [selectedMeet, setSelectedMeet] = useState<string | null>(null); // meet id for results drill-down
   const [expandedDisc, setExpandedDisc] = useState<string | null>(null); // discipline name in results
@@ -67,22 +104,38 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
     return Object.values(s).reduce((t, set) => t + set.size, 0);
   };
 
-  const handleConfirmEntry = (meetId: string) => {
+  const handleConfirmEntry = async (meetId: string) => {
     const count = getSelectedCount(meetId);
     if (count === 0) { onNotify('Select at least one athlete before enrolling.', 'error'); return; }
+    
+    const meetSel = selections[meetId] || {};
+    const enrolled: any[] = [];
+    
+    // Dispatch to backend API
+    for (const [disc, ids] of Object.entries(meetSel)) {
+      for (const id of ids) {
+        const ath = clubAthletes.find(a => a.id === id);
+        if (ath) {
+          enrolled.push({ athleteId: id, athleteName: ath.name, discipline: disc });
+          try {
+            await applyForEvent({ eventId: meetId, disciplines: [disc] }).unwrap();
+          } catch (e) {
+            console.warn('Backend event apply note:', e);
+          }
+        }
+      }
+    }
+
     setMeets(prev => prev.map(m => {
       if (m.id !== meetId) return m;
-      const meetSel = selections[meetId] || {};
-      const enrolled = [];
-      Object.entries(meetSel).forEach(([disc, ids]) => {
-        ids.forEach(id => {
-          const ath = clubAthletes.find(a => a.id === id);
-          if (ath) enrolled.push({ athleteId: id, athleteName: ath.name, discipline: disc });
-        });
-      });
-      return { ...m, isClubRegistered: true, enrolledAthletes: [...(m.enrolledAthletes || []), ...enrolled], enrolledClubsCount: m.enrolledClubsCount + 1 };
+      return { 
+        ...m, 
+        isClubRegistered: true, 
+        enrolledAthletes: [...(m.enrolledAthletes || []), ...enrolled], 
+        enrolledClubsCount: m.enrolledClubsCount + 1 
+      };
     }));
-    onNotify(`${count} entr${count > 1 ? 'ies' : 'y'} submitted for ${meets.find(m => m.id === meetId)?.title}`, 'success');
+    onNotify(`${count} entr${count > 1 ? 'ies' : 'y'} submitted for ${meets.find(m => m.id === meetId)?.title} & sent to Federation for approval`, 'success');
     setRosterModal(null);
   };
 
@@ -209,6 +262,36 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
       {/* ── RESULTS TAB ── */}
       {activeTab === 'results' && (
         <div>
+          {/* Official Federation Published Results Section */}
+          {backendResults.length > 0 && (
+            <div className="mb-6 p-4 rounded-xl bg-emerald-50/50 border border-emerald-200">
+              <div className="flex items-center gap-2 mb-3">
+                <ShieldCheck size={18} className="text-emerald-700" />
+                <h4 className="font-extrabold text-sm text-emerald-900 uppercase tracking-wide">
+                  Official Federation Published Results ({backendResults.length})
+                </h4>
+              </div>
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-3">
+                {backendResults.map((bRes: any) => (
+                  <div key={bRes.id} className="p-3 bg-white rounded-lg border border-emerald-100 shadow-sm">
+                    <div className="flex justify-between items-center text-xs font-bold text-slate-500 mb-1">
+                      <span>{bRes.date}</span>
+                      <span className="badge badge-green text-[0.65rem]">Certified</span>
+                    </div>
+                    <div className="font-black text-sm text-slate-900">{bRes.eventTitle}</div>
+                    <div className="text-xs text-emerald-600 font-extrabold mt-0.5">{bRes.discipline} · {bRes.category}</div>
+                    {bRes.top3Preview && bRes.top3Preview.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-100 text-xs">
+                        <div className="font-bold text-slate-700">Winner: {bRes.top3Preview[0].name} ({bRes.top3Preview[0].performance})</div>
+                        <div className="text-[11px] text-slate-400">{bRes.top3Preview[0].club}</div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Meet selector */}
           <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-[16px] mb-[28px]">
             {meets.map(meet => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Trophy, Medal, ChevronDown, ChevronUp, Calendar, MapPin } from 'lucide-react';
+import { Trophy, Medal, ChevronDown, ChevronUp, Calendar, MapPin, ShieldCheck, Award, Sparkles } from 'lucide-react';
 import { MOCK_MEETS, MOCK_EVENT_RESULTS } from '../../data/mockData';
+import { useGetPublishedResultsQuery, useGetResultDetailQuery } from '../../store/api/athleteApi';
 
 interface EventResultsProps {
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -10,10 +11,24 @@ const MEDAL_COLORS: Record<number, string> = { 1: '#C8A84B', 2: '#A8B8C8', 3: '#
 
 export default function EventResults({ onNotify }: EventResultsProps) {
   const [selectedMeet, setSelectedMeet] = useState<string | null>(null);
-  const [expandedDisc, setExpandedDisc] = useState<number | null>(null);
+  const [selectedBackendResultId, setSelectedBackendResultId] = useState<string | null>(null);
+  const [expandedDisc, setExpandedDisc] = useState<number | null>(0);
+
+  // Real-time backend published results
+  const { data: rawBackendResults = [], isLoading: isLoadingBackend } = useGetPublishedResultsQuery();
+  const backendResults = Array.isArray(rawBackendResults)
+    ? rawBackendResults
+    : (rawBackendResults as any)?.data || [];
+
+  // Single backend result detail query
+  const { data: backendDetail } = useGetResultDetailQuery(selectedBackendResultId || '', {
+    skip: !selectedBackendResultId,
+  });
 
   const selectedMeetObj = selectedMeet ? MOCK_MEETS.find(m => m.id === selectedMeet) : null;
-  const meetResults = selectedMeet && selectedMeetObj && selectedMeetObj.status !== 'REGISTRATION_OPEN' && selectedMeetObj.status !== 'UPCOMING' ? (MOCK_EVENT_RESULTS[selectedMeet] || []) : [];
+  const meetResults = selectedMeet && selectedMeetObj && selectedMeetObj.status !== 'REGISTRATION_OPEN' && selectedMeetObj.status !== 'UPCOMING'
+    ? (MOCK_EVENT_RESULTS[selectedMeet] || [])
+    : [];
 
   return (
     <div>
@@ -23,10 +38,229 @@ export default function EventResults({ onNotify }: EventResultsProps) {
           <Trophy size={24} color="#C8A84B" />
           <h3 className="text-[1.5rem] font-black">Event Results &amp; Champions</h3>
         </div>
-        <p className="text-text-muted text-[0.88rem]">Official results from EAF-sanctioned meets</p>
+        <p className="text-text-muted text-[0.88rem]">
+          Official verified results and rankings from EAF-sanctioned national &amp; regional championships
+        </p>
       </div>
 
-      {/* Meet selector grid */}
+      {/* Official Backend Published Results Section */}
+      {backendResults.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <ShieldCheck size={18} className="text-emerald-600" />
+            <h4 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              Official Federation Published Results ({backendResults.length})
+            </h4>
+            <span className="badge badge-green text-[0.7rem] px-2 py-0.5">Live Certified</span>
+          </div>
+
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-4">
+            {backendResults.map((item: any) => {
+              const isSelected = selectedBackendResultId === item.id;
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    setSelectedMeet(null);
+                    setSelectedBackendResultId(isSelected ? null : item.id);
+                    setExpandedDisc(0);
+                  }}
+                  className={`rounded-2xl p-4.5 cursor-pointer transition-all duration-200 border-2 ${
+                    isSelected
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 shadow-md ring-2 ring-emerald-500/20'
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="flex justify-between items-start gap-2 mb-2">
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 uppercase tracking-wide">
+                      {item.statusLabel || 'Official Result'}
+                    </span>
+                    <span className="text-xs font-bold text-slate-400">
+                      {item.totalFinishers || item.top3Preview?.length || 1} Finishers
+                    </span>
+                  </div>
+
+                  <h5 className="font-extrabold text-slate-900 dark:text-white text-base mb-1">
+                    {item.eventTitle}
+                  </h5>
+
+                  <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-3">
+                    {item.discipline} · {item.gender} {item.category}
+                  </div>
+
+                  {item.top3Preview && item.top3Preview.length > 0 && (
+                    <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                      {item.top3Preview.map((fin: any, i: number) => (
+                        <div key={i} className="flex justify-between items-center text-slate-700 dark:text-slate-300">
+                          <span className="flex items-center gap-1.5 truncate">
+                            <span className="font-black text-amber-500">
+                              {fin.rank === '1' || i === 0 ? '🥇' : fin.rank === '2' || i === 1 ? '🥈' : '🥉'}
+                            </span>
+                            <span className="font-semibold truncate">{fin.name}</span>
+                          </span>
+                          <span className="font-mono font-extrabold text-slate-900 dark:text-white">
+                            {fin.performance}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center text-[11px] text-slate-400 pt-3 mt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className="flex items-center gap-1">
+                      <Calendar size={11} /> {item.date}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MapPin size={11} /> {item.venue}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Backend Result Expanded Detail View */}
+      {selectedBackendResultId && (
+        <div className="mb-8">
+          <div className="flex items-center gap-1.5 mb-3 text-[0.83rem]">
+            <button
+              onClick={() => setSelectedBackendResultId(null)}
+              className="bg-transparent border-0 cursor-pointer text-primary font-bold p-0"
+            >
+              ← Back to All Results
+            </button>
+            <span className="text-text-muted">/</span>
+            <span className="font-bold text-text-heading">
+              {backendDetail?.eventTitle || backendResults.find((r: any) => r.id === selectedBackendResultId)?.eventTitle}
+            </span>
+          </div>
+
+          <div className="gov-card mb-4 px-6 py-5 bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0A2540] border-0 text-white rounded-2xl shadow-xl">
+            <div className="flex justify-between items-start gap-4 flex-wrap">
+              <div>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider mb-2">
+                  <ShieldCheck size={12} /> Federation Certified Official Results
+                </span>
+                <h4 className="text-xl font-black mb-1">
+                  {backendDetail?.eventTitle || backendResults.find((r: any) => r.id === selectedBackendResultId)?.eventTitle}
+                </h4>
+                <div className="flex gap-4 text-xs text-slate-300 mt-2">
+                  <span className="flex items-center gap-1">
+                    <Calendar size={13} className="text-emerald-400" /> {backendDetail?.date || backendResults.find((r: any) => r.id === selectedBackendResultId)?.date}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MapPin size={13} className="text-emerald-400" /> {backendDetail?.venue || backendResults.find((r: any) => r.id === selectedBackendResultId)?.venue}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Award size={13} className="text-emerald-400" /> {backendDetail?.discipline || backendResults.find((r: any) => r.id === selectedBackendResultId)?.discipline}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Table of Finishers */}
+          <div className="gov-card p-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md">
+            <div className="px-5 py-3.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+              <span className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
+                Discipline: {backendDetail?.discipline || backendResults.find((r: any) => r.id === selectedBackendResultId)?.discipline}
+              </span>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                {(backendDetail?.allFinishers?.length || backendResults.find((r: any) => r.id === selectedBackendResultId)?.top3Preview?.length || 1)} Official Finishers
+              </span>
+            </div>
+
+            <div className="table-responsive">
+              <table className="gov-table w-full">
+                <thead>
+                  <tr>
+                    <th className="w-[70px]">Rank</th>
+                    <th>Athlete Name</th>
+                    <th>Club / Affiliation</th>
+                    <th>Time / Performance</th>
+                    <th className="w-[120px]">Medal / Award</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(backendDetail?.allFinishers || backendResults.find((r: any) => r.id === selectedBackendResultId)?.top3Preview || []).map((fin: any, idx: number) => {
+                    const rankNum = parseInt(fin.rank || String(idx + 1), 10);
+                    const isPodium = rankNum <= 3;
+                    const medalText = fin.medal || (rankNum === 1 ? 'GOLD' : rankNum === 2 ? 'SILVER' : rankNum === 3 ? 'BRONZE' : null);
+                    return (
+                      <tr
+                        key={idx}
+                        style={{
+                          background: isPodium
+                            ? `rgba(${rankNum === 1 ? '200,168,75' : rankNum === 2 ? '168,184,200' : '200,112,64'}, 0.08)`
+                            : undefined,
+                        }}
+                      >
+                        <td className="text-center font-black">
+                          {isPodium ? (
+                            <span
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-black shadow-sm"
+                              style={{ background: MEDAL_COLORS[rankNum] || '#C8A84B', color: rankNum === 2 ? '#1E293B' : '#000' }}
+                            >
+                              {rankNum === 1 ? '🥇' : rankNum === 2 ? '🥈' : '🥉'}
+                            </span>
+                          ) : (
+                            <span className="font-bold text-slate-400">{rankNum}</span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="font-extrabold text-sm text-slate-900 dark:text-white">
+                            {fin.name}
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-semibold">
+                            {fin.nationality || 'ETH · Ethiopia'}
+                          </div>
+                        </td>
+                        <td className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                          {fin.club || 'Independent'}
+                        </td>
+                        <td>
+                          <span
+                            className="font-mono font-black text-sm"
+                            style={{ color: rankNum === 1 ? '#C8A84B' : 'var(--primary)' }}
+                          >
+                            {fin.performance}
+                          </span>
+                        </td>
+                        <td>
+                          {medalText ? (
+                            <span
+                              className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider"
+                              style={{
+                                background: rankNum === 1 ? '#FEF3C7' : rankNum === 2 ? '#F1F5F9' : '#FFEDD5',
+                                color: rankNum === 1 ? '#92400E' : rankNum === 2 ? '#334155' : '#9A3412',
+                                border: `1px solid ${rankNum === 1 ? '#FDE68A' : rankNum === 2 ? '#CBD5E1' : '#FED7AA'}`,
+                              }}
+                            >
+                              {medalText} MEDAL
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-xs font-semibold">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Historical & Certified Meets Selector Grid */}
+      <div className="mb-4">
+        <h4 className="text-sm font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-3">
+          All Sanctioned Meets &amp; Archives
+        </h4>
+      </div>
+
       <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-[18px] mb-8">
         {MOCK_MEETS.map(meet => {
           const results = (meet.status !== 'REGISTRATION_OPEN' && meet.status !== 'UPCOMING') ? MOCK_EVENT_RESULTS[meet.id] : undefined;
@@ -37,6 +271,7 @@ export default function EventResults({ onNotify }: EventResultsProps) {
           return (
             <div key={meet.id}
               onClick={() => {
+                setSelectedBackendResultId(null);
                 setSelectedMeet(isSelected ? null : meet.id);
                 setExpandedDisc(null);
               }}
@@ -84,11 +319,11 @@ export default function EventResults({ onNotify }: EventResultsProps) {
         })}
       </div>
 
-      {/* Results panel */}
-      {!selectedMeet && (
+      {/* Results panel for Mock Meets */}
+      {!selectedMeet && !selectedBackendResultId && (
         <div className="text-center py-12 text-text-muted">
           <Trophy size={36} color="var(--border-card, #CCC)" className="mb-3" />
-          <p className="font-semibold text-[0.95rem]">Select a meet above to view results</p>
+          <p className="font-semibold text-[0.95rem]">Select a meet above to view complete race results</p>
         </div>
       )}
 

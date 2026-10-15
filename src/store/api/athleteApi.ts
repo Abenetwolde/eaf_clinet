@@ -236,6 +236,30 @@ export const athleteApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Athletes'],
     }),
 
+    getAthleteNotifications: builder.query<any[], void>({
+      query: () => '/athletes/profile/notifications',
+      transformResponse: (response: any) => response?.data || response || [],
+      providesTags: ['Athletes'],
+    }),
+
+    getPublishedResults: builder.query<any[], void>({
+      query: () => '/results/published',
+      transformResponse: (response: any) => response?.data || response || [],
+      providesTags: ['Results' as any],
+    }),
+
+    getResultDetail: builder.query<any, string>({
+      query: (id) => `/results/${id}`,
+      transformResponse: (response: any) => response?.data || response || null,
+      providesTags: ['Results' as any],
+    }),
+
+    getMyClubResults: builder.query<any, void>({
+      query: () => '/results/my-club',
+      transformResponse: (response: any) => response?.data || response || null,
+      providesTags: ['Results' as any],
+    }),
+
   }),
   overrideExisting: false,
 });
@@ -249,4 +273,8 @@ export const {
   useGetPublishedEventsQuery,
   useGetAthleteApplicationsQuery,
   useApplyForEventMutation,
+  useGetAthleteNotificationsQuery,
+  useGetPublishedResultsQuery,
+  useGetResultDetailQuery,
+  useGetMyClubResultsQuery,
 } = athleteApi;

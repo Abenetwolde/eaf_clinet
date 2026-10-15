@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useGetAthleteNotificationsQuery } from '../../store/api/athleteApi';
 import { Bell, Check, Clock, CheckSquare, Trash2 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import type { Athlete } from '../../types';
@@ -9,6 +10,7 @@ interface AthleteNotificationsProps {
 
 export default function AthleteNotifications({ onNotify }: AthleteNotificationsProps) {
   const athlete = useAppSelector((state) => state.auth.athlete);
+  const { data: backendNotifs = [] } = useGetAthleteNotificationsQuery(undefined, { pollingInterval: 4000 });
   const [notifications, setNotifications] = useState(athlete.notifications || [
     {
       id: "notif-1",
@@ -35,6 +37,27 @@ export default function AthleteNotifications({ onNotify }: AthleteNotificationsP
       read: true
     }
   ]);
+
+  useEffect(() => {
+    if (backendNotifs && backendNotifs.length > 0) {
+      setNotifications(prev => {
+        const merged = [...prev];
+        backendNotifs.forEach((bn: any) => {
+          if (!merged.some(m => m.id === bn.id || (m.title === bn.title && m.message === bn.message))) {
+            merged.unshift({
+              id: bn.id,
+              title: bn.title,
+              message: bn.message,
+              date: bn.date || new Date().toISOString().split('T')[0],
+              type: bn.type || 'success',
+              read: bn.read || false
+            });
+          }
+        });
+        return merged;
+      });
+    }
+  }, [backendNotifs]);
 
   const handleMarkAllRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));

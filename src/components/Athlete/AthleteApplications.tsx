@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, AlertCircle, Clock, X, QrCode, FileCheck, Download, RefreshCw } from 'lucide-react';
+import { Calendar, MapPin, AlertCircle, Clock, X, QrCode, FileCheck, Download, RefreshCw, Lock, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
@@ -355,22 +355,65 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
                 </div>
               </div>
 
-              {/* Real Vector SVG 2D QR Code Container */}
-              <div className="bg-[#F1F5F9] border-2 border-dashed border-[#CBD5E1] rounded-[20px] p-5 text-center mb-5">
-                <div className="text-[0.82rem] font-extrabold text-[#334155] mb-3 flex items-center justify-center gap-1.5">
-                  <QrCode size={16} color="var(--primary)" /> Entry QR Code
-                </div>
-                
-                {/* Real SVG 2D QR Code Matrix */}
-                <EAFQrCode code={`EAF-${selectedApplication.meetId}-${athlete.id}`} size={160} />
+              {/* Conditional Accreditation QR Code Container */}
+              {selectedApplication.status === 'Approved' ? (
+                <div className="bg-[#F0FDF4] border-2 border-dashed border-[#86EFAC] rounded-[20px] p-5 text-center mb-5">
+                  <div className="text-[0.82rem] font-extrabold text-[#15803D] mb-3 flex items-center justify-center gap-1.5">
+                    <CheckCircle2 size={16} className="text-emerald-600" /> Official Competition Accreditation Pass (Approved)
+                  </div>
+                  
+                  {/* Real SVG 2D QR Code Matrix */}
+                  <div className="inline-block p-2.5 bg-white rounded-xl shadow-md border border-[#BBF7D0]">
+                    <EAFQrCode 
+                      code={selectedApplication.qrCode || JSON.stringify({
+                        athlete: athlete.name,
+                        license: athlete.eafLicenseNo || 'EAF-LIC-2026',
+                        faydaFin: athlete.faydaFin || '',
+                        competition: selectedApplication.meetTitle,
+                        disciplines: selectedApplication.disciplines,
+                        eligibility: 'OFFICIAL_ATHLETE_ELIGIBLE',
+                        approvalRef: selectedApplication.meetId,
+                        federation: 'Ethiopian Athletics Federation',
+                        status: 'APPROVED'
+                      })} 
+                      size={160} 
+                    />
+                  </div>
 
-                <div className="font-mono font-black text-base text-[#0F172A] mt-3 tracking-[0.08em]">
-                  EAF-{selectedApplication.meetId.substring(0, 8)}-{athlete.id.substring(4, 12)}
+                  <div className="font-mono font-black text-sm text-[#0F172A] mt-3 tracking-[0.08em]">
+                    REF: EAF-{selectedApplication.meetId.substring(0, 8)}-{athlete.id.substring(0, 8)}
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#DCFCE7] text-[#166534] text-[0.75rem] font-black mt-2">
+                    <ShieldCheck size={14} /> ELIGIBLE TO PARTICIPATE
+                  </div>
+                  <p className="text-[0.78rem] text-[#64748B] mt-2 font-semibold">
+                    Valid only for this approved athlete &amp; competition. Present at Call Room check-in.
+                  </p>
                 </div>
-                <p className="text-[0.78rem] text-[#64748B] mt-1 font-semibold">
-                  Scan this code at the Call Room for quick check-in.
-                </p>
-              </div>
+              ) : selectedApplication.status === 'Rejected' ? (
+                <div className="bg-[#FEF2F2] border-2 border-dashed border-[#FECACA] rounded-[20px] p-6 text-center mb-5">
+                  <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-2">
+                    <AlertCircle size={24} />
+                  </div>
+                  <div className="text-[0.9rem] font-black text-red-700">Accreditation Pass Denied</div>
+                  <p className="text-[0.78rem] text-red-600 mt-1 max-w-sm mx-auto">
+                    This competition registration was not approved by EAF Administration. Contact the competitions department for appeals.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-[#FFFBEB] border-2 border-dashed border-[#FDE68A] rounded-[20px] p-6 text-center mb-5">
+                  <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-2">
+                    <Lock size={22} />
+                  </div>
+                  <div className="text-[0.9rem] font-black text-amber-900">Accreditation QR Pass Locked</div>
+                  <p className="text-[0.78rem] text-amber-800 mt-1.5 max-w-sm mx-auto font-medium">
+                    Your competition registration is pending federation approval. The unique accreditation QR pass will automatically be generated and unlocked once an administrator approves your participation.
+                  </p>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[0.75rem] font-extrabold mt-3">
+                    <Clock size={13} /> Awaiting Admin Approval
+                  </div>
+                </div>
+              )}
 
               {/* Verification Notice */}
               <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl px-4 py-3 flex gap-2 text-[0.78rem] text-[#1E40AF] leading-[1.4]">
