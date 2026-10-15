@@ -16,7 +16,7 @@ export const apiSlice = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Athletes", "Clubs", "Competitions", "Events", "News", "Registrations", "Results", "Users"],
+  tagTypes: ["Athletes", "Clubs", "Competitions", "Events", "News", "Registrations", "Results", "Users", "Gallery", "Content", "Inquiries"],
   endpoints: (builder) => ({
     getAthletes: builder.query<any[], void>({
       query: () => "athletes/public",
@@ -47,6 +47,24 @@ export const apiSlice = createApi({
       transformResponse: (response: any) => response?.data || response || {},
       providesTags: ["Results"],
     }),
+    getGallery: builder.query<any[], void>({
+      query: () => "gallery",
+      transformResponse: (response: any) => response?.data || response || [],
+      providesTags: ["Gallery" as any],
+    }),
+    getSiteContent: builder.query<any, void>({
+      query: () => "content/public",
+      transformResponse: (response: any) => response?.data || response || null,
+      providesTags: ["Content" as any],
+    }),
+    submitContactForm: builder.mutation<any, { name: string; email: string; subject: string; message: string }>({
+      query: (body) => ({
+        url: "content/contact",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Inquiries" as any],
+    }),
   }),
 });
 
@@ -57,4 +75,7 @@ export const {
   useGetPublishedEventsQuery,
   useGetOverviewStatsQuery,
   useGetResultsQuery,
+  useGetGalleryQuery,
+  useGetSiteContentQuery,
+  useSubmitContactFormMutation,
 } = apiSlice;

@@ -7,7 +7,7 @@ import { ResponsiveSeeMoreText } from './ResponsiveSeeMoreText';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '../i18n';
 import { useGetNewsQuery, type NewsArticle } from '../store/api/newsApi';
-import { useGetPublishedEventsQuery, useGetOverviewStatsQuery } from '../store/api/apiSlice';
+import { useGetPublishedEventsQuery, useGetOverviewStatsQuery, useGetGalleryQuery, useGetSiteContentQuery, useSubmitContactFormMutation } from '../store/api/apiSlice';
 import { useGetAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
 import { MOCK_NEWS } from '../data/mockData';
 
@@ -503,10 +503,42 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const { data: apiNews, isLoading: isNewsLoading } = useGetNewsQuery();
   const { data: apiEvents } = useGetPublishedEventsQuery();
   const { data: overviewStats } = useGetOverviewStatsQuery();
+  const { data: apiGallery } = useGetGalleryQuery();
+  const { data: siteContent } = useGetSiteContentQuery();
+  const [submitContact, { isLoading: isContactSubmitting }] = useSubmitContactFormMutation();
+
+  const galleryList: GalleryItem[] = useMemo(() => {
+    if (apiGallery && Array.isArray(apiGallery) && apiGallery.length > 0) {
+      return apiGallery.map((alb: any, idx: number) => ({
+        id: alb.id || idx + 1,
+        title: alb.title,
+        category: alb.category ? (alb.category.charAt(0).toUpperCase() + alb.category.slice(1).toLowerCase().replace(/_/g, ' ')) : 'Championship',
+        img: alb.coverImage || '/images/c1.jpg',
+        location: alb.location || 'Addis Ababa National Stadium',
+        date: alb.eventDate ? new Date(alb.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '2026 Season',
+        type: (alb.type || 'PHOTO') as 'PHOTO' | 'VIDEO',
+        description: alb.description || 'EAF Championship Highlights',
+        captures: Array.isArray(alb.captures) && alb.captures.length > 0 ? alb.captures.map((c: any, cIdx: number) => ({
+          id: c.id || cIdx + 1,
+          img: c.url || alb.coverImage,
+          title: c.title || alb.title,
+          caption: c.caption || alb.description || 'EAF Press Photography',
+          photographer: c.photographer || alb.photographer || 'EAF Media Unit',
+        })) : [{
+          id: 1,
+          img: alb.coverImage || '/images/c1.jpg',
+          title: alb.title,
+          caption: alb.description || 'EAF Press Photography',
+          photographer: alb.photographer || 'EAF Media Unit',
+        }],
+      }));
+    }
+    return GALLERY_IMAGES;
+  }, [apiGallery]);
 
   const allMeets = useMemo(() => {
     if (!apiEvents || !Array.isArray(apiEvents) || apiEvents.length === 0) {
-      return [];
+      return ENRICHED_MEETS;
     }
     return apiEvents.map((evt: any, idx: number) => {
       const scheduleDate = evt.schedule?.[0]?.date || evt.registrationDeadline?.slice(0, 10) || '2026-11-15';
@@ -622,6 +654,28 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   }, [apiAthletes]);
 
   const athleteList = useMemo(() => {
+    if (siteContent?.featuredStars && Array.isArray(siteContent.featuredStars) && siteContent.featuredStars.length > 0) {
+      const activeStars = siteContent.featuredStars.filter((s: any) => s.active !== false);
+      if (activeStars.length > 0) {
+        return activeStars.map((s: any, idx: number) => ({
+          id: s.id || `star-${idx}`,
+          name: s.name,
+          amharicName: s.amharic || s.name,
+          achievement: `${s.event || 'Athletics'} Champion`,
+          event: s.event || 'Long Distance',
+          club: s.club || 'National Team',
+          faydaFin: 'VERIFIED',
+          faydaStatus: 'VERIFIED',
+          dob: '1998-01-01',
+          gender: 'Senior',
+          ageTier: 'Senior',
+          pb: s.pb || 'World Class Mark',
+          quote: 'Representing Ethiopia on the world stage.',
+          img: s.img || '/images/a1.jpg',
+          medals: Array.isArray(s.medals) && s.medals.length > 0 ? s.medals : ['🥇 National Record Holder', '🥇 World Champion'],
+        }));
+      }
+    }
     if (apiAthletes && apiAthletes.length > 0) {
       return apiAthletes.map((ath, idx) => ({
         id: ath.id || idx + 1,
@@ -642,7 +696,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       }));
     }
     return cachedAthletes.length > 0 ? cachedAthletes : ATHLETES;
-  }, [apiAthletes, cachedAthletes]);
+  }, [apiAthletes, cachedAthletes, siteContent?.featuredStars]);
 
   const [selectedMeetId, setSelectedMeetId] = useState<string | null>(null);
   const [selectedAthleteModal, setSelectedAthleteModal] = useState<any>(null);
@@ -652,48 +706,82 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [activeCaptureIndex, setActiveCaptureIndex] = useState<number>(0);
   // Hero Section Live Competitions Ticker State
   const [heroTickerIndex, setHeroTickerIndex] = useState(0);
-  const HERO_LIVE_RESULTS = useMemo(() => [
-    {
-      id: "MEET-2026-04",
-      title: "Oromia Athletics Championship 2026",
-      location: "Asella Stadium • Oromia Region",
-      category: "Men 10,000m Track Final",
-      leader: "Lamecha Girma (Oromia Police)",
-      time: "26:48.30",
-      status: "LIVE NOW",
-      img: "/images/d1.jpg",
-    },
-    {
-      id: "MEET-2026-01",
-      title: "Addis Ababa International Grand Prix 2026",
-      location: "National Stadium • Addis Ababa",
-      category: "Men 5,000m Track Final",
-      leader: "Berihu Aregawi (Commercial Bank)",
-      time: "12:54.20",
-      status: "LIVE NOW",
-      img: "/images/banner_grand_prix.png",
-    },
-    {
-      id: "MEET-2026-03",
-      title: "Jan Meda National Cross-Country Olympic Trials",
-      location: "Jan Meda Race Course • Addis Ababa",
-      category: "Senior Men 10km Cross Country",
-      leader: "Selemon Barega (Police Sports)",
-      time: "28:12.05",
-      status: "LIVE NOW",
-      img: "/images/banner_jan_meda.png",
-    },
-    {
-      id: "MEET-2026-02",
-      title: "Ethiopian National Youth Olympic Games U18/U20",
-      location: "Hawassa International Stadium • Sidama",
-      category: "Women 1,500m Track Final",
-      leader: "Birke Haylom (CBO Club)",
-      time: "03:56.40",
-      status: "LIVE NOW",
-      img: "/images/banner_youth_games.png",
-    },
-  ], []);
+  const HERO_LIVE_RESULTS = useMemo(() => {
+    const list: any[] = [];
+    if (allMeets && allMeets.length > 0) {
+      allMeets.forEach((m: any, idx: number) => {
+        list.push({
+          id: m.id,
+          title: m.title,
+          location: m.venue || 'Addis Ababa National Stadium',
+          category: (m.disciplines && m.disciplines.length > 0) ? `${m.disciplines[0]} Final` : 'Track & Field Final',
+          leader: m.organizerName || 'Ethiopian Athletics Federation',
+          time: m.dateString || 'Scheduled',
+          status: m.status === 'REGISTRATION_OPEN' ? 'REGISTRATION OPEN' : 'LIVE NOW',
+          img: m.img || (idx % 2 === 0 ? '/images/banner_grand_prix.png' : '/images/banner_jan_meda.png'),
+        });
+      });
+    }
+    if (apiNews && Array.isArray(apiNews)) {
+      apiNews.filter((n: any) => n.isFeatured).forEach((n: any) => {
+        if (!list.some(r => r.title === n.title)) {
+          list.push({
+            id: n.id,
+            title: n.title,
+            location: 'EAF Official Notice • Addis Ababa',
+            category: n.category?.replace(/_/g, ' ') || 'Official Announcement',
+            leader: n.author || 'EAF Communications',
+            time: 'Latest Release',
+            status: 'FEATURED NOTICE',
+            img: n.imageUrl || '/images/banner_grand_prix.png',
+          });
+        }
+      });
+    }
+    if (list.length > 0) return list;
+    return [
+      {
+        id: "MEET-2026-04",
+        title: "Oromia Athletics Championship 2026",
+        location: "Asella Stadium • Oromia Region",
+        category: "Men 10,000m Track Final",
+        leader: "Lamecha Girma (Oromia Police)",
+        time: "26:48.30",
+        status: "LIVE NOW",
+        img: "/images/d1.jpg",
+      },
+      {
+        id: "MEET-2026-01",
+        title: "Addis Ababa International Grand Prix 2026",
+        location: "National Stadium • Addis Ababa",
+        category: "Men 5,000m Track Final",
+        leader: "Berihu Aregawi (Commercial Bank)",
+        time: "12:54.20",
+        status: "LIVE NOW",
+        img: "/images/banner_grand_prix.png",
+      },
+      {
+        id: "MEET-2026-03",
+        title: "Jan Meda National Cross-Country Olympic Trials",
+        location: "Jan Meda Race Course • Addis Ababa",
+        category: "Senior Men 10km Cross Country",
+        leader: "Selemon Barega (Police Sports)",
+        time: "28:12.05",
+        status: "LIVE NOW",
+        img: "/images/banner_jan_meda.png",
+      },
+      {
+        id: "MEET-2026-02",
+        title: "Ethiopian National Youth Olympic Games U18/U20",
+        location: "Hawassa International Stadium • Sidama",
+        category: "Women 1,500m Track Final",
+        leader: "Birke Haylom (CBO Club)",
+        time: "03:56.40",
+        status: "LIVE NOW",
+        img: "/images/banner_youth_games.png",
+      },
+    ];
+  }, [allMeets, apiNews]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -816,14 +904,51 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     setSelectedNewsModal(newsList[prevIndex]);
   };
 
+  // Dynamic Sponsors List from CMS
+  const sponsorList = useMemo(() => {
+    const dynamicSponsors = siteContent?.sponsors?.filter((s: any) => s.active !== false) || [];
+    if (dynamicSponsors.length > 0) {
+      const list = dynamicSponsors.map((s: any) => ({
+        src: s.logo,
+        alt: s.name,
+        h: s.height || 48,
+        url: s.websiteUrl || '#',
+      }));
+      return [...list, ...list];
+    }
+    const defaultList = [
+      { src: '/images/800px-Adidas_Logo.svg_.png', alt: 'Adidas', h: 46, url: 'https://www.adidas.com' },
+      { src: '/images/ETHIO-TELECOM-1200px-logo-1-1024x269.jpg', alt: 'Ethio Telecom', h: 48, url: 'https://www.ethiotelecom.et' },
+      { src: '/images/TeleBirr-Logo-1024x468.png', alt: 'Telebirr', h: 46, url: 'https://www.ethiotelecom.et/telebirr' },
+      { src: '/images/Cocacola-logo.jpg', alt: 'Coca-Cola', h: 52, url: 'https://www.coca-cola.com' },
+      { src: '/images/OROMIA-1024x279.jpg', alt: 'Oromia Bank', h: 46, url: 'https://www.oromiabank.com' },
+    ];
+    return [...defaultList, ...defaultList];
+  }, [siteContent?.sponsors]);
+
+  // Dynamic FAQ List from CMS
+  const faqList = useMemo(() => {
+    if (siteContent?.faqs && Array.isArray(siteContent.faqs) && siteContent.faqs.length > 0) {
+      const active = siteContent.faqs.filter((f: any) => f.active !== false);
+      if (active.length > 0) {
+        return active.map((f: any) => ({ q: f.question, a: f.answer }));
+      }
+    }
+    return [
+      { q: 'How do I verify my Fayda ID?', a: 'Enter your 12-digit Fayda FIN on the registration screen. The system will automatically fetch your profile from the national database.' },
+      { q: 'Can I register a new club online?', a: 'Yes. Switch to the Club Admin role and follow the club registration workflow. You will need your official club details and manager information.' },
+      { q: 'When are the results updated?', a: 'Results for live competitions are updated in real-time by the technical committee directly from the venue.' },
+    ];
+  }, [siteContent?.faqs]);
+
   // Switch album in lightbox
   const handleSwitchLightboxAlbum = (direction: 'prev' | 'next') => {
     if (!activeLightboxImg) return;
-    const currentIdx = GALLERY_IMAGES.findIndex(g => g.id === activeLightboxImg.id);
+    const currentIdx = galleryList.findIndex(g => g.id === activeLightboxImg.id);
     const targetIdx = direction === 'next'
-      ? (currentIdx + 1) % GALLERY_IMAGES.length
-      : (currentIdx - 1 + GALLERY_IMAGES.length) % GALLERY_IMAGES.length;
-    setActiveLightboxImg(GALLERY_IMAGES[targetIdx]);
+      ? (currentIdx + 1) % galleryList.length
+      : (currentIdx - 1 + galleryList.length) % galleryList.length;
+    setActiveLightboxImg(galleryList[targetIdx]);
     setActiveCaptureIndex(0);
   };
 
@@ -1026,17 +1151,22 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     setExpandedAthleteCards(prev => ({ ...prev, [cardKey]: !prev[cardKey] }));
   };
 
-  const handleContactSubmit = (e) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      await submitContact(contactForm).unwrap();
+    } catch (err) {
+      console.warn('Contact inquiry submission offline fallback:', err);
+    }
     setContactSuccess(true);
+    setContactForm({ name: '', email: '', subject: '', message: '' });
     setTimeout(() => {
-      setContactForm({ name: '', email: '', subject: '', message: '' });
       setContactSuccess(false);
-    }, 4000);
+    }, 5000);
   };
 
   // Filter athletes
-  const filteredAthletes = ATHLETES.filter(athlete => {
+  const filteredAthletes = athleteList.filter(athlete => {
     if (athleteSearchText) {
       const q = athleteSearchText.toLowerCase();
       const matchName = athlete.name.toLowerCase().includes(q) || (athlete.amharicName && athlete.amharicName.includes(q));
@@ -1048,7 +1178,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   });
 
   // Get unique events from athletes
-  const uniqueEvents = Array.from(new Set(ATHLETES.map(a => a.event)));
+  const uniqueEvents = Array.from(new Set(athleteList.map(a => a.event)));
 
   // Localized string packs
   const loc = {
@@ -1104,8 +1234,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   // Responsive gallery: category filtering and responsive display count
   const filteredGalleryImages = selectedGalleryTab === 'All'
-    ? GALLERY_IMAGES
-    : GALLERY_IMAGES.filter(g => g.category.toLowerCase() === selectedGalleryTab.toLowerCase());
+    ? galleryList
+    : galleryList.filter(g => g.category.toLowerCase().includes(selectedGalleryTab.toLowerCase()) || selectedGalleryTab.toLowerCase().includes(g.category.toLowerCase()));
 
   const galleryLimit = viewportWidth > 1185
     ? 9
@@ -1158,7 +1288,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     return (
       <GalleryDetail
         album={selectedGalleryAlbum}
-        allAlbums={GALLERY_IMAGES}
+        allAlbums={galleryList}
         onBack={() => {
           setSelectedGalleryAlbum(null);
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
@@ -1208,6 +1338,19 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             overflow: 'hidden'
           }}
         >
+          {/* Dynamic Hero Banner Image Background if configured in CMS */}
+          {siteContent?.hero?.bannerUrl && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: `url(${siteContent.hero.bannerUrl})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: darkMode ? 0.12 : 0.07,
+              pointerEvents: 'none',
+            }} />
+          )}
+
           {/* Ambient Light Radial Glow Accents for High-Definition Glassmorphism */}
           <div style={{ position: 'absolute', top: '10%', left: '15%', width: '480px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0) 70%)', filter: 'blur(55px)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', top: '20%', right: '15%', width: '480px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(16, 185, 129, 0) 70%)', filter: 'blur(55px)', pointerEvents: 'none' }} />
@@ -1223,7 +1366,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '1040px', margin: '0 auto', width: '100%' }}>
 
-            {/* Headline */}
+            {/* Headline & Dynamic CMS Badge */}
+            {siteContent?.hero?.badge && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#E0F2FE', color: '#0369A1', padding: '5px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, marginBottom: '16px' }}>
+                <Sparkles size={14} /> {siteContent.hero.badge}
+              </div>
+            )}
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1238,12 +1386,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 textAlign: 'center',
               }}
             >
-              EAF Digital Athlete Portal: <br />
+              {siteContent?.hero?.title || 'EAF Digital Athlete Portal:'} <br />
               <span style={{
                 color: darkMode ? '#F8FAFC' : '#0F172A',
                 fontWeight: 900
               }}>
-                Verify & Track Live Results
+                {siteContent?.hero?.highlight || 'Verify & Track Live Results'}
               </span>
             </motion.h1>
 
@@ -1486,7 +1634,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   }}
                 >
                   <CheckCircle size={20} />
-                  Register with Fayda National ID
+                  {siteContent?.hero?.primaryBtnText || 'Register with Fayda National ID'}
                 </button>
               )}
 
@@ -1516,7 +1664,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 onMouseLeave={e => { e.currentTarget.style.background = darkMode ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF'; e.currentTarget.style.transform = 'none'; }}
               >
                 <Trophy size={20} color="#0284C7" />
-                Explore Competitions
+                {siteContent?.hero?.secondaryBtnText || 'Explore Competitions'}
               </button>
             </motion.div>
 
@@ -1541,106 +1689,90 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-              {/* Card 1: Anti-Doping */}
-              <div
-                className="hover-lift"
-                onClick={() => onChangePublicSubPage('ANTI_DOPING')}
-                style={{
-                  background: t.bgAlt,
-                  border: '1px solid ' + t.border,
-                  borderRadius: '20px',
-                  padding: '24px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
-                }}
-              >
-                <div>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#ECFDF5', border: '1px solid #A7F3D0', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                    <ShieldAlert size={22} color="#059669" />
+              {(siteContent?.specializedSystems?.filter((s: any) => s.active !== false)?.length ? siteContent.specializedSystems.filter((s: any) => s.active !== false) : [
+                {
+                  id: 'sys-1',
+                  title: 'Anti-Doping & Clean Sport',
+                  category: 'Clean Sport',
+                  icon: 'ShieldAlert',
+                  description: 'Registered testing whereabouts, WADA 2026 prohibited list search, laboratory testing history, and TUE medical exemptions.',
+                  actionText: 'Access Integrity Hub',
+                  routeKey: 'ANTI_DOPING',
+                },
+                {
+                  id: 'sys-2',
+                  title: 'Technical Officials & Workforce',
+                  category: 'Workforce',
+                  icon: 'Award',
+                  description: 'Licensing, certifications, WA level courses, appointment allocations, and judge rosters across all 11 regions.',
+                  actionText: 'View Officials Hub',
+                  routeKey: 'OFFICIALS',
+                },
+                {
+                  id: 'sys-3',
+                  title: 'Regional Federations & Structures',
+                  category: 'Governance',
+                  icon: 'Map',
+                  description: 'Centralized database of 11 regional member federations, altitude camps, grassroots talent projects, and regional results.',
+                  actionText: 'Explore Regions & Calendars',
+                  routeKey: 'REGIONS',
+                },
+                {
+                  id: 'sys-4',
+                  title: 'Athlete Representatives (Agents)',
+                  category: 'Representation',
+                  icon: 'Briefcase',
+                  description: 'World Athletics authorized athlete representative registry, licensed international agencies, and represented athlete rosters.',
+                  actionText: 'View Authorized Agents',
+                  routeKey: 'REPRESENTATIVES',
+                },
+              ]).map((sys: any) => {
+                const colors = sys.routeKey === 'ANTI_DOPING'
+                  ? { bg: '#ECFDF5', border: '#A7F3D0', text: '#059669' }
+                  : sys.routeKey === 'OFFICIALS'
+                  ? { bg: '#EFF6FF', border: '#BFDBFE', text: '#2563EB' }
+                  : sys.routeKey === 'REGIONS'
+                  ? { bg: '#FEF3C7', border: '#FDE68A', text: '#D97706' }
+                  : { bg: '#F3E8FF', border: '#E9D5FF', text: '#9333EA' };
+
+                return (
+                  <div
+                    key={sys.id}
+                    className="hover-lift"
+                    onClick={() => onChangePublicSubPage(sys.routeKey || 'ANTI_DOPING')}
+                    style={{
+                      background: t.bgAlt,
+                      border: '1px solid ' + t.border,
+                      borderRadius: '20px',
+                      padding: '24px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                    }}
+                  >
+                    <div>
+                      <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: colors.bg, border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                        {sys.routeKey === 'ANTI_DOPING' ? <ShieldAlert size={22} color={colors.text} /> :
+                         sys.routeKey === 'OFFICIALS' ? <Award size={22} color={colors.text} /> :
+                         sys.routeKey === 'REGIONS' ? <Map size={22} color={colors.text} /> :
+                         <Briefcase size={22} color={colors.text} />}
+                      </div>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: t.text, marginBottom: '6px' }}>
+                        {sys.title}
+                      </h3>
+                      <p style={{ fontSize: '0.84rem', color: t.textMuted, lineHeight: 1.5, marginBottom: '16px' }}>
+                        {sys.description}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.text, fontSize: '0.85rem', fontWeight: 800 }}>
+                      <span>{sys.actionText || 'Access Portal'}</span>
+                      <ArrowRight size={14} />
+                    </div>
                   </div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: t.text, marginBottom: '6px' }}>
-                    Anti-Doping & Clean Sport
-                  </h3>
-                  <p style={{ fontSize: '0.84rem', color: t.textMuted, lineHeight: 1.5, marginBottom: '16px' }}>
-                    Registered testing whereabouts, WADA 2026 prohibited list search, laboratory testing history, and TUE medical exemptions.
-                  </p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#059669', fontSize: '0.85rem', fontWeight: 800 }}>
-                  <span>Access Integrity Hub</span>
-                  <ArrowRight size={14} />
-                </div>
-              </div>
-
-
-
-              {/* Card 3: Regional Hub */}
-              <div
-                className="hover-lift"
-                onClick={() => onChangePublicSubPage('REGIONS')}
-                style={{
-                  background: t.bgAlt,
-                  border: '1px solid ' + t.border,
-                  borderRadius: '20px',
-                  padding: '24px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
-                }}
-              >
-                <div>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#FEF3C7', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                    <Map size={22} color="#D97706" />
-                  </div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: t.text, marginBottom: '6px' }}>
-                    Regional Federations & Structures
-                  </h3>
-                  <p style={{ fontSize: '0.84rem', color: t.textMuted, lineHeight: 1.5, marginBottom: '16px' }}>
-                    Centralized database of 11 regional member federations, altitude camps, grassroots talent projects, and regional results.
-                  </p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#D97706', fontSize: '0.85rem', fontWeight: 800 }}>
-                  <span>Explore Regions & Calendars</span>
-                  <ArrowRight size={14} />
-                </div>
-              </div>
-
-              {/* Card 4: Representatives */}
-              <div
-                className="hover-lift"
-                onClick={() => onChangePublicSubPage('REPRESENTATIVES')}
-                style={{
-                  background: t.bgAlt,
-                  border: '1px solid ' + t.border,
-                  borderRadius: '20px',
-                  padding: '24px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
-                }}
-              >
-                <div>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#F3E8FF', border: '1px solid #E9D5FF', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                    <Briefcase size={22} color="#9333EA" />
-                  </div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: t.text, marginBottom: '6px' }}>
-                    Athlete Representatives (Agents)
-                  </h3>
-                  <p style={{ fontSize: '0.84rem', color: t.textMuted, lineHeight: 1.5, marginBottom: '16px' }}>
-                    World Athletics authorized athlete representative registry, licensed international agencies, and represented athlete rosters.
-                  </p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#9333EA', fontSize: '0.85rem', fontWeight: 800 }}>
-                  <span>View Authorized Agents</span>
-                  <ArrowRight size={14} />
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -2352,9 +2484,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
                   { label: 'Founded', value: '1964' },
-                  { label: 'Licensed Clubs', value: '48 Clubs' },
-                  { label: 'World Athletics', value: 'Member ✓' },
-                  { label: 'African Athletics', value: 'Member ✓' },
+                  { label: 'Licensed Clubs', value: overviewStats?.clubsCount ? `${overviewStats.clubsCount} Clubs` : '48 Clubs' },
+                  { label: 'Registered Athletes', value: overviewStats?.athletesCount ? `${overviewStats.athletesCount} Athletes` : '1,200+ Athletes' },
+                  { label: 'Annual Competitions', value: overviewStats?.publishedEventsCount ? `${overviewStats.publishedEventsCount} Events` : '24+ Events' },
                 ].map(s => (
                   <div key={s.label} style={{
                     background: t.bgAlt, borderRadius: 14,
@@ -2490,19 +2622,26 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
           <div style={{ overflow: 'hidden', position: 'relative', width: '100%', padding: '10px 0' }}>
             <div className="sponsor-track">
-              {[
-                { src: '/images/800px-Adidas_Logo.svg_.png', alt: 'Adidas', h: 46 },
-                { src: '/images/ETHIO-TELECOM-1200px-logo-1-1024x269.jpg', alt: 'Ethio Telecom', h: 48 },
-                { src: '/images/TeleBirr-Logo-1024x468.png', alt: 'Telebirr', h: 46 },
-                { src: '/images/Cocacola-logo.jpg', alt: 'Coca-Cola', h: 52 },
-                { src: '/images/OROMIA-1024x279.jpg', alt: 'Oromia Bank', h: 46 },
-                { src: '/images/800px-Adidas_Logo.svg_.png', alt: 'Adidas 2', h: 46 },
-                { src: '/images/ETHIO-TELECOM-1200px-logo-1-1024x269.jpg', alt: 'Ethio Telecom 2', h: 48 },
-                { src: '/images/TeleBirr-Logo-1024x468.png', alt: 'Telebirr 2', h: 46 },
-                { src: '/images/Cocacola-logo.jpg', alt: 'Coca-Cola 2', h: 52 },
-                { src: '/images/OROMIA-1024x279.jpg', alt: 'Oromia Bank 2', h: 46 },
-              ].map((s, idx) => (
-                <div key={idx} style={{ background: t.surface, padding: '12px 28px', borderRadius: '16px', border: '1px solid ' + t.border, boxShadow: '0 4px 12px rgba(0,0,0,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', filter: darkMode ? 'brightness(0.9) contrast(1.1)' : 'none' }}>
+              {sponsorList.map((s, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    if (s.url && s.url !== '#') window.open(s.url, '_blank');
+                  }}
+                  style={{
+                    background: t.surface,
+                    padding: '12px 28px',
+                    borderRadius: '16px',
+                    border: '1px solid ' + t.border,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: s.url && s.url !== '#' ? 'pointer' : 'default',
+                    filter: darkMode ? 'brightness(0.9) contrast(1.1)' : 'none',
+                  }}
+                  title={s.alt}
+                >
                   <img
                     src={s.src}
                     alt={s.alt}
@@ -2576,11 +2715,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               marginBottom: '36px'
             }}>
               {[
-                { id: 'All', label: 'All Media', count: GALLERY_IMAGES.length },
-                { id: 'Championships', label: 'Championships', count: GALLERY_IMAGES.filter(g => g.category === 'Championships').length },
-                { id: 'Marathons', label: 'Marathons', count: GALLERY_IMAGES.filter(g => g.category === 'Marathons').length },
-                { id: 'Track & Field', label: 'Track & Field', count: GALLERY_IMAGES.filter(g => g.category === 'Track & Field').length },
-                { id: 'Ceremonies', label: 'Ceremonies', count: GALLERY_IMAGES.filter(g => g.category === 'Ceremonies').length },
+                { id: 'All', label: 'All Media', count: galleryList.length },
+                { id: 'Championships', label: 'Championships', count: galleryList.filter(g => g.category.toLowerCase().includes('champ')).length },
+                { id: 'Marathons', label: 'Marathons', count: galleryList.filter(g => g.category.toLowerCase().includes('marathon')).length },
+                { id: 'Track & Field', label: 'Track & Field', count: galleryList.filter(g => g.category.toLowerCase().includes('track') || g.category.toLowerCase().includes('train')).length },
+                { id: 'Ceremonies', label: 'Ceremonies', count: galleryList.filter(g => g.category.toLowerCase().includes('ceremon') || g.category.toLowerCase().includes('nation')).length },
               ].map(tab => {
                 const isActive = selectedGalleryTab === tab.id;
                 return (
@@ -2834,11 +2973,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             <p style={{ color: t.textMuted, marginTop: '8px', fontSize: '1rem' }}>Find answers about registration, Fayda IDs, and club licensing.</p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {[
-              { q: 'How do I verify my Fayda ID?', a: 'Enter your 12-digit Fayda FIN on the registration screen. The system will automatically fetch your profile from the national database.' },
-              { q: 'Can I register a new club online?', a: 'Yes. Switch to the Club Admin role and follow the club registration workflow. You will need your official club details and manager information.' },
-              { q: 'When are the results updated?', a: 'Results for live competitions are updated in real-time by the technical committee directly from the venue.' }
-            ].map((faq, idx) => (
+            {faqList.map((faq, idx) => (
               <div key={idx} style={{ border: '1px solid ' + t.border, borderRadius: '16px', background: t.bgAlt, overflow: 'hidden' }}>
                 <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
@@ -2945,7 +3080,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 </div>
               </div>
               <p style={{ color: '#E0F2FE', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 20 }}>
-                The official national governing body for track, field, road, cross-country and marathon athletics in Ethiopia since 1964.
+                {siteContent?.footer?.tagline || 'The official national governing body for track, field, road, cross-country and marathon athletics in Ethiopia since 1964.'}
               </p>
               <div style={{ display: 'flex', gap: 12 }}>
                 {[
@@ -3002,10 +3137,10 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
-                  { icon: <Phone size={18} />, text: '+251 11 551 7777' },
-                  { icon: <Mail size={18} />, text: 'info@eaf.org.et' },
-                  { icon: <Globe size={18} />, text: 'www.eaf.org.et' },
-                  { icon: <MapPin size={18} />, text: 'Addis Ababa National Stadium Compound, Ethiopia' },
+                  { icon: <Phone size={18} />, text: siteContent?.contactHq?.phone || '+251 11 551 7777' },
+                  { icon: <Mail size={18} />, text: siteContent?.contactHq?.email || 'info@eaf.org.et' },
+                  { icon: <Globe size={18} />, text: siteContent?.contactHq?.website || 'www.eaf.org.et' },
+                  { icon: <MapPin size={18} />, text: siteContent?.contactHq?.address || 'Addis Ababa National Stadium Compound, Ethiopia' },
                 ].map(c => (
                   <div key={c.text} style={{ display: 'flex', alignItems: 'center', gap: 12, color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 600 }}>
                     <span style={{ color: '#FEF08A', flexShrink: 0 }}>{c.icon}</span>
@@ -3020,10 +3155,10 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           {/* Bottom Copyright Bar */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.25)', paddingTop: 24, textAlign: 'center', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <p style={{ color: '#FFFFFF', fontSize: '0.82rem', fontWeight: 600 }}>
-              © 2026 Ethiopian Athletics Federation — የኢትዮጵያ አትሌቲክስ ፌዴሬሽን. All rights reserved.
+              {siteContent?.footer?.copyrightText || '© 2026 Ethiopian Athletics Federation — የኢትዮጵያ አትሌቲክስ ፌዴሬሽን. All rights reserved.'}
             </p>
             <p style={{ color: '#FEF08A', fontSize: '0.82rem', fontWeight: 800 }}>
-              EOSCRMS Government Portal System v4.2
+              {siteContent?.footer?.systemVersion || 'EOSCRMS Government Portal System v4.2'}
             </p>
           </div>
         </div>

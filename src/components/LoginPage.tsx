@@ -357,24 +357,7 @@ export default function LoginPage({
   return (
     <div className={`min-h-screen w-full flex flex-col justify-between ${darkMode ? 'bg-slate-950 text-white' : 'bg-gradient-to-br from-slate-50 via-blue-50/40 to-slate-100 text-slate-900'}`}>
       {/* Top Header / Navigation Bar */}
-      <header className={`w-full border-b px-6 py-4 flex items-center justify-between ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'} backdrop-blur-md sticky top-0 z-30`}>
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => onNavigateHome?.() || window.history.pushState(null, '', '/')}>
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-700 to-indigo-900 flex items-center justify-center shadow-md">
-            <span className="text-xl">🇪🇹</span>
-          </div>
-          <div>
-            <div className="font-extrabold text-sm tracking-wide text-blue-900 dark:text-blue-400">ETHIOPIAN ATHLETICS FEDERATION</div>
-            <div className="text-[11px] text-slate-500 font-medium">የኢትዮጵያ አትሌቲክስ ፌዴሬሽን · Official Portal</div>
-          </div>
-        </div>
 
-        <button
-          onClick={() => onNavigateHome?.() || (window.location.href = '/')}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 dark:text-slate-300 dark:hover:text-blue-400 transition"
-        >
-          <Home className="w-4 h-4" /> Back to Home
-        </button>
-      </header>
 
       {/* Main Responsive Form Container */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-10">
@@ -388,9 +371,7 @@ export default function LoginPage({
         >
           {/* Header Title */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 text-xs font-extrabold mb-3 border border-blue-200 dark:border-blue-900/50">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" /> EAF Federated Identity Access
-            </div>
+          
             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               Sign In to Your Account
             </h1>

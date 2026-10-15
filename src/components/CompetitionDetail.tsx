@@ -381,7 +381,7 @@ export default function CompetitionDetail({
       meetTitle: meet.title,
       venue: meet.venue,
       date: meet.date,
-      bannerUrl: getBannerUrl(meet.id),
+      bannerUrl: getBannerUrl(meet),
       athlete: realAthleteData,
       events: disciplinesToApply,
       registeredAt: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
@@ -405,24 +405,28 @@ export default function CompetitionDetail({
     } catch (e) {}
   };
 
-  // Mock static info for About Tab based on Meet
+  // Dynamic about info prioritizing database values configured from admin hub
+  const schedFirst = Array.isArray(meet?.schedule) && meet.schedule.length > 0 ? (meet.schedule[0] as any) : null;
+  const dynamicStandards = meet?.standards || schedFirst?.standards || null;
+  const dynamicPrizes = meet?.prizes || schedFirst?.prizes || null;
+
   const aboutInfo = {
-    overview: meet.id === 'MEET-2026-01'
+    overview: meet?.description || meet?.overview || (meet?.id === 'MEET-2026-01'
       ? 'The Addis Ababa International Grand Prix is the pinnacle track and field event in Ethiopia, gathering world-class runners, local elite athletes, and international competitors. Sanctioned by EAF and accredited under regional development programs.'
-      : meet.id === 'MEET-2026-02'
+      : meet?.id === 'MEET-2026-02'
         ? 'The National Youth Olympic Games (U18/U20) serves as the primary talent identification platform in Ethiopia. The championship aims to discover the next generation of distance runners to represent Ethiopia in international youth competitions.'
-        : 'The Jan Meda Cross-Country trials hold deep historical significance as the ultimate selection criteria for the Ethiopian National Team representing the nation in the World Athletics Cross Country Championships.',
-    rules: 'All participants must comply with World Athletics Technical Rules and EAF local statutes. Athletes must hold an active EAF Athlete License for the 2026 season. Doping control will be carried out in accordance with WADA guidelines.',
-    standards: meet.id === 'MEET-2026-01'
+        : 'The Jan Meda Cross-Country trials hold deep historical significance as the ultimate selection criteria for the Ethiopian National Team representing the nation in the World Athletics Cross Country Championships.'),
+    rules: meet?.rules || 'All participants must comply with World Athletics Technical Rules and EAF local statutes. Athletes must hold an active EAF Athlete License for the 2026 season. Doping control will be carried out in accordance with WADA guidelines.',
+    standards: dynamicStandards || (meet?.id === 'MEET-2026-01'
       ? '5,000m Men: Under 13:45.00 | 10,000m Women: Under 32:30.00 | 800m Men: Under 1:48.00. Standards must be achieved in EAF-certified events.'
-      : meet.id === 'MEET-2026-02'
+      : meet?.id === 'MEET-2026-02'
         ? 'Open to athletes aged U18 (born 2009-2010) and U20 (born 2007-2008). Must be affiliated with an EAF-registered regional club or academy.'
-        : 'Open entry for registered club teams (max 6 runners per category). Top 4 finishers automatically qualify for selection pools.',
-    prizes: meet.id === 'MEET-2026-01'
+        : 'Open entry for registered club teams (max 6 runners per category). Top 4 finishers automatically qualify for selection pools.'),
+    prizes: dynamicPrizes || (meet?.id === 'MEET-2026-01'
       ? 'Gold: 100,000 ETB | Silver: 60,000 ETB | Bronze: 40,000 ETB. A special record-breaking bonus of 150,000 ETB is awarded for breaking national records.'
-      : meet.id === 'MEET-2026-02'
+      : meet?.id === 'MEET-2026-02'
         ? 'EAF youth development grants: 30,000 ETB for top finishers. Training gear packages provided by Adidas Ethiopia for top 6 finalists.'
-        : 'National team training camp selection for top 6. Cash prizes up to 50,000 ETB for club delegations.'
+        : 'National team training camp selection for top 6. Cash prizes up to 50,000 ETB for club delegations.')
   };
 
   // Generate sub-events for Events Tab
