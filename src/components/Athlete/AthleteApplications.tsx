@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, AlertCircle, Clock, X, QrCode, FileCheck, Download } from 'lucide-react';
+import { Calendar, MapPin, AlertCircle, Clock, X, QrCode, FileCheck, Download, RefreshCw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
@@ -32,7 +32,7 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
   const [selectedApplication, setSelectedApplication] = useState<ApplicationDetail | null>(null);
 
   // Fetch real applications from backend API
-  const { data: backendApps = [], isLoading: isLoadingApps } = useGetAthleteApplicationsQuery();
+  const { data: backendApps = [], isLoading: isLoadingApps, refetch } = useGetAthleteApplicationsQuery(undefined, { pollingInterval: 5000 });
 
   // Pure dynamic backend applications with fallback only to athlete.appliedCompetitions
   const applications = (backendApps && backendApps.length > 0)
@@ -51,11 +51,13 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
     : [];
 
   const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch ((status || '').toLowerCase()) {
       case 'approved':
-        return <span className="badge badge-green">✓ Approved</span>;
+        return <span className="badge badge-green" style={{ background: '#ECFDF5', color: '#065F46', border: '1px solid #A7F3D0' }}>✓ Approved</span>;
       case 'pending':
-        return <span className="badge badge-amber"><Clock size={12} /> Pending</span>;
+        return <span className="badge badge-amber" style={{ background: '#FFFBEB', color: '#92400E', border: '1px solid #FDE68A' }}><Clock size={12} /> Pending</span>;
+      case 'rejected':
+        return <span className="badge badge-red" style={{ background: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA' }}>✕ Rejected</span>;
       case 'completed':
         return <span className="badge badge-blue">★ Completed</span>;
       case 'closed':
@@ -177,13 +179,23 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
 
   return (
     <div>
-      <div className="mb-6">
-        <h3 className="text-[1.4rem] font-extrabold text-text-heading">
-          My Applied Competitions
-        </h3>
-        <p className="text-[0.85rem] text-text-muted mt-1">
-          Track and review the status of your individual event registration applications.
-        </p>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 className="text-[1.4rem] font-extrabold text-text-heading">
+            My Registrations & Applications
+          </h3>
+          <p className="text-[0.85rem] text-text-muted mt-1">
+            Track and review the real-time status of your event applications (pending, approved, or rejected).
+          </p>
+        </div>
+        <button
+          onClick={() => refetch()}
+          disabled={isLoadingApps}
+          className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 inline-flex items-center gap-2 cursor-pointer shadow-sm transition-all"
+        >
+          <RefreshCw size={14} className={isLoadingApps ? 'animate-spin text-blue-600' : 'text-slate-600'} />
+          <span>{isLoadingApps ? 'Refreshing...' : 'Refresh Status'}</span>
+        </button>
       </div>
 
       {/* Applications Grid/List */}
@@ -217,8 +229,9 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
                       <div className="flex items-center gap-3.5">
                         <div className="w-16 h-11 rounded-[8px] overflow-hidden shrink-0 border border-[#E2E8F0]">
                           <img 
-                            src={meet.bannerUrl || "/images/banner_grand_prix.png"} 
+                            src={(app as any).imageUrl || meet.bannerUrl || "/images/banner_grand_prix.png"} 
                             alt={app.meetTitle} 
+                            onError={(e) => { (e.target as HTMLImageElement).src = '/images/banner_grand_prix.png'; }}
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -311,9 +324,19 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
                     <div className="text-[0.75rem] font-extrabold text-primary uppercase tracking-[0.05em]">Application Details</div>
                     <div className="text-[0.82rem] font-bold text-[#64748B] mt-0.5">Submitted on {selectedApplication.appliedDate}</div>
                   </div>
-                  <span className="bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] px-3 py-1 rounded-[8px] text-[0.78rem] font-extrabold inline-flex items-center gap-1">
-                    <FileCheck size={14} /> Entry Confirmed
-                  </span>
+                  {selectedApplication.status === 'Approved' ? (
+                    <span className="bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0] px-3 py-1 rounded-[8px] text-[0.78rem] font-extrabold inline-flex items-center gap-1">
+                      <FileCheck size={14} /> Entry Approved
+                    </span>
+                  ) : selectedApplication.status === 'Rejected' ? (
+                    <span className="bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA] px-3 py-1 rounded-[8px] text-[0.78rem] font-extrabold inline-flex items-center gap-1">
+                      ✕ Entry Rejected
+                    </span>
+                  ) : (
+                    <span className="bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A] px-3 py-1 rounded-[8px] text-[0.78rem] font-extrabold inline-flex items-center gap-1">
+                      <Clock size={14} /> Under Review (Pending)
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -359,12 +382,22 @@ export default function AthleteApplications({ onNotify }: AthleteApplicationsPro
 
               {/* Footer Button */}
               <div className="mt-5">
-                <button 
-                  className="btn-gov-primary w-full p-3 rounded-xl text-[0.9rem] flex items-center justify-center gap-2 font-extrabold cursor-pointer" 
-                  onClick={() => handleDownloadPass(selectedApplication)}
-                >
-                  <Download size={17} /> Download Pass
-                </button>
+                {selectedApplication.status === 'Approved' ? (
+                  <button 
+                    className="btn-gov-primary w-full p-3 rounded-xl text-[0.9rem] flex items-center justify-center gap-2 font-extrabold cursor-pointer" 
+                    onClick={() => handleDownloadPass(selectedApplication)}
+                  >
+                    <Download size={17} /> Download Official Accreditation Pass
+                  </button>
+                ) : selectedApplication.status === 'Rejected' ? (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-800 text-center text-xs font-bold">
+                    This competition application was not approved by EAF Administration. Contact the competitions department for appeals.
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-center text-xs font-bold">
+                    Application is currently pending admin review. Your official accreditation pass will be unlocked upon approval.
+                  </div>
+                )}
               </div>
             </div>
           </div>

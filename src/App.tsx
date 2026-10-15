@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LandingPage from './components/LandingPage';
 import AuthModal from './components/AuthModal';
+import LoginPage from './components/LoginPage';
 import RegistrationModal from './components/RegistrationModal';
 import FaydaVerifiedProfileModal, { FaydaResidentIdentity, formatFin } from './components/FaydaVerifiedProfileModal';
 import RBACSecurityMatrix from './components/Security/RBACSecurityMatrix';
@@ -112,6 +113,66 @@ export default function App() {
       return false;
     }
   });
+
+  const [authModalConfig, setAuthModalConfig] = useState<any>(null);
+  const [regModalRole, setRegModalRole] = useState<'CLUB' | 'ATHLETE' | null>(null);
+  const [verifiedCitizen, setVerifiedCitizen] = useState<FaydaResidentIdentity | null>(null);
+  const [showCitizenModal, setShowCitizenModal] = useState(false);
+  const [showRbacMatrix, setShowRbacMatrix] = useState(false);
+  const [showVerifiedBanner, setShowVerifiedBanner] = useState(true);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [toast, setToast] = useState<any>(null);
+
+  // Compute actual backend registration status
+  const registeredInfo = (() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('eaf_registered_athlete');
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return null;
+  })();
+
+  const isLoggedIn = Boolean(
+    (currentRole === 'ATHLETE' || currentRole === 'CLUB') &&
+    (Boolean(authToken) || authStatus === 'authenticated' || Boolean(userData))
+  );
+
+  const isUserRegistered = Boolean(
+    (isLoggedIn && (
+      Boolean((userData as any)?.isRegistered && (userData as any)?.status === 'ACTIVE') ||
+      Boolean(registeredInfo?.isRegistered && registeredInfo?.athleteId)
+    )) ||
+    (typeof window !== 'undefined' && localStorage.getItem('eaf_registration_status') === 'completed')
+  );
+
+  const rawStatus = (userData as any)?.registrationStatus || registeredInfo?.status;
+  const registeredStatusText = (() => {
+    if (!rawStatus) return isUserRegistered ? 'Active / Registered' : null;
+    const upper = String(rawStatus).toUpperCase();
+    if (upper === 'DRAFT') {
+      // Never show Draft to users!
+      return null;
+    }
+    if (upper === 'PENDING' || upper === 'PENDING_APPROVAL' || upper === 'SUBMITTED') {
+      return 'Registration Under Review';
+    }
+    if (upper === 'FAYDA_VERIFIED') {
+      return 'Verified';
+    }
+    if (upper === 'ACTIVE' || upper === 'APPROVED') {
+      return 'Active';
+    }
+    return rawStatus;
+  })();
+
+  // User profile avatar displayed whenever user is logged in
+  const userProfileAvatar = Boolean(isLoggedIn || isUserRegistered)
+    ? (currentAthlete?.photoUrl || registeredInfo?.photoUrl || (userData as any)?.picture || (typeof window !== 'undefined' ? (localStorage.getItem('fayda_photo') || localStorage.getItem('eaf_user_avatar')) : null) || '/images/runner_female.png')
+    : null;
+
+  const handleNotify = (message: string, type = 'info') => setToast({ message, type });
 
   // Persist athletes data
   useEffect(() => {
@@ -318,18 +379,39 @@ export default function App() {
     return () => window.removeEventListener('openRegistrationModal', handleOpenRegistration);
   }, [isUserRegistered, isLoggedIn]);
 
-  // Listen for openAuthModal event
+  // Listen for openAuthModal event & route history
   useEffect(() => {
     const handleOpenAuth = (e: any) => {
-      setAuthModalConfig({
-        isOpen: true,
-        method: e.detail?.method || 'FIN',
-        credential: e.detail?.credential || '',
-      });
+      setPublicSubPage('LOGIN');
+      if (typeof window !== 'undefined') {
+        window.history.pushState(null, '', '/login');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     };
     window.addEventListener('openAuthModal', handleOpenAuth);
     return () => window.removeEventListener('openAuthModal', handleOpenAuth);
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname === '/login') {
+      if (!isLoggedIn) {
+        setPublicSubPage('LOGIN');
+      } else {
+        window.history.replaceState({}, '', '/');
+      }
+    }
+    const handlePopState = () => {
+      if (window.location.pathname === '/login') {
+        setPublicSubPage('LOGIN');
+      } else if (window.location.pathname === '/register') {
+        setRegModalRole('ATHLETE');
+      } else if (window.location.pathname === '/') {
+        setPublicSubPage('HOME');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isLoggedIn]);
 
   // Listen for Fayda OIDC completion from popup window
   useEffect(() => {
@@ -348,64 +430,7 @@ export default function App() {
     return () => window.removeEventListener('message', handleFaydaMessage);
   }, [isUserRegistered]);
 
-  const [authModalConfig, setAuthModalConfig] = useState<any>(null);
-  const [regModalRole, setRegModalRole] = useState<'CLUB' | 'ATHLETE' | null>(null);
-  const [verifiedCitizen, setVerifiedCitizen] = useState<FaydaResidentIdentity | null>(null);
-  const [showCitizenModal, setShowCitizenModal] = useState(false);
-  const [showRbacMatrix, setShowRbacMatrix] = useState(false);
-  const [showVerifiedBanner, setShowVerifiedBanner] = useState(true);
-  const [paymentData, setPaymentData] = useState<any>(null);
-  const [toast, setToast] = useState<any>(null);
 
-  // Compute actual backend registration status
-  const registeredInfo = (() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('eaf_registered_athlete');
-        if (stored) return JSON.parse(stored);
-      } catch (e) {}
-    }
-    return null;
-  })();
-
-  const isLoggedIn = Boolean(
-    (currentRole === 'ATHLETE' || currentRole === 'CLUB') &&
-    (Boolean(authToken) || authStatus === 'authenticated' || Boolean(userData))
-  );
-
-  const isUserRegistered = Boolean(
-    isLoggedIn && (
-      Boolean((userData as any)?.isRegistered && (userData as any)?.status === 'ACTIVE') ||
-      Boolean(registeredInfo?.isRegistered && registeredInfo?.athleteId)
-    )
-  );
-
-  const rawStatus = (userData as any)?.registrationStatus || registeredInfo?.status;
-  const registeredStatusText = (() => {
-    if (!rawStatus) return isUserRegistered ? 'Active / Registered' : null;
-    const upper = String(rawStatus).toUpperCase();
-    if (upper === 'DRAFT') {
-      // Never show Draft to users!
-      return null;
-    }
-    if (upper === 'PENDING' || upper === 'PENDING_APPROVAL' || upper === 'SUBMITTED') {
-      return 'Registration Under Review';
-    }
-    if (upper === 'FAYDA_VERIFIED') {
-      return 'Verified';
-    }
-    if (upper === 'ACTIVE' || upper === 'APPROVED') {
-      return 'Active';
-    }
-    return rawStatus;
-  })();
-
-  // User profile avatar only created and activated when registration is complete
-  const userProfileAvatar = isUserRegistered
-    ? (currentAthlete?.photoUrl || registeredInfo?.photoUrl || (typeof window !== 'undefined' ? localStorage.getItem('eaf_user_avatar') : null) || '/images/runner_female.png')
-    : null;
-
-  const handleNotify = (message: string, type = 'info') => setToast({ message, type });
 
   const handleOpenAuthModal = () => {
     if (isLoggedIn) {
@@ -413,7 +438,11 @@ export default function App() {
       handleNotify('You are already logged in to your portal.', 'info');
       return;
     }
-    setAuthModalConfig({ isOpen: true });
+    setPublicSubPage('LOGIN');
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/login');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleLoginSuccess = (role: string, data: any) => {
@@ -967,7 +996,31 @@ export default function App() {
           }
         `}</style>
 
-        {regModalRole && !isLoggedIn ? (
+        {publicSubPage === 'LOGIN' && !isLoggedIn ? (
+          <LoginPage
+            darkMode={darkMode}
+            onLoginSuccess={(role, data) => {
+              handleLoginSuccess(role, data);
+              setPublicSubPage('HOME');
+              if (typeof window !== 'undefined') {
+                window.history.pushState(null, '', '/');
+              }
+            }}
+            onOpenRegistration={() => {
+              setPublicSubPage('HOME');
+              setRegModalRole('ATHLETE');
+              if (typeof window !== 'undefined') {
+                window.history.pushState(null, '', '/register');
+              }
+            }}
+            onNavigateHome={() => {
+              setPublicSubPage('HOME');
+              if (typeof window !== 'undefined') {
+                window.history.pushState(null, '', '/');
+              }
+            }}
+          />
+        ) : regModalRole && !isLoggedIn ? (
           <RegistrationModal
             role={regModalRole}
             verifiedIdentity={verifiedCitizen}

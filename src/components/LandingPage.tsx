@@ -1123,6 +1123,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     return (
       <CompetitionDetail
         meet={meetObj}
+        meetId={selectedMeetId}
         onBack={() => setSelectedMeetId(null)}
         onRegister={onRegister}
         currentRole={currentRole}
@@ -1413,50 +1414,32 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               transition={{ duration: 0.5, delay: 0.15 }}
               style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', marginBottom: '24px' }}
             >
-              {/* Primary CTA / Registered Status Badge */}
-              {isLoggedIn || isRegistered ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                  <div
-                    style={{
-                      background: '#ECFDF5',
-                      border: '2px solid #6EE7B7',
-                      color: '#065F46',
-                      fontWeight: 800,
-                      fontSize: '0.92rem',
-                      padding: '12px 22px',
-                      borderRadius: '14px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
-                    }}
-                  >
-                    <CheckCircle size={18} color="#059669" />
-                    <span>Session: {currentRole === 'CLUB' ? 'Club Administrator' : (registeredStatus && registeredStatus.toUpperCase() !== 'DRAFT' ? registeredStatus : 'Active / Verified Athlete')}</span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (onChangePublicSubPage) onChangePublicSubPage('DASHBOARD');
-                    }}
-                    style={{
-                      background: '#1D4ED8',
-                      color: '#FFFFFF',
-                      fontWeight: 800,
-                      fontSize: '0.92rem',
-                      padding: '13px 24px',
-                      borderRadius: '14px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)'
-                    }}
-                  >
-                    <span>Go to {currentRole === 'CLUB' ? 'Club' : 'Athlete'} Portal</span>
-                    <ArrowRight size={16} />
-                  </button>
-                </div>
+              {/* Primary CTA */}
+              {isLoggedIn ? (
+                <button
+                  onClick={() => {
+                    if (onChangePublicSubPage) onChangePublicSubPage('DASHBOARD');
+                  }}
+                  className="btn-accent"
+                  style={{
+                    background: '#1D4ED8',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '0.98rem',
+                    padding: '14px 28px',
+                    borderRadius: '14px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    transition: 'all 0.25s ease'
+                  }}
+                >
+                  <span>Go to {currentRole === 'CLUB' ? 'Club' : 'Athlete'} Portal</span>
+                  <ArrowRight size={18} />
+                </button>
               ) : isRegistered ? (
                 <button
                   onClick={() => {
@@ -1880,6 +1863,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       <img
                         src={meet.img}
                         alt={meet.title}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = '/images/banner_grand_prix.png';
+                        }}
                         style={{
                           position: 'absolute',
                           inset: 0,

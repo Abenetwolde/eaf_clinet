@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Trophy, Calendar, MapPin, Phone, Mail, Award, Users, Filter,
   CheckCircle2, User, UserCheck, Building, Clock, ChevronRight, ShieldCheck, X, Download, Printer, Check,
-  Lock, QrCode, Camera
+  Lock, QrCode, Camera,
+  AlertTriangle
 } from 'lucide-react';
 import { MOCK_ATHLETES, MOCK_EVENT_RESULTS, MOCK_CLUBS } from '../data/mockData';
 import { useI18n } from '../i18n';
 
 // Helper to determine banner image based on meet ID
-const getBannerUrl = (meetId) => {
-  if (meetId === 'MEET-2026-01') return '/images/banner_grand_prix.png';
-  if (meetId === 'MEET-2026-02') return '/images/banner_youth_games.png';
-  if (meetId === 'MEET-2026-03') return '/images/banner_jan_meda.png';
-  return 'https://images.unsplash.com/photo-1532444458054-01a7dd3e9fca?w=900&auto=format&fit=crop&q=80';
+const getBannerUrl = (meet: any) => {
+  if (!meet) return '/images/banner_grand_prix.png';
+  if (typeof meet === 'string') {
+    if (meet === 'MEET-2026-01') return '/images/banner_grand_prix.png';
+    if (meet === 'MEET-2026-02') return '/images/banner_youth_games.png';
+    if (meet === 'MEET-2026-03') return '/images/banner_jan_meda.png';
+    if (meet.startsWith('http') || meet.startsWith('/images/')) return meet;
+    return '/images/banner_grand_prix.png';
+  }
+  if (meet.bannerUrl) return meet.bannerUrl;
+  if (meet.img) return meet.img;
+  if (meet.id === 'MEET-2026-01') return '/images/banner_grand_prix.png';
+  if (meet.id === 'MEET-2026-02') return '/images/banner_youth_games.png';
+  if (meet.id === 'MEET-2026-03') return '/images/banner_jan_meda.png';
+  return '/images/banner_grand_prix.png';
 };
 
 // Realistic High-Density SVG 2D QR Code Matrix
@@ -114,6 +125,7 @@ const RealisticQRCode = ({ size = 150 }) => (
 
 interface CompetitionDetailProps {
   meet: any;
+  meetId?: string;
   onBack: () => void;
   onRegister: (role: 'CLUB' | 'ATHLETE') => void;
   currentRole?: 'LANDING' | 'CLUB' | 'ATHLETE';
@@ -122,13 +134,86 @@ interface CompetitionDetailProps {
 }
 
 export default function CompetitionDetail({
-  meet,
+  meet: initialMeet,
+  meetId,
   onBack,
   onRegister,
   currentRole = 'LANDING',
   currentAthlete,
   onLoginSuccess
 }: CompetitionDetailProps) {
+  const [liveEventDetail, setLiveEventDetail] = useState<any>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState<boolean>(false);
+
+  const effectiveId = (initialMeet as any)?.id || meetId;
+
+  useEffect(() => {
+    if (!effectiveId) return;
+    let isMounted = true;
+    setIsDetailLoading(true);
+
+    const fetchDetail = async () => {
+      try {
+        const token = localStorage.getItem('token') || localStorage.getItem('eaf_token');
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = "Bearer " + token;
+
+        const endpoints = [
+          "http://localhost:3000/api/v1/events/" + effectiveId + "/detail",
+          "/api/v1/events/" + effectiveId + "/detail",
+        ];
+
+        for (const url of endpoints) {
+          try {
+            const res = await fetch(url, { headers });
+            if (res.ok) {
+              const json = await res.json();
+              if (json.success && json.data) {
+                if (isMounted) setLiveEventDetail(json.data);
+                break;
+              }
+            }
+          } catch {}
+        }
+      } catch (err) {
+        console.warn('Dynamic fetch competition detail notice:', err);
+      } finally {
+        if (isMounted) setIsDetailLoading(false);
+      }
+    };
+
+    fetchDetail();
+    return () => { isMounted = false; };
+  }, [effectiveId]);
+
+  const meet = useMemo(() => {
+    if (!liveEventDetail) return initialMeet;
+    const scheduleDate = liveEventDetail.schedule?.[0]?.date || liveEventDetail.registrationDeadline?.slice(0, 10) || initialMeet?.date;
+    const parsedDate = scheduleDate ? new Date(scheduleDate) : null;
+    const dateStr = parsedDate && !isNaN(parsedDate.getTime())
+      ? parsedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      : (initialMeet?.dateString || 'November 15, 2026');
+
+    return {
+      ...initialMeet,
+      ...liveEventDetail,
+      title: liveEventDetail.title || initialMeet?.title,
+      amharic: liveEventDetail.title || initialMeet?.amharic,
+      venue: liveEventDetail.venue || initialMeet?.venue,
+      date: scheduleDate || initialMeet?.date,
+      dateString: dateStr,
+      disciplines: (Array.isArray(liveEventDetail.disciplines) && liveEventDetail.disciplines.length > 0)
+        ? liveEventDetail.disciplines
+        : (initialMeet?.disciplines || ['10,000m', '5,000m', 'Marathon']),
+      description: liveEventDetail.description || initialMeet?.description,
+      rules: liveEventDetail.rules || initialMeet?.rules,
+      bannerUrl: liveEventDetail.bannerUrl || initialMeet?.bannerUrl || initialMeet?.img || '/images/banner_grand_prix.png',
+      img: liveEventDetail.bannerUrl || initialMeet?.bannerUrl || initialMeet?.img || '/images/banner_grand_prix.png',
+      status: liveEventDetail.status === 'PUBLISHED' ? 'REGISTRATION_OPEN' : (liveEventDetail.status || initialMeet?.status || 'REGISTRATION_OPEN'),
+      organizerName: liveEventDetail.organizerName || initialMeet?.organizerName || 'Ethiopian Athletics Federation',
+      organizerEmail: liveEventDetail.organizerEmail || initialMeet?.organizerEmail || 'competitions@eaf.gov.et',
+    };
+  }, [initialMeet, liveEventDetail]);
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<string>('about');
   // Results Filters
@@ -236,6 +321,19 @@ export default function CompetitionDetail({
     (typeof window !== 'undefined' && (localStorage.getItem('eaf_registered_athlete') || localStorage.getItem('eaf_registration_status')))
   );
 
+  const handleApplyClick = () => {
+    const token = localStorage.getItem('token') || localStorage.getItem('eaf_token');
+    const isAuth = Boolean(token || currentRole === 'ATHLETE' || currentRole === 'CLUB');
+    if (!isAuth) {
+      window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { method: 'FIN' } }));
+      return;
+    }
+    if (isRegistrationPending) {
+      return;
+    }
+    setShowIndividualModal(true);
+  };
+
   const handleToggleDiscipline = (disc: string) => {
     if (selectedDisciplines.includes(disc)) {
       if (selectedDisciplines.length > 1) {
@@ -249,7 +347,7 @@ export default function CompetitionDetail({
   const handleSubmitMeetRegistration = async () => {
     if (isRegistrationPending) return;
     setIsPendingApproval(true);
-    const token = localStorage.getItem('token') || localStorage.getItem('eaf_token');
+    const token = localStorage.getItem('token') || localStorage.getItem('eaf_token') || localStorage.getItem('eaf_accessToken');
     const disciplinesToApply = selectedDisciplines.length > 0 ? selectedDisciplines : (meet.disciplines || ['General Entry']);
 
     try {
@@ -290,6 +388,21 @@ export default function CompetitionDetail({
       status: 'Pending',
     };
     setRegistrationPass(pass);
+    try {
+      const existing = JSON.parse(localStorage.getItem('eaf_user_registrations') || '[]');
+      const newEntry = {
+        id: `reg-${Date.now()}`,
+        eventId: meet.id,
+        eventTitle: meet.title,
+        disciplines: disciplinesToApply,
+        appliedAt: new Date().toISOString(),
+        status: 'PENDING',
+        venue: meet.venue,
+        date: meet.date,
+      };
+      existing.unshift(newEntry);
+      localStorage.setItem('eaf_user_registrations', JSON.stringify(existing));
+    } catch (e) {}
   };
 
   // Mock static info for About Tab based on Meet
@@ -438,13 +551,20 @@ export default function CompetitionDetail({
           marginBottom: '32px'
         }}
       >
-        <div
+        <img
+          src={getBannerUrl(meet)}
+          alt={meet.title}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.onerror = null;
+            target.src = '/images/banner_grand_prix.png';
+          }}
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `url(${getBannerUrl(meet.id)})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
           }}
         />
         <div
@@ -637,53 +757,29 @@ export default function CompetitionDetail({
                 </span>
                 <ChevronRight size={18} color="#991B1B" />
               </button>
-            ) : currentRole === 'ATHLETE' ? (
-              isRegistrationPending ? (
-                <div
-                  style={{
-                    flex: 1,
-                    padding: '16px 20px',
-                    borderRadius: '14px',
-                    background: '#FEF3C7',
-                    border: '1px solid #FCD34D',
-                    color: '#92400E',
-                    fontWeight: 800,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    fontSize: '0.9rem',
-                    boxShadow: '0 4px 12px rgba(217, 119, 6, 0.1)'
-                  }}
-                >
-                  <AlertTriangle size={20} color="#D97706" style={{ flexShrink: 0 }} />
-                  <span>Registration Pending Approval — Applications Locked</span>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowIndividualModal(true)}
-                  className="btn-accent"
-                  style={{
-                    flex: 1,
-                    padding: '16px 20px',
-                    borderRadius: '14px',
-                    justifyContent: 'space-between',
-                    background: '#FFFFFF',
-                    color: 'var(--primary-dark)',
-                    fontWeight: 900,
-                    boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)',
-                    cursor: 'pointer',
-                    border: 'none'
-                  }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.98rem' }}>
-                    <UserCheck size={20} color="var(--primary-dark)" /> Apply for Competition
-                  </span>
-                  <ChevronRight size={18} color="var(--primary-dark)" />
-                </button>
-              )
+            ) : isRegistrationPending && (currentRole === 'ATHLETE' || currentRole === 'CLUB') ? (
+              <div
+                style={{
+                  flex: 1,
+                  padding: '16px 20px',
+                  borderRadius: '14px',
+                  background: '#FEF3C7',
+                  border: '1px solid #FCD34D',
+                  color: '#92400E',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  fontSize: '0.9rem',
+                  boxShadow: '0 4px 12px rgba(217, 119, 6, 0.1)'
+                }}
+              >
+                <AlertTriangle size={20} color="#D97706" style={{ flexShrink: 0 }} />
+                <span>Registration Pending Approval — Applications Locked</span>
+              </div>
             ) : (
               <button
-                onClick={() => setShowAuthModal(true)}
+                onClick={handleApplyClick}
                 className="btn-accent"
                 style={{
                   flex: 1,
@@ -695,11 +791,13 @@ export default function CompetitionDetail({
                   fontWeight: 900,
                   boxShadow: '0 8px 20px rgba(0, 0, 0, 0.12)',
                   cursor: 'pointer',
-                  border: 'none'
+                  border: 'none',
+                  display: 'flex',
+                  alignItems: 'center'
                 }}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.98rem' }}>
-                  <User size={20} color="var(--primary-dark)" /> Sign In / Register
+                  <UserCheck size={20} color="var(--primary-dark)" /> Apply for Competition
                 </span>
                 <ChevronRight size={18} color="var(--primary-dark)" />
               </button>
@@ -1090,7 +1188,7 @@ export default function CompetitionDetail({
 
             {/* Modal Header with Event Banner */}
             <div className="modal-bleed-banner" style={{ position: 'relative', height: '140px', background: '#0F172A' }}>
-              <img src={getBannerUrl(meet.id)} alt={meet.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
+              <img src={getBannerUrl(meet)} alt={meet.title} onError={(e) => { (e.target as HTMLImageElement).src = '/images/banner_grand_prix.png'; }} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, #0F172A 0%, transparent 100%)' }} />
 
               <button
@@ -1296,27 +1394,7 @@ export default function CompetitionDetail({
 
                   {/* Submit Enrollment Button */}
                   <button
-                    onClick={async () => {
-                      setIsPendingApproval(true);
-                      const token = localStorage.getItem('token') || localStorage.getItem('eaf_token');
-                      if (token && meet?.id) {
-                        try {
-                          await fetch(`/api/v1/events/${meet.id}/apply`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({
-                              eventId: meet.id,
-                              disciplines: selectedEvents.length > 0 ? selectedEvents : ['General Entry'],
-                            })
-                          });
-                        } catch (e) {
-                          console.warn('Event entry API notice:', e);
-                        }
-                      }
-                    }}
+                    onClick={handleSubmitMeetRegistration}
                     className="btn-accent"
                     style={{ width: '100%', padding: '16px', borderRadius: '14px', fontSize: '1rem', fontWeight: 900, justifyContent: 'center', background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', color: '#FFF', border: 'none', cursor: 'pointer', boxShadow: '0 8px 20px rgba(14, 165, 233, 0.3)' }}
                   >

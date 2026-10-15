@@ -36,7 +36,7 @@ export default function Navbar({
     Boolean(authState.userData && (authState.userData as any).status === "ACTIVE" && (authState.userData as any).isRegistered))
   );
 
-  const userAvatar = isRegistered ? (currentAthlete?.photoUrl || "/images/runner_female.png") : null;
+  const userAvatar = isAuthenticated ? (currentAthlete?.photoUrl || (authState.userData as any)?.picture || (typeof window !== "undefined" ? (localStorage.getItem("fayda_photo") || localStorage.getItem("eaf_user_avatar")) : null) || "/images/runner_female.png") : null;
 
   return (
     <motion.header
