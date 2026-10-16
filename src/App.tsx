@@ -343,8 +343,15 @@ export default function App() {
         localStorage.getItem('eaf_registered_athlete')
       );
 
+      const isClubRequested =
+        urlParams.get('openReg') === 'CLUB' ||
+        urlParams.get('role')?.toLowerCase() === 'club' ||
+        window.location.search.includes('role=club');
+
       if (
         urlParams.get('openReg') === 'ATHLETE' ||
+        urlParams.get('openReg') === 'CLUB' ||
+        urlParams.get('role') === 'club' ||
         urlParams.get('faydaVerified') === 'true' ||
         urlParams.get('faydaSuccess') === 'true' ||
         window.location.pathname.startsWith('/register') ||
@@ -353,8 +360,9 @@ export default function App() {
         if (isAlreadyRegisteredMarker || isCurrentlyAuth) {
           window.history.replaceState({}, '', '/');
         } else {
-          window.history.pushState(null, '', '/register');
-          setRegModalRole('ATHLETE');
+          const targetRole = isClubRequested ? 'CLUB' : 'ATHLETE';
+          window.history.pushState(null, '', targetRole === 'CLUB' ? '/register?role=club' : '/register');
+          setRegModalRole(targetRole);
         }
       }
       if (urlParams.get('faydaSuccess') === 'true' || urlParams.get('token')) {
@@ -372,8 +380,9 @@ export default function App() {
         return;
       }
       setAuthModalConfig(null); // Close auth modal
-      window.history.pushState(null, '', '/register');
-      setRegModalRole(e.detail.role); // Open registration modal
+      const role = e?.detail?.role || 'ATHLETE';
+      window.history.pushState(null, '', role === 'CLUB' ? '/register?role=club' : '/register');
+      setRegModalRole(role); // Open registration modal
     };
     window.addEventListener('openRegistrationModal', handleOpenRegistration);
     return () => window.removeEventListener('openRegistrationModal', handleOpenRegistration);
@@ -404,7 +413,8 @@ export default function App() {
       if (window.location.pathname === '/login') {
         setPublicSubPage('LOGIN');
       } else if (window.location.pathname === '/register') {
-        setRegModalRole('ATHLETE');
+        const isClub = window.location.search.includes('role=club');
+        setRegModalRole(isClub ? 'CLUB' : 'ATHLETE');
       } else if (window.location.pathname === '/') {
         setPublicSubPage('HOME');
       }
@@ -473,7 +483,8 @@ export default function App() {
       dispatch(addClub(newClub));
       dispatch(setClub(newClub));
       dispatch(setRole('CLUB'));
-      setClubSubPage('OVERVIEW');
+      const targetSubPage = registrationData.payload.targetSubPage || 'OVERVIEW';
+      setClubSubPage(targetSubPage);
       setPublicSubPage('HOME');
       setNavNonce(prev => prev + 1);
       window.scrollTo(0, 0);
@@ -1030,11 +1041,12 @@ export default function App() {
                 window.history.pushState(null, '', '/');
               }
             }}
-            onOpenRegistration={() => {
+            onOpenRegistration={(role?: 'CLUB' | 'ATHLETE') => {
               setPublicSubPage('HOME');
-              setRegModalRole('ATHLETE');
+              const chosenRole = role || 'ATHLETE';
+              setRegModalRole(chosenRole);
               if (typeof window !== 'undefined') {
-                window.history.pushState(null, '', '/register');
+                window.history.pushState(null, '', chosenRole === 'CLUB' ? '/register?role=club' : '/register');
               }
             }}
             onNavigateHome={() => {
@@ -1069,7 +1081,7 @@ export default function App() {
                 return;
               }
               setRegModalRole(role);
-              window.history.pushState(null, '', '/register');
+              window.history.pushState(null, '', role === 'CLUB' ? '/register?role=club' : '/register');
             }}
             onChangePublicSubPage={setPublicSubPage}
             publicSubPage="HOME"
@@ -1109,7 +1121,7 @@ export default function App() {
             }}
             onRegister={(role: 'CLUB' | 'ATHLETE') => {
               setRegModalRole(role);
-              window.history.pushState(null, '', '/register');
+              window.history.pushState(null, '', role === 'CLUB' ? '/register?role=club' : '/register');
             }}
           />
         )}

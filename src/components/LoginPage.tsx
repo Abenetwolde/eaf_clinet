@@ -4,7 +4,7 @@ import { useAppDispatch } from '../store/hooks';
 import { login } from '../store/slices/authSlice';
 import { MOCK_CLUBS, MOCK_ATHLETES } from '../data/mockData';
 import {
-  ShieldCheck, Phone, AlertCircle, ArrowRight, ArrowLeft, Sparkles, Eye, EyeOff, User, Lock, Home
+  ShieldCheck, Phone, AlertCircle, ArrowRight, ArrowLeft, Sparkles, Eye, EyeOff, User, Lock, Home, Building2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -12,7 +12,7 @@ export type LoginMethod = 'FAYDA' | 'PHONE';
 
 interface LoginPageProps {
   onLoginSuccess: (role: string, data: any) => void;
-  onOpenRegistration?: () => void;
+  onOpenRegistration?: (role?: 'CLUB' | 'ATHLETE') => void;
   onNavigateHome?: () => void;
   initialMethod?: LoginMethod | string;
   initialCredential?: string;
@@ -522,18 +522,34 @@ export default function LoginPage({
           </div>
 
           {/* Footer Registration Link */}
-          <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-            Don't have an athlete license yet?{' '}
-            <button
-              type="button"
-              onClick={() => {
-                if (onOpenRegistration) onOpenRegistration();
-                else window.location.href = '/register';
-              }}
-              className="font-extrabold text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
-            >
-              Start EAF Registration
-            </button>
+          <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+            <div>
+              Don't have an athlete license yet?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenRegistration) onOpenRegistration('ATHLETE');
+                  else window.location.href = '/register';
+                }}
+                className="font-extrabold text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
+              >
+                Start Athlete Registration (Fayda)
+              </button>
+            </div>
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
+              Representing an athletics club or organization?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenRegistration) onOpenRegistration('CLUB');
+                  else window.location.href = '/register?role=club';
+                }}
+                className="font-extrabold text-sky-700 dark:text-sky-400 hover:underline cursor-pointer inline-flex items-center gap-1"
+              >
+                <Building2 className="w-3.5 h-3.5 inline" />
+                Register as a Club (No Fayda upfront)
+              </button>
+            </div>
           </div>
         </motion.div>
       </main>

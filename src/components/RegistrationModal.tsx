@@ -18,6 +18,7 @@ import {
   type AthleteRegistrationRequest,
 } from '../store/api/athleteApi';
 import FaydaVerifiedProfileModal, { FaydaResidentIdentity, formatFin } from './FaydaVerifiedProfileModal';
+import ClubRegistrationForm from './ClubAdmin/ClubRegistrationForm';
 
 // Types for internal use
 export interface FaydaResult {
@@ -255,6 +256,20 @@ export default function RegistrationModal({
   onRegisterSuccess: (data: PendingRegistrationData) => void;
 }) {
   const { t } = useI18n();
+
+  const [activeRegType, setActiveRegType] = useState<'ATHLETE' | 'CLUB'>(() => {
+    if (initialRole === 'CLUB') return 'CLUB';
+    if (typeof window !== 'undefined' && window.location.search.includes('role=club')) return 'CLUB';
+    return 'ATHLETE';
+  });
+
+  useEffect(() => {
+    if (initialRole === 'CLUB') {
+      setActiveRegType('CLUB');
+    } else if (initialRole === 'ATHLETE') {
+      setActiveRegType('ATHLETE');
+    }
+  }, [initialRole]);
 
   // Pre-load verified Fayda identity
   const initialFayda = resolveStoredFaydaIdentity(verifiedIdentity);
@@ -2065,6 +2080,27 @@ export default function RegistrationModal({
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // DEDICATED CLUB REGISTRATION FLOW (NO FAYDA REQUIRED)
+  // ─────────────────────────────────────────────────────────────────────────────
+  if (activeRegType === 'CLUB') {
+    return (
+      <ClubRegistrationForm
+        onClose={onClose}
+        onRegisterSuccess={(clubData: any) => {
+          onRegisterSuccess({
+            type: 'CLUB',
+            payload: {
+              club: clubData.payload.club,
+              targetSubPage: clubData.payload.targetSubPage || 'REGISTER_MEMBER',
+            },
+          });
+        }}
+        onSwitchToAthlete={() => setActiveRegType('ATHLETE')}
+      />
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
   // FULL PAGE VIEW (REPLACING MODAL & REMOVING GREEN/YELLOW/RED BORDER)
   // ─────────────────────────────────────────────────────────────────────────────
   return (
@@ -2075,6 +2111,28 @@ export default function RegistrationModal({
       {/* Main Full-Page Content Card */}
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-8 my-4 sm:my-6">
         <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
+          {/* Top Registration Role Switcher */}
+          {!isSubmittedPending && !isAlreadyCompleted && (
+            <div className="flex p-1.5 bg-slate-100 rounded-2xl mb-8 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setActiveRegType('ATHLETE')}
+                className="flex-1 py-2.5 px-4 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition bg-white text-blue-700 shadow-xs border border-slate-200 cursor-pointer"
+              >
+                <User size={16} />
+                <span>🏃 Individual Athlete (Fayda National ID)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveRegType('CLUB')}
+                className="flex-1 py-2.5 px-4 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition text-slate-600 hover:text-slate-900 cursor-pointer"
+              >
+                <Building2 size={16} />
+                <span>🏢 Athletics Club / Organization (No Fayda upfront)</span>
+              </button>
+            </div>
+          )}
+
           {!isSubmittedPending && (
             <StepBar steps={steps} current={step} />
           )}
