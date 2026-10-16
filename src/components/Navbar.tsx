@@ -116,14 +116,27 @@ export default function Navbar({
                 </motion.button>
               </div>
             ) : (
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onOpenAuthModal()}
-                className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[0.9rem] px-5 py-2.5 rounded-xl border-0 cursor-pointer shadow-xs"
-              >
-                Sign In
-              </motion.button>
+              <div className="flex items-center gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent("openRegistrationModal", { detail: { role: "CLUB" } }));
+                  }}
+                  className="bg-sky-50 border border-sky-200 text-sky-800 hover:bg-sky-100 font-extrabold text-[0.85rem] px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer transition-all shadow-xs"
+                >
+                  <Building2 size={15} className="text-sky-700" />
+                  Register Club
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onOpenAuthModal()}
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-[0.9rem] px-4.5 py-2.5 rounded-xl border-0 cursor-pointer shadow-xs"
+                >
+                  Sign In
+                </motion.button>
+              </div>
             )
           ) : (
             <>

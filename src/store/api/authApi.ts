@@ -237,3 +237,5 @@ export const {
   useGetVerificationStatusQuery,
   useLazyGetVerificationStatusQuery,
 } = authApi;
+
+export { useInitiateFaydaMutation, useConfirmFaydaOtpMutation } from './athleteApi';

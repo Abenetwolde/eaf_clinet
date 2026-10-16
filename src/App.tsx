@@ -569,6 +569,7 @@ export default function App() {
       { label: t('nav.home'), page: 'HOME' },
       { label: t('nav.competitions'), page: 'COMPETITIONS' },
       { label: t('nav.athletes'), page: 'ATHLETES' },
+      { label: "Professionals", page: "PROFESSIONALS" },
       { label: t('nav.media'), page: 'MEDIA' },
     ];
 
@@ -779,6 +780,29 @@ export default function App() {
                     </button>
                   </div>
                 )}
+
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setRegModalRole('CLUB')}
+                  className="btn-accent"
+                  style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    padding: '8px 16px',
+                    borderRadius: '12px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: darkMode ? '#1E293B' : '#EFF6FF',
+                    border: '1.5px solid ' + (darkMode ? '#334155' : '#BFDBFE'),
+                    color: darkMode ? '#93C5FD' : '#1D4ED8',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Building2 size={14} />
+                  Register Club
+                </motion.button>
 
                 <motion.button
                 whileHover={{ scale: 1.03 }}

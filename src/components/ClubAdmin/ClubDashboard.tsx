@@ -39,13 +39,19 @@ export default function ClubDashboard({ club, athletes, transfers, onRenewLicens
           </div>
 
           <div>
-            <div className="flex items-center gap-[10px]">
+            <div className="flex items-center gap-[10px] flex-wrap">
               <h2 className="text-[2rem] font-black text-text-main">
                 {club.name}
               </h2>
-              <span className="badge badge-gold">
-                Rank #{club.clubRank} Regional
-              </span>
+              {((club as any).verificationStatus === "PENDING" || (club as any).status === "PENDING") ? (
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300">
+                  Accreditation Pending
+                </span>
+              ) : (
+                <span className="badge badge-gold">
+                  Rank #{club.clubRank} Regional
+                </span>
+              )}
             </div>
             <p className="text-[0.9rem] text-text-muted mt-[4px] font-semibold">
               Region: {club.region} | Club Manager: <strong>{club.manager}</strong> | ID: {club.id}
@@ -158,9 +164,23 @@ export default function ClubDashboard({ club, athletes, transfers, onRenewLicens
       )}
 
       {activeTab === 'MEETS' && (
-        <MeetRegistration 
-          onNotify={onNotify}
-        />
+        ((club as any).verificationStatus === 'PENDING' || (club as any).status === 'PENDING') ? (
+          <div className="glass-panel p-[40px] text-center max-w-[640px] mx-auto my-[40px] border-2 border-amber-300 bg-amber-50/60 rounded-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto mb-4">
+              <Trophy size={32} />
+            </div>
+            <h3 className="text-xl font-black text-amber-950 mb-2">Competition Entries Restricted</h3>
+            <p className="text-sm text-amber-800 leading-relaxed mb-4">
+              Official meet entries and championship seedings are restricted while your club accreditation is undergoing review by the Ethiopian Athletics Federation.
+              You may manage roster members, but meet entries require approved federation status.
+            </p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-200/80 text-amber-900 text-xs font-bold">
+              <span>Status: Federation Accreditation Pending</span>
+            </div>
+          </div>
+        ) : (
+          <MeetRegistration onNotify={onNotify} />
+        )
       )}
     </div>
   );

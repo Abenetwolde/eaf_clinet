@@ -47,13 +47,26 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   return (
     <div>
       {/* Page Title Header */}
-      <div className="flex items-center justify-between mb-[24px] flex-wrap gap-[12px]">
+      <div className="flex items-center justify-between mb-[20px] flex-wrap gap-[12px]">
         <div>
-          <h2 className="text-[1.6rem] font-extrabold text-text-heading">
-            {club.name} — Executive Dashboard
-          </h2>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h2 className="text-[1.6rem] font-extrabold text-text-heading">
+              {club.name} — Executive Dashboard
+            </h2>
+            {((club as any).verificationStatus === "PENDING" || (club as any).status === "PENDING") ? (
+              <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                Accreditation Pending
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5">
+                <ShieldCheck size={13} className="text-emerald-600" />
+                Official Accredited Club
+              </span>
+            )}
+          </div>
           <p className="text-[0.88rem] text-text-muted mt-[2px]">
-            Federation Club ID: <strong>{club.id}</strong> | Region: <strong>{club.region}</strong> | Manager: <strong>{club.manager}</strong>
+            Federation Club ID: <strong>{club.id}</strong> | Region: <strong>{club.region}</strong> | Manager: <strong>{club.manager || (club as any).presidentName || "Club Admin"}</strong>
           </p>
         </div>
 
@@ -83,6 +96,27 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
           </button>
         </div>
       </div>
+
+      {/* Pending Accreditation Notice Banner */}
+      {((club as any).verificationStatus === "PENDING" || (club as any).status === "PENDING") && (
+        <div className="bg-amber-50 border-2 border-amber-400/70 rounded-2xl p-5 mb-6 flex items-start gap-4 shadow-sm">
+          <div className="p-2.5 rounded-xl bg-amber-100 text-amber-800 shrink-0 mt-0.5">
+            <AlertTriangle size={24} />
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h4 className="text-base font-extrabold text-amber-900">Federation Accreditation Under Review</h4>
+              <span className="px-2.5 py-0.5 rounded-full text-[0.68rem] font-black bg-amber-200 text-amber-900 uppercase tracking-wide">
+                Status: Pending
+              </span>
+            </div>
+            <p className="text-sm text-amber-800 leading-relaxed">
+              Your club application has been submitted to the Ethiopian Athletics Federation and is currently undergoing credential review.
+              You are permitted to register club athletes, coaches, and staff via Fayda National ID verification. However, official competition licensing and meet entry will remain restricted until federation accreditation is approved.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Metrics Row */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-[16px] mb-[28px]">

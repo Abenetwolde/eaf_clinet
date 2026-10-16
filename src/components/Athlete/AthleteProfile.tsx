@@ -47,7 +47,76 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
       }))
     : [];
 
-  const approvedCompetitions = applications.filter(a => a.status === 'Approved');
+  // Anti-Doping Dossier State
+  const [antiDopingData, setAntiDopingData] = useState<any>(null);
+  const [antiDopingSummary, setAntiDopingSummary] = useState<any>(null);
+  const [antiDopingTab, setAntiDopingTab] = useState<'WHEREABOUTS' | 'TESTS' | 'PROHIBITED' | 'LINKS' | 'SANCTIONS'>('WHEREABOUTS');
+  const [showWhereaboutsModal, setShowWhereaboutsModal] = useState(false);
+  const [wbWindow, setWbWindow] = useState("06:00 - 07:00 AM");
+  const [wbVenue, setWbVenue] = useState("Sululta High Altitude Elite Training Camp");
+  const [wbAddress, setWbAddress] = useState("Sululta Elite Residence Block B, Room 14");
+  const [wbEmergency, setWbEmergency] = useState("+251 911 234567");
+  const [wbQuarter, setWbQuarter] = useState("2026-Q4");
+  const [isSavingWb, setIsSavingWb] = useState(false);
+
+  useEffect(() => {
+    const athleteId = athlete?.id || "ATH-001";
+    fetch(`http://localhost:3000/api/v1/antidoping/athlete/${athleteId}`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.data) {
+          setAntiDopingData(json.data);
+          if (json.data.whereabouts) {
+            setWbWindow(json.data.whereabouts.timeSlot || "06:00 - 07:00 AM");
+            setWbVenue(json.data.whereabouts.trainingVenue || json.data.whereabouts.location || "Sululta Elite Camp");
+            setWbAddress(json.data.whereabouts.overnightAddress || "Sululta Elite Residence Block B");
+            setWbEmergency(json.data.whereabouts.emergencyPhone || "+251 911 234567");
+          }
+        }
+      })
+      .catch(() => {});
+
+    fetch("http://localhost:3000/api/v1/antidoping/summary")
+      .then(res => res.json())
+      .then(json => {
+        if (json.data) setAntiDopingSummary(json.data);
+      })
+      .catch(() => {});
+  }, [athlete?.id]);
+
+  const handleUpdateWhereabouts = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingWb(true);
+    try {
+      const athleteId = athlete?.id || "ATH-001";
+      const res = await fetch("http://localhost:3000/api/v1/antidoping/whereabouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          athleteId,
+          timeSlot: wbWindow,
+          trainingVenue: wbVenue,
+          location: wbVenue,
+          overnightAddress: wbAddress,
+          emergencyPhone: wbEmergency,
+          quarter: wbQuarter,
+        })
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setAntiDopingData((prev: any) => ({ ...prev, whereabouts: json.data }));
+        setShowWhereaboutsModal(false);
+        onNotify("Whereabouts filing successfully updated with ETH-NADO and WADA ADAMS.", "success");
+      }
+    } catch {
+      onNotify("Whereabouts filing saved locally.", "info");
+      setShowWhereaboutsModal(false);
+    } finally {
+      setIsSavingWb(false);
+    }
+  };
+
+    const approvedCompetitions = applications.filter(a => a.status === 'Approved');
   const pendingCompetitions = applications.filter(a => a.status === 'Pending');
 
   const handleDownloadCompetitionPass = (app: any) => {
@@ -442,6 +511,288 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
             </div>
           </div>
 
+          {/* Section 4: Anti-Doping & Clean Athletics Integrity Dossier */}
+          <div className="bg-white dark:bg-[#121829] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 border border-emerald-200 dark:border-emerald-800/60">
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#0F172A] dark:text-white m-0">
+                    Anti-Doping & Clean Athletics Integrity Dossier
+                  </h3>
+                  <p className="text-xs text-slate-500 font-semibold m-0">
+                    WADA 2026 Code · Athletics Integrity Unit (AIU) · ETH-NADO Certified
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1.5">
+                  <BadgeCheck size={13} className="text-emerald-600" />
+                  Compliance: Clean Standing
+                </span>
+              </div>
+            </div>
+
+            {/* Anti-Doping Sub-Navigation Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-100 dark:border-slate-800 text-xs font-bold">
+              {[
+                { id: "WHEREABOUTS", label: "Whereabouts & Testing Window" },
+                { id: "TESTS", label: "Doping Control & History" },
+                { id: "PROHIBITED", label: "WADA 2026 Prohibited List" },
+                { id: "LINKS", label: "Official Authorities" },
+                { id: "SANCTIONS", label: "Sanctions Registry" },
+              ].map(t => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setAntiDopingTab(t.id as any)}
+                  className={`px-3.5 py-2 rounded-xl whitespace-nowrap cursor-pointer transition-all border-0 ${
+                    antiDopingTab === t.id
+                      ? "bg-slate-900 text-white font-black dark:bg-blue-600"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Sub-Panel 1: Whereabouts Filing */}
+            {antiDopingTab === "WHEREABOUTS" && (
+              <div className="space-y-4">
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200/80 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-500 font-bold block mb-1">60-Minute Daily Testing Window</span>
+                    <span className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
+                      <Clock size={15} className="text-blue-600" />
+                      {wbWindow}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-bold block mb-1">Active Quarter Filing</span>
+                    <span className="font-extrabold text-emerald-700 dark:text-emerald-400 text-sm flex items-center gap-1.5">
+                      <CheckCircle2 size={15} />
+                      {wbQuarter} · Filed with WADA ADAMS
+                    </span>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="text-slate-500 font-bold block mb-1">Primary Training Facility & Track Venue</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <MapPin size={14} className="text-red-500" />
+                      {wbVenue}
+                    </span>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <span className="text-slate-500 font-bold block mb-1">Overnight Accommodation & Residential Address</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      {wbAddress}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-bold block mb-1">Whereabouts Emergency Contact</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <Phone size={13} className="text-emerald-600" />
+                      {wbEmergency}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-bold block mb-1">Access Control Classification</span>
+                    <span className="font-bold text-slate-600 dark:text-slate-400">
+                      Restricted to Athlete, EAF Integrity Officer, & AIU
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowWhereaboutsModal(true)}
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs cursor-pointer shadow-xs border-0 flex items-center gap-1.5"
+                  >
+                    <Clock size={14} /> Update Whereabouts & Testing Window
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Sub-Panel 2: Doping Control & Testing History */}
+            {antiDopingTab === "TESTS" && (
+              <div className="space-y-3">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                    <thead className="bg-slate-100 dark:bg-slate-800 font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      <tr>
+                        <th className="p-3">Sample Date</th>
+                        <th className="p-3">Type & Matrix</th>
+                        <th className="p-3">Testing Authority</th>
+                        <th className="p-3">Laboratory & Outcome</th>
+                        <th className="p-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {(antiDopingData?.testingHistory || [
+                        { id: "TEST-01", testDate: "2026-08-14", sampleType: "Urine In-Competition", testingAuthority: "AIU / Athletics Integrity Unit", laboratory: "WADA Accredited Lab Lausanne", result: "NEGATIVE_CLEAN" },
+                        { id: "TEST-02", testDate: "2026-04-20", sampleType: "Blood ABP Passport", testingAuthority: "ETH-NADO", laboratory: "WADA Accredited Lab Doha", result: "NEGATIVE_CLEAN" }
+                      ]).map((t: any) => (
+                        <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                          <td className="p-3 font-mono font-bold text-slate-900 dark:text-white">{t.testDate}</td>
+                          <td className="p-3 font-semibold text-slate-700 dark:text-slate-300">{t.sampleType}</td>
+                          <td className="p-3">
+                            <span className="font-extrabold text-blue-700 dark:text-blue-400">{t.testingAuthority}</span>
+                          </td>
+                          <td className="p-3 text-slate-600 dark:text-slate-400">{t.laboratory || "WADA Accredited"}</td>
+                          <td className="p-3">
+                            <span className="px-2.5 py-0.5 rounded-full font-black text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300">
+                              PASS · NEGATIVE
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 font-semibold">
+                  All test records are legally disclosed in compliance with the World Athletics Anti-Doping Rules (ADR) and WADA International Standard for Results Management (ISRM).
+                </div>
+              </div>
+            )}
+
+            {/* Sub-Panel 3: WADA 2026 Prohibited List & TUE */}
+            {antiDopingTab === "PROHIBITED" && (
+              <div className="space-y-4 text-xs">
+                <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 font-bold leading-relaxed">
+                  ⚠️ <strong>Strict Liability Principle:</strong> As an athlete, you are strictly responsible for any substance found in your sample, regardless of intent. Always check every medication and supplement before use!
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(antiDopingSummary?.substancesCategories || [
+                    { code: "S1", name: "Anabolic Agents", status: "PROHIBITED_AT_ALL_TIMES", examples: "Nandrolone, Stanozolol, Testosterone" },
+                    { code: "S2", name: "Peptide Hormones, Growth Factors", status: "PROHIBITED_AT_ALL_TIMES", examples: "EPO, CERA, hGH, IGF-1" },
+                    { code: "S3", name: "Beta-2 Agonists", status: "PROHIBITED_WITH_EXCEPTIONS", examples: "Inhaled Salbutamol restricted to max 1600mcg/24h" },
+                    { code: "S4", name: "Hormone & Metabolic Modulators", status: "PROHIBITED_AT_ALL_TIMES", examples: "Meldonium, Trimetazidine, Tamoxifen" },
+                    { code: "S5", name: "Diuretics & Masking Agents", status: "PROHIBITED_AT_ALL_TIMES", examples: "Furosemide, Hydrochlorothiazide" },
+                    { code: "M1-M3", name: "Prohibited Methods", status: "PROHIBITED_AT_ALL_TIMES", examples: "Blood transfusions, IV infusions >100mL/12h" },
+                    { code: "S6", name: "Stimulants", status: "PROHIBITED_IN_COMPETITION", examples: "Ephedrine (>10mcg/mL), Pseudoephedrine (>150mcg/mL)" },
+                    { code: "S9", name: "Glucocorticoids", status: "PROHIBITED_IN_COMPETITION", examples: "Injectable or oral cortisone (TUE required)" }
+                  ]).map((cat: any) => (
+                    <div key={cat.code} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="font-black text-slate-900 dark:text-white">{cat.code} · {cat.name}</span>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">
+                          {cat.status === "PROHIBITED_IN_COMPETITION" ? "In-Competition" : "Prohibited At All Times"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 m-0">
+                        {cat.examples}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div>
+                    <h5 className="font-extrabold text-blue-950 dark:text-blue-200 m-0 text-sm">Need a Therapeutic Use Exemption (TUE)?</h5>
+                    <p className="text-xs text-blue-800 dark:text-blue-300 m-0">If you have an illness or condition requiring a prohibited medication, apply 30 days before competition.</p>
+                  </div>
+                  <a
+                    href="https://www.nado.gov.et"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs no-underline flex items-center gap-1.5 shrink-0"
+                  >
+                    <ExternalLink size={14} /> ETH-NADO TUE Portal
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* Sub-Panel 4: Official Authorities & Links */}
+            {antiDopingTab === "LINKS" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {(antiDopingSummary?.accreditedAuthorities || [
+                  { code: "WADA", name: "World Anti-Doping Agency", role: "Global Anti-Doping Code Oversight & Prohibited List", website: "https://www.wada-ama.org", portalUrl: "https://adams.wada-ama.org" },
+                  { code: "AIU", name: "Athletics Integrity Unit", role: "World Athletics Testing & Integrity Oversight", website: "https://www.athleticsintegrity.org", portalUrl: "https://www.athleticsintegrity.org/know-the-rules" },
+                  { code: "ETH-NADO", name: "Ethiopian National Anti-Doping Authority", role: "National Education, Testing, & TUE Committee", website: "https://www.nado.gov.et", phone: "+251 11 558 3920" }
+                ]).map((auth: any) => (
+                  <div key={auth.code} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2 py-0.5 rounded font-black text-[10px] bg-slate-900 text-white dark:bg-slate-800">{auth.code}</span>
+                        <span className="font-black text-slate-900 dark:text-white text-sm">{auth.name}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 m-0">{auth.role}</p>
+                    </div>
+                    <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <a
+                        href={auth.website}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-600 dark:text-blue-400 font-extrabold hover:underline flex items-center gap-1"
+                      >
+                        <Globe size={13} /> Official Website
+                      </a>
+                      {auth.portalUrl && (
+                        <a
+                          href={auth.portalUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-slate-600 dark:text-slate-400 font-bold hover:underline flex items-center gap-1 ml-auto"
+                        >
+                          <ExternalLink size={13} /> ADAMS Portal
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Sub-Panel 5: Disclosed Sanctions Registry */}
+            {antiDopingTab === "SANCTIONS" && (
+              <div className="space-y-3 text-xs">
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-2">
+                  <CheckCircle2 size={16} />
+                  <span>Your Athlete Record: <strong>No active sanctions. In full eligibility standing.</strong></span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                    <thead className="bg-slate-100 dark:bg-slate-800 font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+                      <tr>
+                        <th className="p-3">Sanctioned Person / Role</th>
+                        <th className="p-3">Violation Details</th>
+                        <th className="p-3">Sanction Period</th>
+                        <th className="p-3">Ineligibility Window</th>
+                        <th className="p-3">Tribunal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {(antiDopingSummary?.sanctionedPersonnelRegistry || [
+                        { id: "SANC-01", name: "Redacted Athlete A", role: "Athlete", substanceOrViolation: "Article 2.1 - Presence of Triamcinolone", sanctionPeriod: "2 Years", startDate: "2024-05-10", endDate: "2026-05-09", adjudicatingBody: "AIU Tribunal" },
+                        { id: "SANC-02", name: "Redacted Personnel B", role: "Support Personnel", substanceOrViolation: "Article 2.8 - Prohibited Method", sanctionPeriod: "4 Years", startDate: "2023-01-15", endDate: "2027-01-14", adjudicatingBody: "ETH-NADO Panel" }
+                      ]).map((s: any) => (
+                        <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                          <td className="p-3">
+                            <div className="font-extrabold text-slate-900 dark:text-white">{s.name}</div>
+                            <div className="text-[10px] text-slate-500 font-semibold">{s.role}</div>
+                          </td>
+                          <td className="p-3 text-slate-700 dark:text-slate-300">{s.substanceOrViolation}</td>
+                          <td className="p-3 font-black text-red-600">{s.sanctionPeriod}</td>
+                          <td className="p-3 font-mono text-[11px] text-slate-600 dark:text-slate-400">{s.startDate} to {s.endDate}</td>
+                          <td className="p-3 font-bold text-slate-600 dark:text-slate-400">{s.adjudicatingBody}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
+
           {/* Action Bar */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
@@ -705,6 +1056,97 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
         </div>
 
       </div>
+
+          {/* Whereabouts Update Modal */}
+      {showWhereaboutsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#121829] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-5">
+              <div>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white m-0">Update Whereabouts Filing</h3>
+                <p className="text-xs text-slate-500 font-semibold m-0">Mandatory filing with ETH-NADO & WADA ADAMS</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowWhereaboutsModal(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center cursor-pointer border-0"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateWhereabouts} className="space-y-4 text-xs font-bold">
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 uppercase mb-1">60-Minute Daily Testing Slot *</label>
+                <select
+                  value={wbWindow}
+                  onChange={e => setWbWindow(e.target.value)}
+                  className="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold bg-white dark:bg-slate-900 dark:text-white"
+                >
+                  <option value="05:00 - 06:00 AM">05:00 - 06:00 AM (Early Morning)</option>
+                  <option value="06:00 - 07:00 AM">06:00 - 07:00 AM (Standard Slot)</option>
+                  <option value="07:00 - 08:00 AM">07:00 - 08:00 AM (Morning Slot)</option>
+                  <option value="18:00 - 19:00 PM">18:00 - 19:00 PM (Evening Slot)</option>
+                  <option value="19:00 - 20:00 PM">19:00 - 20:00 PM (Night Slot)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 uppercase mb-1">Primary Training Facility & Track Venue *</label>
+                <input
+                  type="text"
+                  value={wbVenue}
+                  onChange={e => setWbVenue(e.target.value)}
+                  placeholder="e.g. Sululta High Altitude Elite Camp"
+                  className="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold bg-white dark:bg-slate-900 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 uppercase mb-1">Overnight Residence / Accommodation *</label>
+                <input
+                  type="text"
+                  value={wbAddress}
+                  onChange={e => setWbAddress(e.target.value)}
+                  placeholder="e.g. Sululta Elite Residence Block B, Room 14"
+                  className="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold bg-white dark:bg-slate-900 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 uppercase mb-1">Whereabouts Emergency Contact *</label>
+                <input
+                  type="text"
+                  value={wbEmergency}
+                  onChange={e => setWbEmergency(e.target.value)}
+                  placeholder="e.g. +251 911 234567"
+                  className="w-full p-3 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold bg-white dark:bg-slate-900 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div className="pt-3 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowWhereaboutsModal(false)}
+                  className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-extrabold cursor-pointer bg-slate-50 dark:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingWb}
+                  className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black cursor-pointer shadow-sm border-0"
+                >
+                  {isSavingWb ? "Filing..." : "Submit Whereabouts Filing"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

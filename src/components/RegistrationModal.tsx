@@ -404,6 +404,13 @@ export default function RegistrationModal({
 
   // Club President specific
   const [clubName, setClubName] = useState('Ethiopian Electric Athletics Club');
+  const [clubShortName, setClubShortName] = useState('EEAC');
+  const [clubCity, setClubCity] = useState('Addis Ababa');
+  const [clubAddress, setClubAddress] = useState('Mexico Square, EEP Compound, Bldg 4');
+  const [clubOfficialEmail, setClubOfficialEmail] = useState('admin@eeac-athletics.et');
+  const [clubOfficialPhone, setClubOfficialPhone] = useState('+251 11 551 2233');
+  const [clubLogo, setClubLogo] = useState('⚡');
+  const [supportingDocsNumber, setSupportingDocsNumber] = useState('RSB-AA-2024-C9842');
   const [charterAuthority, setCharterAuthority] = useState('Executive President & Charter Signatory');
   const [executiveTerm, setExecutiveTerm] = useState('2024 - 2028 Olympic Quadrennial');
   const [charterAgreed, setCharterAgreed] = useState(true);
@@ -757,10 +764,14 @@ export default function RegistrationModal({
           lastName: (faydaResult?.name || 'Club President').split(' ').slice(1).join(' ') || 'Admin',
           phoneNumber: phone.trim(),
           clubName: clubName.trim(),
-          clubShortName: clubName.split(' ')[0] || 'Club',
+          clubShortName: clubShortName.trim() || clubName.split(' ')[0],
+          clubEmail: clubOfficialEmail.trim(),
+          clubPhone: clubOfficialPhone.trim(),
+          clubAddress: clubAddress.trim(),
+          clubCity: clubCity.trim(),
           clubRegion: region,
-          clubCity: region,
           licenseNumber: 'ETH-CL-2026-' + Math.floor(100 + Math.random() * 900),
+          logoUrl: clubLogo,
         };
 
         const res = await fetch('http://localhost:3000/api/v1/clubs/register-admin', {
@@ -774,20 +785,25 @@ export default function RegistrationModal({
         const newClub: ClubPayload = {
           id: serverId,
           name: clubName,
-          shortName: clubName.split(' ')[0] || 'Club',
+          shortName: clubShortName || clubName.split(' ')[0] || 'Club',
           region,
+          city: clubCity,
+          address: clubAddress,
           manager: faydaResult?.name || 'Club President',
-          email,
-          phone,
-          licensedAthletes: 1,
-          pendingVerifications: 1,
+          email: clubOfficialEmail || email,
+          phone: clubOfficialPhone || phone,
+          licensedAthletes: 0,
+          pendingVerifications: 0,
           unlicensedAthletes: 0,
           transfersCount: 0,
-          logo: '🏃',
+          logo: clubLogo,
+          logoUrl: clubLogo,
           clubRank: 1,
           totalPoints: 100,
           presidentName: faydaResult?.name || 'Club President',
           charterSigned: charterAgreed,
+          verificationStatus: 'PENDING',
+          status: 'PENDING',
         };
         setServerRegistrationId(serverId);
         setPendingRegistrationData({ type: 'CLUB', payload: { club: newClub } });
@@ -1548,25 +1564,108 @@ export default function RegistrationModal({
 
         {selectedRole === 'CLUB_PRESIDENT' && (
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Official Club Name</label>
-              <input
-                type="text" value={clubName} onChange={e => setClubName(e.target.value)}
-                className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Official Club Name *</label>
+                <input
+                  type="text" value={clubName} onChange={e => setClubName(e.target.value)}
+                  placeholder="e.g. Ethiopian Electric Athletics Club"
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-sky-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Short Name / Code</label>
+                <input
+                  type="text" value={clubShortName} onChange={e => setClubShortName(e.target.value)}
+                  placeholder="e.g. EEAC"
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
             </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Executive Authority Mandate</label>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">City / Municipality *</label>
+                <input
+                  type="text" value={clubCity} onChange={e => setClubCity(e.target.value)}
+                  placeholder="e.g. Addis Ababa"
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Headquarters Address</label>
+                <input
+                  type="text" value={clubAddress} onChange={e => setClubAddress(e.target.value)}
+                  placeholder="e.g. Mexico Square, Compound Bldg 4"
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Official Club Email *</label>
+                <input
+                  type="email" value={clubOfficialEmail} onChange={e => setClubOfficialEmail(e.target.value)}
+                  placeholder="e.g. info@club.et"
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Official Club Phone</label>
+                <input
+                  type="tel" value={clubOfficialPhone} onChange={e => setClubOfficialPhone(e.target.value)}
+                  placeholder="e.g. +251 11 551 2233"
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
+            </div>
+
+            {/* Club Logo / Crest Selection */}
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">Club Emblem / Logo *</label>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                {['⚡', '🏃', '🦅', '🦁', '🏔️', '🌟', '🔥', '🛡️'].map((sym) => (
+                  <button
+                    key={sym}
+                    type="button"
+                    onClick={() => setClubLogo(sym)}
+                    className={`w-12 h-12 rounded-xl text-2xl flex items-center justify-center border transition-all ${
+                      clubLogo === sym
+                        ? 'border-sky-500 bg-sky-50 shadow-sm ring-2 ring-sky-300'
+                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
+                  >
+                    {sym}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={clubLogo.startsWith('http') || clubLogo.startsWith('/') ? clubLogo : ''}
+                onChange={e => setClubLogo(e.target.value)}
+                placeholder="Or paste custom Logo Image URL (e.g. https://... or /images/...)"
+                className="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-medium"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Representative Mandate</label>
                 <input
                   type="text" value={charterAuthority} onChange={e => setCharterAuthority(e.target.value)}
+                  placeholder="e.g. Executive President & Signatory"
                   className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Elected Term of Office</label>
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Supporting Credentials / License Ref</label>
                 <input
-                  type="text" value={executiveTerm} onChange={e => setExecutiveTerm(e.target.value)}
+                  type="text" value={supportingDocsNumber} onChange={e => setSupportingDocsNumber(e.target.value)}
+                  placeholder="e.g. RSB-AA-2024-C9842"
                   className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
                 />
               </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Trophy, ShieldAlert, Map, Briefcase, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share, RefreshCw, Zap } from 'lucide-react';
+import { Building2, Trophy, ShieldAlert, Map, Briefcase, Calendar, MapPin, ChevronRight, Mail, Phone, Globe, Users, Award, Activity, BookOpen, Search, Filter, Clock, CheckCircle, X, Send, Play, Image, Sparkles, ShieldCheck, ChevronLeft, ArrowRight, UserCheck, HelpCircle, Plus, Minus, FolderOpen, Share2, ChevronUp, ChevronDown, Check, ExternalLink, Maximize2, Eye, Camera, Bookmark, Share, RefreshCw, Zap } from 'lucide-react';
 import CompetitionDetail from './CompetitionDetail';
 import NewsDetail from './NewsDetail';
 import GalleryDetail from './GalleryDetail';
@@ -1637,6 +1637,32 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   {siteContent?.hero?.primaryBtnText || 'Register with Fayda National ID'}
                 </button>
               )}
+
+              {/* Register as a Club CTA */}
+              <button
+                onClick={() => onRegister('CLUB')}
+                className="btn-accent"
+                style={{
+                  background: darkMode ? "rgba(29, 78, 216, 0.15)" : "#EFF6FF",
+                  color: "#1D4ED8",
+                  border: "2px solid #BFDBFE",
+                  fontWeight: 800,
+                  fontSize: "0.98rem",
+                  padding: "14px 28px",
+                  borderRadius: "14px",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  transition: "all 0.25s ease"
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#DBEAFE"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = darkMode ? "rgba(29, 78, 216, 0.15)" : "#EFF6FF"; e.currentTarget.style.transform = "none"; }}
+              >
+                <Building2 size={20} color="#1D4ED8" />
+                Register as a Club
+              </button>
 
               {/* Secondary CTA */}
               <button

@@ -27,7 +27,7 @@ interface ProfessionalsRegistryProps {
 interface Professional {
   id: string;
   name: string;
-  category: 'TECHNICAL_OFFICIAL' | 'MEDICAL' | 'COACH' | 'MASSAGE_THERAPIST' | 'PHYSIOTHERAPIST';
+  category: 'TECHNICAL_OFFICIAL' | 'MEDICAL' | 'COACH' | 'MASSAGE_THERAPIST' | 'PHYSIOTHERAPIST' | 'SUPPORT_PERSONNEL';
   roleTitle: string;
   qualificationLevel: string;
   licenseNumber: string;
@@ -107,6 +107,19 @@ export default function ProfessionalsRegistry({ darkMode = false }: Professional
     },
     {
       id: 'PROF-006',
+      name: 'Aynalem Bekele',
+      category: 'SUPPORT_PERSONNEL',
+      roleTitle: 'High Performance Sports Nutritionist & Dietitian',
+      qualificationLevel: 'MSc Clinical & Sports Nutrition / IOC Diploma',
+      licenseNumber: 'ETH-NUT-2022-771',
+      region: 'Addis Ababa / Federal',
+      institution: 'Ethiopian Youth Sports Academy',
+      experienceYears: 7,
+      status: 'ACTIVE',
+      verified: true
+    },
+    {
+      id: 'PROF-006',
       name: 'Dr. Yonas Mulugeta',
       category: 'MEDICAL',
       roleTitle: 'Cardiology Consultant & National TUE Committee Head',
@@ -139,7 +152,7 @@ export default function ProfessionalsRegistry({ darkMode = false }: Professional
 
   // Form State
   const [regName, setRegName] = useState('');
-  const [regCategory, setRegCategory] = useState<'TECHNICAL_OFFICIAL' | 'MEDICAL' | 'COACH' | 'MASSAGE_THERAPIST' | 'PHYSIOTHERAPIST'>('COACH');
+  const [regCategory, setRegCategory] = useState<'TECHNICAL_OFFICIAL' | 'MEDICAL' | 'COACH' | 'MASSAGE_THERAPIST' | 'PHYSIOTHERAPIST' | 'SUPPORT_PERSONNEL'>('COACH');
   const [regRoleTitle, setRegRoleTitle] = useState('');
   const [regQualification, setRegQualification] = useState('');
   const [regLicense, setRegLicense] = useState('');
@@ -198,8 +211,8 @@ export default function ProfessionalsRegistry({ darkMode = false }: Professional
       const fallback: Professional = {
         id: 'PROF-' + String(professionals.length + 1).padStart(3, '0'),
         ...payload,
-        status: 'VERIFIED',
-        verified: true
+        status: 'PENDING',
+        verified: false
       };
       setProfessionals(prev => [fallback, ...prev]);
     }
@@ -235,6 +248,8 @@ export default function ProfessionalsRegistry({ darkMode = false }: Professional
         return { label: 'Physiotherapist', icon: Activity, color: 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300' };
       case 'MASSAGE_THERAPIST':
         return { label: 'Massage Therapist', icon: HeartPulse, color: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300' };
+      case 'SUPPORT_PERSONNEL':
+        return { label: 'Support Personnel', icon: Users, color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300' };
       case 'TECHNICAL_OFFICIAL':
       default:
         return { label: 'Technical Official', icon: ShieldCheck, color: 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-200' };
@@ -283,6 +298,7 @@ export default function ProfessionalsRegistry({ darkMode = false }: Professional
                 { id: 'MEDICAL', label: 'Medical Doctors' },
                 { id: 'PHYSIOTHERAPIST', label: 'Physiotherapists' },
                 { id: 'MASSAGE_THERAPIST', label: 'Massage Therapists' },
+                { id: 'SUPPORT_PERSONNEL', label: 'Support Personnel' },
               ].map(cat => (
                 <button
                   key={cat.id}
@@ -361,10 +377,17 @@ export default function ProfessionalsRegistry({ darkMode = false }: Professional
                     <Building size={13} className="shrink-0 text-slate-400" />
                     <span className="truncate">{prof.institution}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-emerald-600 font-extrabold shrink-0">
-                    <CheckCircle2 size={13} />
-                    <span>Verified</span>
-                  </div>
+                  {prof.status === 'PENDING' ? (
+                    <div className="flex items-center gap-1 text-amber-600 font-extrabold shrink-0">
+                      <Users size={13} />
+                      <span>Pending Review</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-emerald-600 font-extrabold shrink-0">
+                      <CheckCircle2 size={13} />
+                      <span>Verified</span>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             );
@@ -406,7 +429,7 @@ export default function ProfessionalsRegistry({ darkMode = false }: Professional
                       Accreditation Registered Successfully!
                     </h4>
                     <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">
-                      Professional profile has been verified and added to the official EAF registry.
+                      Professional credentials submitted for verification and are pending federation approval.
                     </p>
                   </div>
                 ) : (
@@ -425,6 +448,7 @@ export default function ProfessionalsRegistry({ darkMode = false }: Professional
                         <option value="MEDICAL">Medical Doctor / Sports Medicine Physician</option>
                         <option value="PHYSIOTHERAPIST">Physiotherapist</option>
                         <option value="MASSAGE_THERAPIST">Massage Therapist (Soft Tissue Specialist)</option>
+                        <option value="SUPPORT_PERSONNEL">Support Personnel / Nutritionist / Biomechanist</option>
                       </select>
                     </div>
 
