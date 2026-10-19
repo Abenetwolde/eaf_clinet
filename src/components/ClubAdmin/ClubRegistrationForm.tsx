@@ -257,7 +257,8 @@ export default function ClubRegistrationForm({
     };
 
     try {
-      const res = await fetch('http://localhost:3000/api/v1/clubs/register-admin', {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const res = await fetch(`${apiBase.replace(/\/$/, '')}/clubs/register-admin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -265,26 +266,27 @@ export default function ClubRegistrationForm({
 
       const json = await res.json();
 
-      let serverClubId = `CLUB-${Date.now().toString().slice(-6)}`;
-      if (res.ok && json?.data?.club?.id) {
-        serverClubId = json.data.club.id;
-      } else if (!res.ok && json?.message && !json.message.includes('already exists')) {
-        console.warn('Backend returned notice:', json?.message);
+      if (!res.ok) {
+        throw new Error(json?.message || 'Club registration failed. Please check your details and try again.');
+      }
+      const persistedClub = json?.data?.club;
+      if (!persistedClub?.id || !json?.data?.user?.id) {
+        throw new Error('The server did not confirm the club account. Please try again.');
       }
 
       const newClub: Club = {
-        id: serverClubId,
-        name: clubName.trim(),
-        shortName: shortCode,
-        region: clubRegion,
-        manager: repName.trim(),
-        email: clubEmail.trim(),
-        phone: clubPhone.trim(),
+        id: persistedClub.id,
+        name: persistedClub.name || clubName.trim(),
+        shortName: persistedClub.shortName || shortCode,
+        region: persistedClub.region || clubRegion,
+        manager: `${json.data.user.firstName || firstName} ${json.data.user.lastName || lastName}`.trim(),
+        email: persistedClub.email || clubEmail.trim(),
+        phone: persistedClub.phone || clubPhone.trim(),
         licensedAthletes: 0,
         pendingVerifications: 0,
         unlicensedAthletes: 0,
         transfersCount: 0,
-        logo: resolvedLogo,
+        logo: persistedClub.logoUrl || resolvedLogo,
         clubRank: 1,
         totalPoints: 100,
       };
@@ -294,43 +296,16 @@ export default function ClubRegistrationForm({
       (newClub as any).address = clubAddress.trim();
       (newClub as any).presidentName = repName.trim();
       (newClub as any).charterAuthority = repTitle.trim();
-      (newClub as any).verificationStatus = 'PENDING';
-      (newClub as any).status = 'PENDING';
-      (newClub as any).licenseNumber = cleanRef;
-      (newClub as any).logoUrl = resolvedLogo;
+      (newClub as any).verificationStatus = persistedClub.verificationStatus;
+      (newClub as any).status = persistedClub.verificationStatus === 'VERIFIED' ? 'ACTIVE' : persistedClub.verificationStatus;
+      (newClub as any).licenseNumber = persistedClub.licenseNumber || cleanRef;
+      (newClub as any).logoUrl = persistedClub.logoUrl || resolvedLogo;
 
       setRegisteredClub(newClub);
-      setReferenceId(cleanRef);
+      setReferenceId(persistedClub.licenseNumber || cleanRef);
       setStep(4); // Show success screen
     } catch (err: any) {
-      console.warn('Network or server exception during registration, using resilient local registration:', err);
-      const fallbackId = `CLUB-${Date.now().toString().slice(-6)}`;
-      const fallbackClub: Club = {
-        id: fallbackId,
-        name: clubName.trim(),
-        shortName: shortCode,
-        region: clubRegion,
-        manager: repName.trim(),
-        email: clubEmail.trim(),
-        phone: clubPhone.trim(),
-        licensedAthletes: 0,
-        pendingVerifications: 0,
-        unlicensedAthletes: 0,
-        transfersCount: 0,
-        logo: resolvedLogo,
-        clubRank: 1,
-        totalPoints: 100,
-      };
-      (fallbackClub as any).city = clubCity.trim();
-      (fallbackClub as any).address = clubAddress.trim();
-      (fallbackClub as any).presidentName = repName.trim();
-      (fallbackClub as any).verificationStatus = 'PENDING';
-      (fallbackClub as any).status = 'PENDING';
-      (fallbackClub as any).licenseNumber = cleanRef;
-
-      setRegisteredClub(fallbackClub);
-      setReferenceId(cleanRef);
-      setStep(4);
+      setErrorMessage(err?.message || 'Unable to connect to the registration service. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -1073,7 +1048,7 @@ export default function ClubRegistrationForm({
               </h2>
 
               <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6 max-w-md">
-                <strong>{registeredClub.name}</strong> has been registered with the Ethiopian Athletics Federation. Your club administration workspace is active.
+                  <strong>{registeredClub.name}</strong> was saved to the Ethiopian Athletics Federation registry. Sign in with the administrator email and password you registered.
               </p>
 
               {/* Tracking & Accreditation Card */}

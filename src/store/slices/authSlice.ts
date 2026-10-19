@@ -10,12 +10,24 @@ import {
   removeItem,
 } from '../persistence';
 
+const EMPTY_CLUB: Club = {
+  id: '', name: '', shortName: '', region: '', manager: '', email: '', phone: '',
+  licensedAthletes: 0, pendingVerifications: 0, unlicensedAthletes: 0, transfersCount: 0,
+  logo: '', clubRank: 0, totalPoints: 0,
+};
+const EMPTY_ATHLETE: Athlete = {
+  id: '', name: '', dob: '', gender: '', ageTier: '', licenseStatus: 'PENDING', photoUrl: '',
+  personalBests: [], seasonBests: [], notifications: [], weightLog: [], trainingLog: [], achievements: [],
+};
+
 export interface UserDataFromApi {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
   phoneNumber?: string | null;
+  faydaNin?: string | null;
+  picture?: string | null;
   status: string;
   roles?: string[];
   permissions?: string[];
@@ -46,7 +58,7 @@ function readInitialClub(): Club {
     const found = pool.find((c) => c.id === savedId);
     if (found) return found;
   }
-  return MOCK_CLUBS[0];
+  return EMPTY_CLUB;
 }
 
 function readInitialAthlete(): Athlete {
@@ -56,7 +68,7 @@ function readInitialAthlete(): Athlete {
     const found = pool.find((a) => a.id === savedId);
     if (found) return found;
   }
-  return MOCK_ATHLETES[0];
+  return EMPTY_ATHLETE;
 }
 
 function readInitialToken(): string | null {

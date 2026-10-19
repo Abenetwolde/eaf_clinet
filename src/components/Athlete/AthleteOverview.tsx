@@ -7,7 +7,7 @@ import {
   FileText, Check, Copy, User, Lock, ExternalLink
 } from 'lucide-react';
 import type { Athlete } from '../../types';
-import { MOCK_EVENT_RESULTS, MEET_META, MOCK_ATHLETES, MOCK_MEETS } from '../../data/mockData';
+import { MOCK_EVENT_RESULTS, MEET_META, MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
 import LicenseQrCode from './LicenseQrCode';
 
@@ -19,7 +19,7 @@ interface AthleteOverviewProps {
 
 export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdateAthlete }: AthleteOverviewProps) {
   const rawAthlete = useAppSelector((state) => state.auth.athlete);
-  const athlete = rawAthlete || MOCK_ATHLETES[0];
+  const athlete = rawAthlete;
 
   const [activeTab, setActiveTab] = useState('overview');
   const [copiedFin, setCopiedFin] = useState(false);

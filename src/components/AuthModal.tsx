@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useLoginMutation } from '../store/api/authApi';
 import { useAppDispatch } from '../store/hooks';
 import { login } from '../store/slices/authSlice';
-import { MOCK_CLUBS, MOCK_ATHLETES } from '../data/mockData';
 import {
-  ShieldCheck, Phone, AlertCircle, ArrowRight, X, Sparkles, Eye, EyeOff
+  ShieldCheck, Phone, AlertCircle, ArrowRight, X, Eye, EyeOff
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -121,17 +120,20 @@ export default function AuthModal({
       const data = res.data;
 
       const userRole = (data.userRole || '').toLowerCase();
-      const roles: string[] = data.user?.roles || [];
+      const roles: string[] = data.user?.roles || data.roles || [];
       const isCoach = userRole.includes('coach') || roles.some((r: string) => r.toUpperCase() === 'COACH');
       const isClub = userRole.includes('club') || roles.some((r: string) => r.toUpperCase().includes('CLUB'));
 
       const appRole = isCoach ? 'COACH' : isClub ? 'CLUB' : 'ATHLETE';
 
       const userData = {
-        id: data.user?.id || data.userId,
-        email: data.user?.email || '',
-        firstName: data.user?.firstName || '',
-        lastName: data.user?.lastName || '',
+        id: data.user?.id || data.userId || data.id,
+        email: data.user?.email || data.email || '',
+        firstName: data.user?.firstName || data.firstName || '',
+        lastName: data.user?.lastName || data.lastName || '',
+        phoneNumber: data.user?.phoneNumber || data.phoneNumber || '',
+        faydaNin: data.faydaNin || data.user?.faydaIdentity?.nin || '',
+        picture: data.user?.picture || data.user?.photoUrl || data.picture || data.photoUrl || '',
         status: data.status || data.user?.status || 'ACTIVE',
         roles,
       };
@@ -240,104 +242,10 @@ export default function AuthModal({
       const msg = apiErr?.data?.message || apiErr?.error || 'Invalid credentials. Please verify your login details and password.';
 
       if (apiErr?.status === 'FETCH_ERROR') {
-        setError('Cannot connect to the backend server. Please verify your connection or use the Demo Sandbox below.');
+        setError('Cannot connect to the backend server. Please verify your connection and try again.');
       } else {
         setError(msg);
       }
-    }
-  };
-
-  const handleDemoLogin = (role: 'CLUB' | 'ATHLETE' | 'COACH') => {
-    if (role === 'COACH') {
-      const coach = {
-        id: 'cmv25mzco000bfhdljahai4gz',
-        name: 'Tolosa Kotu',
-        email: 'tolosa.21593@athletics.et',
-        phoneNumber: '0911442159',
-        licenseNumber: 'WA-COA-ETH-2026-21593',
-        specialization: 'Distance & Steeplechase',
-        yearsOfExperience: 24,
-        status: 'ACTIVE',
-        faydaFin: '3849018299412026',
-        faydaFan: 'FAN-3849-0182-2026',
-      };
-      const userData = {
-        id: 'cmv25mzcl0009fhdl2xk3hazq',
-        email: 'tolosa.21593@athletics.et',
-        firstName: 'Tolosa',
-        lastName: 'Kotu',
-        status: 'ACTIVE',
-        roles: ['COACH'],
-      };
-      dispatch(login({
-        role: 'COACH',
-        coach,
-        token: 'demo-token-coach-' + Date.now(),
-        refreshToken: 'demo-refresh-token-' + Date.now(),
-        userId: userData.id,
-        userData,
-      }));
-      onLoginSuccess('COACH', { coach });
-    } else if (role === 'CLUB') {
-      const club = MOCK_CLUBS[0];
-      const userData = {
-        id: 'usr-club-' + club.id,
-        email: club.email || 'clubadmin@aarc.et',
-        firstName: 'Dawit',
-        lastName: 'Bekele',
-        status: 'ACTIVE',
-        roles: ['CLUB_ADMIN'],
-      };
-
-      dispatch(login({
-        role: 'CLUB',
-        club,
-        token: 'demo-token-club-' + Date.now(),
-        refreshToken: 'demo-refresh-token-' + Date.now(),
-        userId: userData.id,
-        userData,
-      }));
-
-      onLoginSuccess('CLUB', { club });
-    } else {
-      const athlete = MOCK_ATHLETES[0];
-      const userData = {
-        id: athlete.id,
-        email: 'tigist.akele@example.com',
-        firstName: 'Tigist',
-        lastName: 'Akele',
-        status: 'ACTIVE',
-        roles: ['ATHLETE'],
-      };
-
-      dispatch(login({
-        role: 'ATHLETE',
-        athlete,
-        token: 'demo-token-athlete-' + Date.now(),
-        refreshToken: 'demo-refresh-token-' + Date.now(),
-        userId: userData.id,
-        userData,
-      }));
-
-      onLoginSuccess('ATHLETE', { athlete });
-    }
-  };
-
-  const handleFillSampleCred = (type: 'ATHLETE_FIN' | 'COACH_FIN' | 'COACH_PHONE' | 'ATHLETE_PHONE') => {
-    setError('');
-    setPassword('Password123!');
-    if (type === 'ATHLETE_FIN') {
-      setMethod('FAYDA');
-      setCredential('2685 0380 1845 1943');
-    } else if (type === 'ATHLETE_PHONE') {
-      setMethod('PHONE');
-      setCredential('0911000000');
-    } else if (type === 'COACH_FIN') {
-      setMethod('FAYDA');
-      setCredential('3849 0182 9941 2026');
-    } else if (type === 'COACH_PHONE') {
-      setMethod('PHONE');
-      setCredential('0911442159');
     }
   };
 
@@ -490,44 +398,6 @@ export default function AuthModal({
             </button>
           </form>
 
-          {/* Quick Sample Credentials Chip Row */}
-          <div className="mt-4 pt-3 border-t border-slate-100">
-            <div className="text-[11px] font-black text-slate-600 mb-2 flex items-center justify-between">
-              <span>Sample Test Credentials (Click to prefill):</span>
-              <span className="text-[10px] text-blue-600 font-bold">Password: Password123!</span>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => handleFillSampleCred('COACH_FIN')}
-                className="text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-[11px] font-bold cursor-pointer transition-colors"
-              >
-                ⏱️ Coach (Tolosa Kotu) · FIN
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillSampleCred('COACH_PHONE')}
-                className="text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-[11px] font-bold cursor-pointer transition-colors"
-              >
-                ⏱️ Coach (Tolosa Kotu) · Phone
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillSampleCred('ATHLETE_FIN')}
-                className="text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-[11px] font-bold cursor-pointer transition-colors"
-              >
-                🏃 Athlete (Chernet T.) · FIN
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillSampleCred('ATHLETE_PHONE')}
-                className="text-left p-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-[11px] font-bold cursor-pointer transition-colors"
-              >
-                🏃 Athlete · Phone: 0911000000
-              </button>
-            </div>
-          </div>
-
           {/* Separate Registration Link */}
           <div className="mt-4 pt-3 border-t border-slate-100 text-center">
             <p className="text-xs text-slate-600 m-0">
@@ -549,43 +419,6 @@ export default function AuthModal({
             </p>
           </div>
 
-          {/* Clearly Separated Demo Login Sandbox */}
-          <div className="mt-4 p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                <Sparkles size={13} className="text-amber-500" /> Demo Sandbox (Instant Jump)
-              </span>
-              <span className="text-[10px] bg-slate-200/80 text-slate-700 px-2 py-0.5 rounded font-bold">
-                No Password Required
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('COACH')}
-                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-blue-50 text-slate-800 text-xs font-bold transition-all cursor-pointer text-left shadow-2xs"
-              >
-                <div className="font-black text-blue-700 text-[11px]">Coach Portal</div>
-                <div className="text-[10px] text-slate-500 truncate">Tolosa Kotu</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('ATHLETE')}
-                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-blue-50 text-slate-800 text-xs font-bold transition-all cursor-pointer text-left shadow-2xs"
-              >
-                <div className="font-black text-slate-900 text-[11px]">Athlete Portal</div>
-                <div className="text-[10px] text-slate-500 truncate">Tigist Akele</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('CLUB')}
-                className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-blue-50 text-slate-800 text-xs font-bold transition-all cursor-pointer text-left shadow-2xs"
-              >
-                <div className="font-black text-slate-900 text-[11px]">Club Portal</div>
-                <div className="text-[10px] text-slate-500 truncate">Dawit Bekele</div>
-              </button>
-            </div>
-          </div>
         </div>
       </motion.div>
     </div>

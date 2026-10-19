@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import { useLoginMutation } from '../store/api/authApi';
 import { useAppDispatch } from '../store/hooks';
 import { login } from '../store/slices/authSlice';
-import { MOCK_CLUBS, MOCK_ATHLETES } from '../data/mockData';
 import {
-  ShieldCheck, Phone, AlertCircle, ArrowRight, ArrowLeft, Sparkles, Eye, EyeOff, User, Lock, Home, Building2, CheckCircle2
+  ShieldCheck, Phone, Mail, AlertCircle, ArrowRight, ArrowLeft, Eye, EyeOff, User, Lock, Home, Building2, CheckCircle2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export type LoginMethod = 'FAYDA' | 'PHONE';
+export type LoginMethod = 'FAYDA' | 'PHONE' | 'EMAIL';
 
 interface LoginPageProps {
   onLoginSuccess: (role: string, data: any) => void;
@@ -32,12 +31,13 @@ export default function LoginPage({
 
   const [method, setMethod] = useState<LoginMethod>(() => {
     if (initialMethod === 'PHONE') return 'PHONE';
+    if (initialMethod === 'EMAIL') return 'EMAIL';
     return 'FAYDA';
   });
 
   const [credential, setCredential] = useState(() => {
     if (initialCredential) {
-      if (initialMethod === 'PHONE') return initialCredential;
+      if (initialMethod === 'PHONE' || initialMethod === 'EMAIL') return initialCredential;
       const digits = initialCredential.replace(/\D/g, '').slice(0, 16);
       return digits.match(/.{1,4}/g)?.join(' ') || initialCredential;
     }
@@ -82,6 +82,8 @@ export default function LoginPage({
         const formatted = digits.match(/.{1,4}/g)?.join(' ') || digits;
         setCredential(formatted);
       }
+    } else if (method === 'EMAIL') {
+      setCredential(val.trimStart());
     } else {
       setCredential(val);
     }
@@ -96,7 +98,7 @@ export default function LoginPage({
   const validateInput = (): boolean => {
     const raw = credential.trim();
     if (!raw) {
-      setError(`Please enter your ${method === 'FAYDA' ? 'Fayda National ID (FAN or FIN)' : 'Phone Number'}.`);
+      setError(`Please enter your ${method === 'FAYDA' ? 'Fayda National ID (FAN or FIN)' : method === 'EMAIL' ? 'email address' : 'phone number'}.`);
       return false;
     }
 
@@ -126,6 +128,9 @@ export default function LoginPage({
         setError('Please enter a valid phone number (e.g., 0911442159 or +251 91 144 2159).');
         return false;
       }
+    } else if (method === 'EMAIL' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) {
+      setError('Please enter a valid email address.');
+      return false;
     }
 
     return true;
@@ -139,6 +144,7 @@ export default function LoginPage({
 
     try {
       let identifierToSend = credential.trim();
+      if (method === 'EMAIL') identifierToSend = identifierToSend.toLowerCase();
       if (method === 'FAYDA' && !identifierToSend.toUpperCase().startsWith('FAN')) {
         identifierToSend = credential.replace(/\s+/g, '');
       }
@@ -147,17 +153,20 @@ export default function LoginPage({
       const data = res.data;
 
       const userRole = (data.userRole || '').toLowerCase();
-      const roles: string[] = data.user?.roles || [];
+      const roles: string[] = data.user?.roles || data.roles || [];
       const isCoach = userRole.includes('coach') || roles.some((r: string) => r.toUpperCase() === 'COACH');
       const isClub = userRole.includes('club') || roles.some((r: string) => r.toUpperCase().includes('CLUB'));
 
       const appRole = isCoach ? 'COACH' : isClub ? 'CLUB' : 'ATHLETE';
 
       const userData = {
-        id: data.user?.id || data.userId,
-        email: data.user?.email || '',
-        firstName: data.user?.firstName || '',
-        lastName: data.user?.lastName || '',
+        id: data.user?.id || data.userId || data.id,
+        email: data.user?.email || data.email || '',
+        firstName: data.user?.firstName || data.firstName || '',
+        lastName: data.user?.lastName || data.lastName || '',
+        phoneNumber: data.user?.phoneNumber || data.phoneNumber || '',
+        faydaNin: data.faydaNin || data.user?.faydaIdentity?.nin || '',
+        picture: data.user?.picture || data.user?.photoUrl || data.picture || data.photoUrl || '',
         status: data.status || data.user?.status || 'ACTIVE',
         roles,
       };
@@ -267,114 +276,10 @@ export default function LoginPage({
       const msg = apiErr?.data?.message || apiErr?.error || 'Invalid credentials. Please verify your login details and password.';
 
       if (apiErr?.status === 'FETCH_ERROR') {
-        setError('Cannot connect to backend server. You can use the Quick Sandbox Logins below to test immediately.');
+        setError('Cannot connect to backend server. Please try again when the connection is available.');
       } else {
         setError(msg);
       }
-    }
-  };
-
-  const handleDemoLogin = (role: 'CLUB' | 'ATHLETE' | 'COACH') => {
-    if (role === 'COACH') {
-      const coach = {
-        id: 'cmv25mzco000bfhdljahai4gz',
-        name: 'Tolosa Kotu',
-        email: 'tolosa.21593@athletics.et',
-        phoneNumber: '0911442159',
-        licenseNumber: 'WA-COA-ETH-2026-21593',
-        specialization: 'Distance & Steeplechase',
-        yearsOfExperience: 24,
-        status: 'ACTIVE',
-        faydaFin: '3849018299412026',
-        faydaFan: 'FAN-3849-0182-2026',
-      };
-      const userData = {
-        id: 'cmv25mzcl0009fhdl2xk3hazq',
-        email: 'tolosa.21593@athletics.et',
-        firstName: 'Tolosa',
-        lastName: 'Kotu',
-        status: 'ACTIVE',
-        roles: ['COACH'],
-      };
-      dispatch(login({
-        role: 'COACH',
-        coach,
-        token: 'demo-token-coach-' + Date.now(),
-        refreshToken: 'demo-refresh-token-' + Date.now(),
-        userId: userData.id,
-        userData,
-      }));
-      onLoginSuccess('COACH', { coach });
-    } else if (role === 'CLUB') {
-      const club = MOCK_CLUBS[0];
-      const userData = {
-        id: 'usr-club-' + club.id,
-        email: club.email || 'clubadmin@aarc.et',
-        firstName: 'Dawit',
-        lastName: 'Bekele',
-        status: 'ACTIVE',
-        roles: ['CLUB_ADMIN'],
-      };
-
-      dispatch(login({
-        role: 'CLUB',
-        club,
-        token: 'demo-token-club-' + Date.now(),
-        refreshToken: 'demo-refresh-token-' + Date.now(),
-        userId: userData.id,
-        userData,
-      }));
-
-      onLoginSuccess('CLUB', { club });
-    } else {
-      const athlete = MOCK_ATHLETES[0];
-      const userData = {
-        id: athlete.id || 'cmuxyf78x0029fheqhs7ggvv1',
-        email: 'tigist.akele@example.com',
-        firstName: 'Tigist',
-        lastName: 'Akele',
-        status: 'ACTIVE',
-        roles: ['ATHLETE'],
-      };
-
-      dispatch(login({
-        role: 'ATHLETE',
-        athlete,
-        token: 'demo-token-athlete-' + Date.now(),
-        refreshToken: 'demo-refresh-token-' + Date.now(),
-        userId: userData.id,
-        userData,
-      }));
-
-      try {
-        localStorage.setItem('eaf_registered_athlete', JSON.stringify({
-          userId: userData.id,
-          name: 'Tigist Akele',
-          status: 'ACTIVE',
-          isRegistered: true,
-          photoUrl: athlete.photoUrl || '/images/runner_female.png',
-        }));
-      } catch (e) {}
-
-      onLoginSuccess('ATHLETE', { athlete });
-    }
-  };
-
-  const handleFillSampleCred = (type: 'ATHLETE_FIN' | 'COACH_FIN' | 'COACH_PHONE' | 'ATHLETE_PHONE') => {
-    setError('');
-    setPassword('Password123!');
-    if (type === 'ATHLETE_FIN') {
-      setMethod('FAYDA');
-      setCredential('2685 0380 1845 1943');
-    } else if (type === 'COACH_FIN') {
-      setMethod('FAYDA');
-      setCredential('3849 0182 9941 2026');
-    } else if (type === 'COACH_PHONE') {
-      setMethod('PHONE');
-      setCredential('0911442159');
-    } else if (type === 'ATHLETE_PHONE') {
-      setMethod('PHONE');
-      setCredential('0911223344');
     }
   };
 
@@ -405,7 +310,7 @@ export default function LoginPage({
           </div>
 
           {/* Login Method Tabs (Fayda vs Phone) */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-6">
+          <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-6">
             <button
               type="button"
               onClick={() => handleMethodSelect('FAYDA')}
@@ -429,6 +334,18 @@ export default function LoginPage({
             >
               <Phone className="w-4 h-4 text-blue-600" />
               <span>Phone Number</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleMethodSelect('EMAIL')}
+              className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
+                method === 'EMAIL'
+                  ? 'bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-700'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+              }`}
+            >
+              <Mail className="w-4 h-4 text-blue-600" />
+              <span>Email</span>
             </button>
           </div>
 
@@ -457,25 +374,25 @@ export default function LoginPage({
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                {method === 'FAYDA' ? 'Fayda National ID (FIN or FAN)' : 'Registered Phone Number'}
+                {method === 'FAYDA' ? 'Fayda National ID (FIN or FAN)' : method === 'EMAIL' ? 'Account Email' : 'Registered Phone Number'}
               </label>
               <div className="relative">
                 <input
-                  type="text"
+                  type={method === 'EMAIL' ? 'email' : 'text'}
                   value={credential}
                   onChange={(e) => handleCredentialChange(e.target.value)}
-                  placeholder={method === 'FAYDA' ? 'e.g. 2685 0380 1845 1943 or FAN12345678' : 'e.g. 0911442159 or +251 91 144 2159'}
+                  placeholder={method === 'FAYDA' ? 'e.g. 2685 0380 1845 1943 or FAN12345678' : method === 'EMAIL' ? 'Enter the email used to register' : 'e.g. 0911442159 or +251 91 144 2159'}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 transition"
                   autoFocus
                 />
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                  {method === 'FAYDA' ? <ShieldCheck className="w-5 h-5 text-blue-600" /> : <Phone className="w-5 h-5 text-blue-600" />}
+                  {method === 'FAYDA' ? <ShieldCheck className="w-5 h-5 text-blue-600" /> : method === 'EMAIL' ? <Mail className="w-5 h-5 text-blue-600" /> : <Phone className="w-5 h-5 text-blue-600" />}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
                 {method === 'FAYDA'
                   ? 'Enter your 16-digit Fayda FIN or your alphanumeric FAN.'
-                  : 'Enter the phone number linked to your EAF profile.'}
+                  : method === 'EMAIL' ? 'Use the email address and password from club registration.' : 'Enter the phone number linked to your EAF profile.'}
               </p>
             </div>
 
@@ -521,42 +438,6 @@ export default function LoginPage({
               )}
             </button>
           </form>
-
-          {/* Quick Sandbox / Demo Logins */}
-          <div className="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-                ⚡ Quick Sandbox Logins
-              </span>
-              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">1-Click Test</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('ATHLETE')}
-                className="py-2 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 text-xs font-bold text-slate-800 dark:text-slate-200 flex flex-col items-center gap-1 transition cursor-pointer"
-              >
-                <span>🏃 Athlete</span>
-                <span className="text-[10px] text-slate-500 font-normal">Tigist Akele</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('COACH')}
-                className="py-2 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 text-xs font-bold text-slate-800 dark:text-slate-200 flex flex-col items-center gap-1 transition cursor-pointer"
-              >
-                <span>⏱️ Coach</span>
-                <span className="text-[10px] text-slate-500 font-normal">Tolosa Kotu</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDemoLogin('CLUB')}
-                className="py-2 px-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:border-blue-300 text-xs font-bold text-slate-800 dark:text-slate-200 flex flex-col items-center gap-1 transition cursor-pointer"
-              >
-                <span>🏢 Club Admin</span>
-                <span className="text-[10px] text-slate-500 font-normal">Dawit Bekele</span>
-              </button>
-            </div>
-          </div>
 
           {/* Footer Registration Link */}
           <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">

@@ -169,8 +169,13 @@ export default function App() {
 
   // User profile avatar displayed whenever user is logged in
   const userProfileAvatar = Boolean(isLoggedIn || isUserRegistered)
-    ? (currentAthlete?.photoUrl || registeredInfo?.photoUrl || (userData as any)?.picture || (typeof window !== 'undefined' ? (localStorage.getItem('fayda_photo') || localStorage.getItem('eaf_user_avatar')) : null) || '/images/runner_female.png')
+    ? ((userData as any)?.picture ||
+      (currentRole === 'CLUB'
+        ? ((userData as any)?.faydaNin ? `http://localhost:3000/api/v1/fayda/photo/${encodeURIComponent((userData as any).faydaNin)}` : null)
+        : currentAthlete?.photoUrl || registeredInfo?.photoUrl ||
+          (typeof window !== 'undefined' ? (localStorage.getItem('fayda_photo') || localStorage.getItem('eaf_user_avatar')) : null)))
     : null;
+  const signedInName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim();
 
   const handleNotify = (message: string, type = 'info') => setToast({ message, type });
 
@@ -278,12 +283,12 @@ export default function App() {
       const nin = ident.nin || ident.fin || urlParams.get('nin');
       const name = ident.fullName || ident.name || urlParams.get('name');
       const nameAmh = ident.fullNameAmharic || ident.amharic || urlParams.get('nameAmh') || name;
-      const dob = ident.birthDate || ident.dob || urlParams.get('dob') || '1980-12-01';
-      const gender = (ident.gender || urlParams.get('gender') || 'MALE').toUpperCase();
-      const phone = ident.phoneNumber || ident.phone || urlParams.get('phone') || '0909090909';
-      const email = ident.email || urlParams.get('email') || 'chere@id.et';
-      const address = ident.address || ident.region || 'Addis Ababa / Federal';
-      const picture = ident.picture || ident.photoUrl || urlParams.get('photoUrl') || localStorage.getItem('fayda_photo') || sessionStorage.getItem('fayda_photo') || '/images/fayda_resident_photo.jpg';
+      const dob = ident.birthDate || ident.dob || urlParams.get('dob') || '';
+      const gender = (ident.gender || urlParams.get('gender') || '').toUpperCase();
+      const phone = ident.phoneNumber || ident.phone || urlParams.get('phone') || '';
+      const email = ident.email || urlParams.get('email') || '';
+      const address = ident.address || ident.region || '';
+      const picture = ident.picture || ident.photoUrl || urlParams.get('photoUrl') || localStorage.getItem('fayda_photo') || sessionStorage.getItem('fayda_photo') || '';
       const token = urlParams.get('token') || payload?.verificationToken || ident.verificationToken;
 
       if (nin && name) {
@@ -295,7 +300,7 @@ export default function App() {
           fullName: name,
           fullNameAmharic: nameAmh,
           birthDate: dob,
-          gender: gender === 'MALE' ? 'Male' : 'Female',
+          gender: gender === 'MALE' ? 'Male' : gender === 'FEMALE' ? 'Female' : '',
           phoneNumber: phone,
           email,
           address,
@@ -342,6 +347,16 @@ export default function App() {
         localStorage.getItem('eaf_registration_status') === 'completed' ||
         localStorage.getItem('eaf_registered_athlete')
       );
+
+      if (
+        sessionStorage.getItem('eaf_club_member_registration') === '1' &&
+        sessionStorage.getItem('eaf_currentRole') === 'CLUB'
+      ) {
+        setClubSubPage('REGISTER_MEMBER');
+        setPublicSubPage('DASHBOARD');
+        window.history.replaceState({}, '', '/');
+        return;
+      }
 
       const isClubRequested =
         urlParams.get('openReg') === 'CLUB' ||
@@ -460,7 +475,7 @@ export default function App() {
     if (role === 'CLUB') {
       if (data.club) dispatch(setClub(data.club));
       dispatch(setRole('CLUB'));
-      setClubSubPage('OVERVIEW');
+      setClubSubPage('REGISTER_MEMBER');
       setPublicSubPage('DASHBOARD'); // Reset to dashboard so club admin sees their dashboard first
       handleNotify(`Welcome back, ${data.club?.shortName || 'Club Admin'}!`, 'success');
     } else if (role === 'COACH') {
@@ -485,7 +500,7 @@ export default function App() {
       dispatch(setRole('CLUB'));
       const targetSubPage = registrationData.payload.targetSubPage || 'OVERVIEW';
       setClubSubPage(targetSubPage);
-      setPublicSubPage('HOME');
+      setPublicSubPage('DASHBOARD');
       setNavNonce(prev => prev + 1);
       window.scrollTo(0, 0);
       setTimeout(() => window.scrollTo(0, 0), 50);
@@ -761,7 +776,7 @@ export default function App() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => {
-                    setClubSubPage('OVERVIEW');
+                    setClubSubPage('REGISTER_MEMBER');
                     setPublicSubPage('DASHBOARD');
                   }}
                   className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 transition-all cursor-pointer shadow-sm group"
@@ -780,10 +795,10 @@ export default function App() {
                   </div>
                   <div className="flex flex-col text-left">
                     <span className="text-[0.78rem] font-black text-white leading-tight group-hover:text-emerald-200 truncate max-w-[120px]">
-                      {(verifiedCitizen?.fullName || currentClub?.manager || 'Club President').split(' ')[0]}
+                      {(signedInName || currentClub?.manager || currentClub?.name || 'Club Admin').split(' ')[0]}
                     </span>
                     <span className="text-[0.62rem] font-extrabold text-emerald-400 flex items-center gap-0.5">
-                      <CheckCircle2 size={9} /> Verified ID
+                      <CheckCircle2 size={9} /> {userData?.email || 'Club Administrator'}
                     </span>
                   </div>
                 </motion.button>
@@ -962,7 +977,7 @@ export default function App() {
                 ) : isLoggedIn && currentRole === 'CLUB' ? (
                   <div className="flex flex-col gap-2">
                     <button
-                      onClick={() => { setClubSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); setMobileMenuOpen(false); }}
+                      onClick={() => { setClubSubPage('REGISTER_MEMBER'); setPublicSubPage('DASHBOARD'); setMobileMenuOpen(false); }}
                       className="w-full p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/40 bg-emerald-950/30 text-emerald-300 font-bold"
                     >
                       <div className="flex items-center gap-2.5">
@@ -978,8 +993,8 @@ export default function App() {
                           )}
                         </div>
                         <div className="text-left">
-                          <div className="text-xs font-black text-white">{currentClub?.shortName || 'Club Admin'}</div>
-                          <div className="text-[0.68rem] text-emerald-400 font-bold">✓ Club Administration</div>
+                          <div className="text-xs font-black text-white">{signedInName || currentClub?.manager || 'Club Admin'}</div>
+                          <div className="text-[0.68rem] text-emerald-400 font-bold">{userData?.email || currentClub?.name || 'Club Administration'}</div>
                         </div>
                       </div>
                       <span className="text-xs font-extrabold text-white bg-emerald-600 px-2.5 py-1 rounded-lg">Enter →</span>
@@ -1219,7 +1234,7 @@ export default function App() {
         )}
         {clubSubPage === 'REGISTER_MEMBER' && (
           <RegisterMember
-            onBack={() => setClubSubPage('OVERVIEW')}
+            onBack={() => setClubSubPage('ROSTER')}
             onNotify={handleNotify}
             onAddAthlete={handleAddAthlete}
           />
