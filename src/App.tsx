@@ -357,7 +357,7 @@ export default function App() {
         window.location.pathname.startsWith('/register') ||
         (nin && name && !isCurrentlyAuth && !sessionStorage.getItem('eaf_skip_auto_reg'))
       ) {
-        if (isAlreadyRegisteredMarker || isCurrentlyAuth) {
+        if (isCurrentlyAuth) {
           window.history.replaceState({}, '', '/');
         } else {
           const targetRole = isClubRequested ? 'CLUB' : 'ATHLETE';
@@ -493,14 +493,21 @@ export default function App() {
     } else if (registrationData.type === 'ATHLETE') {
       const newAthlete = registrationData.payload.athlete as Athlete;
       dispatch(addAthlete(newAthlete));
-      dispatch(setAthlete(newAthlete));
-      dispatch(setRole('ATHLETE'));
-      setAthleteSubPage('OVERVIEW');
-      setPublicSubPage('HOME');
+      // Redirect to login page instead of home page
+      sessionStorage.setItem(
+        'eaf_registration_success_msg',
+        `Registration completed successfully for ${newAthlete.name}! Please sign in with your Fayda National ID or phone number.`
+      );
+      sessionStorage.setItem('eaf_registered_fin', newAthlete.faydaFin || '');
+      setRegModalRole(null);
+      setPublicSubPage('LOGIN');
+      if (typeof window !== 'undefined') {
+        window.history.pushState(null, '', '/login');
+      }
       setNavNonce(prev => prev + 1);
       window.scrollTo(0, 0);
       setTimeout(() => window.scrollTo(0, 0), 50);
-      handleNotify(`Athlete "${newAthlete.name}" registered successfully! Welcome to EAF.`, 'success');
+      handleNotify(`Athlete "${newAthlete.name}" registered successfully! Please sign in.`, 'success');
     } else {
       setPublicSubPage('PROFESSIONALS');
       setNavNonce(prev => prev + 1);
@@ -511,6 +518,21 @@ export default function App() {
   };
 
   const [navNonce, setNavNonce] = useState(0);
+
+  useEffect(() => {
+    const handleNavPage = (e: any) => {
+      if (e.detail?.page === 'LOGIN') {
+        setRegModalRole(null);
+        setPublicSubPage('LOGIN');
+        if (typeof window !== 'undefined') {
+          window.history.pushState(null, '', '/login');
+        }
+        window.scrollTo(0, 0);
+      }
+    };
+    window.addEventListener('navigateToPage', handleNavPage);
+    return () => window.removeEventListener('navigateToPage', handleNavPage);
+  }, []);
 
   const handleSwitchRoleDirectly = (targetRole: string) => {
     if (targetRole === 'LANDING' || targetRole === 'HOME') {
@@ -1075,11 +1097,6 @@ export default function App() {
             onToggleDarkMode={() => setDarkMode(!darkMode)}
             onLogin={() => setAuthModalConfig({ isOpen: true, method: 'FIN', credential: '' })}
             onRegister={(role: 'CLUB' | 'ATHLETE') => {
-              if (isUserRegistered) {
-                handleNotify('You have already completed registration with the Ethiopian Athletics Federation.', 'info');
-                setPublicSubPage('DASHBOARD');
-                return;
-              }
               setRegModalRole(role);
               window.history.pushState(null, '', role === 'CLUB' ? '/register?role=club' : '/register');
             }}

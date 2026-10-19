@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Building2, ShieldCheck, CheckCircle2, ArrowRight, ArrowLeft,
   AlertCircle, RefreshCw, Eye, EyeOff, User, Phone, Mail, MapPin,
-  FileCheck, Sparkles, Check, Users
+  FileCheck, Sparkles, Check, Users, UploadCloud, Image as ImageIcon, Trash2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Club } from '../../types';
@@ -50,6 +50,95 @@ export default function ClubRegistrationForm({
   const [clubPhone, setClubPhone] = useState('');
   const [clubLogo, setClubLogo] = useState('⚡');
   const [customLogoUrl, setCustomLogoUrl] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState('');
+  const [logoFileName, setLogoFileName] = useState('');
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  const handleLogoFile = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setLogoUploadError('Please select a valid image file (PNG, JPG, WEBP, or SVG).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoUploadError('Image size exceeds 5MB limit. Please choose a smaller file.');
+      return;
+    }
+
+    setLogoUploadError('');
+    setLogoFileName(file.name);
+    setIsUploadingLogo(true);
+
+    // Immediate local preview so UI never waits
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (dataUrl) setCustomLogoUrl(dataUrl);
+    };
+    reader.readAsDataURL(file);
+
+    // Real server upload
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const endpoints = [
+        '/api/v1/clubs/upload-logo',
+        'http://localhost:3000/api/v1/clubs/upload-logo',
+      ];
+
+      let uploadedUrl = '';
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, {
+            method: 'POST',
+            body: formData,
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json?.data?.url) {
+              uploadedUrl = json.data.url;
+              break;
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('Upload attempt error at ' + ep, fetchErr);
+        }
+      }
+
+      if (uploadedUrl) {
+        const fullUrl = uploadedUrl.startsWith('http')
+          ? uploadedUrl
+          : `http://localhost:3000${uploadedUrl}`;
+        setCustomLogoUrl(fullUrl);
+      }
+    } catch (err: any) {
+      console.warn('Server upload notice, keeping local preview:', err);
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleLogoFile(file);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleLogoFile(file);
+  };
+
+  const handleRemoveLogo = () => {
+    setCustomLogoUrl('');
+    setLogoFileName('');
+    setLogoUploadError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   // Step 2: Governance & Accreditation
   const [repName, setRepName] = useState('');
@@ -467,37 +556,134 @@ export default function ClubRegistrationForm({
                   </div>
                 </div>
 
-                {/* Club Emblem / Logo */}
+                {/* Club Official Logo Upload */}
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
-                    Club Emblem / Crest Icon
-                  </label>
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    {CLUB_EMBLEMS.map((sym) => (
-                      <button
-                        key={sym}
-                        type="button"
-                        onClick={() => {
-                          setClubLogo(sym);
-                          setCustomLogoUrl('');
-                        }}
-                        className={`w-11 h-11 rounded-xl text-2xl flex items-center justify-center border transition-all cursor-pointer ${
-                          clubLogo === sym && !customLogoUrl
-                            ? 'border-sky-500 bg-sky-50 ring-2 ring-sky-300 shadow-xs'
-                            : 'border-slate-200 bg-white hover:bg-slate-50'
-                        }`}
-                      >
-                        {sym}
-                      </button>
-                    ))}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
+                      Official Club Crest / Logo <span className="text-red-500">*</span>
+                    </label>
+                    <span className="text-[11px] font-bold text-sky-700">
+                      PNG, JPG, WEBP or SVG (Max 5MB)
+                    </span>
                   </div>
+
                   <input
-                    type="text"
-                    value={customLogoUrl}
-                    onChange={(e) => setCustomLogoUrl(e.target.value)}
-                    placeholder="Or paste custom Logo Image URL (e.g. https://... or /images/...)"
-                    className="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-medium bg-white"
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+                    onChange={handleFileChange}
+                    className="hidden"
                   />
+
+                  {customLogoUrl ? (
+                    <div className="p-4 rounded-2xl bg-white border-2 border-sky-300 shadow-sm flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
+                          <img
+                            src={customLogoUrl}
+                            alt="Club Logo Preview"
+                            className="w-full h-full object-contain rounded-lg"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-slate-900 truncate max-w-[220px]">
+                              {logoFileName || "Uploaded Club Logo"}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                              <CheckCircle2 size={11} /> Real Upload
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-medium m-0 mt-0.5">
+                            This logo will be displayed on official club licenses, rosters, and competition entries.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer bg-white"
+                        >
+                          Change Logo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleRemoveLogo}
+                          className="p-2 rounded-xl text-red-600 hover:bg-red-50 border border-red-200 cursor-pointer bg-white"
+                          title="Remove uploaded logo"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setIsDraggingOver(true); }}
+                      onDragLeave={() => setIsDraggingOver(false)}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`p-6 rounded-2xl border-2 border-dashed transition-all cursor-pointer text-center flex flex-col items-center justify-center gap-2 ${
+                        isDraggingOver
+                          ? "border-sky-500 bg-sky-50/70"
+                          : "border-slate-300 bg-slate-50/60 hover:border-sky-400 hover:bg-sky-50/30"
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center shadow-xs">
+                        {isUploadingLogo ? (
+                          <RefreshCw size={22} className="animate-spin text-sky-600" />
+                        ) : (
+                          <UploadCloud size={24} />
+                        )}
+                      </div>
+
+                      <div>
+                        <span className="text-sm font-black text-slate-900 block">
+                          {isUploadingLogo ? "Uploading Club Logo..." : "Upload Official Club Logo Image"}
+                        </span>
+                        <span className="text-xs text-slate-500 font-medium">
+                          Click to browse or drag and drop your logo file here
+                        </span>
+                      </div>
+
+                      <div className="mt-1">
+                        <span className="px-3 py-1 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-sky-700 shadow-xs">
+                          Choose File
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {logoUploadError && (
+                    <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={14} /> {logoUploadError}
+                    </p>
+                  )}
+
+                  {/* Fallback preset emblems for sandbox */}
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-bold text-slate-500">Or pick fallback emblem:</span>
+                    <div className="flex items-center gap-1.5">
+                      {CLUB_EMBLEMS.slice(0, 6).map((sym) => (
+                        <button
+                          key={sym}
+                          type="button"
+                          onClick={() => {
+                            setClubLogo(sym);
+                            setCustomLogoUrl("");
+                          }}
+                          className={`w-7 h-7 rounded-lg text-sm flex items-center justify-center border cursor-pointer ${
+                            clubLogo === sym && !customLogoUrl
+                              ? "border-sky-500 bg-sky-100"
+                              : "border-slate-200 bg-white hover:bg-slate-50"
+                          }`}
+                        >
+                          {sym}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -905,8 +1091,18 @@ export default function ClubRegistrationForm({
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-2xl shadow-xs shrink-0">
-                    {registeredClub.logo}
+                  <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-2xl shadow-xs shrink-0 overflow-hidden">
+                    {(registeredClub.logoUrl || registeredClub.logo || "").startsWith("http") ||
+                    (registeredClub.logoUrl || registeredClub.logo || "").startsWith("/") ||
+                    (registeredClub.logoUrl || registeredClub.logo || "").startsWith("data:") ? (
+                      <img
+                        src={registeredClub.logoUrl || registeredClub.logo}
+                        alt="Club Logo"
+                        className="w-full h-full object-contain p-1"
+                      />
+                    ) : (
+                      registeredClub.logo || "⚡"
+                    )}
                   </div>
                   <div>
                     <div className="text-base font-black text-slate-900">{registeredClub.name}</div>

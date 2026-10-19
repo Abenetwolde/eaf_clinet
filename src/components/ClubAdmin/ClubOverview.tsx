@@ -3,6 +3,7 @@ import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, 
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import type { Club, Athlete, Transfer } from '../../types';
 import { useAppSelector } from '../../store/hooks';
+import { useGetAthletesQuery } from '../../store/api/athleteApi';
 
 interface ClubOverviewProps {
   club?: Club;
@@ -19,8 +20,55 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   const storeTransfers = useAppSelector((state) => state.club.transfers);
 
   const club = propClub || storeClub;
-  const athletes = propAthletes || storeAthletes;
   const transfers = propTransfers || storeTransfers;
+
+  // Retrieve club members dynamically from database
+  const { data: backendAthletes } = useGetAthletesQuery(
+    club?.id ? { clubId: club.id } : undefined
+  );
+
+  const dynamicAthletes: Athlete[] = React.useMemo(() => {
+    if (backendAthletes && backendAthletes.length > 0) {
+      return backendAthletes.map((b: any) => ({
+        id: b.id,
+        name: b.name || `${b.user?.firstName || ""} ${b.user?.lastName || ""}`.trim() || "Club Athlete",
+        amharicName: b.amharicName || b.name,
+        dob: b.dateOfBirth || "2000-01-01",
+        gender: b.gender || "Male",
+        ageTier: b.ageTier || "Senior",
+        clubId: b.clubId || club.id,
+        clubName: b.clubName || club.name,
+        faydaFin: b.faydaFin || b.nin || "Verified",
+        faydaFan: b.faydaFan || b.fanNumber || "FAN-Verified",
+        faydaStatus: "VERIFIED",
+        faydaHash: "0xFAYDA_HASH",
+        primaryEvent: b.primaryEvent || "Athletics",
+        licenseStatus: b.status === "ACTIVE" ? "ACTIVE" : "PENDING",
+        licenseNumber: b.licenseNumber || null,
+        licenseExpiry: null,
+        photoUrl: b.photoUrl || "/images/runner_marathon.png",
+        checkinStatus: "NOT_CHECKED_IN",
+        qrCodeData: null,
+        weight: b.weight || 60,
+        height: b.height || 175,
+        restingHR: 50,
+        trainingLoad: "80",
+        emergencyContact: b.emergencyContactPhone || "",
+        medicalNotes: "",
+        email: b.user?.email || "",
+        phone: b.user?.phoneNumber || "",
+        region: b.region || club.region,
+        personalBests: [],
+        seasonBests: [],
+        weightLog: [],
+        trainingLog: [],
+        achievements: [],
+      }));
+    }
+    return propAthletes || storeAthletes;
+  }, [backendAthletes, propAthletes, storeAthletes, club]);
+
+  const athletes = dynamicAthletes;
 
   const verifiedCount = athletes.filter(a => a.faydaStatus === 'VERIFIED').length;
   const activeLicenseCount = athletes.filter(a => a.licenseStatus === 'ACTIVE').length;

@@ -250,10 +250,24 @@ export default function RegisterMember({ onBack, onNotify, onAddAthlete }: Regis
 
     if (selectedType === 'ATHLETE') {
       try {
+        const splitNames = (faydaResult.name || 'Athlete Member').split(' ');
+        const fName = splitNames[0] || 'Athlete';
+        const lName = splitNames.slice(1).join(' ') || 'Member';
+        const cleanFinDigits = faydaFin.replace(/\D/g, '');
+
         await registerAthlete({
           email: email.trim(),
           password: 'Password123!',
           phoneNumber: phone.trim(),
+          firstName: fName,
+          lastName: lName,
+          amharicName: faydaResult.amharic,
+          faydaFin: cleanFinDigits,
+          nin: cleanFinDigits,
+          dateOfBirth: faydaResult.dob,
+          gender: faydaResult.gender?.toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE',
+          photoUrl: faydaResult.photoUrl,
+          primaryEvent: primaryEvent || '5,000m',
           faydaVerificationToken: (faydaResult as any).verificationToken || 'FAYDA-TOKEN-MOCK',
           fanNumber: (newMember as any).faydaFan,
           clubId: currentClub?.id || null,

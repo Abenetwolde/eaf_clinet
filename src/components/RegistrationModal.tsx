@@ -279,13 +279,7 @@ export default function RegistrationModal({
   const [faydaVerificationToken, setFaydaVerificationToken] = useState<string | null>(initialFayda?.verificationToken || null);
 
   // Active registration workflow role
-  const [selectedRole, setSelectedRole] = useState<RegistrationRoleType | null>(() => {
-    if (initialRole === 'CLUB') return 'CLUB_PRESIDENT';
-    if (initialRole === 'COACH') return 'COACH';
-    if (initialRole === 'MEDICAL_HEAD') return 'MEDICAL_HEAD';
-    if (initialRole === 'OFFICIAL') return 'OFFICIAL';
-    return 'ATHLETE';
-  });
+  const [selectedRole, setSelectedRole] = useState<RegistrationRoleType>('ATHLETE');
 
   // RTK Query API Hooks
   const { data: regOptions } = useGetRegistrationOptionsQuery();
@@ -314,9 +308,21 @@ export default function RegistrationModal({
     isRegistered: boolean;
     message?: string;
     email?: string;
+    phone?: string;
     fullName?: string;
+    amharicName?: string;
+    fin?: string;
+    fan?: string;
     athleteId?: string;
     clubId?: string;
+    clubName?: string;
+    primaryEvent?: string;
+    status?: string;
+    photoUrl?: string;
+    gender?: string;
+    dateOfBirth?: string;
+    region?: string;
+    roles?: string[];
   } | null>(null);
 
   // Check if verified Fayda ID is already registered
@@ -379,12 +385,15 @@ export default function RegistrationModal({
   const handleOpenLoginModal = () => {
     onClose();
     if (typeof window !== 'undefined') {
+      sessionStorage.setItem('eaf_registered_fin', faydaResult?.fin || '');
+      sessionStorage.setItem(
+        'eaf_registration_success_msg',
+        `Existing registration found for ${faydaResult?.name || "your account"}. Please sign in to access your portal.`
+      );
+      window.history.pushState(null, '', '/login');
       window.dispatchEvent(
-        new CustomEvent('openAuthModal', {
-          detail: {
-            method: 'FIN',
-            credential: faydaResult?.fin || '',
-          },
+        new CustomEvent('navigateToPage', {
+          detail: { page: 'LOGIN', credential: faydaResult?.fin || '' },
         })
       );
     }
@@ -623,7 +632,7 @@ export default function RegistrationModal({
     setNewPbVenue('');
   };
 
-  const steps = ['1. Fayda Identity', '2. Role Selection', '3. Profile Details', '4. Review & Confirm'];
+  const steps = ['1. Fayda Verification', '2. Athlete Details', '3. Review & Submit'];
 
   // Submission handler
   const handleSubmit = async () => {
@@ -1044,32 +1053,89 @@ export default function RegistrationModal({
         {isCheckingRegistered ? (
           <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-800 flex items-center gap-3">
             <RefreshCw size={18} className="animate-spin text-blue-600" />
-            <span className="text-xs sm:text-sm font-bold">Verifying National ID status in federation registry...</span>
+            <span className="text-xs sm:text-sm font-bold">Verifying National ID status in Ethiopian Athletics Federation registry...</span>
           </div>
         ) : isDuplicate ? (
-          <div className="p-6 rounded-3xl bg-amber-50 border-2 border-amber-300 text-amber-950 flex flex-col sm:flex-row items-center justify-between gap-5 shadow-sm">
-            <div className="flex items-start gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 text-amber-600 shadow-xs">
-                <AlertCircle size={26} />
+          <div className="space-y-4">
+            {/* Prominent Duplicate Registration Notice */}
+            <div className="p-6 rounded-3xl bg-amber-50 border-2 border-amber-300 text-amber-950 flex flex-col sm:flex-row items-center justify-between gap-5 shadow-sm">
+              <div className="flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0 text-amber-600 shadow-xs">
+                  <AlertCircle size={26} />
+                </div>
+                <div>
+                  <h5 className="text-base sm:text-lg font-black text-amber-900 m-0 leading-tight">
+                    Registration Already Completed
+                  </h5>
+                  <p className="text-xs sm:text-sm text-amber-800 font-medium m-0 mt-1 max-w-lg leading-relaxed">
+                    This Fayda National ID ({formatFin(faydaResult.fin)}) has already completed official registration with the Ethiopian Athletics Federation. Duplicate accounts cannot be created.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h5 className="text-base sm:text-lg font-black text-amber-900 m-0 leading-tight">
-                  This Fayda National ID is Already Registered
-                </h5>
-                <p className="text-xs sm:text-sm text-amber-800 font-medium m-0 mt-1 max-w-lg leading-relaxed">
-                  A user profile with National ID Number ({formatFin(faydaResult.fin)}) is already registered in the Ethiopian Athletics Federation. You cannot create a duplicate registration with this National ID.
-                </p>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleOpenLoginModal}
+                  className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm whitespace-nowrap cursor-pointer border-0 shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all"
+                >
+                  <span>Proceed to Sign In</span>
+                  <ArrowRight size={16} />
+                </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
+            {/* Display Retrieved Existing Registration Profile */}
+            <div className="bg-white border-2 border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-500">
+                  Retrieved Federation Account Details
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  Status: {registeredAccountInfo?.status || "Active Registered"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <span className="font-bold text-slate-500 block">Registered Athlete</span>
+                  <span className="font-black text-slate-900 text-sm mt-0.5 block">
+                    {registeredAccountInfo?.fullName || faydaResult.name}
+                  </span>
+                  {registeredAccountInfo?.amharicName && (
+                    <span className="text-blue-700 font-bold block">{registeredAccountInfo.amharicName}</span>
+                  )}
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <span className="font-bold text-slate-500 block">Affiliated Club</span>
+                  <span className="font-black text-slate-900 text-sm mt-0.5 block">
+                    {registeredAccountInfo?.clubName || "Independent Athlete"}
+                  </span>
+                  <span className="text-slate-500 font-semibold block">
+                    Discipline: {registeredAccountInfo?.primaryEvent || "Athletics"}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <span className="font-bold text-slate-500 block">Contact Information</span>
+                  <span className="font-mono font-bold text-slate-800 block">
+                    {registeredAccountInfo?.email || faydaResult.email || "No email on file"}
+                  </span>
+                  <span className="font-mono text-slate-600 block">
+                    {registeredAccountInfo?.phone || faydaResult.phoneNumber || ""}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-start pt-2">
               <button
                 type="button"
-                onClick={handleOpenLoginModal}
-                className="flex-1 sm:flex-initial px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm whitespace-nowrap cursor-pointer border-0 shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all"
+                onClick={handleClearFaydaVerification}
+                className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 cursor-pointer bg-transparent border-0"
               >
-                <span>Login to Existing Account</span>
-                <ArrowRight size={16} />
+                <RefreshCw size={14} /> Verify with a different National ID
               </button>
             </div>
           </div>
@@ -1085,10 +1151,10 @@ export default function RegistrationModal({
 
             <button
               type="button"
-              onClick={() => setStep(1)} // Advance to Stage 2: Role Selection
+              onClick={() => setStep(1)} // Advance to Step 1: Athlete Profile Details
               className="px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 cursor-pointer border-0 transition-all ml-auto"
             >
-              <span>Proceed to Stage 2: Select Role</span>
+              <span>Continue to Athlete Details</span>
               <ArrowRight size={18} />
             </button>
           </div>
@@ -1261,7 +1327,7 @@ export default function RegistrationModal({
       setSubmissionError('Passwords do not match. Please re-enter your password.');
       return;
     }
-    setStep(3);
+    setStep(2);
   };
 
   const renderAccountCredentialsCard = () => (
@@ -1545,7 +1611,7 @@ export default function RegistrationModal({
           <div className="flex gap-3 mt-4">
             <button
               type="button"
-              onClick={() => setStep(1)}
+              onClick={() => setStep(0)}
               className="px-6 py-3 rounded-xl border border-slate-300 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer bg-white"
             >
               Back
@@ -1958,7 +2024,7 @@ export default function RegistrationModal({
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => setStep(2)}
+            onClick={() => setStep(1)}
             className="px-6 py-3 rounded-xl border border-slate-300 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer bg-white"
           >
             Back
@@ -2137,16 +2203,13 @@ export default function RegistrationModal({
             <StepBar steps={steps} current={step} />
           )}
 
-          {isAlreadyCompleted ? (
-            renderAlreadyCompletedScreen()
-          ) : isSubmittedPending ? (
+          {isSubmittedPending ? (
             renderSuccessScreen()
           ) : (
             <div>
               {step === 0 && renderStep0FaydaAuth()}
-              {step === 1 && renderStep1RoleSelection()}
-              {step === 2 && renderStep2ProfileDetails()}
-              {step === 3 && renderStep3ReviewAndConfirm()}
+              {step === 1 && renderStep2ProfileDetails()}
+              {step === 2 && renderStep3ReviewAndConfirm()}
             </div>
           )}
         </div>

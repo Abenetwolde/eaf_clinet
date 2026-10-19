@@ -4,7 +4,7 @@ import { useAppDispatch } from '../store/hooks';
 import { login } from '../store/slices/authSlice';
 import { MOCK_CLUBS, MOCK_ATHLETES } from '../data/mockData';
 import {
-  ShieldCheck, Phone, AlertCircle, ArrowRight, ArrowLeft, Sparkles, Eye, EyeOff, User, Lock, Home, Building2
+  ShieldCheck, Phone, AlertCircle, ArrowRight, ArrowLeft, Sparkles, Eye, EyeOff, User, Lock, Home, Building2, CheckCircle2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -46,6 +46,30 @@ export default function LoginPage({
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [registrationSuccessMessage, setRegistrationSuccessMessage] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const msg = sessionStorage.getItem('eaf_registration_success_msg');
+      if (msg) {
+        sessionStorage.removeItem('eaf_registration_success_msg');
+        return msg;
+      }
+    }
+    return '';
+  });
+
+  // Pre-fill registered FIN if present
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedFin = sessionStorage.getItem('eaf_registered_fin');
+      if (savedFin && !credential) {
+        const digits = savedFin.replace(/\D/g, '').slice(0, 16);
+        const formatted = digits.match(/.{1,4}/g)?.join(' ') || savedFin;
+        setCredential(formatted);
+        setMethod('FAYDA');
+        sessionStorage.removeItem('eaf_registered_fin');
+      }
+    }
+  }, []);
 
   const handleCredentialChange = (val: string) => {
     setError('');
@@ -407,6 +431,19 @@ export default function LoginPage({
               <span>Phone Number</span>
             </button>
           </div>
+
+          {/* Registration Success Banner */}
+          {registrationSuccessMessage && (
+            <div className="mb-5 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-700/60 flex items-start gap-3 text-emerald-900 dark:text-emerald-200 text-xs sm:text-sm shadow-xs">
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex-1">
+                <strong className="block text-emerald-950 dark:text-emerald-100 font-black mb-0.5">
+                  Registration Successful!
+                </strong>
+                <span className="font-semibold leading-relaxed">{registrationSuccessMessage}</span>
+              </div>
+            </div>
+          )}
 
           {/* Error Banner */}
           {error && (

@@ -81,6 +81,15 @@ export interface AthleteRegistrationRequest {
   dominantFoot?: 'LEFT' | 'RIGHT' | 'BOTH';
   bloodType?: string;
   nationality?: string;
+  firstName?: string;
+  lastName?: string;
+  amharicName?: string;
+  faydaFin?: string;
+  nin?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  photoUrl?: string;
+  primaryEvent?: string;
 }
 
 export interface AthleteRegistrationResponse {
