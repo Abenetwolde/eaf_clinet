@@ -1,7 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { Club, Transfer } from '../../types';
-import { MOCK_CLUBS, MOCK_TRANSFERS } from '../../data/mockData';
-import { STORAGE_KEYS, readJSON, writeJSON } from '../persistence';
 
 export interface ClubState {
   clubs: Club[];
@@ -9,8 +7,8 @@ export interface ClubState {
 }
 
 const initialState: ClubState = {
-  clubs: readJSON<Club[]>(STORAGE_KEYS.clubs, MOCK_CLUBS),
-  transfers: readJSON<Transfer[]>(STORAGE_KEYS.transfers, MOCK_TRANSFERS),
+  clubs: [],
+  transfers: [],
 };
 
 const clubSlice = createSlice({
@@ -19,11 +17,9 @@ const clubSlice = createSlice({
   reducers: {
     addClub(state, action: PayloadAction<Club>) {
       state.clubs.unshift(action.payload);
-      writeJSON(STORAGE_KEYS.clubs, state.clubs);
     },
     addTransfer(state, action: PayloadAction<Transfer>) {
       state.transfers.unshift(action.payload);
-      writeJSON(STORAGE_KEYS.transfers, state.transfers);
     },
   },
 });

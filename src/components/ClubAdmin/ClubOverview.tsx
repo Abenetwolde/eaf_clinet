@@ -16,7 +16,6 @@ interface ClubOverviewProps {
 
 export default function ClubOverview({ club: propClub, athletes: propAthletes, transfers: propTransfers, onChangeSubPage, onNotify, onAddClub }: ClubOverviewProps) {
   const storeClub = useAppSelector((state) => state.auth.club);
-  const storeAthletes = useAppSelector((state) => state.athletes);
   const storeTransfers = useAppSelector((state) => state.club.transfers);
 
   const club = propClub || storeClub;
@@ -27,46 +26,25 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
     club?.id ? { clubId: club.id } : undefined
   );
 
-  const dynamicAthletes: Athlete[] = React.useMemo(() => {
-    if (backendAthletes && backendAthletes.length > 0) {
-      return backendAthletes.map((b: any) => ({
-        id: b.id,
-        name: b.name || `${b.user?.firstName || ""} ${b.user?.lastName || ""}`.trim() || "Club Athlete",
-        amharicName: b.amharicName || b.name,
-        dob: b.dateOfBirth || "2000-01-01",
-        gender: b.gender || "Male",
-        ageTier: b.ageTier || "Senior",
-        clubId: b.clubId || club.id,
-        clubName: b.clubName || club.name,
-        faydaFin: b.faydaFin || b.nin || "Verified",
-        faydaFan: b.faydaFan || b.fanNumber || "FAN-Verified",
-        faydaStatus: "VERIFIED",
-        faydaHash: "0xFAYDA_HASH",
-        primaryEvent: b.primaryEvent || "Athletics",
-        licenseStatus: b.status === "ACTIVE" ? "ACTIVE" : "PENDING",
-        licenseNumber: b.licenseNumber || null,
-        licenseExpiry: null,
-        photoUrl: b.photoUrl || "/images/runner_marathon.png",
-        checkinStatus: "NOT_CHECKED_IN",
-        qrCodeData: null,
-        weight: b.weight || 60,
-        height: b.height || 175,
-        restingHR: 50,
-        trainingLoad: "80",
-        emergencyContact: b.emergencyContactPhone || "",
-        medicalNotes: "",
-        email: b.user?.email || "",
-        phone: b.user?.phoneNumber || "",
-        region: b.region || club.region,
-        personalBests: [],
-        seasonBests: [],
-        weightLog: [],
-        trainingLog: [],
-        achievements: [],
-      }));
-    }
-    return propAthletes || storeAthletes;
-  }, [backendAthletes, propAthletes, storeAthletes, club]);
+  const dynamicAthletes: Athlete[] = React.useMemo(() => (backendAthletes || []).map((b: any) => ({
+    id: b.id,
+    name: b.name || `${b.user?.firstName || ""} ${b.user?.lastName || ""}`.trim(),
+    amharicName: b.amharicName,
+    dob: b.dateOfBirth,
+    gender: b.gender,
+    ageTier: b.ageTier,
+    clubId: b.clubId,
+    clubName: b.clubName,
+    faydaFin: b.faydaFin || b.user?.faydaIdentity?.nin,
+    faydaFan: b.faydaFan || b.fanNumber,
+    faydaStatus: b.user?.faydaIdentity?.verified ? "VERIFIED" : "PENDING",
+    primaryEvent: b.primaryEvent,
+    licenseStatus: b.status,
+    licenseNumber: b.licenseNumber,
+    photoUrl: b.photoUrl || "",
+    checkinStatus: "NOT_CHECKED_IN",
+    personalBests: [], seasonBests: [], weightLog: [], trainingLog: [], achievements: [],
+  } as Athlete)), [backendAthletes]);
 
   const athletes = dynamicAthletes;
 
@@ -74,22 +52,14 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   const activeLicenseCount = athletes.filter(a => a.licenseStatus === 'ACTIVE').length;
   const expiredCount = athletes.filter(a => a.licenseStatus !== 'ACTIVE').length;
 
-  const performanceData = [
-    { month: 'Jan', points: 120 },
-    { month: 'Feb', points: 150 },
-    { month: 'Mar', points: 170 },
-    { month: 'Apr', points: 210 },
-    { month: 'May', points: 190 },
-    { month: 'Jun', points: 280 },
-    { month: 'Jul', points: 310 },
-  ];
-
-  const eventsData = [
-    { name: 'Sprints', value: 12 },
-    { name: 'Middle Dist', value: 18 },
-    { name: 'Long Dist', value: 35 },
-    { name: 'Field Events', value: 8 },
-  ];
+  const performanceData: { month: string; points: number }[] = [];
+  const eventsData = athletes.reduce<{ name: string; value: number }[]>((counts, athlete) => {
+    const name = athlete.primaryEvent || 'Unspecified';
+    const current = counts.find((item) => item.name === name);
+    if (current) current.value += 1;
+    else counts.push({ name, value: 1 });
+    return counts;
+  }, []);
   const COLORS = ['var(--primary)', '#10B981', '#F59E0B', '#8B5CF6'];
 
   return (

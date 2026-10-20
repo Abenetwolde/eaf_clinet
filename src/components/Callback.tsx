@@ -139,7 +139,7 @@ export default function Callback() {
           photoUrl: decoded.picture || '',
           phoneNumber: decoded.phone_number || '',
           email: decoded.email || '',
-          verificationToken: decoded.verificationToken || access_token,
+          verificationToken: decoded.verificationToken || '',
           hash: '0xFAYDA_' + cleanDigits.slice(-6),
           verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
           ageTier,
@@ -160,7 +160,7 @@ export default function Callback() {
               payload: {
                 access_token,
                 userInfo: decoded,
-                verificationToken: decoded.verificationToken,
+                verificationToken: decoded.verificationToken || '',
               },
             },
             window.location.origin
@@ -222,7 +222,7 @@ export default function Callback() {
       photoUrl: userInfo.picture || '',
       phoneNumber: userInfo.phone_number || '',
       email: userInfo.email || '',
-      verificationToken: userInfo.verificationToken || accessToken,
+      verificationToken: userInfo.verificationToken || '',
       hash: `0xFAYDA_${cleanDigits.slice(-6)}`,
       verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
       ageTier,

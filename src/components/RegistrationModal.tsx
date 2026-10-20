@@ -8,13 +8,10 @@ import {
   Phone, Mail, MapPin, Calendar, Hash, FileCheck, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MOCK_CLUBS } from '../data/mockData';
 import { useI18n } from '../i18n';
 import {
   useGetRegistrationOptionsQuery,
   useRegisterAthleteMutation,
-  useInitiateFaydaMutation,
-  useConfirmFaydaOtpMutation,
   type AthleteRegistrationRequest,
 } from '../store/api/athleteApi';
 import FaydaVerifiedProfileModal, { FaydaResidentIdentity, formatFin } from './FaydaVerifiedProfileModal';
@@ -176,72 +173,40 @@ function StepBar({ steps, current }: { steps: string[]; current: number }) {
  * Synchronous resolver for Fayda National ID identity
  */
 function resolveStoredFaydaIdentity(propIdentity?: FaydaResidentIdentity | null): FaydaResult | null {
-  if (propIdentity && (propIdentity.nin || propIdentity.fullName)) {
-    const dob = propIdentity.birthDate || '1980-12-01';
-    const dobYear = parseInt(dob.substring(0, 4));
-    const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
-    const tier = propIdentity.ageTier || (age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division');
-    const fin = propIdentity.nin;
-    const cleanDigits = fin.replace(/\D/g, '');
-    const fan = 'FAN-' + (cleanDigits.slice(-8) || '98421084');
-
+  try {
+    const raw = propIdentity
+      ? { ...propIdentity, fin: propIdentity.nin, name: propIdentity.fullName, dob: propIdentity.birthDate, photoUrl: propIdentity.picture }
+      : typeof window !== 'undefined'
+        ? JSON.parse(sessionStorage.getItem('eaf_fayda_verified') || localStorage.getItem('eaf_fayda_verified') || 'null')
+        : null;
+    if (!raw) return null;
+    const fin = raw.fin || raw.nin || '';
+    const name = raw.name || raw.fullName || '';
+    const dob = raw.dob || raw.birthDate || raw.birthdate || '';
+    const verificationToken = raw.verificationToken || '';
+    if (!fin || !name || !dob || !verificationToken) return null;
+    const age = new Date().getFullYear() - new Date(dob).getFullYear();
     return {
-      name: propIdentity.fullName,
-      amharic: propIdentity.fullNameAmharic || propIdentity.fullName,
+      name,
+      amharic: raw.amharic || raw.fullNameAmharic || '',
       dob,
-      gender: propIdentity.gender || 'Male',
-      blood: 'O+',
-      region: propIdentity.address || 'Addis Ababa / Federal',
-      photoUrl: propIdentity.picture || '/images/fayda_resident_photo.jpg',
-      ageTier: tier,
+      gender: raw.gender || '',
+      blood: raw.blood || '',
+      region: raw.region || raw.address || '',
+      photoUrl: raw.photoUrl || raw.picture || '',
+      ageTier: raw.ageTier || (age <= 16 ? 'U16' : age <= 18 ? 'U18' : age <= 20 ? 'U20' : age >= 35 ? 'Masters' : 'Senior'),
       fin,
-      fan,
-      hash: propIdentity.hash || ('0xFAYDA_' + cleanDigits.slice(-6)),
-      verificationDate: propIdentity.verifiedAt || new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-      phoneNumber: propIdentity.phoneNumber,
-      email: propIdentity.email,
-      address: propIdentity.address,
-      verificationToken: propIdentity.verificationToken,
+      fan: raw.fan || raw.fanNumber || '',
+      hash: '',
+      verificationDate: raw.verificationDate || raw.verifiedAt || '',
+      phoneNumber: raw.phoneNumber || raw.phone || '',
+      email: raw.email || '',
+      address: raw.address || '',
+      verificationToken,
     };
+  } catch {
+    return null;
   }
-
-  if (typeof window !== 'undefined') {
-    try {
-      const rawVerified = sessionStorage.getItem('eaf_fayda_verified') || localStorage.getItem('eaf_fayda_verified');
-      if (rawVerified) {
-        const parsed = JSON.parse(rawVerified);
-        if (parsed && (parsed.fin || parsed.nin || parsed.name)) {
-          const fin = parsed.fin || parsed.nin || '268503801845194354101114624931981150';
-          const dob = parsed.dob || parsed.birthDate || '1980-12-01';
-          const dobYear = parseInt(dob.substring(0, 4));
-          const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
-          const tier = parsed.ageTier || (age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division');
-          const cleanDigits = fin.replace(/\D/g, '');
-          const fan = parsed.fan || ('FAN-' + (cleanDigits.slice(-8) || '98421084'));
-
-          return {
-            name: parsed.name || parsed.fullName || 'Chernet Tadese Bekele',
-            amharic: parsed.amharic || parsed.fullNameAmharic || parsed.name || 'Chernet Tadese Bekele',
-            dob,
-            gender: parsed.gender || 'Male',
-            blood: parsed.blood || 'O+',
-            region: parsed.region || parsed.address || 'Addis Ababa / Federal',
-            photoUrl: parsed.photoUrl || parsed.picture || '/images/fayda_resident_photo.jpg',
-            ageTier: tier,
-            fin,
-            fan,
-            hash: parsed.hash || ('0xFAYDA_' + cleanDigits.slice(-6)),
-            verificationDate: parsed.verificationDate || new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-            phoneNumber: parsed.phoneNumber || parsed.phone,
-            email: parsed.email,
-            address: parsed.address || parsed.region,
-            verificationToken: parsed.verificationToken,
-          };
-        }
-      }
-    } catch (e) {}
-  }
-  return null;
 }
 
 export default function RegistrationModal({
@@ -275,7 +240,7 @@ export default function RegistrationModal({
   const initialFayda = resolveStoredFaydaIdentity(verifiedIdentity);
   const [faydaResult, setFaydaResult] = useState<FaydaResult | null>(initialFayda);
   const [faydaFin, setFaydaFin] = useState<string>(initialFayda?.fin || '');
-  const [faydaFan, setFaydaFan] = useState<string>(initialFayda?.fan || 'FAN-9842-1084-3310');
+  const [faydaFan, setFaydaFan] = useState<string>(initialFayda?.fan || '');
   const [faydaVerificationToken, setFaydaVerificationToken] = useState<string | null>(initialFayda?.verificationToken || null);
 
   // Active registration workflow role
@@ -284,8 +249,6 @@ export default function RegistrationModal({
   // RTK Query API Hooks
   const { data: regOptions } = useGetRegistrationOptionsQuery();
   const [registerAthlete, { isLoading: isRegistering }] = useRegisterAthleteMutation();
-  const [initiateFayda] = useInitiateFaydaMutation();
-  const [confirmFaydaOtp] = useConfirmFaydaOtpMutation();
   const [submissionError, setSubmissionError] = useState<string>('');
 
   // Step state:
@@ -419,12 +382,12 @@ export default function RegistrationModal({
   };
 
   // Common account fields
-  const [email, setEmail] = useState(initialFayda?.email || 'chere@id.et');
+  const [email, setEmail] = useState(initialFayda?.email || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [phone, setPhone] = useState(initialFayda?.phoneNumber || '+251 90 909 0909');
-  const [region, setRegion] = useState(initialFayda?.region || 'Addis Ababa / Federal');
+  const [phone, setPhone] = useState(initialFayda?.phoneNumber || '');
+  const [region, setRegion] = useState(initialFayda?.region || '');
 
   // Club President specific
   const [clubName, setClubName] = useState('Ethiopian Electric Athletics Club');
@@ -512,18 +475,18 @@ export default function RegistrationModal({
       if (event.data?.type === 'FAYDA_OIDC_SUCCESS' && event.data.payload) {
         const payload = event.data.payload;
         const identity = payload.userInfo || payload.identity || {};
-        const fullName = identity['name#en'] || identity.fullName || identity.name || 'Chernet Tadese Bekele';
-        const amharic = identity['name#am'] || identity.fullNameAmharic || fullName;
-        const dob = identity.birthdate || identity.birthDate || '1980-12-01';
+        const fullName = identity['name#en'] || identity.fullName || identity.name || '';
+        const amharic = identity['name#am'] || identity.fullNameAmharic || '';
+        const dob = identity.birthdate || identity.birthDate || '';
         const dobYear = parseInt(dob.substring(0, 4));
         const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
         const tier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division';
-        const nin = identity.nin || identity.national_id || identity.sub || '268503801845194354101114624931981150';
+        const nin = identity.nin || identity.national_id || '';
         const cleanDigits = nin.replace(/\D/g, '');
         const fan = 'FAN-' + (cleanDigits.slice(-8) || '98421084');
-        const phoneVal = identity.phone_number || identity.phoneNumber || '0909090909';
-        const emailVal = identity.email || 'chere@id.et';
-        const photo = identity.picture || localStorage.getItem('fayda_photo') || '/images/fayda_resident_photo.jpg';
+        const phoneVal = identity.phone_number || identity.phoneNumber || '';
+        const emailVal = identity.email || '';
+        const photo = identity.picture || '';
 
         const resObj: FaydaResult = {
           name: fullName,
@@ -541,7 +504,7 @@ export default function RegistrationModal({
           phoneNumber: phoneVal,
           email: emailVal,
           address: 'Addis Ababa / Federal',
-          verificationToken: payload.verificationToken || payload.access_token,
+          verificationToken: payload.verificationToken || '',
         };
 
         setFaydaResult(resObj);
@@ -587,7 +550,7 @@ export default function RegistrationModal({
         mark: newPbMark,
         isFat: true,
         date: new Date().toISOString().split('T')[0],
-        venue: newPbVenue || 'National Stadium'
+        venue: newPbVenue
       }
     ]);
     setNewPbEvent('');
@@ -604,10 +567,9 @@ export default function RegistrationModal({
     // Club resolution
     const apiClubs = regOptions?.clubs || [];
     const matchedApiClub = apiClubs.find(c => c.id === selectedClubId);
-    const fallbackClub = MOCK_CLUBS.find(c => c.id === selectedClubId);
     const club = selectedClubId === 'NONE'
       ? { id: 'NONE', name: 'Independent Athlete', shortName: 'Independent' }
-      : (matchedApiClub ? { id: matchedApiClub.id, name: matchedApiClub.name, shortName: matchedApiClub.name.split(' ')[0] } : fallbackClub);
+      : matchedApiClub ? { id: matchedApiClub.id, name: matchedApiClub.name, shortName: matchedApiClub.name.split(' ')[0] } : null;
 
     if (selectedRole === 'ATHLETE' || !selectedRole) {
       // Validate inputs
@@ -621,39 +583,42 @@ export default function RegistrationModal({
         setSubmissionError('Password must be at least 8 characters long.');
         return;
       }
+      const tokenToUse = faydaVerificationToken || faydaResult?.verificationToken;
+      if (!tokenToUse) {
+        setSubmissionError('Complete the official Fayda verification flow before registering.');
+        return;
+      }
 
       const displayEvent = Array.isArray(primaryEvent) ? primaryEvent.join(', ') : primaryEvent;
-      const fallbackId = 'ATH-2026-' + Math.floor(100 + Math.random() * 900);
-
       const newAthlete: AthletePayload = {
-        id: fallbackId,
-        name: faydaResult?.name || 'Chernet Tadese Bekele',
-        amharicName: faydaResult?.amharic || 'ቸርነት ታደሰ በቀለ',
-        dob: faydaResult?.dob || '1980-12-01',
-        gender: faydaResult?.gender || 'Male',
-        ageTier: faydaResult?.ageTier || 'Masters Division (45 yrs)',
-        clubId: club.id,
-        clubName: club.shortName || club.name,
-        faydaFin: faydaResult?.fin || faydaFin || '2685038018451943',
-        faydaFan: faydaResult?.fan || faydaFan || 'FAN-9842-1084-3310',
+        id: '',
+        name: faydaResult?.name || '',
+        amharicName: faydaResult?.amharic || '',
+        dob: faydaResult?.dob || '',
+        gender: faydaResult?.gender || '',
+        ageTier: faydaResult?.ageTier || '',
+        clubId: club?.id || 'NONE',
+        clubName: club?.shortName || club?.name || '',
+        faydaFin: faydaResult?.fin || faydaFin || '',
+        faydaFan: faydaResult?.fan || faydaFan || '',
         faydaStatus: 'VERIFIED',
-        faydaHash: faydaResult?.hash || '0xFAYDA_7849',
+        faydaHash: faydaResult?.hash || '',
         primaryEvent: displayEvent,
         licenseStatus: 'PENDING_APPROVAL',
-        licenseNumber: 'ETH-LIC-2026-8842',
-        licenseExpiry: '2027-10-31',
-        photoUrl: faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg',
+        licenseNumber: '',
+        licenseExpiry: '',
+        photoUrl: faydaResult?.photoUrl || '',
         checkinStatus: 'NOT_CHECKED_IN',
         qrCodeData: null,
         weight, height, restingHR,
-        trainingLoad: '85',
+        trainingLoad: '',
         emergencyContact, medicalNotes,
         email: athleteEmail,
-        phone: phone || faydaResult?.phoneNumber || '+251911000000',
-        region: faydaResult?.region || region || 'Addis Ababa',
+        phone: phone || faydaResult?.phoneNumber || '',
+        region: faydaResult?.region || region || '',
         personalBests,
         seasonBests: personalBests.map(p => ({ event: p.event, mark: p.mark, year: 2026 })),
-        weightLog: [{ date: '2026-10-10', kg: weight }],
+        weightLog: [],
         trainingLog: [],
         achievements: [],
         medicalClearance: {
@@ -664,25 +629,6 @@ export default function RegistrationModal({
       };
 
       try {
-        // Resolve a valid Fayda token
-        let tokenToUse = faydaVerificationToken || faydaResult?.verificationToken;
-        if (!tokenToUse) {
-          const cleanNin = (newAthlete.faydaFin).replace(/\D/g, '') || '2685038018451943';
-          try {
-            const initRes = await initiateFayda({ nin: cleanNin }).unwrap();
-            if (initRes.data?.verificationId) {
-              const confirmRes = await confirmFaydaOtp({
-                verificationId: initRes.data.verificationId,
-                otp: initRes.data.otp || '111111',
-              }).unwrap();
-              tokenToUse = confirmRes.data.verificationToken;
-              setFaydaVerificationToken(tokenToUse);
-            }
-          } catch (tokErr) {
-            console.warn('Could not auto-generate token from initiate/confirm, proceeding with token fallback');
-          }
-        }
-
         // Match discipline from backend API
         const availableSports = regOptions?.disciplines || [];
         const matchedSport = availableSports.find(s =>
@@ -693,12 +639,12 @@ export default function RegistrationModal({
           email: athleteEmail,
           password,
           phoneNumber: newAthlete.phone,
-          faydaVerificationToken: tokenToUse || '',
+          faydaVerificationToken: tokenToUse,
           fanNumber: newAthlete.faydaFan,
           sportIds: matchedSport ? [matchedSport.id] : undefined,
           sportId: matchedSport?.id,
           clubId: matchedApiClub ? matchedApiClub.id : (selectedClubId !== 'NONE' ? selectedClubId : undefined),
-          clubName: matchedApiClub ? matchedApiClub.name : (club.name !== 'Independent Athlete' ? club.name : undefined),
+          clubName: matchedApiClub?.name,
           region: newAthlete.region,
           height: Number(height),
           weight: Number(weight),
@@ -706,7 +652,8 @@ export default function RegistrationModal({
         };
 
         const apiResponse = await registerAthlete(regPayload).unwrap();
-        const serverId = apiResponse.data?.id || fallbackId;
+        const serverId = apiResponse.data?.id;
+        if (!serverId) throw new Error('The server did not confirm athlete registration.');
         const serverStatus = apiResponse.data?.status || 'PENDING';
 
         setServerRegistrationId(serverId);
@@ -811,7 +758,7 @@ export default function RegistrationModal({
     const officialPayload: OfficialPayload = {
       id: `${selectedRole}-2026-` + Math.floor(100 + Math.random() * 900),
       role: selectedRole,
-      name: faydaResult?.name || 'Chernet Tadese Bekele',
+      name: faydaResult?.name || '',
       amharicName: faydaResult?.amharic,
       faydaFin: faydaResult?.fin || faydaFin,
       faydaFan: faydaResult?.fan || faydaFan,
@@ -1449,8 +1396,8 @@ export default function RegistrationModal({
                 className="w-full p-3 rounded-xl border border-slate-300 text-slate-900 font-semibold text-sm bg-white"
               >
                 <option value="NONE">Independent / Unaffiliated Athlete</option>
-                {MOCK_CLUBS.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.region})</option>
+                {(regOptions?.clubs || []).map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
@@ -1464,7 +1411,7 @@ export default function RegistrationModal({
                 onChange={e => setRegion(e.target.value)}
                 className="w-full p-3 rounded-xl border border-slate-300 text-slate-900 font-semibold text-sm bg-white"
               >
-                {(regOptions?.regions && regOptions.regions.length > 0 ? regOptions.regions : ['Addis Ababa', 'Oromia', 'Amhara', 'Sidama', 'Tigray', 'Somali']).map(r => (
+                {(regOptions?.regions || []).map(r => (
                   <option key={r} value={r}>{r}</option>
                 ))}
               </select>

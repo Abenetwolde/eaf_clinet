@@ -4,10 +4,8 @@ import {
   ArrowRight, UserCheck, X, Users, ShieldCheck, AlertTriangle,
   Medal, List, UserPlus, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { MOCK_MEETS, MOCK_EVENT_RESULTS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
-import { useGetPublishedEventsQuery, useGetPublishedResultsQuery, useApplyForEventMutation } from '../../store/api/athleteApi';
-import { useEffect } from 'react';
+import { useGetAthletesQuery, useGetPublishedEventsQuery, useGetPublishedResultsQuery, useApplyForEventMutation } from '../../store/api/athleteApi';
 
 const MEDAL_COLORS: Record<number, string> = { 1: '#C8A84B', 2: '#A8B8C8', 3: '#C87040' };
 
@@ -28,7 +26,7 @@ interface MeetCard {
   date: string;
   status: string;
   disciplines: string[];
-  enrolledClubsCount: number;
+  totalAthletesEnrolled?: number;
   isClubRegistered?: boolean;
   bannerUrl: string;
   enrolledAthletes: any[];
@@ -41,8 +39,7 @@ interface RosterModalState {
 
 export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
   const club = useAppSelector((state) => state.auth.club);
-  const athletes = useAppSelector((state) => state.athletes);
-  const [meets, setMeets] = useState<MeetCard[]>(MOCK_MEETS);
+  const { data: backendAthletes = [] } = useGetAthletesQuery(club?.id ? { clubId: club.id } : undefined);
 
   // Real backend queries
   const { data: backendEvents = [] } = useGetPublishedEventsQuery();
@@ -53,31 +50,18 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
     ? rawBackendResults
     : (rawBackendResults as any)?.data || [];
 
-  // Merge backend published events with meets
-  useEffect(() => {
-    if (backendEvents && backendEvents.length > 0) {
-      setMeets(prev => {
-        const merged = [...prev];
-        backendEvents.forEach((be: any) => {
-          if (!merged.some(m => m.id === be.id || m.title === be.title)) {
-            merged.unshift({
-              id: be.id,
-              title: be.title,
-              venue: be.venue || 'Addis Ababa National Stadium',
-              date: be.schedule?.date || '2026-10-20',
-              status: be.status || 'REGISTRATION_OPEN',
-              disciplines: Array.isArray(be.disciplines) ? be.disciplines : ['5,000m', '10,000m'],
-              enrolledClubsCount: 1,
-              isClubRegistered: false,
-              bannerUrl: be.bannerUrl || '/images/banner_grand_prix.png',
-              enrolledAthletes: [],
-            });
-          }
-        });
-        return merged;
-      });
-    }
-  }, [backendEvents]);
+  const meets: MeetCard[] = backendEvents.map((event: any) => ({
+    id: event.id,
+    title: event.title,
+    venue: event.venue || '',
+    date: Array.isArray(event.schedule) ? event.schedule[0]?.date || '' : event.schedule?.date || '',
+    status: event.status,
+    disciplines: Array.isArray(event.disciplines) ? event.disciplines : [],
+    totalAthletesEnrolled: event.totalAthletesEnrolled,
+    isClubRegistered: false,
+    bannerUrl: event.bannerUrl || '',
+    enrolledAthletes: [],
+  }));
   const [activeTab, setActiveTab] = useState<string>('enroll');   // 'enroll' | 'results'
   const [selectedMeet, setSelectedMeet] = useState<string | null>(null); // meet id for results drill-down
   const [expandedDisc, setExpandedDisc] = useState<string | null>(null); // discipline name in results
@@ -86,7 +70,12 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
   const [rosterModal, setRosterModal] = useState<RosterModalState | null>(null);
   const [selections, setSelections] = useState<Record<string, Record<string, Set<string>>>>({});
 
-  const clubAthletes = athletes.filter(a => a.clubId === club.id);
+  const clubAthletes = backendAthletes.map((athlete: any) => ({
+    id: athlete.id,
+    name: athlete.name || `${athlete.user?.firstName || ''} ${athlete.user?.lastName || ''}`.trim(),
+    clubId: athlete.clubId,
+    licenseStatus: athlete.status,
+  }));
 
   // ── enrollment helpers ──
   const toggleAthlete = (meetId: string, discipline: string, athleteId: string) => {
@@ -109,33 +98,24 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
     if (count === 0) { onNotify('Select at least one athlete before enrolling.', 'error'); return; }
     
     const meetSel = selections[meetId] || {};
-    const enrolled: any[] = [];
-    
-    // Dispatch to backend API
+    let submitted = 0;
+    const failures: string[] = [];
     for (const [disc, ids] of Object.entries(meetSel)) {
       for (const id of ids) {
         const ath = clubAthletes.find(a => a.id === id);
         if (ath) {
-          enrolled.push({ athleteId: id, athleteName: ath.name, discipline: disc });
           try {
-            await applyForEvent({ eventId: meetId, disciplines: [disc] }).unwrap();
-          } catch (e) {
-            console.warn('Backend event apply note:', e);
+            await applyForEvent({ eventId: meetId, athleteId: id, disciplines: [disc] }).unwrap();
+            submitted += 1;
+          } catch (e: any) {
+            failures.push(e?.data?.message || `Could not submit ${ath.name}'s ${disc} entry.`);
           }
         }
       }
     }
-
-    setMeets(prev => prev.map(m => {
-      if (m.id !== meetId) return m;
-      return { 
-        ...m, 
-        isClubRegistered: true, 
-        enrolledAthletes: [...(m.enrolledAthletes || []), ...enrolled], 
-        enrolledClubsCount: m.enrolledClubsCount + 1 
-      };
-    }));
-    onNotify(`${count} entr${count > 1 ? 'ies' : 'y'} submitted for ${meets.find(m => m.id === meetId)?.title} & sent to Federation for approval`, 'success');
+    if (submitted) onNotify(`${submitted} entr${submitted > 1 ? 'ies' : 'y'} submitted for ${meets.find(m => m.id === meetId)?.title}.`, 'success');
+    if (failures.length) onNotify(failures.join(' '), 'error');
+    if (submitted) setSelections(prev => ({ ...prev, [meetId]: {} }));
     setRosterModal(null);
   };
 
@@ -144,7 +124,9 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
 
   // ── results data ──
   const selectedMeetObj = selectedMeet ? meets.find(m => m.id === selectedMeet) : null;
-  const resultsForMeet = selectedMeetObj && selectedMeetObj.status !== 'REGISTRATION_OPEN' && selectedMeetObj.status !== 'UPCOMING' ? (MOCK_EVENT_RESULTS[selectedMeet] || []) : [];
+  const resultsForMeet = backendResults
+    .filter((result: any) => result.eventId === selectedMeet)
+    .map((result: any) => ({ discipline: result.discipline, results: result.entries || [] }));
 
   return (
     <div>
@@ -295,7 +277,8 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
           {/* Meet selector */}
           <div className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-[16px] mb-[28px]">
             {meets.map(meet => {
-              const hasResults = meet.status !== 'REGISTRATION_OPEN' && meet.status !== 'UPCOMING' && !!(MOCK_EVENT_RESULTS[meet.id]);
+              const resultsCount = backendResults.filter((result: any) => result.eventId === meet.id).length;
+              const hasResults = resultsCount > 0;
               const isSelected = selectedMeet === meet.id;
               return (
                 <div key={meet.id}
@@ -309,7 +292,7 @@ export default function MeetRegistration({ onNotify }: MeetRegistrationProps) {
                     <div className="absolute inset-0 flex items-center justify-center flex-col gap-[4px] p-[12px]">
                       <h4 className="text-white font-extrabold text-[0.88rem] text-center leading-[1.3]">{meet.title}</h4>
                       <span className="text-[0.72rem] text-[#8FA8BC] font-bold">
-                        {hasResults ? `${MOCK_EVENT_RESULTS[meet.id].length} events with results` : (meet.status === 'REGISTRATION_OPEN' || meet.status === 'UPCOMING') ? 'Registration in progress' : 'Results not yet published'}
+                        {hasResults ? `${resultsCount} published result records` : (meet.status === 'REGISTRATION_OPEN' || meet.status === 'UPCOMING') ? 'Registration in progress' : 'Results not yet published'}
                       </span>
                     </div>
                     {isSelected && (

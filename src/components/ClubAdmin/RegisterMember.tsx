@@ -16,7 +16,7 @@ type FaydaProfile = {
   fanNumber?: string; email?: string; phoneNumber?: string;
 };
 
-function profileFromIdentity(raw: string, clubRegion = ''): { profile: FaydaProfile; fin: string } | null {
+function profileFromIdentity(raw: string): { profile: FaydaProfile; fin: string } | null {
   try {
     const outer = JSON.parse(raw);
     const identity = outer.identity || outer;
@@ -31,7 +31,7 @@ function profileFromIdentity(raw: string, clubRegion = ''): { profile: FaydaProf
       dob: identity.dob || identity.birthDate || identity.birthdate || '',
       gender: identity.gender || '',
       photoUrl: identity.photoUrl || identity.picture || '',
-      region: identity.region || address || clubRegion,
+      region: identity.region || address || '',
       address: address || identity.region || '',
       nationality: identity.nationality || '',
       verificationToken: outer.verificationToken || identity.verificationToken,
@@ -56,7 +56,7 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [event, setEvent] = useState('5,000m');
+  const [event, setEvent] = useState('');
   const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
   const [specialization, setSpecialization] = useState('Athletics');
@@ -71,8 +71,8 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
       const savedType = sessionStorage.getItem('eaf_club_member_type');
       if (savedType !== 'ATHLETE' && savedType !== 'COACH') return;
       const serialized = raw || sessionStorage.getItem('eaf_fayda_verified') || '';
-      const verified = serialized ? profileFromIdentity(serialized, club?.region || '') : null;
-      if (!verified) return;
+      const verified = serialized ? profileFromIdentity(serialized) : null;
+      if (!verified?.profile.verificationToken) return;
       setType(savedType);
       setProfile(verified.profile);
       setFin(verified.fin);
@@ -110,7 +110,7 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile || !type || !club?.id) return onNotify('Complete Fayda verification first.', 'error');
+    if (!profile || !type || !club?.id || !profile.verificationToken) return onNotify('Complete the official Fayda verification flow first.', 'error');
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return onNotify('Enter a valid email address.', 'error');
     if (password.length < 8) return onNotify('Password must contain at least 8 characters.', 'error');
     if (!phone.trim()) return onNotify('Enter a contact phone number.', 'error');
@@ -127,10 +127,10 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
         await registerAthlete({
           email: email.trim(), password, phoneNumber: phone.trim(), firstName: names[0], lastName: names.slice(1).join(' '),
           amharicName: profile.amharic, faydaFin: nin, nin, dateOfBirth: profile.dob,
-          gender: profile.gender.toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE', nationality: 'Ethiopian',
+          gender: profile.gender.toUpperCase(), nationality: profile.nationality,
           photoUrl: profile.photoUrl, primaryEvent: event, faydaVerificationToken: profile.verificationToken || '',
           fanNumber: profile.fanNumber, clubId: club.id, clubName: club.name, sportIds: [event], sportId: event,
-          region: profile.region || club.region, emergencyContactPhone: emergencyContactPhone.trim(),
+          region: profile.region, emergencyContactPhone: emergencyContactPhone.trim(),
         }).unwrap();
         // The API response is the source of truth; the roster reads the saved member from the server.
       } else {
@@ -192,7 +192,7 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
       {type === 'ATHLETE' ? <>
         {!profile.dob && <label>Date of birth<input required type="date" value={profile.dob} onChange={e => setProfile({ ...profile, dob: e.target.value })} style={inputStyle}/></label>}
         {!profile.gender && <label>Gender<select required value={profile.gender} onChange={e => setProfile({ ...profile, gender: e.target.value })} style={inputStyle}><option value="">Select gender</option><option value="MALE">Male</option><option value="FEMALE">Female</option></select></label>}
-        <label>Primary event<select value={event} onChange={e => setEvent(e.target.value)} style={inputStyle}>{['100m Sprint','200m Sprint','400m','800m','1,500m','3,000m Steeplechase','5,000m','10,000m','Half Marathon','Marathon','High Jump','Long Jump','Triple Jump','Javelin Throw','Shot Put'].map(x => <option key={x}>{x}</option>)}</select></label>
+        <label>Primary event<select required value={event} onChange={e => setEvent(e.target.value)} style={inputStyle}><option value="">Select event</option>{['100m Sprint','200m Sprint','400m','800m','1,500m','3,000m Steeplechase','5,000m','10,000m','Half Marathon','Marathon','High Jump','Long Jump','Triple Jump','Javelin Throw','Shot Put'].map(x => <option key={x}>{x}</option>)}</select></label>
         <label>Emergency contact phone<input required value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} style={inputStyle}/></label>
       </> : <>
         <label>Coach license number<input value={licenseNumber} onChange={e => setLicenseNumber(e.target.value)} style={inputStyle}/></label>

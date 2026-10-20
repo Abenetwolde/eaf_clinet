@@ -253,7 +253,7 @@ export const athleteApi = apiSlice.injectEndpoints({
 
     applyForEvent: builder.mutation<
       { success: boolean; message: string; data: any },
-      { eventId: string; disciplines?: string[] }
+      { eventId: string; athleteId?: string; disciplines?: string[] }
     >({
       query: ({ eventId, disciplines }) => ({
         url: `/events/${eventId}/apply`,
