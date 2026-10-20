@@ -331,8 +331,10 @@ export default function App() {
             verificationToken: token,
           });
           sessionStorage.setItem('eaf_fayda_verified', serialized);
-          localStorage.setItem('eaf_fayda_verified', serialized);
-          localStorage.setItem('fayda_auth_payload', JSON.stringify({ identity: citizenObj, verificationToken: token }));
+          if (sessionStorage.getItem('eaf_club_member_registration') !== '1') {
+            localStorage.setItem('eaf_fayda_verified', serialized);
+            localStorage.setItem('fayda_auth_payload', JSON.stringify({ identity: citizenObj, verificationToken: token }));
+          }
         } catch (e) {}
       }
 
@@ -1248,13 +1250,13 @@ export default function App() {
           <RegisterMember
             onBack={() => setClubSubPage('ROSTER')}
             onNotify={handleNotify}
-            onAddAthlete={handleAddAthlete}
           />
         )}
         {clubSubPage === 'ROSTER' && (
           <RosterManagement
             onRenewLicense={handleInitiateLicensePayment}
-            onAddAthlete={handleAddAthlete} onUpdateAthlete={handleUpdateAthlete}
+            onRegisterMember={() => setClubSubPage('REGISTER_MEMBER')}
+            onUpdateAthlete={handleUpdateAthlete}
           />
         )}
         {clubSubPage === 'MEETS' && (

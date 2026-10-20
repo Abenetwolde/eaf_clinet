@@ -146,8 +146,10 @@ export default function Callback() {
 
         try {
           sessionStorage.setItem('eaf_fayda_verified', JSON.stringify(autoPayload));
-          localStorage.setItem('eaf_fayda_verified', JSON.stringify(autoPayload));
-          localStorage.setItem('fayda_auth_payload', JSON.stringify({ identity: autoPayload, verificationToken: autoPayload.verificationToken }));
+          if (sessionStorage.getItem('eaf_club_member_registration') !== '1') {
+            localStorage.setItem('eaf_fayda_verified', JSON.stringify(autoPayload));
+            localStorage.setItem('fayda_auth_payload', JSON.stringify({ identity: autoPayload, verificationToken: autoPayload.verificationToken }));
+          }
         } catch (e) {}
 
         if (window.opener && !window.opener.closed) {
@@ -225,7 +227,9 @@ export default function Callback() {
     };
 
     sessionStorage.setItem('eaf_fayda_verified', JSON.stringify(payload));
-    localStorage.setItem('eaf_fayda_verified', JSON.stringify(payload));
+    if (sessionStorage.getItem('eaf_club_member_registration') !== '1') {
+      localStorage.setItem('eaf_fayda_verified', JSON.stringify(payload));
+    }
     window.location.href = '/register?faydaVerified=true';
   };
 

@@ -7,7 +7,6 @@ import { FAYDA_CONFIG, launchFaydaPortal } from '../../constants/fayda';
 interface RegisterMemberProps {
   onBack: () => void;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
-  onAddAthlete: (athlete: any) => void;
 }
 
 type MemberType = 'ATHLETE' | 'COACH';
@@ -16,7 +15,7 @@ type FaydaProfile = {
   region: string; verificationToken?: string; fanNumber?: string; email?: string; phoneNumber?: string;
 };
 
-export default function RegisterMember({ onBack, onNotify, onAddAthlete }: RegisterMemberProps) {
+export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps) {
   const club = useAppSelector((state) => state.auth.club);
   const [registerAthlete] = useRegisterAthleteByClubAdminMutation();
   const [registerCoach] = useRegisterCoachByClubAdminMutation();
@@ -38,7 +37,7 @@ export default function RegisterMember({ onBack, onNotify, onAddAthlete }: Regis
   useEffect(() => {
     if (sessionStorage.getItem('eaf_club_member_registration') !== '1') return;
     const savedType = sessionStorage.getItem('eaf_club_member_type');
-    const raw = localStorage.getItem('eaf_fayda_verified');
+    const raw = sessionStorage.getItem('eaf_fayda_verified');
     if (raw && (savedType === 'ATHLETE' || savedType === 'COACH')) {
       try {
         const identity = JSON.parse(raw);
@@ -100,7 +99,7 @@ export default function RegisterMember({ onBack, onNotify, onAddAthlete }: Regis
     setSubmitting(true);
     try {
       if (type === 'ATHLETE') {
-        const response = await registerAthlete({
+        await registerAthlete({
           email: email.trim(), password, phoneNumber: phone.trim(), firstName: names[0], lastName: names.slice(1).join(' '),
           amharicName: profile.amharic, faydaFin: nin, nin, dateOfBirth: profile.dob,
           gender: profile.gender.toUpperCase() === 'FEMALE' ? 'FEMALE' : 'MALE', nationality: 'Ethiopian',
@@ -108,9 +107,7 @@ export default function RegisterMember({ onBack, onNotify, onAddAthlete }: Regis
           fanNumber: profile.fanNumber, clubId: club.id, clubName: club.name, sportIds: [event], sportId: event,
           region: profile.region || club.region, emergencyContactPhone: emergencyContactPhone.trim(),
         }).unwrap();
-        onAddAthlete({ id: response.data?.id, name: profile.name, amharicName: profile.amharic, dob: profile.dob,
-          gender: profile.gender, clubId: club.id, clubName: club.name, faydaFin: nin, faydaFan: profile.fanNumber || '',
-          faydaStatus: 'VERIFIED', primaryEvent: event, photoUrl: profile.photoUrl, email: email.trim(), phone: phone.trim() });
+        // The API response is the source of truth; the roster reads the saved member from the server.
       } else {
         await registerCoach({
           email: email.trim(), password, phoneNumber: phone.trim(), firstName: names[0], lastName: names.slice(1).join(' '),
@@ -119,6 +116,10 @@ export default function RegisterMember({ onBack, onNotify, onAddAthlete }: Regis
           specialization: specialization.trim() || 'Athletics', yearsOfExperience: Number(yearsOfExperience) || 0,
         }).unwrap();
       }
+      sessionStorage.removeItem('eaf_fayda_verified');
+      sessionStorage.removeItem('fayda_auth_payload');
+      sessionStorage.removeItem('eaf_club_member_registration');
+      sessionStorage.removeItem('eaf_club_member_type');
       onNotify(`${type === 'ATHLETE' ? 'Athlete' : 'Coach'} ${profile.name} was added to ${club.name}.`, 'success');
       onBack();
     } catch (e: any) {
