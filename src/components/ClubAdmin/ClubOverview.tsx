@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2 } from 'lucide-react';
+import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2, Smartphone } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import type { Club, Athlete, Transfer } from '../../types';
 import { useAppSelector } from '../../store/hooks';
@@ -12,9 +12,10 @@ interface ClubOverviewProps {
   onChangeSubPage: (page: string) => void;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
   onAddClub?: (club: Club) => void;
+  onPayClubMembership?: (club: any) => void;
 }
 
-export default function ClubOverview({ club: propClub, athletes: propAthletes, transfers: propTransfers, onChangeSubPage, onNotify, onAddClub }: ClubOverviewProps) {
+export default function ClubOverview({ club: propClub, athletes: propAthletes, transfers: propTransfers, onChangeSubPage, onNotify, onAddClub, onPayClubMembership }: ClubOverviewProps) {
   const storeClub = useAppSelector((state) => state.auth.club);
   const storeAthletes = useAppSelector((state) => state.athletes);
   const storeTransfers = useAppSelector((state) => state.club.transfers);
@@ -275,6 +276,37 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
                 className="bg-transparent border-0 text-accent font-bold text-[0.8rem] cursor-pointer mt-[8px] inline-flex items-center gap-[4px]"
               >
                 Go to Roster Audits <ArrowRight size={14} />
+              </button>
+            </div>
+
+            <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '10px', padding: '14px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: 800, color: '#0369A1' }}>Club Affiliation & Membership (2026/27)</div>
+                <span style={{ fontSize: '0.7rem', background: '#00A3E0', color: 'white', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>TELEBIRR</span>
+              </div>
+              <p style={{ color: 'var(--text-muted)', marginTop: '4px', fontSize: '0.8rem' }}>
+                Annual club affiliation fee with Ethiopian Athletics Federation.
+              </p>
+              <button
+                type="button"
+                onClick={() => onPayClubMembership ? onPayClubMembership(club) : onChangeSubPage('AFFILIATION')}
+                style={{
+                  marginTop: '8px',
+                  padding: '6px 12px',
+                  background: '#00A3E0',
+                  color: 'white',
+                  borderRadius: '8px',
+                  fontWeight: 800,
+                  fontSize: '0.78rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  border: 'none',
+                }}
+              >
+                <Smartphone size={13} />
+                Renew Affiliation via Telebirr (5,000 ETB)
               </button>
             </div>
 

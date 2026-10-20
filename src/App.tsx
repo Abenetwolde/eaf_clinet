@@ -567,6 +567,7 @@ export default function App() {
 
   const handleInitiateLicensePayment = (athleteObj: any) => {
     setPaymentData({
+      type: 'ATHLETE_LICENSE',
       athleteId: athleteObj.id,
       athleteName: athleteObj.name,
       amount: 500,
@@ -574,8 +575,29 @@ export default function App() {
     });
   };
 
+  const handleInitiateClubMembershipPayment = (clubObj: any) => {
+    setPaymentData({
+      type: 'CLUB_MEMBERSHIP_FEE',
+      clubId: clubObj?.id || 'club-eth-01',
+      clubName: clubObj?.name || 'Athletics Club',
+      amount: 5000,
+      description: 'EAF Annual Club Affiliation & Membership (2026/27 Season)'
+    });
+  };
+
+  const handleInitiateEventPayment = (eventObj: any, athleteObj: any) => {
+    setPaymentData({
+      type: 'EVENT_REGISTRATION',
+      eventId: eventObj.id,
+      athleteId: athleteObj.id,
+      athleteName: athleteObj.name,
+      amount: eventObj.fee || 350,
+      description: `Event Entry: ${eventObj.title}`
+    });
+  };
+
   const handlePaymentComplete = (receipt: any) => {
-    if (paymentData?.athleteId) {
+    if (paymentData?.athleteId && (paymentData.type === 'ATHLETE_LICENSE' || !paymentData.type)) {
       const licNo = 'EAF-LIC-2026-' + Math.floor(1000 + Math.random() * 9000);
       const updater = (a: any) => a.id === paymentData.athleteId
         ? { ...a, licenseStatus: 'ACTIVE', licenseNumber: licNo, licenseExpiry: '2026-12-31' }
@@ -584,6 +606,11 @@ export default function App() {
       if (currentAthlete && currentAthlete.id === paymentData.athleteId) {
         dispatch(setAthlete(updater(currentAthlete)));
       }
+    } else if (paymentData?.clubId && paymentData.type === 'CLUB_MEMBERSHIP_FEE') {
+      const updater = (c: any) => c.id === paymentData.clubId
+        ? { ...c, verificationStatus: 'VERIFIED', membershipExpiresAt: '2027-12-31' }
+        : c;
+      dispatch(setClubs(clubs.map(updater)));
     }
     handleNotify(`Payment via ${receipt.gateway} complete! Receipt: ${receipt.receiptNo}`, 'success');
     setPaymentData(null);
@@ -1214,7 +1241,10 @@ export default function App() {
       >
         {clubSubPage === 'OVERVIEW' && (
           <ClubOverview
-            onChangeSubPage={setClubSubPage} onNotify={handleNotify} onAddClub={handleAddClub}
+            onChangeSubPage={setClubSubPage}
+            onNotify={handleNotify}
+            onAddClub={handleAddClub}
+            onPayClubMembership={handleInitiateClubMembershipPayment}
           />
         )}
         {clubSubPage === 'REGISTER_MEMBER' && (
