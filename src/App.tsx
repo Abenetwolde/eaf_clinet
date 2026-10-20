@@ -38,7 +38,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n, LanguageSelector } from './i18n';
 
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { setRole, setClub, setAthlete, setCoach, logout, setAuthLoading, setUserData } from './store/slices/authSlice';
+import { login, setRole, setClub, setAthlete, setCoach, logout, setAuthLoading, setUserData } from './store/slices/authSlice';
 import { addAthlete, updateAthlete, setAthletes } from './store/slices/athleteSlice';
 import { addClub, addTransfer } from './store/slices/clubSlice';
 import { useLazyGetMeQuery, useLogoutApiMutation } from './store/api/authApi';
@@ -495,9 +495,21 @@ export default function App() {
     localStorage.setItem('eaf_registration_status', 'completed');
     if (registrationData.type === 'CLUB') {
       const newClub = registrationData.payload.club as Club;
+      const session = registrationData.payload.session;
+      if (!session?.token) {
+        setPublicSubPage('LOGIN');
+        handleNotify('Club registered. Sign in with the club admin credentials before adding members.', 'info');
+        return;
+      }
       dispatch(addClub(newClub));
-      dispatch(setClub(newClub));
-      dispatch(setRole('CLUB'));
+      dispatch(login({
+        role: 'CLUB',
+        club: newClub,
+        token: session.token,
+        refreshToken: session.refreshToken,
+        userId: session.userId,
+        userData: session.userData,
+      }));
       const targetSubPage = registrationData.payload.targetSubPage || 'OVERVIEW';
       setClubSubPage(targetSubPage);
       setPublicSubPage('DASHBOARD');

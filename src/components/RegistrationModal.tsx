@@ -124,7 +124,7 @@ export interface OfficialPayload {
 
 export type PendingRegistrationData =
   | { type: 'ATHLETE'; payload: { athlete: AthletePayload } }
-  | { type: 'CLUB'; payload: { club: ClubPayload } }
+  | { type: 'CLUB'; payload: { club: ClubPayload; targetSubPage?: string; session?: { token: string; refreshToken?: string; userId: string; userData?: any } } }
   | { type: 'OFFICIAL'; payload: { official: OfficialPayload } };
 
 export type RegistrationRoleType = 'ATHLETE' | 'CLUB_PRESIDENT' | 'COACH' | 'MEDICAL_HEAD' | 'OFFICIAL';
@@ -2116,6 +2116,7 @@ export default function RegistrationModal({
             payload: {
               club: clubData.payload.club,
               targetSubPage: clubData.payload.targetSubPage || 'REGISTER_MEMBER',
+              session: clubData.payload.session,
             },
           });
         }}
