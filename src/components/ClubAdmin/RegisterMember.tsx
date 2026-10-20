@@ -12,8 +12,39 @@ interface RegisterMemberProps {
 type MemberType = 'ATHLETE' | 'COACH';
 type FaydaProfile = {
   name: string; amharic: string; dob: string; gender: string; photoUrl: string;
-  region: string; verificationToken?: string; fanNumber?: string; email?: string; phoneNumber?: string;
+  region: string; address: string; nationality: string; verificationToken?: string;
+  fanNumber?: string; email?: string; phoneNumber?: string;
 };
+
+function profileFromIdentity(raw: string, clubRegion = ''): { profile: FaydaProfile; fin: string } | null {
+  try {
+    const outer = JSON.parse(raw);
+    const identity = outer.identity || outer;
+    const addressValue = identity.address;
+    const address = typeof addressValue === 'string'
+      ? addressValue
+      : [addressValue?.woreda, addressValue?.zone, addressValue?.region, addressValue?.city]
+          .filter(Boolean).join(', ');
+    const profile: FaydaProfile = {
+      name: identity.name || identity.fullName || identity['name#en'] || [identity.given_name || identity.firstName, identity.middle_name, identity.family_name || identity.lastName].filter(Boolean).join(' '),
+      amharic: identity.amharic || identity.fullNameAmharic || identity['name#am'] || '',
+      dob: identity.dob || identity.birthDate || identity.birthdate || '',
+      gender: identity.gender || '',
+      photoUrl: identity.photoUrl || identity.picture || '',
+      region: identity.region || address || clubRegion,
+      address: address || identity.region || '',
+      nationality: identity.nationality || '',
+      verificationToken: outer.verificationToken || identity.verificationToken,
+      fanNumber: identity.fan || identity.fanNumber || identity.fan_number,
+      email: identity.email || '',
+      phoneNumber: identity.phoneNumber || identity.phone_number || identity.phone || '',
+    };
+    const fin = identity.fin || identity.nin || identity.national_id || identity.nationalId || '';
+    return profile.name && fin ? { profile, fin } : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps) {
   const club = useAppSelector((state) => state.auth.club);
@@ -35,35 +66,29 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem('eaf_club_member_registration') !== '1') return;
-    const savedType = sessionStorage.getItem('eaf_club_member_type');
-    const raw = sessionStorage.getItem('eaf_fayda_verified');
-    if (raw && (savedType === 'ATHLETE' || savedType === 'COACH')) {
-      try {
-        const identity = JSON.parse(raw);
-        const verified: FaydaProfile = {
-          name: identity.name || identity.fullName || '',
-          amharic: identity.amharic || identity.fullNameAmharic || '',
-          dob: identity.dob || identity.birthDate || '',
-          gender: identity.gender || '',
-          photoUrl: identity.photoUrl || identity.picture || '',
-          region: identity.region || identity.address || club?.region || '',
-          verificationToken: identity.verificationToken,
-          fanNumber: identity.fan || identity.fanNumber,
-          email: identity.email || '',
-          phoneNumber: identity.phoneNumber || '',
-        };
-        setType(savedType);
-        setProfile(verified);
-        setFin(identity.fin || identity.nin || '');
-        setEmail(verified.email || '');
-        setPhone(verified.phoneNumber || '');
-      } catch {
-        setError('Could not read the Fayda profile returned from verification. Please try again.');
-      }
-    }
-    sessionStorage.removeItem('eaf_club_member_registration');
-    sessionStorage.removeItem('eaf_club_member_type');
+    const acceptFaydaIdentity = (raw?: string) => {
+      if (sessionStorage.getItem('eaf_club_member_registration') !== '1') return;
+      const savedType = sessionStorage.getItem('eaf_club_member_type');
+      if (savedType !== 'ATHLETE' && savedType !== 'COACH') return;
+      const serialized = raw || sessionStorage.getItem('eaf_fayda_verified') || '';
+      const verified = serialized ? profileFromIdentity(serialized, club?.region || '') : null;
+      if (!verified) return;
+      setType(savedType);
+      setProfile(verified.profile);
+      setFin(verified.fin);
+      setEmail(verified.profile.email || '');
+      setPhone(verified.profile.phoneNumber || '');
+      setError('');
+      sessionStorage.removeItem('eaf_club_member_registration');
+      sessionStorage.removeItem('eaf_club_member_type');
+    };
+    const handleVerified = (event: Event) => {
+      const custom = event as CustomEvent<string>;
+      acceptFaydaIdentity(custom.detail);
+    };
+    acceptFaydaIdentity();
+    window.addEventListener('eaf-fayda-verified', handleVerified);
+    return () => window.removeEventListener('eaf-fayda-verified', handleVerified);
   }, [club?.region]);
 
   const verifyWithFayda = async () => {
@@ -145,9 +170,20 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
       <div style={{ display: 'flex', gap: 12 }}><button type="button" className="btn-gov-secondary" onClick={() => setType(null)}>Change role</button><button type="button" className="btn-accent" disabled={loading} onClick={verifyWithFayda}>{loading ? 'Opening Fayda…' : 'Continue to Fayda'}</button></div>
     </div>}
     {profile && <form className="gov-card" onSubmit={submit} style={{ padding: 28, borderRadius: 16, display: 'grid', gap: 18 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        {profile.photoUrl && <img src={profile.photoUrl} alt="Fayda profile" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }}/>}
-        <div><h3 style={{ margin: 0 }}>{profile.name}</h3><div style={{ color: '#64748B' }}>{profile.amharic} · Fayda FIN {fin}</div><div style={{ color: '#64748B' }}>{profile.dob} · {profile.gender}</div></div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 18, paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>
+        {profile.photoUrl
+          ? <img src={profile.photoUrl} alt={`Fayda profile of ${profile.name}`} style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '3px solid #DBEAFE' }}/>
+          : <div aria-label="No Fayda photo available" style={{ width: 96, height: 96, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#E2E8F0', color: '#334155', fontSize: 30, fontWeight: 800 }}>{profile.name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</div>}
+        <div><h3 style={{ margin: 0 }}>{profile.name}</h3><div style={{ color: '#15803D', fontWeight: 700, marginTop: 4 }}>Fayda identity verified</div></div>
+      </div>
+      <h3 style={{ margin: '0 0 -8px' }}>Verified Fayda information</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+        {([
+          ['Full name', profile.name], ['Full name (Amharic)', profile.amharic], ['FIN / National ID', fin],
+          ['FAN number', profile.fanNumber], ['Date of birth', profile.dob], ['Gender', profile.gender],
+          ['Nationality', profile.nationality], ['Address', profile.address], ['Region', profile.region],
+          ['Fayda email', profile.email], ['Fayda phone', profile.phoneNumber],
+        ] as const).map(([label, value]) => <label key={label} style={{ color: '#475569', fontSize: 13 }}>{label}<input readOnly value={value || 'Not provided by Fayda'} style={{ ...inputStyle, background: '#F8FAFC', color: value ? '#0F172A' : '#94A3B8' }}/></label>)}
       </div>
       <h3 style={{ margin: 0 }}>Account and contact details</h3>
       <label>Email<input required type="email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle}/></label>

@@ -444,6 +444,17 @@ export default function App() {
   useEffect(() => {
     const handleFaydaMessage = (e: MessageEvent) => {
       if (e.data?.type === 'FAYDA_OIDC_SUCCESS' && e.data.payload?.userInfo) {
+        if (sessionStorage.getItem('eaf_club_member_registration') === '1') {
+          const identity = {
+            ...e.data.payload.userInfo,
+            verificationToken: e.data.payload.verificationToken || e.data.payload.userInfo.verificationToken,
+          };
+          const verified = JSON.stringify({ identity, verificationToken: identity.verificationToken });
+          sessionStorage.setItem('eaf_fayda_verified', verified);
+          window.dispatchEvent(new CustomEvent('eaf-fayda-verified', { detail: verified }));
+          setClubSubPage('REGISTER_MEMBER');
+          return;
+        }
         if (isUserRegistered) {
           handleNotify('You have already completed registration with the Ethiopian Athletics Federation.', 'info');
           setPublicSubPage('DASHBOARD');

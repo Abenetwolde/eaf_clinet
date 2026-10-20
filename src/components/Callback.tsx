@@ -113,13 +113,13 @@ export default function Callback() {
         setUserInfo(decoded);
 
         // Pre-package and persist verified citizen payload
-        const fin = decoded.nin || decoded.national_id || decoded.sub || '268503801845194354101114624931981150';
+        const fin = decoded.nin || decoded.national_id || decoded.sub || '';
         const cleanDigits = fin.replace(/\D/g, '');
-        const fan = 'FAN-' + (cleanDigits.slice(-8) || '98421084');
-        const dobYear = decoded.birthdate ? parseInt(decoded.birthdate.substring(0, 4)) : 2001;
-        const age = new Date().getFullYear() - (isNaN(dobYear) ? 2001 : dobYear);
+        const fan = decoded.fan || decoded.fanNumber || decoded.fan_number || '';
+        const dobYear = decoded.birthdate ? parseInt(decoded.birthdate.substring(0, 4)) : NaN;
+        const age = new Date().getFullYear() - dobYear;
         const ageTier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? 'Masters Division (' + age + ' yrs)' : 'Senior Division';
-        let region = 'Addis Ababa / Federal';
+        let region = '';
         if (typeof decoded.address === 'object' && decoded.address?.region) {
           region = decoded.address.region + ' Regional State';
         } else if (typeof decoded.address === 'string' && decoded.address.trim()) {
@@ -127,17 +127,18 @@ export default function Callback() {
         }
 
         const autoPayload = {
-          name: decoded['name#en'] || decoded.name || (decoded.given_name || '') + ' ' + (decoded.family_name || '') || 'Chernet Tadese Bekele',
-          amharic: decoded['name#am'] || decoded.name || 'ቸርነት ታደሰ በቀለ',
+          name: decoded['name#en'] || decoded.name || `${decoded.given_name || ''} ${decoded.family_name || ''}`.trim(),
+          amharic: decoded['name#am'] || '',
           fin,
           fan,
-          dob: decoded.birthdate || '1980-12-01',
-          gender: (decoded.gender || 'MALE').toUpperCase() === 'MALE' ? 'Male' : 'Female',
-          blood: 'O+',
+          dob: decoded.birthdate || '',
+          gender: decoded.gender || '',
           region,
-          photoUrl: decoded.picture || '/images/fayda_resident_photo.jpg',
-          phoneNumber: decoded.phone_number || '0909090909',
-          email: decoded.email || 'chere@id.et',
+          nationality: decoded.nationality || '',
+          address: decoded.address || '',
+          photoUrl: decoded.picture || '',
+          phoneNumber: decoded.phone_number || '',
+          email: decoded.email || '',
           verificationToken: decoded.verificationToken || access_token,
           hash: '0xFAYDA_' + cleanDigits.slice(-6),
           verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -146,7 +147,7 @@ export default function Callback() {
 
         try {
           sessionStorage.setItem('eaf_fayda_verified', JSON.stringify(autoPayload));
-          if (sessionStorage.getItem('eaf_club_member_registration') !== '1') {
+          if (sessionStorage.getItem('eaf_club_member_registration') !== '1' && !(window.opener && !window.opener.closed)) {
             localStorage.setItem('eaf_fayda_verified', JSON.stringify(autoPayload));
             localStorage.setItem('fayda_auth_payload', JSON.stringify({ identity: autoPayload, verificationToken: autoPayload.verificationToken }));
           }
@@ -200,26 +201,27 @@ export default function Callback() {
       region = userInfo.address;
     }
 
-    const fin = userInfo.nin || userInfo.national_id || userInfo.sub || '268503801845194354101114624931981150';
+    const fin = userInfo.nin || userInfo.national_id || userInfo.sub || '';
     const cleanDigits = fin.replace(/\D/g, '');
-    const fan = 'FAN-' + (cleanDigits.slice(-8) || '98421084');
+    const fan = userInfo.fan || userInfo.fanNumber || userInfo.fan_number || '';
 
-    const dobYear = userInfo.birthdate ? parseInt(userInfo.birthdate.substring(0, 4)) : 2001;
-    const age = new Date().getFullYear() - (isNaN(dobYear) ? 2001 : dobYear);
+    const dobYear = userInfo.birthdate ? parseInt(userInfo.birthdate.substring(0, 4)) : NaN;
+    const age = new Date().getFullYear() - dobYear;
     const ageTier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division';
 
     const payload = {
-      name: userInfo['name#en'] || userInfo.name || `${userInfo.given_name || ''} ${userInfo.family_name || ''}`.trim() || 'Chernet Tadese Bekele',
-      amharic: userInfo['name#am'] || userInfo.name || 'ቸርነት ታደሰ በቀለ',
+      name: userInfo['name#en'] || userInfo.name || `${userInfo.given_name || ''} ${userInfo.family_name || ''}`.trim(),
+      amharic: userInfo['name#am'] || '',
       fin,
       fan,
-      dob: userInfo.birthdate || '1980-12-01',
-      gender: (userInfo.gender || 'MALE').toUpperCase() === 'MALE' ? 'Male' : 'Female',
-      blood: 'O+',
+      dob: userInfo.birthdate || '',
+      gender: userInfo.gender || '',
       region,
-      photoUrl: userInfo.picture || '/images/fayda_resident_photo.jpg',
-      phoneNumber: userInfo.phone_number || '0909090909',
-      email: userInfo.email || 'chere@id.et',
+      nationality: userInfo.nationality || '',
+      address: userInfo.address || '',
+      photoUrl: userInfo.picture || '',
+      phoneNumber: userInfo.phone_number || '',
+      email: userInfo.email || '',
       verificationToken: userInfo.verificationToken || accessToken,
       hash: `0xFAYDA_${cleanDigits.slice(-6)}`,
       verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -227,24 +229,24 @@ export default function Callback() {
     };
 
     sessionStorage.setItem('eaf_fayda_verified', JSON.stringify(payload));
-    if (sessionStorage.getItem('eaf_club_member_registration') !== '1') {
+    if (sessionStorage.getItem('eaf_club_member_registration') !== '1' && !(window.opener && !window.opener.closed)) {
       localStorage.setItem('eaf_fayda_verified', JSON.stringify(payload));
     }
     window.location.href = '/register?faydaVerified=true';
   };
 
   const formattedAddress = (): string => {
-    if (!userInfo?.address) return 'Addis Ababa, Ethiopia';
+    if (!userInfo?.address) return 'Not provided by Fayda';
     if (typeof userInfo.address === 'object') {
       return [userInfo.address.woreda, userInfo.address.zone, userInfo.address.region]
-        .filter(Boolean).join(', ') || userInfo.address.formatted || 'Addis Ababa, Ethiopia';
+        .filter(Boolean).join(', ') || userInfo.address.formatted || 'Not provided by Fayda';
     }
     return String(userInfo.address);
   };
 
-  const rawFin = userInfo?.nin || userInfo?.national_id || userInfo?.sub || '268503801845194354101114624931981150';
+  const rawFin = userInfo?.nin || userInfo?.national_id || userInfo?.sub || '';
   const cleanDigits = rawFin.replace(/\D/g, '');
-  const rawFan = 'FAN-' + (cleanDigits.slice(-8) || '98421084');
+  const rawFan = userInfo?.fan || userInfo?.fanNumber || userInfo?.fan_number || '';
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
@@ -350,12 +352,8 @@ export default function Callback() {
             {/* Profile Overview Card */}
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 sm:p-6 mb-6">
               <div className="flex items-center gap-5 flex-wrap sm:flex-nowrap mb-6">
-                <div className="w-20 h-24 sm:w-24 sm:h-28 rounded-xl overflow-hidden border-2 border-white shadow-md shrink-0 bg-slate-200">
-                  <img
-                    src={userInfo.picture || '/images/fayda_resident_photo.jpg'}
-                    alt="Biometric Portrait"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="w-20 h-24 sm:w-24 sm:h-28 rounded-xl overflow-hidden border-2 border-white shadow-md shrink-0 bg-slate-200 flex items-center justify-center">
+                  {userInfo.picture ? <img src={userInfo.picture} alt="Fayda profile" className="w-full h-full object-cover" /> : <span className="text-xs text-slate-500 text-center px-2">No Fayda photo</span>}
                 </div>
                 <div className="flex-1 min-w-[200px]">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 mb-1.5">
@@ -370,11 +368,11 @@ export default function Callback() {
                     </div>
                   )}
                   <div className="text-xs sm:text-sm text-slate-600 font-semibold mt-1 flex items-center gap-2 flex-wrap">
-                    <span>{userInfo.birthdate || '1980-12-01'}</span>
+                    <span>{userInfo.birthdate || 'Date of birth not provided'}</span>
                     <span>•</span>
-                    <span>{userInfo.gender || 'Male'}</span>
+                    <span>{userInfo.gender || 'Gender not provided'}</span>
                     <span>•</span>
-                    <span>{userInfo.nationality || 'Ethiopian'}</span>
+                    <span>{userInfo.nationality || 'Nationality not provided'}</span>
                   </div>
                 </div>
               </div>
@@ -402,7 +400,7 @@ export default function Callback() {
                     <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-extrabold">Virtual Access</span>
                   </div>
                   <div className="text-lg sm:text-xl font-black text-slate-900 font-mono tracking-wide">
-                    {rawFan}
+                    {rawFan || 'Not provided by Fayda'}
                   </div>
                   <div className="text-xs text-slate-500 font-medium mt-1">
                     Tokenized authentication credential
@@ -415,12 +413,12 @@ export default function Callback() {
                 <div className="flex items-center gap-2">
                   <Phone size={14} className="text-slate-400" />
                   <span className="font-bold">Phone:</span>
-                  <span className="font-semibold">{userInfo.phone_number || '0909090909'}</span>
+                  <span className="font-semibold">{userInfo.phone_number || 'Not provided by Fayda'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail size={14} className="text-slate-400" />
                   <span className="font-bold">Email:</span>
-                  <span className="font-semibold">{userInfo.email || 'chere@id.et'}</span>
+                  <span className="font-semibold">{userInfo.email || 'Not provided by Fayda'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin size={14} className="text-slate-400" />
