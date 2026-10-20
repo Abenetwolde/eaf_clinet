@@ -221,6 +221,24 @@ export const athleteApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Athletes'],
     }),
 
+    registerAthleteByClubAdmin: builder.mutation<AthleteRegistrationResponse, AthleteRegistrationRequest>({
+      query: (body) => ({
+        url: '/athletes/register/by-admin',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Athletes'],
+    }),
+
+    registerCoachByClubAdmin: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({
+        url: '/coaches/register/by-admin',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Athletes'],
+    }),
+
     getPublishedEvents: builder.query<PublishedEvent[], void>({
       query: () => '/events/published',
       transformResponse: (response: { success: boolean; data: PublishedEvent[] }) => response.data || [],
@@ -279,6 +297,8 @@ export const {
   useInitiateFaydaMutation,
   useConfirmFaydaOtpMutation,
   useRegisterAthleteMutation,
+  useRegisterAthleteByClubAdminMutation,
+  useRegisterCoachByClubAdminMutation,
   useGetPublishedEventsQuery,
   useGetAthleteApplicationsQuery,
   useApplyForEventMutation,

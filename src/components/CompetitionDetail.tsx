@@ -247,12 +247,7 @@ export default function CompetitionDetail({
     setAuthError('');
     setShowAuthModal(false);
 
-    const lowerEmail = authEmail.toLowerCase();
-    let loggedInAthlete = currentAthlete || MOCK_ATHLETES[0];
-    if (lowerEmail.includes('haile') || lowerEmail.includes('athlete') || lowerEmail.includes('runner')) {
-      const found = MOCK_ATHLETES.find(a => a.name.toLowerCase().includes('haile')) || MOCK_ATHLETES[0];
-      if (found) loggedInAthlete = found;
-    }
+    const loggedInAthlete = currentAthlete;
 
     if (onLoginSuccess) {
       onLoginSuccess('ATHLETE', { athlete: loggedInAthlete });
@@ -1439,12 +1434,6 @@ export default function CompetitionDetail({
               </p>
             </div>
 
-            {/* Demo Credentials Box */}
-            <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '12px', padding: '12px 14px', marginBottom: '20px', fontSize: '0.82rem', color: '#1E40AF' }}>
-              <div style={{ fontWeight: 800, marginBottom: '2px' }}>💡 Demo Test Credentials:</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem' }}>athlete@example.com / athlete123</div>
-            </div>
-
             {authError && (
               <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#991B1B', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem', marginBottom: '16px' }}>
                 {authError}
@@ -1641,34 +1630,7 @@ export default function CompetitionDetail({
                   }
                 `}</style>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    const sampleAthlete = currentAthlete || MOCK_ATHLETES[0];
-                    setScannedPassResult({
-                      athleteName: sampleAthlete.name || 'Haile Demisse Tadesse',
-                      bib: 'BIB-9042',
-                      passId: `EAF-PASS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-                      disciplines: meet.disciplines ? meet.disciplines.slice(0, 2) : ['5,000m'],
-                      faydaFin: sampleAthlete.faydaFin || '9840-3920-1124',
-                    });
-                  }}
-                  className="btn-accent"
-                  style={{
-                    width: '100%',
-                    padding: '14px',
-                    borderRadius: '12px',
-                    fontSize: '0.95rem',
-                    fontWeight: 900,
-                    background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)',
-                    color: '#FFF',
-                    border: 'none',
-                    cursor: 'pointer',
-                    justifyContent: 'center'
-                  }}
-                >
-                  ⚡ Simulate Scan Pass &amp; Verify Access
-                </button>
+
               </div>
             )}
 

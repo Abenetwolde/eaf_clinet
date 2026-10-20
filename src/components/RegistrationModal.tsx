@@ -572,47 +572,10 @@ export default function RegistrationModal({
       await launchFaydaPortal(redirectUri, asPopup);
     } catch (err: any) {
       console.error('Failed to launch Fayda portal:', err);
-      setFaydaError('Failed to connect to Fayda identity server. You can use the Quick Test fill below.');
+      setFaydaError('Failed to connect to Fayda identity server. Please try again later.');
     } finally {
       setIsOidcLaunching(false);
     }
-  };
-
-  // Instant demo fill for sandbox testing
-  const handleDemoBypassFayda = () => {
-    setFaydaError('');
-    const usedFin = '268503801845194354101114624931981150';
-    const usedFan = 'FAN-9842-1084-3310';
-    setFaydaFin(usedFin);
-    setFaydaFan(usedFan);
-    const resObj: FaydaResult = {
-      name: 'Chernet Tadese Bekele',
-      amharic: 'ቸርነት ታደሰ በቀለ',
-      dob: '1980-12-01',
-      gender: 'Male',
-      blood: 'O+',
-      region: 'Addis Ababa / Federal',
-      photoUrl: '/images/fayda_resident_photo.jpg',
-      ageTier: 'Masters Division (45 yrs)',
-      fin: usedFin,
-      fan: usedFan,
-      hash: '0xFAYDA_AUTHENTICATED_7849',
-      verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-      phoneNumber: '0909090909',
-      email: 'chere@id.et',
-      address: 'Addis Ababa / Federal',
-      verificationToken: 'demo_fayda_token_2026',
-    };
-    setFaydaResult(resObj);
-    setEmail(resObj.email || 'chere@id.et');
-    setPhone(resObj.phoneNumber || '0909090909');
-    try {
-      sessionStorage.setItem('eaf_fayda_verified', JSON.stringify(resObj));
-      localStorage.setItem('eaf_fayda_verified', JSON.stringify(resObj));
-    } catch (e) {}
-
-    // Stay on Step 0 to display retrieved information in Section 1
-    setStep(0);
   };
 
   const handleAddPersonalBest = () => {
@@ -644,7 +607,7 @@ export default function RegistrationModal({
     const fallbackClub = MOCK_CLUBS.find(c => c.id === selectedClubId);
     const club = selectedClubId === 'NONE'
       ? { id: 'NONE', name: 'Independent Athlete', shortName: 'Independent' }
-      : (matchedApiClub ? { id: matchedApiClub.id, name: matchedApiClub.name, shortName: matchedApiClub.name.split(' ')[0] } : (fallbackClub || MOCK_CLUBS[0]));
+      : (matchedApiClub ? { id: matchedApiClub.id, name: matchedApiClub.name, shortName: matchedApiClub.name.split(' ')[0] } : fallbackClub);
 
     if (selectedRole === 'ATHLETE' || !selectedRole) {
       // Validate inputs
@@ -730,7 +693,7 @@ export default function RegistrationModal({
           email: athleteEmail,
           password,
           phoneNumber: newAthlete.phone,
-          faydaVerificationToken: tokenToUse || 'demo_token_athlete_2026',
+          faydaVerificationToken: tokenToUse || '',
           fanNumber: newAthlete.faydaFan,
           sportIds: matchedSport ? [matchedSport.id] : undefined,
           sportId: matchedSport?.id,
@@ -798,36 +761,42 @@ export default function RegistrationModal({
           logoUrl: clubLogo,
         };
 
-        const res = await fetch('http://localhost:3000/api/v1/clubs/register-admin', {
+        const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+        const res = await fetch(`${apiBase.replace(/\/$/, '')}/clubs/register-admin`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(clubAdminPayload),
         });
         const json = await res.json();
-        const serverId = json?.data?.club?.id || ('CLUB-PRES-2026-' + Math.floor(100 + Math.random() * 900));
+        if (!res.ok) throw new Error(json?.message || 'Club registration failed. Please check your details and try again.');
+        const persistedClub = json?.data?.club;
+        if (!persistedClub?.id || !json?.data?.user?.id) {
+          throw new Error('The server did not confirm the club account. Please try again.');
+        }
+        const serverId = persistedClub.id;
 
         const newClub: ClubPayload = {
           id: serverId,
-          name: clubName,
-          shortName: clubShortName || clubName.split(' ')[0] || 'Club',
-          region,
-          city: clubCity,
-          address: clubAddress,
-          manager: faydaResult?.name || 'Club President',
-          email: clubOfficialEmail || email,
-          phone: clubOfficialPhone || phone,
+          name: persistedClub.name || clubName,
+          shortName: persistedClub.shortName || clubShortName || clubName.split(' ')[0] || 'Club',
+          region: persistedClub.region || region,
+          city: persistedClub.city || clubCity,
+          address: persistedClub.address || clubAddress,
+          manager: `${json.data.user.firstName || 'Club'} ${json.data.user.lastName || 'President'}`.trim(),
+          email: persistedClub.email || clubOfficialEmail || email,
+          phone: persistedClub.phone || clubOfficialPhone || phone,
           licensedAthletes: 0,
           pendingVerifications: 0,
           unlicensedAthletes: 0,
           transfersCount: 0,
-          logo: clubLogo,
-          logoUrl: clubLogo,
+          logo: persistedClub.logoUrl || clubLogo,
+          logoUrl: persistedClub.logoUrl || clubLogo,
           clubRank: 1,
           totalPoints: 100,
           presidentName: faydaResult?.name || 'Club President',
           charterSigned: charterAgreed,
-          verificationStatus: 'PENDING',
-          status: 'PENDING',
+          verificationStatus: persistedClub.verificationStatus,
+          status: persistedClub.verificationStatus === 'VERIFIED' ? 'ACTIVE' : persistedClub.verificationStatus,
         };
         setServerRegistrationId(serverId);
         setPendingRegistrationData({ type: 'CLUB', payload: { club: newClub } });
@@ -912,17 +881,6 @@ export default function RegistrationModal({
               </span>
             </div>
           </motion.button>
-
-          {/* Discrete Demo Test Option */}
-          <div className="mt-6 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleDemoBypassFayda}
-              className="text-xs font-bold text-slate-500 hover:text-blue-700 underline cursor-pointer bg-transparent border-0"
-            >
-              ⚡ Quick Test Auto-Fill (Demo Mode)
-            </button>
-          </div>
 
           {faydaError && (
             <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold max-w-md">

@@ -397,9 +397,11 @@ const STRUCTURE_ITEMS = [
 
 const QUICK_LINKS = [
   ['Home', 'ቅድመ ገጽ', '#home'],
-  ['News', 'ዜና', '#news'],
-  ['Gallery', 'áˆáˆµáˆ', '#media'],
-  ['Contact', 'á‹«áŒáŠ™áŠ•', '#contact'],
+  ['Competitions', 'ውድድሮች', '#competitions'],
+  ['Athletes', 'አትሌቶች', '#athletes'],
+  ['News & Updates', 'ዜና እና መረጃዎች', '#news'],
+  ['Media Gallery', 'ማዕከለ ስዕላት / ሚዲያ', '#media'],
+  ['Contact HQ', 'ያግኙን', '#contact'],
 ];
 
 const TAG_COLORS: Record<string, { bg: string; color: string }> = {
@@ -2073,7 +2075,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                             borderRadius: '8px',
                             border: '1px solid rgba(255, 255, 255, 0.3)',
                           }}>
-                             {meet.region}
+                            📍 {meet.region}
                           </span>
                         </div>
 
@@ -2948,7 +2950,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                         borderTop: '1px solid rgba(255,255,255,0.12)',
                         paddingTop: '10px',
                       }}>
-                        <span> {item.location}</span>
+                        <span>📍 {item.location}</span>
                         <span style={{ color: '#38BDF8', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           View Album →
                         </span>
@@ -3024,6 +3026,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 8.6 CONTACT FORM SECTION ── */}
       <section id="contact-form" style={{ background: darkMode ? '#0D1117' : '#F0F9FF', padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
+        <div id="contact" style={{ position: 'relative', top: '-40px' }} />
         <div style={{ maxWidth: 800, margin: '0 auto', background: t.surface, padding: '40px', borderRadius: '24px', boxShadow: '0 12px 32px rgba(15, 23, 42, 0.05)', border: '1px solid ' + t.border }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
             <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text }}>Contact the Federation</h2>
@@ -3143,12 +3146,43 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     key={en}
                     href={href}
                     onClick={(e) => {
-                      if (href === '#media') { e.preventDefault(); onChangePublicSubPage('MEDIA'); }
-                      else if (href === '#competitions') { e.preventDefault(); onChangePublicSubPage('COMPETITIONS'); }
-                      else if (href === '#athletes') { e.preventDefault(); onChangePublicSubPage('ATHLETES'); }
-                      else if (href === '#home') { e.preventDefault(); onChangePublicSubPage('HOME'); }
+                      e.preventDefault();
+                      if (href === '#home') {
+                        onChangePublicSubPage('HOME');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else if (href === '#competitions') {
+                        onChangePublicSubPage('COMPETITIONS');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else if (href === '#athletes') {
+                        onChangePublicSubPage('ATHLETES');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else if (href === '#media') {
+                        onChangePublicSubPage('MEDIA');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else if (href === '#news') {
+                        if (publicSubPage !== 'HOME') {
+                          onChangePublicSubPage('HOME');
+                          setTimeout(() => {
+                            document.getElementById('news')?.scrollIntoView({ behavior: 'smooth' });
+                          }, 200);
+                        } else {
+                          document.getElementById('news')?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      } else if (href === '#contact') {
+                        const target = document.getElementById('contact') || document.getElementById('contact-form');
+                        if (target) {
+                          target.scrollIntoView({ behavior: 'smooth' });
+                        } else {
+                          onChangePublicSubPage('HOME');
+                          setTimeout(() => {
+                            (document.getElementById('contact') || document.getElementById('contact-form'))?.scrollIntoView({ behavior: 'smooth' });
+                          }, 200);
+                        }
+                      }
                     }}
-                    style={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 600, textDecoration: 'none', transition: 'color 0.15s' }}
+                    style={{ color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 600, textDecoration: 'none', transition: 'color 0.15s', cursor: 'pointer' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#FEF08A')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = '#FFFFFF')}
                   >
                     {en} / {am}
                   </a>
@@ -3309,7 +3343,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       {activeLightboxImg.category}
                     </span>
                     <span style={{ color: '#94A3B8', fontSize: '0.82rem', fontWeight: 600 }}>
-                       {activeLightboxImg.location} Â·  {activeLightboxImg.date}
+                      📍 {activeLightboxImg.location} · 🗓️ {activeLightboxImg.date}
                     </span>
                   </div>
                   <h3 style={{ color: '#FFFFFF', fontSize: '1.35rem', fontWeight: 900, lineHeight: 1.3 }}>
@@ -3640,7 +3674,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 </div>
 
                 <div style={{ color: '#94A3B8', fontSize: '0.8rem', fontWeight: 600 }}>
-                  Tip: Use <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>←</kbd> <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>→</kbd> to navigate, <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>Esc</kbd> to exit
+                  Tip: Use <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>←</kbd> <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>→</kbd> to navigate, <kbd style={{ background: '#1E293B', padding: '2px 6px', borderRadius: 4, color: '#FFF' }}>Esc</kbd> to exit
                 </div>
 
                 <button

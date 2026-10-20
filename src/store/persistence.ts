@@ -19,6 +19,21 @@ export const STORAGE_KEYS = {
   userData: 'eaf_userData',
 } as const;
 
+// Remove client-side club, athlete, and transfer fixtures cached by older builds.
+// The backend registry is now the source of truth for these records.
+const CLUB_ATHLETE_RESET_KEY = 'eaf_club_athlete_data_reset_v1';
+if (typeof window !== 'undefined') {
+  try {
+    if (localStorage.getItem(CLUB_ATHLETE_RESET_KEY) !== 'done') {
+      [STORAGE_KEYS.clubs, STORAGE_KEYS.athletes, STORAGE_KEYS.transfers,
+        STORAGE_KEYS.currentClubId, STORAGE_KEYS.currentAthleteId].forEach((key) => localStorage.removeItem(key));
+      localStorage.setItem(CLUB_ATHLETE_RESET_KEY, 'done');
+    }
+  } catch {
+    // Storage can be unavailable in private browsing; keep the app usable.
+  }
+}
+
 export function readJSON<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);

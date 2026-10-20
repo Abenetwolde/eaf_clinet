@@ -36,10 +36,16 @@ export default function AppLayout({
   const currentRole = useAppSelector((state) => state.auth.role);
   const currentClub = useAppSelector((state) => state.auth.club);
   const currentAthlete = useAppSelector((state) => state.auth.athlete);
+  const userData = useAppSelector((state) => state.auth.userData);
+  const clubAdminName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || currentClub.manager || 'Club Admin';
+  const clubAdminPhoto = userData?.picture || (userData?.faydaNin
+    ? `http://localhost:3000/api/v1/fayda/photo/${encodeURIComponent(userData.faydaNin)}`
+    : null);
   const isClub = currentRole === 'CLUB';
 
   const clubNavItems = [
     { id: 'OVERVIEW',   label: 'Dashboard',           icon: Home },
+    { id: 'REGISTER_MEMBER', label: 'Add Member',       icon: UserCheck },
     { id: 'ROSTER',     label: 'Athlete Management',  icon: Users },
     { id: 'MEETS',      label: 'Meets',               icon: Trophy },
     { id: 'TRANSFERS',  label: 'Transfers',           icon: ArrowRightLeft },
@@ -111,10 +117,13 @@ export default function AppLayout({
         <div className="px-4 py-3.5 bg-white/[0.04] border-b border-[#2D3A5A] flex items-center gap-2.5">
           {isClub ? (
             <>
-              <div className="text-2xl shrink-0">{currentClub.logo}</div>
-              <div>
-                <div className="text-[0.84rem] font-bold text-white">{currentClub.shortName}</div>
-                <div className="text-[0.68rem] text-accent font-bold">Admin</div>
+              <div className="relative w-10 h-10 shrink-0 overflow-hidden rounded-full border-2 border-accent bg-primary/20 flex items-center justify-center text-white font-bold">
+                <span>{clubAdminName.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>
+                {clubAdminPhoto && <img src={clubAdminPhoto} alt={clubAdminName} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.remove(); }} />}
+              </div>
+              <div className="min-w-0">
+                <div className="text-[0.84rem] font-bold text-white truncate">{clubAdminName}</div>
+                <div className="text-[0.68rem] text-accent font-bold truncate">{userData?.email || currentClub.name}</div>
               </div>
             </>
           ) : (
