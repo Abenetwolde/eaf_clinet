@@ -9,6 +9,7 @@ import { Download, Clock } from 'lucide-react';
 import { useGetAthleteApplicationsQuery, useUpdateAthleteProfileMutation } from '../../store/api/athleteApi';
 import { useAppSelector } from '../../store/hooks';
 import type { Athlete } from '../../types';
+import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 
 interface AthleteProfileProps {
   onUpdateAthlete: (athlete: Athlete) => void;
@@ -130,7 +131,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
           <div className="flex items-center gap-5">
             <div className="relative shrink-0">
               <img
-                src={athlete.photoUrl || '/images/profile-placeholder.svg'}
+                src={getProfilePhotoUrl({ photoUrl: athlete.photoUrl, faydaFin: athlete.faydaFin }) || '/images/profile-placeholder.svg'}
                 alt={athlete.name}
                 className="w-20 h-24 sm:w-24 sm:h-28 rounded-2xl object-cover border-4 border-white/90 shadow-xl bg-slate-800"
               />

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 import { ShieldCheck, Upload, FileCheck, RefreshCw, Info, ExternalLink } from 'lucide-react';
 import type { Athlete } from '../../types';
 import { launchFaydaPortal, FAYDA_CONFIG } from '../../constants/fayda';
@@ -69,12 +70,12 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
             </span>
           )}
         </div>
-        
+
         <div className="flex gap-5 items-center flex-wrap">
           <div className="relative">
-            <img 
-              src={athlete.photoUrl || '/images/runner_marathon.png'} 
-              alt={athlete.name} 
+            <img
+              src={getProfilePhotoUrl({ photoUrl: athlete.photoUrl, faydaFin: athlete.faydaFin }) || '/images/profile-placeholder.svg'}
+              alt={athlete.name}
               className="w-[88px] h-[88px] rounded-[16px] object-cover border-[3px] border-[#38BDF8] shadow-[0_8px_16px_rgba(0,0,0,0.4)]"
             />
             {athlete.faydaStatus === 'VERIFIED' && (
@@ -100,7 +101,7 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
             ))}
           </div>
         </div>
-        
+
         {athlete.faydaHash && (
           <div className="mt-4 text-[0.75rem] text-[#64748B] font-mono border-t border-white/10 pt-3">
             Audit Hash: {athlete.faydaHash}

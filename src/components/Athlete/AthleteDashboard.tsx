@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { 
-  ShieldCheck, 
-  Award, 
+import {
+  ShieldCheck,
+  Award,
   Trophy,
   CreditCard
 } from 'lucide-react';
@@ -10,6 +10,7 @@ import RecordsVault from './RecordsVault';
 import EventResults from './EventResults';
 import LicenseQrCode from './LicenseQrCode';
 import type { Athlete } from '../../types';
+import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 
 interface AthleteDashboardProps {
   athlete: Athlete;
@@ -26,8 +27,8 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
       {/* Athlete Header Profile Banner */}
       <div className="glass-panel p-8 mb-7 bg-[var(--bg-card)] border-2 border-[rgba(0,168,89,0.25)] flex items-center justify-between flex-wrap gap-5">
         <div className="flex items-center gap-5">
-          <img 
-            src={athlete.photoUrl} 
+          <img
+            src={getProfilePhotoUrl({ photoUrl: athlete.photoUrl, faydaFin: athlete.faydaFin }) || '/images/profile-placeholder.svg'}
             alt={athlete.name}
             className="w-[86px] h-[86px] rounded-[22px] object-cover border-[3px] border-[#00A859] shadow-[0_8px_20px_rgba(0,168,89,0.2)]"
           />
@@ -66,7 +67,7 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
 
         {/* License Action Button */}
         {athlete.licenseStatus !== 'ACTIVE' ? (
-          <button 
+          <button
             onClick={() => onPayLicense(athlete)}
             className="btn-telebirr text-[0.9rem] px-[22px] py-3.5"
           >
@@ -89,7 +90,7 @@ export default function AthleteDashboard({ athlete, onUpdateAthlete, onPayLicens
       </div>
 
       {/* Career Records Vault View */}
-      <RecordsVault 
+      <RecordsVault
         athlete={athlete}
         onNotify={onNotify}
       />

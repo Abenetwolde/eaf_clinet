@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 import {
   Building2, UserCheck, Users, ArrowRightLeft, Trophy, ShieldCheck,
   Navigation, Activity, LogOut, Home,
@@ -38,9 +39,7 @@ export default function AppLayout({
   const currentAthlete = useAppSelector((state) => state.auth.athlete);
   const userData = useAppSelector((state) => state.auth.userData);
   const clubAdminName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || currentClub.manager || 'Club Admin';
-  const clubAdminPhoto = userData?.picture || (userData?.faydaNin
-    ? `http://localhost:3000/api/v1/fayda/photo/${encodeURIComponent(userData.faydaNin)}`
-    : null);
+  const clubAdminPhoto = getProfilePhotoUrl({ picture: userData?.picture, faydaNin: userData?.faydaNin });
   const isClub = currentRole === 'CLUB';
 
   const clubNavItems = [
@@ -129,7 +128,7 @@ export default function AppLayout({
           ) : (
             <>
               <img
-                src={currentAthlete.photoUrl}
+                src={getProfilePhotoUrl({ photoUrl: currentAthlete.photoUrl, picture: userData?.picture, faydaFin: currentAthlete.faydaFin || userData?.faydaNin }) || '/images/profile-placeholder.svg'}
                 alt={currentAthlete.name}
                 className="w-8 h-8 rounded-full object-cover shrink-0 border-2 border-accent"
               />

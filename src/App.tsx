@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getProfilePhotoUrl } from './utils/profilePhoto';
 import LandingPage from './components/LandingPage';
 import AuthModal from './components/AuthModal';
 import LoginPage from './components/LoginPage';
@@ -169,11 +170,11 @@ export default function App() {
 
   // User profile avatar displayed whenever user is logged in
   const userProfileAvatar = Boolean(isLoggedIn || isUserRegistered)
-    ? ((userData as any)?.picture ||
-      (currentRole === 'CLUB'
-        ? ((userData as any)?.faydaNin ? `http://localhost:3000/api/v1/fayda/photo/${encodeURIComponent((userData as any).faydaNin)}` : null)
-        : currentAthlete?.photoUrl || registeredInfo?.photoUrl ||
-          (typeof window !== 'undefined' ? (localStorage.getItem('fayda_photo') || localStorage.getItem('eaf_user_avatar')) : null)))
+    ? getProfilePhotoUrl({
+        picture: (userData as any)?.picture,
+        photoUrl: currentRole === 'ATHLETE' ? currentAthlete?.photoUrl || registeredInfo?.photoUrl : undefined,
+        faydaFin: (userData as any)?.faydaNin || currentAthlete?.faydaFin,
+      })
     : null;
   const signedInName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim();
 

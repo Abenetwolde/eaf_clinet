@@ -10,6 +10,7 @@ import type { Athlete } from '../../types';
 import { useAppSelector } from '../../store/hooks';
 import { useGetAthleteDashboardQuery, useGetAthletePersonalBestsQuery, useGetAthleteTrainingLogsQuery, useGetAthleteWeightLogsQuery, useGetMyAthleteResultsQuery, useUpdateAthleteProfileMutation, useCreateAthletePersonalBestMutation, useCreateAthleteTrainingLogMutation, useCreateAthleteWeightLogMutation } from '../../store/api/athleteApi';
 import LicenseQrCode from './LicenseQrCode';
+import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 
 interface AthleteOverviewProps {
   onChangeSubPage: (page: string) => void;
@@ -36,7 +37,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
     dob: dashboard.dateOfBirth,
     gender: dashboard.gender,
     ageTier: dashboard.ageTier,
-    photoUrl: dashboard.photoUrl || '',
+    photoUrl: getProfilePhotoUrl({ photoUrl: dashboard.photoUrl, picture: dashboard.user?.picture, faydaFin: dashboard.user?.faydaIdentity?.nin || rawAthlete?.faydaFin }) || rawAthlete?.photoUrl || '',
     clubId: dashboard.clubId || undefined,
     clubName: dashboard.clubName || undefined,
     region: dashboard.region || undefined,
@@ -185,7 +186,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
             {/* Passport Photo Frame with Biometric Verified Badge */}
             <div className="relative shrink-0">
               <img
-                src={athlete.photoUrl || '/images/profile-placeholder.svg'}
+                src={getProfilePhotoUrl({ photoUrl: athlete.photoUrl, faydaFin: athlete.faydaFin }) || '/images/profile-placeholder.svg'}
                 alt={athlete.name}
                 className="w-20 h-24 sm:w-24 sm:h-28 rounded-2xl object-cover border-4 border-white/90 shadow-xl bg-slate-800"
               />
@@ -478,7 +479,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 {/* Athlete Portrait Photo */}
                 <div className="relative shrink-0">
                   <img
-                    src={athlete.photoUrl || '/images/profile-placeholder.svg'}
+                    src={getProfilePhotoUrl({ photoUrl: athlete.photoUrl, faydaFin: athlete.faydaFin }) || '/images/profile-placeholder.svg'}
                     alt={athlete.name}
                     className="w-16 h-20 rounded-xl object-cover border-2 border-amber-400/80 shadow-md bg-slate-800"
                   />
