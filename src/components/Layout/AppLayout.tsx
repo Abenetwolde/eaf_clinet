@@ -130,6 +130,7 @@ export default function AppLayout({
               <img
                 src={getProfilePhotoUrl({ photoUrl: currentAthlete.photoUrl, picture: userData?.picture, faydaFin: currentAthlete.faydaFin || userData?.faydaNin }) || '/images/profile-placeholder.svg'}
                 alt={currentAthlete.name}
+                onError={(e) => { e.currentTarget.src = '/images/profile-placeholder.svg'; }}
                 className="w-8 h-8 rounded-full object-cover shrink-0 border-2 border-accent"
               />
               <div>

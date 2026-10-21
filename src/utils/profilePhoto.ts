@@ -8,7 +8,8 @@ interface ProfilePhotoSource {
 /** Prefer a persisted/Fayda picture; otherwise resolve the verified Fayda portrait by FIN. */
 export function getProfilePhotoUrl(source: ProfilePhotoSource): string | null {
   const direct = source.photoUrl?.trim() || source.picture?.trim();
-  if (direct) return direct;
+  const isPlaceholder = Boolean(direct && /(?:runner_(?:female|marathon)|fayda_resident_photo|avatar-placeholder|profile-placeholder)/i.test(direct));
+  if (direct && !isPlaceholder) return direct;
 
   const fin = source.faydaFin || source.faydaNin;
   if (!fin) return null;
