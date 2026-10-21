@@ -5,24 +5,17 @@ import {
   Lock, QrCode, Camera,
   AlertTriangle
 } from 'lucide-react';
-import { MOCK_ATHLETES, MOCK_EVENT_RESULTS, MOCK_CLUBS } from '../data/mockData';
 import { useI18n } from '../i18n';
 
 // Helper to determine banner image based on meet ID
 const getBannerUrl = (meet: any) => {
   if (!meet) return '/images/banner_grand_prix.png';
   if (typeof meet === 'string') {
-    if (meet === 'MEET-2026-01') return '/images/banner_grand_prix.png';
-    if (meet === 'MEET-2026-02') return '/images/banner_youth_games.png';
-    if (meet === 'MEET-2026-03') return '/images/banner_jan_meda.png';
     if (meet.startsWith('http') || meet.startsWith('/images/')) return meet;
     return '/images/banner_grand_prix.png';
   }
   if (meet.bannerUrl) return meet.bannerUrl;
   if (meet.img) return meet.img;
-  if (meet.id === 'MEET-2026-01') return '/images/banner_grand_prix.png';
-  if (meet.id === 'MEET-2026-02') return '/images/banner_youth_games.png';
-  if (meet.id === 'MEET-2026-03') return '/images/banner_jan_meda.png';
   return '/images/banner_grand_prix.png';
 };
 
@@ -261,43 +254,30 @@ export default function CompetitionDetail({
   if (!meet) return null;
 
 
-  // Dynamic Real Athlete Profile Data
+  // Use only Fayda identity and athlete details actually present in the authenticated session.
   const realAthleteData = useMemo(() => {
     let savedCitizen: any = null;
     try {
       const raw = localStorage.getItem('eaf_fayda_verified') || sessionStorage.getItem('eaf_fayda_verified');
       if (raw) savedCitizen = JSON.parse(raw);
     } catch {}
-
-    const athleteName = currentAthlete?.name || savedCitizen?.name || savedCitizen?.fullName || 'Registered Athlete';
-    const amharicName = currentAthlete?.amharicName || savedCitizen?.amharic || savedCitizen?.fullNameAmharic || athleteName;
-    const faydaFin = currentAthlete?.faydaFin || savedCitizen?.fin || savedCitizen?.nin || 'Verified Fayda ID';
-    const dob = currentAthlete?.dob || savedCitizen?.dob || savedCitizen?.birthDate || '1998-05-12';
-    const gender = currentAthlete?.gender || savedCitizen?.gender || 'Male';
-    const region = currentAthlete?.region || savedCitizen?.region || 'Addis Ababa';
-    const clubName = currentAthlete?.clubName || 'Independent / Unaffiliated Athlete';
-    const primaryEvent = currentAthlete?.primaryEvent || (meet?.disciplines?.[0] || '10,000m');
-    const photoUrl = currentAthlete?.photoUrl || savedCitizen?.photoUrl || '/images/fayda_resident_photo.jpg';
-    const emergencyContact = currentAthlete?.emergencyContact || '+251 91 111 2233';
-    const seasonBest = currentAthlete?.seasonBests?.[0]?.mark || currentAthlete?.personalBests?.[0]?.mark || '13:12.40';
-
     return {
-      fullName: athleteName,
-      amharicName,
-      faydaFin,
-      dob,
-      gender,
-      region,
-      subcity: 'Bole / Central',
-      houseNo: 'EAF-REG-2026',
-      club: clubName,
-      primaryEvent,
-      photoUrl,
-      emergencyContact,
-      seasonBest,
-      faydaVerified: true,
-      licenseNumber: currentAthlete?.licenseNumber || 'ETH-LIC-2026-PENDING',
-      status: currentAthlete?.status || currentAthlete?.licenseStatus || 'PENDING',
+      fullName: currentAthlete?.name || savedCitizen?.name || savedCitizen?.fullName || 'Not provided',
+      amharicName: currentAthlete?.amharicName || savedCitizen?.amharic || savedCitizen?.fullNameAmharic || '',
+      faydaFin: currentAthlete?.faydaFin || savedCitizen?.fin || savedCitizen?.nin || '',
+      dob: currentAthlete?.dob || savedCitizen?.dob || savedCitizen?.birthDate || '',
+      gender: currentAthlete?.gender || savedCitizen?.gender || '',
+      region: currentAthlete?.region || savedCitizen?.region || '',
+      subcity: savedCitizen?.subcity || '',
+      houseNo: '',
+      club: currentAthlete?.clubName || currentAthlete?.club || '',
+      primaryEvent: currentAthlete?.primaryEvent || '',
+      photoUrl: currentAthlete?.photoUrl || savedCitizen?.photoUrl || savedCitizen?.picture || '',
+      emergencyContact: currentAthlete?.emergencyContact || '',
+      seasonBest: currentAthlete?.seasonBests?.[0]?.mark || currentAthlete?.personalBests?.[0]?.mark || '',
+      faydaVerified: Boolean(currentAthlete?.faydaStatus === 'VERIFIED' || savedCitizen?.verified),
+      licenseNumber: currentAthlete?.licenseNumber || '',
+      status: currentAthlete?.status || currentAthlete?.licenseStatus || 'Not recorded',
     };
   }, [currentAthlete, meet]);
 
@@ -343,7 +323,7 @@ export default function CompetitionDetail({
     if (isRegistrationPending) return;
     setIsPendingApproval(true);
     const token = localStorage.getItem('token') || localStorage.getItem('eaf_token') || localStorage.getItem('eaf_accessToken');
-    const disciplinesToApply = selectedDisciplines.length > 0 ? selectedDisciplines : (meet.disciplines || ['General Entry']);
+    const disciplinesToApply = selectedDisciplines;
 
     try {
       const res = await fetch(`/api/v1/events/${meet.id}/apply`, {
@@ -394,9 +374,7 @@ export default function CompetitionDetail({
     }
 
     let ageGroup = 'Senior';
-    if (meet.id === 'MEET-2026-02') {
-      ageGroup = 'Senior';
-    } else if (d.toLowerCase().includes('u20')) {
+    if (d.toLowerCase().includes('u20')) {
       ageGroup = 'U20';
     } else if (d.toLowerCase().includes('u18')) {
       ageGroup = 'U18';
@@ -410,55 +388,9 @@ export default function CompetitionDetail({
     };
   });
 
-  // Generate Starter Lists (suppressed when event is open for registration)
-  const starterList = (meet.status === 'REGISTRATION_OPEN' || meet.status === 'UPCOMING') ? [] : MOCK_ATHLETES.map((ath, idx) => ({
-    bib: `BIB-30${idx + 1}`,
-    name: ath.name,
-    amharicName: ath.amharicName,
-    club: ath.clubName,
-    event: meet.disciplines[idx % meet.disciplines.length] || '1,500m',
-    gender: ath.gender,
-    ageGroup: ath.ageTier,
-    seedTime: idx === 0 ? '12:51.44' : idx === 1 ? '1:57.20' : idx === 2 ? '3:38.10' : idx === 3 ? '29:42.10' : '2:04.50',
-    verified: ath.faydaStatus === 'VERIFIED'
-  }));
-
-  // Fetch Results if available (suppressed when event is open for registration)
-  const rawResults = (meet.status === 'REGISTRATION_OPEN' || meet.status === 'UPCOMING') ? [] : (MOCK_EVENT_RESULTS[meet.id] || []);
-
-  const resultsData = [];
-  rawResults.forEach(disciplineBlock => {
-    disciplineBlock.results.forEach(res => {
-      const matchingAthlete = MOCK_ATHLETES.find(a => a.name === res.athleteName);
-
-      let gender = disciplineBlock.discipline.toLowerCase().includes('women') ? 'Women' : 'Men';
-      if (matchingAthlete) {
-        gender = matchingAthlete.gender;
-      } else if (res.athleteName.includes('Tigist') || res.athleteName.includes('Almaz') || res.athleteName.includes('Worknesh') || res.athleteName.includes('Hirut') || res.athleteName.includes('Netsanet')) {
-        gender = 'Women';
-      }
-
-      let ageTier = matchingAthlete ? matchingAthlete.ageTier : 'Senior';
-      if (meet.id === 'MEET-2026-02') {
-        ageTier = res.athleteName.includes('Abel') ? 'U18' : 'U20';
-      }
-
-      resultsData.push({
-        rank: res.pos,
-        bib: matchingAthlete ? matchingAthlete.id.replace('ATH-2026-', 'BIB-') : `BIB-${Math.floor(100 + Math.random() * 800)}`,
-        name: res.athleteName,
-        club: res.club,
-        time: res.time,
-        pb: res.pb,
-        sb: res.sb,
-        nr: res.pos === 1 && meet.id === 'MEET-2026-01' && disciplineBlock.discipline === '800m',
-        event: disciplineBlock.discipline,
-        gender,
-        ageGroup: ageTier,
-        verified: matchingAthlete ? matchingAthlete.faydaStatus === 'VERIFIED' : true
-      });
-    });
-  });
+  // Starter lists and official results are shown only when supplied by the event service.
+  const starterList: any[] = [];
+  const resultsData: any[] = [];
 
   const filteredResults = resultsData.filter(r => {
     if (resultEventFilter !== 'ALL' && r.event !== resultEventFilter) return false;
@@ -585,7 +517,7 @@ export default function CompetitionDetail({
               <div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('competitionDetail.dateSchedule')}</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-heading)', marginTop: '2px' }}>
-                  {meet.date} | 08:00 AM EAT
+                  {meet.date || 'Date not recorded'}
                 </div>
               </div>
             </div>
@@ -597,8 +529,7 @@ export default function CompetitionDetail({
               <div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('competitionDetail.deadline')}</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#DC2626', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  August 05, 2026 
-                  <span className="badge badge-red" style={{ padding: '2px 6px', fontSize: '0.65rem' }}>{t('competitionDetail.urgent')}</span>
+                  {meet.registrationDeadline || 'Deadline not recorded'}
                 </div>
               </div>
             </div>
@@ -1198,7 +1129,7 @@ export default function CompetitionDetail({
                     <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                       <div>
                         <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('competitionDetail.trackingRef')}</span>
-                        <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>COMP-ACC-2026-984210</strong>
+                        <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>{registrationPass?.passId || 'Pending federation reference'}</strong>
                       </div>
                       <div>
                         <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('competitionDetail.athleteName').toUpperCase()}</span>
@@ -1206,11 +1137,11 @@ export default function CompetitionDetail({
                       </div>
                       <div>
                         <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('competitionDetail.disciplinesEnrolled')}</span>
-                        <strong style={{ color: 'var(--primary-dark)' }}>{selectedDisciplines.join(', ') || '1,500m'}</strong>
+                        <strong style={{ color: 'var(--primary-dark)' }}>{selectedDisciplines.join(', ') || 'Not selected'}</strong>
                       </div>
                       <div>
                         <span style={{ color: '#64748B', fontSize: '0.72rem', display: 'block', fontWeight: 700 }}>{t('competitionDetail.seedTime')}</span>
-                        <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>12:54.20</strong>
+                        <strong style={{ fontFamily: 'var(--font-mono)', color: '#0F172A' }}>{faydaNationalIdData.seasonBest || 'Not recorded'}</strong>
                       </div>
                     </div>
                   </div>
@@ -1513,7 +1444,7 @@ export default function CompetitionDetail({
                   <CheckCircle2 size={36} />
                 </div>
                 <span className="badge badge-green" style={{ fontSize: '0.78rem', padding: '4px 12px', fontWeight: 900, marginBottom: '12px', display: 'inline-block' }}>
-                  ✅ PASS VERIFIED &amp; ACCREDITED
+                  Validation status unavailable
                 </span>
                 <h4 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0F172A', marginBottom: '4px' }}>
                   {scannedPassResult.athleteName}

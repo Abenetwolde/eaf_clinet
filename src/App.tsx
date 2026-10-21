@@ -1310,6 +1310,7 @@ export default function App() {
             onChangeSubPage={setAthleteSubPage}
             onPayLicense={handleInitiateLicensePayment}
             onUpdateAthlete={handleUpdateAthlete}
+            onNotify={handleNotify}
           />
         )}
         {athleteSubPage === 'APPLIED' && (

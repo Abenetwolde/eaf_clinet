@@ -7,19 +7,46 @@ import {
   FileText, Check, Copy, User, Lock, ExternalLink
 } from 'lucide-react';
 import type { Athlete } from '../../types';
-import { MOCK_EVENT_RESULTS, MEET_META, MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
+import { useGetAthleteDashboardQuery, useGetAthletePersonalBestsQuery, useGetAthleteTrainingLogsQuery, useGetAthleteWeightLogsQuery, useGetMyAthleteResultsQuery, useUpdateAthleteProfileMutation, useCreateAthletePersonalBestMutation, useCreateAthleteTrainingLogMutation, useCreateAthleteWeightLogMutation } from '../../store/api/athleteApi';
 import LicenseQrCode from './LicenseQrCode';
 
 interface AthleteOverviewProps {
   onChangeSubPage: (page: string) => void;
   onPayLicense: (athlete: Athlete) => void;
   onUpdateAthlete: (athlete: Athlete) => void;
+  onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdateAthlete }: AthleteOverviewProps) {
+export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdateAthlete, onNotify }: AthleteOverviewProps) {
   const rawAthlete = useAppSelector((state) => state.auth.athlete);
-  const athlete = rawAthlete;
+  const { data: dashboard } = useGetAthleteDashboardQuery();
+  const { data: personalBests = { allTime: [], season: [] } } = useGetAthletePersonalBestsQuery();
+  const { data: trainingLogs = [] } = useGetAthleteTrainingLogsQuery();
+  const { data: weightLogs = [] } = useGetAthleteWeightLogsQuery();
+  const { data: recordedResults = [] } = useGetMyAthleteResultsQuery();
+  const [updateProfile] = useUpdateAthleteProfileMutation();
+  const [createPersonalBest] = useCreateAthletePersonalBestMutation();
+  const [createTrainingLog] = useCreateAthleteTrainingLogMutation();
+  const [createWeightLog] = useCreateAthleteWeightLogMutation();
+  const athlete = dashboard ? {
+    ...rawAthlete,
+    id: dashboard.id,
+    name: dashboard.name,
+    dob: dashboard.dateOfBirth,
+    gender: dashboard.gender,
+    ageTier: dashboard.ageTier,
+    photoUrl: dashboard.photoUrl || '',
+    clubId: dashboard.clubId || undefined,
+    clubName: dashboard.clubName || undefined,
+    region: dashboard.region || undefined,
+    faydaFin: dashboard.user?.faydaIdentity?.nin || rawAthlete?.faydaFin,
+    weight: dashboard.fitnessStats?.weightKg ?? undefined,
+    height: dashboard.fitnessStats?.heightCm ?? undefined,
+    personalBests: [...(personalBests.allTime || []), ...(personalBests.season || [])].map((pb: any) => ({ event: pb.event, mark: pb.mark, time: pb.mark, date: pb.date || undefined, venue: pb.venue || undefined })),
+    trainingLog: trainingLogs.map((log: any) => ({ date: log.date, type: log.type, distance: log.distanceKm, duration: `${log.durationMinutes} min`, notes: log.notes || '' })),
+    weightLog: weightLogs.map((log: any) => ({ date: log.date, kg: log.weightKg })),
+  } as Athlete : rawAthlete;
 
   const [activeTab, setActiveTab] = useState('overview');
   const [copiedFin, setCopiedFin] = useState(false);
@@ -45,60 +72,60 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
 
   // Body stats edit
   const [editingStats, setEditingStats] = useState(false);
-  const [editWeight, setEditWeight] = useState<string | number>(athlete?.weight || 58);
-  const [editHeight, setEditHeight] = useState<string | number>(athlete?.height || 172);
-  const [editHR, setEditHR] = useState<string | number>(athlete?.restingHR || 48);
+  const [editWeight, setEditWeight] = useState<string | number>(athlete?.weight ?? '');
+  const [editHeight, setEditHeight] = useState<string | number>(athlete?.height ?? '');
 
   useEffect(() => {
     if (athlete) {
-      setEditWeight(athlete.weight || 58);
-      setEditHeight(athlete.height || 172);
-      setEditHR(athlete.restingHR || 48);
+      setEditWeight(athlete.weight ?? '');
+      setEditHeight(athlete.height ?? '');
     }
   }, [athlete?.id, athlete?.weight, athlete?.height, athlete?.restingHR]);
 
-  const handleAddWeight = () => {
+  const handleAddWeight = async () => {
     const w = parseFloat(newWeight);
     if (isNaN(w) || w <= 0) return;
-    const updated: Athlete = {
-      ...athlete,
-      weight: w,
-      weightLog: [{ date: newWeightDate, kg: w }, ...(athlete.weightLog || [])]
-    };
-    onUpdateAthlete(updated);
-    setNewWeight('');
+    try {
+      await createWeightLog({ date: newWeightDate, weightKg: w }).unwrap();
+      onNotify('Weight entry saved.', 'success');
+      setNewWeight('');
+    } catch (error: any) { onNotify(error?.data?.message || 'Weight entry could not be saved.', 'error'); }
   };
 
-  const handleAddTraining = () => {
+  const handleAddTraining = async () => {
     const d = parseFloat(trainDist);
     if (isNaN(d) || !trainDur) return;
-    const entry = { date: trainDate, type: trainType, distance: d, duration: trainDur, notes: trainNotes };
-    onUpdateAthlete({ ...athlete, trainingLog: [entry, ...(athlete.trainingLog || [])] });
-    setShowAddTraining(false);
-    setTrainDist(''); setTrainDur(''); setTrainNotes('');
+    const durationMinutes = Number(trainDur);
+    if (!Number.isInteger(durationMinutes) || durationMinutes < 0) { onNotify('Enter workout duration in whole minutes.', 'error'); return; }
+    try {
+      await createTrainingLog({ date: trainDate, type: trainType, distanceKm: d, durationMinutes, notes: trainNotes }).unwrap();
+      onNotify('Training session saved.', 'success');
+      setShowAddTraining(false); setTrainDist(''); setTrainDur(''); setTrainNotes('');
+    } catch (error: any) { onNotify(error?.data?.message || 'Training session could not be saved.', 'error'); }
   };
 
-  const handleAddPb = () => {
+  const handleAddPb = async () => {
     if (!pbTime.trim()) return;
-    const newPb = { event: pbEvent, time: pbTime.trim(), date: pbDate, venue: pbVenue.trim() };
-    const existing = (athlete.personalBests || []).filter(p => p.event !== pbEvent);
-    onUpdateAthlete({ ...athlete, personalBests: [newPb, ...existing] });
-    setShowAddPb(false);
-    setPbTime(''); setPbVenue('');
+    try {
+      await createPersonalBest({ event: pbEvent, mark: pbTime.trim(), date: pbDate, venue: pbVenue.trim() }).unwrap();
+      onNotify('Performance record saved.', 'success');
+      setShowAddPb(false); setPbTime(''); setPbVenue('');
+    } catch (error: any) { onNotify(error?.data?.message || 'Performance record could not be saved.', 'error'); }
   };
 
-  const handleSaveStats = () => {
+  const handleSaveStats = async () => {
     const w = parseFloat(String(editWeight));
     const h = parseFloat(String(editHeight));
-    const hr = parseFloat(String(editHR));
-
-    onUpdateAthlete({
-      ...athlete,
-      weight: !isNaN(w) && w > 0 ? w : (athlete.weight || 58),
-      height: !isNaN(h) && h > 0 ? h : (athlete.height || 172),
-      restingHR: !isNaN(hr) && hr > 0 ? hr : (athlete.restingHR || 48)
-    });
-    setEditingStats(false);
+    const body: Record<string, number> = {};
+    if (Number.isFinite(w) && w > 0) body.weight = w;
+    if (Number.isFinite(h) && h > 0) body.height = h;
+    if (!Object.keys(body).length) { onNotify('Enter a valid height or weight.', 'error'); return; }
+    try {
+      await updateProfile(body).unwrap();
+      onUpdateAthlete({ ...athlete, ...body });
+      onNotify('Profile measurements saved.', 'success');
+      setEditingStats(false);
+    } catch (error: any) { onNotify(error?.data?.message || 'Profile measurements could not be saved.', 'error'); }
   };
 
   const handleCopyFin = () => {
@@ -109,56 +136,30 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
   };
 
   // BMI Calculation
-  const numW = typeof athlete?.weight === 'number' && athlete.weight > 0 ? athlete.weight : 58;
-  const numH = typeof athlete?.height === 'number' && athlete.height > 0 ? athlete.height : 172;
-  const bmiCalc = numW / Math.pow(numH / 100, 2);
-  const bmi = isFinite(bmiCalc) ? bmiCalc.toFixed(1) : '20.4';
+  const numW = typeof athlete?.weight === 'number' && athlete.weight > 0 ? athlete.weight : null;
+  const numH = typeof athlete?.height === 'number' && athlete.height > 0 ? athlete.height : null;
+  const bmiCalc = numW && numH ? numW / Math.pow(numH / 100, 2) : null;
+  const bmi = bmiCalc && isFinite(bmiCalc) ? bmiCalc.toFixed(1) : null;
 
-  // Build competition history for this athlete
-  interface CompResult {
-    meetId: string;
-    meetTitle: string;
-    meetDate: string;
-    meetVenue: string;
-    discipline: string;
-    pos: number;
-    time: string;
-    pb: boolean;
-    sb: boolean;
-    totalAthletes: number;
-  }
-  const competitionHistory: CompResult[] = [];
-  if (athlete?.name) {
-    Object.entries(MOCK_EVENT_RESULTS).forEach(([meetId, disciplines]) => {
-      const meetObj = MOCK_MEETS.find(m => m.id === meetId);
-      if (meetObj && (meetObj.status === 'REGISTRATION_OPEN' || meetObj.status === 'UPCOMING')) return;
-      const meta = MEET_META[meetId];
-      disciplines.forEach(disc => {
-        const myResult = disc.results.find(r => r.athleteName === athlete.name);
-        if (myResult) {
-          competitionHistory.push({
-            meetId,
-            meetTitle: meta?.title ?? meetId,
-            meetDate: meta?.date ?? '—',
-            meetVenue: meta?.venue ?? '—',
-            discipline: disc.discipline,
-            pos: myResult.pos,
-            time: myResult.time,
-            pb: myResult.pb,
-            sb: myResult.sb,
-            totalAthletes: disc.results.length,
-          });
-        }
-      });
-    });
-  }
-
+  const competitionHistory = recordedResults.map((result: any, index: number) => ({
+    meetId: result.resultId || String(index),
+    meetTitle: result.eventTitle || 'Untitled event',
+    meetDate: result.date || 'Not recorded',
+    meetVenue: result.venue || 'Not recorded',
+    discipline: result.discipline || 'Not recorded',
+    pos: Number(result.rank) || 0,
+    time: result.performance || '',
+    pb: false,
+    sb: false,
+    totalAthletes: 0,
+  }));
   const totalRaces = competitionHistory.length;
   const goldCount = competitionHistory.filter(r => r.pos === 1).length;
   const silverCount = competitionHistory.filter(r => r.pos === 2).length;
   const bronzeCount = competitionHistory.filter(r => r.pos === 3).length;
   const medalCount = goldCount + silverCount + bronzeCount;
-  const bestPos = competitionHistory.length > 0 ? Math.min(...competitionHistory.map(r => r.pos)) : null;
+  const placements = competitionHistory.map((r) => r.pos).filter((position) => position > 0);
+  const bestPos = placements.length > 0 ? Math.min(...placements) : null;
 
   const tabs = [
     { id: 'overview', label: 'Dashboard Overview', icon: BarChart3 },
@@ -184,11 +185,11 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
             {/* Passport Photo Frame with Biometric Verified Badge */}
             <div className="relative shrink-0">
               <img
-                src={athlete.photoUrl || '/images/runner_female.png'}
+                src={athlete.photoUrl || '/images/profile-placeholder.svg'}
                 alt={athlete.name}
                 className="w-20 h-24 sm:w-24 sm:h-28 rounded-2xl object-cover border-4 border-white/90 shadow-xl bg-slate-800"
               />
-              <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white rounded-full p-1 border-2 border-white shadow-md" title="Fayda Biometrics Authenticated">
+              <div className={`absolute -bottom-2 -right-2 ${dashboard?.faydaVerified ? 'bg-emerald-500' : 'bg-slate-500'} text-white rounded-full p-1 border-2 border-white shadow-md`} title={dashboard?.faydaVerified ? "Fayda identity verified" : "Fayda verification not recorded"}>
                 <CheckCircle2 size={16} />
               </div>
             </div>
@@ -197,10 +198,10 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[0.72rem] font-black px-2.5 py-0.5 rounded-full">
-                  <ShieldCheck size={12} /> Fayda Verified
+                  <ShieldCheck size={12} /> {dashboard?.faydaVerified ? 'Fayda verified' : 'Fayda verification not recorded'}
                 </span>
                 {/* <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[0.72rem] font-black px-2.5 py-0.5 rounded-full">
-                  🏅 {athlete.ageTier || 'Senior Division'}
+                  🏅 {athlete.ageTier || 'Not recorded'}
                 </span>
                 <span className="inline-flex items-center gap-1 bg-sky-500/20 text-sky-200 border border-sky-400/30 text-[0.72rem] font-bold px-2.5 py-0.5 rounded-full">
                   🇪🇹 Ethiopian Athletics
@@ -211,12 +212,12 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 {athlete.name}
               </h1>
               <div className="text-lg sm:text-xl font-extrabold text-[#FCD34D] tracking-wide">
-                {athlete.amharicName || 'አልማዝ በቀለ ነጋሽ'}
+                {athlete.amharicName || '—'}
               </div>
 
               <div className="flex items-center gap-3 text-[0.82rem] text-slate-200/90 flex-wrap pt-0.5 font-medium">
                 <span className="flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-md">
-                  🏛️ <strong className="text-white">{athlete.clubName || 'Independent'}</strong>
+                  🏛️ <strong className="text-white">{athlete.clubName || 'Not recorded'}</strong>
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-md">
@@ -224,7 +225,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  FIN: <strong className="font-mono text-[#FCD34D] font-bold">{athlete.faydaFin || '7961-3131-0300'}</strong>
+                  FIN: <strong className="font-mono text-[#FCD34D] font-bold">{athlete.faydaFin || 'Not provided'}</strong>
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
@@ -313,7 +314,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
               </div>
 
               {editingStats ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
                   <div className="form-group mb-0">
                     <label className="form-label text-[0.76rem]">Weight (kg)</label>
                     <input className="form-input text-sm" type="number" value={editWeight} onChange={e => setEditWeight(e.target.value)} />
@@ -322,55 +323,32 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                     <label className="form-label text-[0.76rem]">Height (cm)</label>
                     <input className="form-input text-sm" type="number" value={editHeight} onChange={e => setEditHeight(e.target.value)} />
                   </div>
-                  <div className="form-group mb-0">
-                    <label className="form-label text-[0.76rem]">Resting HR (bpm)</label>
-                    <input className="form-input text-sm" type="number" value={editHR} onChange={e => setEditHR(e.target.value)} />
-                  </div>
-                  <button className="btn-gov-primary sm:col-span-3 p-2.5 font-bold text-xs mt-1" onClick={handleSaveStats}>
+                  <button className="btn-gov-primary sm:col-span-2 p-2.5 font-bold text-xs mt-1" onClick={handleSaveStats}>
                     <Save size={14} /> Update Metrics
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
                     <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Weight</div>
                     <div className="text-2xl font-black text-primary dark:text-sky-400 mt-1">
-                      {athlete.weight || 58} <span className="text-xs font-semibold text-slate-500">kg</span>
+                      {athlete.weight ?? 'Not recorded'} {typeof athlete.weight === 'number' && <span className="text-xs font-semibold text-slate-500">kg</span>}
                     </div>
                     <div className="text-[0.7rem] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
-                      BMI: {bmi} (Optimal)
+                      BMI: {bmi || 'Not calculated'}
                     </div>
                   </div>
 
                   <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
                     <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Height</div>
                     <div className="text-2xl font-black text-slate-800 dark:text-slate-200 mt-1">
-                      {athlete.height || 172} <span className="text-xs font-semibold text-slate-500">cm</span>
+                      {athlete.height ?? 'Not recorded'} {typeof athlete.height === 'number' && <span className="text-xs font-semibold text-slate-500">cm</span>}
                     </div>
                     <div className="text-[0.7rem] text-slate-500 font-semibold mt-1">
-                      Division Standard
+                      Self-reported measurement
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
-                    <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Resting HR</div>
-                    <div className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1">
-                      {athlete.restingHR || 48} <span className="text-xs font-semibold text-slate-500">bpm</span>
-                    </div>
-                    <div className="text-[0.7rem] text-rose-600 dark:text-rose-400 font-bold mt-1">
-                      Elite Athletic
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
-                    <div className="text-xs font-bold text-slate-500 dark:text-slate-400">Weekly Load</div>
-                    <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
-                      {athlete.trainingLoad || 60} <span className="text-xs font-semibold text-slate-500">/ 100</span>
-                    </div>
-                    <div className="text-[0.7rem] text-amber-600 dark:text-amber-400 font-bold mt-1">
-                      Optimal Intensity
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -471,7 +449,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
           {/* ── RIGHT / SIDEBAR COLUMN (4 cols) ── */}
           <div className="lg:col-span-4 space-y-6">
 
-            {/* 1. Official Digital Pass Credential Card (Realistic Athlete Digital ID Card Design) */}
+            {/* 1. Athlete profile card */}
             <div className="rounded-2xl bg-gradient-to-br from-[#06152B] via-[#0A2540] to-[#0F172A] p-5 text-white shadow-2xl border border-amber-500/30 relative overflow-hidden">
               {/* Background watermark hologram & gradient accent */}
               <div className="pointer-events-none absolute -right-12 -bottom-12 w-44 h-44 rounded-full bg-gradient-to-br from-amber-500/10 to-emerald-500/10 blur-2xl" />
@@ -491,7 +469,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                   </div>
                 </div>
                 <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[0.62rem] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <CheckCircle2 size={10} /> VERIFIED
+                  <CheckCircle2 size={10} /> {dashboard?.faydaVerified ? 'VERIFIED' : 'NOT VERIFIED'}
                 </span>
               </div>
 
@@ -500,25 +478,25 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 {/* Athlete Portrait Photo */}
                 <div className="relative shrink-0">
                   <img
-                    src={athlete.photoUrl || '/images/runner_female.png'}
+                    src={athlete.photoUrl || '/images/profile-placeholder.svg'}
                     alt={athlete.name}
                     className="w-16 h-20 rounded-xl object-cover border-2 border-amber-400/80 shadow-md bg-slate-800"
                   />
                   <div className="absolute -bottom-1 -right-1 bg-amber-500 text-slate-950 font-black text-[0.58rem] px-1 rounded border border-white">
-                    {athlete.ageTier || 'SNR'}
+                    {athlete.ageTier || '—'}
                   </div>
                 </div>
 
                 {/* ID Details */}
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="text-sm font-black text-white truncate leading-tight">{athlete.name}</div>
-                  <div className="text-[0.75rem] font-bold text-amber-300 truncate">{athlete.amharicName || 'አልማዝ በቀለ ነጋሽ'}</div>
+                  <div className="text-[0.75rem] font-bold text-amber-300 truncate">{athlete.amharicName || '—'}</div>
                   
                   <div className="text-[0.7rem] text-slate-300 pt-0.5 space-y-0.5">
                     <div>Event: <strong className="text-white">{athlete.primaryEvent}</strong></div>
-                    <div>Club: <strong className="text-white">{athlete.clubName || 'Independent'}</strong></div>
+                    <div>Club: <strong className="text-white">{athlete.clubName || 'Not recorded'}</strong></div>
                     <div className="flex items-center gap-1">
-                      FIN: <strong className="text-[#FCD34D] font-mono text-[0.72rem]">{athlete.faydaFin || '7961-3131-0300'}</strong>
+                      FIN: <strong className="text-[#FCD34D] font-mono text-[0.72rem]">{athlete.faydaFin || 'Not provided'}</strong>
                       <button
                         onClick={handleCopyFin}
                         title="Copy FIN"
@@ -536,15 +514,15 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 {/* Small Security Verification QR Thumbnail */}
                 <div className="shrink-0 bg-white p-1.5 rounded-lg border border-slate-700 shadow-sm flex flex-col items-center">
                   <QrCode size={38} className="text-slate-950" />
-                  <span className="text-[0.55rem] font-extrabold text-slate-700 mt-0.5">VERIFY</span>
+                  <span className="text-[0.55rem] font-extrabold text-slate-700 mt-0.5">ID</span>
                 </div>
               </div>
 
               {/* Card Footer Bar */}
               <div className="mt-3.5 pt-2.5 border-t border-white/15 flex justify-between items-center text-[0.68rem] text-slate-300">
-                <span>LIC: <strong className="font-mono text-white">{athlete.licenseNumber || 'ETH-2026-092'}</strong></span>
+                <span>LIC: <strong className="font-mono text-white">{athlete.licenseNumber || 'Not recorded'}</strong></span>
                 <span className="text-emerald-400 font-bold flex items-center gap-1">
-                  <ShieldCheck size={12} /> Active Digital Accreditation
+                  <ShieldCheck size={12} /> {athlete.licenseStatus === 'ACTIVE' ? 'Active license' : athlete.licenseStatus || 'License status not recorded'}
                 </span>
               </div>
             </div>
@@ -590,23 +568,23 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300">
                   <span className="font-bold flex items-center gap-1.5">
-                    <ShieldCheck size={14} /> WADA Anti-Doping
+                    <ShieldCheck size={14} /> Anti-Doping Record
                   </span>
-                  <span className="font-extrabold">COMPLIANT</span>
+                  <span className="font-extrabold">Not recorded</span>
                 </div>
 
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-800/40 text-blue-800 dark:text-blue-300">
                   <span className="font-bold flex items-center gap-1.5">
                     <CheckCircle2 size={14} /> Fayda Biometrics
                   </span>
-                  <span className="font-extrabold">MATCHED</span>
+                  <span className="font-extrabold">{dashboard?.faydaVerified ? 'Verified' : 'Not verified'}</span>
                 </div>
 
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40 text-purple-800 dark:text-purple-300">
                   <span className="font-bold flex items-center gap-1.5">
                     <Award size={14} /> Club Affiliation
                   </span>
-                  <span className="font-extrabold">{athlete.clubName ? 'ACTIVE' : 'INDEPENDENT'}</span>
+                  <span className="font-extrabold">{athlete.clubName || 'No club recorded'}</span>
                 </div>
               </div>
             </div>
@@ -641,79 +619,20 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
             })}
           </div>
 
-          {totalRaces === 0 ? (
-            <div className="bg-white dark:bg-[#121829] border border-slate-200/80 dark:border-slate-800 rounded-2xl text-center p-16 text-slate-400">
-              <Trophy size={48} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-              <p className="font-extrabold text-base text-[#0F172A] dark:text-white mb-1">No competition results recorded yet</p>
-              <p className="text-xs text-slate-500">Results will appear here automatically once this athlete finishes an EAF certified championship heat.</p>
+          {competitionHistory.length === 0 ? (
+            <div className="bg-white dark:bg-[#121829] border border-slate-200/80 dark:border-slate-800 rounded-2xl text-center p-12 text-slate-500">
+              <Trophy size={42} className="mx-auto mb-3 text-slate-300 dark:text-slate-600" />
+              <p className="font-extrabold text-base text-[#0F172A] dark:text-white mb-1">No competition results recorded</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {Object.keys(MEET_META).map(meetId => {
-                const meetResults = competitionHistory.filter(r => r.meetId === meetId);
-                if (meetResults.length === 0) return null;
-                const meta = MEET_META[meetId];
-                return (
-                  <div key={meetId} className="bg-white dark:bg-[#121829] border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-                    <div className="px-6 py-4 bg-gradient-to-r from-[#0F172A] to-[#1E293B] text-white flex items-center justify-between gap-3 flex-wrap">
-                      <div>
-                        <div className="font-black text-sm text-white">{meta.title}</div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-300">
-                          <span className="flex items-center gap-1"><Calendar size={11} /> {meta.date}</span>
-                          <span className="flex items-center gap-1"><MapPin size={11} /> {meta.venue}</span>
-                        </div>
-                      </div>
-                      <span className="bg-amber-500/20 text-amber-300 border border-amber-400/40 text-xs font-extrabold px-3 py-1 rounded-full">
-                        {meetResults.length} event{meetResults.length > 1 ? 's' : ''}
-                      </span>
-                    </div>
-
-                    <div className="table-responsive">
-                      <table className="gov-table">
-                        <thead>
-                          <tr>
-                            <th>Pos</th>
-                            <th>Discipline</th>
-                            <th>Time / Result</th>
-                            <th>Field</th>
-                            <th>Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {meetResults.map((r, i) => (
-                            <tr key={i}>
-                              <td>
-                                <div style={{
-                                  width: 32, height: 32, borderRadius: '50%',
-                                  background: r.pos === 1 ? 'rgba(200,168,75,0.15)' : r.pos === 2 ? 'rgba(168,184,200,0.15)' : r.pos === 3 ? 'rgba(200,112,64,0.15)' : 'var(--bg-surface-variant)',
-                                  border: `2px solid ${r.pos === 1 ? '#C8A84B' : r.pos === 2 ? '#A8B8C8' : r.pos === 3 ? '#C87040' : 'var(--border-card)'}`,
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontWeight: 900, fontSize: '0.8rem',
-                                  color: r.pos === 1 ? '#C8A84B' : r.pos === 2 ? '#A8B8C8' : r.pos === 3 ? '#C87040' : 'var(--text-muted)'
-                                }}>
-                                  {r.pos <= 3 ? ['🥇', '🥈', '🥉'][r.pos - 1] : r.pos}
-                                </div>
-                              </td>
-                              <td><strong className="text-[0.9rem]">{r.discipline}</strong></td>
-                              <td>
-                                <span className={`font-mono font-extrabold text-[1rem] ${r.pos === 1 ? 'text-[#C8A84B]' : 'text-primary'}`}>
-                                  {r.time}
-                                </span>
-                              </td>
-                              <td className="text-slate-500 text-[0.82rem]">{r.pos} / {r.totalAthletes}</td>
-                              <td>
-                                {r.pb && <span className="badge badge-amber text-[0.65rem]">PB</span>}
-                                {r.sb && <span className="badge badge-blue text-[0.65rem]">SB</span>}
-                                {!r.pb && !r.sb && <span className="text-slate-400">—</span>}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="gov-card overflow-hidden">
+              <div className="table-responsive"><table className="gov-table">
+                <thead><tr><th>Event</th><th>Date</th><th>Venue</th><th>Discipline</th><th>Place</th><th>Performance</th></tr></thead>
+                <tbody>{competitionHistory.map((result: any) => <tr key={result.meetId}>
+                  <td>{result.meetTitle}</td><td>{result.meetDate}</td><td>{result.meetVenue}</td><td>{result.discipline}</td>
+                  <td>{result.pos > 0 ? result.pos : 'Not recorded'}</td><td>{result.time || 'Not recorded'}</td>
+                </tr>)}</tbody>
+              </table></div>
             </div>
           )}
         </div>
@@ -913,7 +832,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                   </div>
                   <div className="form-group">
                     <label className="form-label">Duration</label>
-                    <input className="form-input" value={trainDur} onChange={e => setTrainDur(e.target.value)} placeholder="e.g. 1h 05m" />
+                    <input className="form-input" type="number" min="0" step="1" value={trainDur} onChange={e => setTrainDur(e.target.value)} placeholder="Duration in minutes" />
                   </div>
                 </div>
                 <div className="form-group">

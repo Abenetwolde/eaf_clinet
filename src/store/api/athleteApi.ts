@@ -251,6 +251,52 @@ export const athleteApi = apiSlice.injectEndpoints({
       providesTags: ['Athletes'],
     }),
 
+    getAthleteDashboard: builder.query<any, void>({
+      query: () => '/athletes/profile',
+      transformResponse: (response: any) => response?.data || null,
+      providesTags: ['Athletes'],
+    }),
+    getAthletePersonalBests: builder.query<any, void>({
+      query: () => '/athletes/profile/personal-bests',
+      transformResponse: (response: any) => response?.data || { allTime: [], season: [] },
+      providesTags: ['Athletes'],
+    }),
+    getAthleteTrainingLogs: builder.query<any[], void>({
+      query: () => '/athletes/profile/training-logs',
+      transformResponse: (response: any) => response?.data || [],
+      providesTags: ['Athletes'],
+    }),
+    getAthleteWeightLogs: builder.query<any[], void>({
+      query: () => '/athletes/profile/weight-logs',
+      transformResponse: (response: any) => response?.data || [],
+      providesTags: ['Athletes'],
+    }),
+    getMyAthleteResults: builder.query<any[], void>({
+      query: () => '/results/my-results',
+      transformResponse: (response: any) => response?.data?.data || [],
+      providesTags: ['Results' as any],
+    }),
+
+    updateAthleteProfile: builder.mutation<any, Record<string, unknown>>({
+      query: (body) => ({ url: '/athletes/profile', method: 'PATCH', body }),
+      invalidatesTags: ['Athletes'],
+    }),
+
+    createAthletePersonalBest: builder.mutation<any, { event: string; mark: string; date?: string; venue?: string }>({
+      query: (body) => ({ url: '/athletes/profile/personal-bests', method: 'POST', body }),
+      invalidatesTags: ['Athletes'],
+    }),
+
+    createAthleteTrainingLog: builder.mutation<any, { date: string; type: string; distanceKm: number; durationMinutes: number; notes?: string }>({
+      query: (body) => ({ url: '/athletes/profile/training-logs', method: 'POST', body }),
+      invalidatesTags: ['Athletes'],
+    }),
+
+    createAthleteWeightLog: builder.mutation<any, { date: string; weightKg: number }>({
+      query: (body) => ({ url: '/athletes/profile/weight-logs', method: 'POST', body }),
+      invalidatesTags: ['Athletes'],
+    }),
+
     applyForEvent: builder.mutation<
       { success: boolean; message: string; data: any },
       { eventId: string; athleteId?: string; disciplines?: string[] }
@@ -301,6 +347,15 @@ export const {
   useRegisterCoachByClubAdminMutation,
   useGetPublishedEventsQuery,
   useGetAthleteApplicationsQuery,
+  useGetAthleteDashboardQuery,
+  useGetAthletePersonalBestsQuery,
+  useGetAthleteTrainingLogsQuery,
+  useGetAthleteWeightLogsQuery,
+  useGetMyAthleteResultsQuery,
+  useUpdateAthleteProfileMutation,
+  useCreateAthletePersonalBestMutation,
+  useCreateAthleteTrainingLogMutation,
+  useCreateAthleteWeightLogMutation,
   useApplyForEventMutation,
   useGetAthleteNotificationsQuery,
   useGetPublishedResultsQuery,

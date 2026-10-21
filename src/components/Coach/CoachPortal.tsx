@@ -35,9 +35,9 @@ export default function CoachPortal({
   const [faydaLoading, setFaydaLoading] = useState(false);
   const [faydaError, setFaydaError] = useState("");
   const [faydaVerificationId, setFaydaVerificationId] = useState("");
-  const [regEvent, setRegEvent] = useState("5,000m");
-  const [regWeight, setRegWeight] = useState("58");
-  const [regHeight, setRegHeight] = useState("172");
+  const [regEvent, setRegEvent] = useState("");
+  const [regWeight, setRegWeight] = useState("");
+  const [regHeight, setRegHeight] = useState("");
 
   const [initiateFayda] = useInitiateFaydaMutation();
   const [confirmFaydaOtp] = useConfirmFaydaOtpMutation();
@@ -214,7 +214,7 @@ export default function CoachPortal({
                 {coachName}
               </div>
               <div className="text-[10px] font-bold text-blue-700 flex items-center gap-1">
-                <ShieldCheck size={11} className="text-blue-600" /> WA Certified Coach
+                <ShieldCheck size={11} className="text-blue-600" /> License not recorded
               </div>
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function CoachPortal({
           <div className="flex items-center gap-4 flex-wrap">
             <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl bg-white/10 border-2 border-white/20 backdrop-blur-md overflow-hidden flex items-center justify-center shadow-lg relative shrink-0">
               <img
-                src="/images/fayda_resident_photo.jpg"
+                src={coachProfile?.photoUrl || ''}
                 alt="Coach Portrait"
                 className="w-full h-full object-cover"
               />
@@ -245,7 +245,7 @@ export default function CoachPortal({
 
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/30 border border-blue-300/40 text-[11px] font-black text-blue-100 mb-1.5 backdrop-blur-xs">
-                <ShieldCheck size={12} className="text-emerald-400" /> Fayda Verified High Performance Coach
+                <ShieldCheck size={12} className="text-emerald-400" /> {coachProfile?.faydaStatus === 'VERIFIED' ? 'Fayda verified coach' : 'Fayda verification not recorded'}
               </div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white m-0">
                 {coachName}
@@ -316,9 +316,9 @@ export default function CoachPortal({
                   <span className="text-xs font-black uppercase tracking-wider">Squad Athletes</span>
                   <Users size={18} className="text-blue-600" />
                 </div>
-                <div className="text-2xl font-black text-slate-900">{athletes.length || 18}</div>
+                <div className="text-2xl font-black text-slate-900">{athletes.length}</div>
                 <div className="text-xs text-emerald-600 font-bold mt-1 flex items-center gap-1">
-                  <CheckCircle2 size={12} /> 100% Fayda ID Verified
+                  {athletes.filter((item: any) => item.faydaVerified).length} Fayda verified
                 </div>
               </div>
 
@@ -327,9 +327,9 @@ export default function CoachPortal({
                   <span className="text-xs font-black uppercase tracking-wider">Upcoming Events</span>
                   <Calendar size={18} className="text-indigo-600" />
                 </div>
-                <div className="text-2xl font-black text-slate-900">{events.length || 5}</div>
+                <div className="text-2xl font-black text-slate-900">{events.length}</div>
                 <div className="text-xs text-indigo-600 font-bold mt-1">
-                  Active National Label Meets
+                  Published events returned by the federation
                 </div>
               </div>
 
@@ -338,9 +338,9 @@ export default function CoachPortal({
                   <span className="text-xs font-black uppercase tracking-wider">High Performance Tier</span>
                   <Trophy size={18} className="text-amber-500" />
                 </div>
-                <div className="text-2xl font-black text-slate-900">Olympic Standard</div>
+                <div className="text-2xl font-black text-slate-900">Not recorded</div>
                 <div className="text-xs text-slate-500 font-bold mt-1">
-                  Bekoji High Altitude Base
+                  Training center not recorded
                 </div>
               </div>
 
@@ -349,9 +349,9 @@ export default function CoachPortal({
                   <span className="text-xs font-black uppercase tracking-wider">License Status</span>
                   <Award size={18} className="text-emerald-600" />
                 </div>
-                <div className="text-2xl font-black text-emerald-600">Active / Valid</div>
+                <div className="text-2xl font-black text-emerald-600">{licenseNo}</div>
                 <div className="text-xs text-slate-500 font-bold mt-1">
-                  Quadrennial 2024–2028
+                  License validity not recorded
                 </div>
               </div>
             </div>
@@ -399,7 +399,7 @@ export default function CoachPortal({
                           <td className="py-3">
                             <div className="flex items-center gap-3">
                               <img
-                                src={ath.photoUrl || '/images/fayda_resident_photo.jpg'}
+                                src={ath.photoUrl || ''}
                                 alt="Athlete"
                                 className="w-9 h-9 rounded-xl object-cover border border-slate-200"
                               />
@@ -408,23 +408,23 @@ export default function CoachPortal({
                                   {ath.name || `${ath.user?.firstName || ''} ${ath.user?.lastName || ''}`}
                                 </div>
                                 <div className="text-[11px] text-blue-700 font-bold">
-                                  {ath.amharicName || 'የኢትዮጵያ አትሌት'}
+                                  {ath.amharicName || ''}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="py-3 font-semibold text-slate-700">
-                            {ath.primaryEvent || '5,000m Long Distance'}
+                            {ath.primaryEvent || 'Not recorded'}
                           </td>
                           <td className="py-3 font-mono text-xs font-bold text-slate-600">
-                            {ath.faydaFin || '2685 0380 1845 1943'}
+                            {ath.faydaFin || 'Not recorded'}
                           </td>
                           <td className="py-3 font-mono text-xs font-black text-slate-900">
-                            {ath.personalBest || '12:48.20'}
+                            {ath.personalBest || 'Not recorded'}
                           </td>
                           <td className="py-3">
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              VERIFIED
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black ${ath.faydaVerified ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>
+                              {ath.faydaVerified ? 'FAYDA VERIFIED' : 'NOT VERIFIED'}
                             </span>
                           </td>
                         </tr>
@@ -462,17 +462,17 @@ export default function CoachPortal({
                     <div>
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-[10px] font-black uppercase tracking-wider text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full">
-                          {evt.category || 'Championship'}
+                          {evt.category || 'Category not recorded'}
                         </span>
                         <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                          <MapPin size={12} /> {evt.venue || 'Addis Ababa'}
+                          <MapPin size={12} /> {evt.venue || 'Venue not recorded'}
                         </span>
                       </div>
                       <h4 className="text-base font-black text-slate-900 m-0 leading-snug">
                         {evt.title}
                       </h4>
                       <p className="text-xs text-slate-600 line-clamp-2 mt-1">
-                        {evt.description || 'Official athletics competition sanctioned by the Ethiopian Athletics Federation.'}
+                        {evt.description || 'No event description is recorded.'}
                       </p>
                     </div>
 
@@ -534,22 +534,22 @@ export default function CoachPortal({
                 <div key={ath.id} className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between gap-4">
                   <div className="flex items-start gap-4">
                     <img
-                      src={ath.photoUrl || '/images/fayda_resident_photo.jpg'}
+                      src={ath.photoUrl || ''}
                       alt="Athlete"
                       className="w-16 h-18 rounded-2xl object-cover border-2 border-slate-200 shrink-0 bg-slate-100"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 text-emerald-700 text-[10px] font-black uppercase">
-                        <ShieldCheck size={12} /> Fayda Verified
+                        {ath.faydaVerified && <><ShieldCheck size={12} /> Fayda Verified</>}
                       </div>
                       <h4 className="text-base font-black text-slate-900 truncate leading-tight mt-0.5">
                         {ath.name || `${ath.user?.firstName || ''} ${ath.user?.lastName || ''}`}
                       </h4>
                       <div className="text-xs text-blue-700 font-bold mt-0.5">
-                        {ath.amharicName || 'የኢትዮጵያ አትሌት'}
+                        {ath.amharicName || ''}
                       </div>
                       <div className="text-[11px] text-slate-500 font-medium mt-1">
-                        {ath.ageTier || 'Senior Division'} · {ath.clubName || 'Bekoji Training Center'}
+                        {ath.ageTier || 'Age category not recorded'} · {ath.clubName || 'Club not recorded'}
                       </div>
                     </div>
                   </div>
@@ -557,21 +557,21 @@ export default function CoachPortal({
                   <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80 space-y-1.5 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500 font-bold">Primary Event:</span>
-                      <span className="font-black text-slate-900">{ath.primaryEvent || '5,000m'}</span>
+                      <span className="font-black text-slate-900">{ath.primaryEvent || 'Not recorded'}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500 font-bold">Personal Best:</span>
-                      <span className="font-mono font-black text-blue-700">{ath.personalBest || '12:48.20'}</span>
+                      <span className="font-mono font-black text-blue-700">{ath.personalBest || 'Not recorded'}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500 font-bold">National ID:</span>
-                      <span className="font-mono text-slate-700 font-bold text-[11px]">{ath.faydaFin || '2685 0380 1845 1943'}</span>
+                      <span className="font-mono text-slate-700 font-bold text-[11px]">{ath.faydaFin || 'Not recorded'}</span>
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => onNotify(`Viewing biometric biometric telemetry for ${ath.name || 'athlete'}.`, 'info')}
+                    onClick={() => onNotify('Performance telemetry is not available in the current athlete record.', 'info')}
                     className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-blue-50 text-blue-700 hover:text-blue-800 text-xs font-black transition-colors cursor-pointer bg-white flex items-center justify-center gap-1.5"
                   >
                     <Activity size={14} />
@@ -601,17 +601,17 @@ export default function CoachPortal({
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <span className="text-[10px] font-black uppercase tracking-wider text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-full">
-                        {evt.category || 'Championship'}
+                        {evt.category || 'Category not recorded'}
                       </span>
                       <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                        <MapPin size={12} /> {evt.venue || 'Addis Ababa'}
+                        <MapPin size={12} /> {evt.venue || 'Venue not recorded'}
                       </span>
                     </div>
                     <h4 className="text-lg font-black text-slate-900 m-0">
                       {evt.title}
                     </h4>
                     <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-                      {evt.description || 'Official athletics competition sanctioned by the Ethiopian Athletics Federation.'}
+                      {evt.description || 'No event description is recorded.'}
                     </p>
                   </div>
 
@@ -646,31 +646,28 @@ export default function CoachPortal({
           <div className="space-y-6">
             <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-xs">
               <h3 className="text-lg font-black text-slate-900 mb-1">High Altitude Training Logs & Workload</h3>
-              <p className="text-xs text-slate-500 mb-6">Monitoring Bekoji High Altitude Training Center sessions</p>
+              <p className="text-xs text-slate-500 mb-6">Training logs are available when the backend training record service is configured.</p>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900">
                   <div className="text-xs font-bold uppercase tracking-wider text-blue-700">Altitude Base</div>
-                  <div className="text-xl font-black mt-1">2,810 Meters</div>
-                  <div className="text-[11px] text-blue-600 mt-0.5">Bekoji, Oromia Regional State</div>
+                  <div className="text-xl font-black mt-1">Not recorded</div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900">
                   <div className="text-xs font-bold uppercase tracking-wider text-emerald-700">Weekly Squad Mileage</div>
-                  <div className="text-xl font-black mt-1">165–185 km</div>
-                  <div className="text-[11px] text-emerald-600 mt-0.5">High altitude endurance block</div>
+                  <div className="text-xl font-black mt-1">Not recorded</div>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900">
                   <div className="text-xs font-bold uppercase tracking-wider text-indigo-700">Anti-Doping Compliance</div>
-                  <div className="text-xl font-black mt-1">100% Cleared</div>
-                  <div className="text-[11px] text-indigo-600 mt-0.5">ETH-NADO whereabouts submitted</div>
+                  <div className="text-xl font-black mt-1">No records available</div>
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={() => onNotify('New high-altitude session logged into federation registry.', 'success')}
+                onClick={() => onNotify('Training log storage is not configured. No session was saved.', 'error')}
                 className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm flex items-center gap-2 cursor-pointer border-0 shadow-sm"
               >
                 <Dumbbell size={16} />
@@ -769,13 +766,13 @@ export default function CoachPortal({
                   {/* Verified Identity Card */}
                   <div className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 flex items-center gap-4">
                     <img
-                      src={faydaVerifiedData.photoUrl || "/images/runner_marathon.png"}
+                      src={faydaVerifiedData.photoUrl || "/images/profile-placeholder.svg"}
                       alt="Verified"
                       className="w-14 h-16 rounded-xl object-cover border border-emerald-300 bg-white shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1 text-emerald-800 text-[10px] font-black uppercase">
-                        <ShieldCheck size={12} /> Fayda Verified Resident
+                        {ath.faydaVerified && <><ShieldCheck size={12} /> Fayda Verified</>} Resident
                       </div>
                       <div className="font-black text-sm text-slate-900 truncate mt-0.5">
                         {faydaVerifiedData.fullName}

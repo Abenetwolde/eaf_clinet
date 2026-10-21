@@ -1876,7 +1876,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                         </div>
 
                         <div style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: 8, fontWeight: 600 }}>
-                          🗓️ {selectedNews.date} · 📍 {selectedNews.location || 'Addis Ababa'}
+                          🗓️ {selectedNews.date || 'Date not recorded'} · 📍 {selectedNews.location || 'Location not recorded'}
                         </div>
 
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.6rem', fontWeight: 900, marginBottom: 12, lineHeight: 1.3 }}>
@@ -1979,9 +1979,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
                   { label: 'Founded', value: '1964' },
-                  { label: 'Licensed Clubs', value: overviewStats?.clubsCount ? `${overviewStats.clubsCount} Clubs` : '48 Clubs' },
-                  { label: 'Registered Athletes', value: overviewStats?.athletesCount ? `${overviewStats.athletesCount} Athletes` : '1,200+ Athletes' },
-                  { label: 'Annual Competitions', value: overviewStats?.publishedEventsCount ? `${overviewStats.publishedEventsCount} Events` : '24+ Events' },
+                  { label: 'Licensed Clubs', value: Number.isFinite(overviewStats?.clubsCount) ? `${overviewStats.clubsCount} Clubs` : 'Unavailable' },
+                  { label: 'Registered Athletes', value: Number.isFinite(overviewStats?.athletesCount) ? `${overviewStats.athletesCount} Athletes` : 'Unavailable' },
+                  { label: 'Annual Competitions', value: Number.isFinite(overviewStats?.publishedEventsCount) ? `${overviewStats.publishedEventsCount} Events` : 'Unavailable' },
                 ].map(s => (
                   <div key={s.label} style={{
                     background: t.bgAlt, borderRadius: 14,
@@ -2264,7 +2264,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               gap: '24px'
             }}>
               {visibleGalleryImages.map((item, idx) => {
-                const capturesCount = item.captures?.length || 1;
+                const capturesCount = item.captures?.length ?? 0;
                 return (
                   <motion.div
                     key={item.id}
@@ -2667,7 +2667,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   { icon: <Phone size={18} />, text: siteContent?.contactHq?.phone || '+251 11 551 7777' },
                   { icon: <Mail size={18} />, text: siteContent?.contactHq?.email || 'info@eaf.org.et' },
                   { icon: <Globe size={18} />, text: siteContent?.contactHq?.website || 'www.eaf.org.et' },
-                  { icon: <MapPin size={18} />, text: siteContent?.contactHq?.address || 'Addis Ababa National Stadium Compound, Ethiopia' },
+          { icon: <MapPin size={18} />, text: siteContent?.contactHq?.address || 'Address not recorded' },
                 ].map(c => (
                   <div key={c.text} style={{ display: 'flex', alignItems: 'center', gap: 12, color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 600 }}>
                     <span style={{ color: '#FEF08A', flexShrink: 0 }}>{c.icon}</span>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, CheckCircle2, RefreshCw, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { Mail, Phone, CheckCircle2, RefreshCw, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useVerifyEmailMutation, useRequestPhoneOtpMutation, useVerifyPhoneMutation } from '../store/api/authApi';
 
 type VerificationStep = 'EMAIL' | 'PHONE' | 'DONE';
@@ -23,18 +23,9 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
   const [emailVerified, setEmailVerified] = useState(false);
   const [accountActive, setAccountActive] = useState(false);
 
-  // ⚡ Demo Bypass Handler
-  const handleDemoBypass = () => {
-    setError('');
-    setEmailVerified(true);
-    setAccountActive(true);
-    setStep('DONE');
-    setSuccessMessage('⚡ Demo Mode: Verification Bypassed Successfully!');
-  };
-
   const handleVerifyEmail = async () => {
     if (emailCode.length !== 6) {
-      setError('Please enter a 6-digit code or use Demo Bypass.');
+      setError('Please enter the 6-digit verification code.');
       return;
     }
     setError('');
@@ -52,7 +43,7 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string }; error?: string; status?: string | number };
       if (apiErr?.status === 'FETCH_ERROR' || !apiErr?.status) {
-        setError('Cannot reach backend server. Click Demo Bypass below to proceed.');
+        setError('Cannot reach the verification service. Please try again later.');
       } else {
         setError(apiErr?.data?.message || apiErr?.error || 'Invalid code.');
       }
@@ -67,7 +58,7 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string }; error?: string; status?: string | number };
       if (apiErr?.status === 'FETCH_ERROR' || !apiErr?.status) {
-        setError('Cannot reach backend server. Click Demo Bypass below to proceed.');
+        setError('Cannot reach the verification service. Please try again later.');
       } else {
         setError(apiErr?.data?.message || apiErr?.error || 'Failed to send OTP.');
       }
@@ -76,7 +67,7 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
 
   const handleVerifyPhone = async () => {
     if (phoneOtp.length !== 6) {
-      setError('Please enter the 6-digit OTP or use Demo Bypass.');
+      setError('Please enter the 6-digit OTP.');
       return;
     }
     setError('');
@@ -90,7 +81,7 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
     } catch (err: unknown) {
       const apiErr = err as { data?: { message?: string }; error?: string; status?: string | number };
       if (apiErr?.status === 'FETCH_ERROR' || !apiErr?.status) {
-        setError('Cannot reach backend server. Click Demo Bypass below to proceed.');
+        setError('Cannot reach the verification service. Please try again later.');
       } else {
         setError(apiErr?.data?.message || apiErr?.error || 'Invalid or expired OTP.');
       }
@@ -104,59 +95,6 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
     isVerifying: boolean,
   ) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Quick Fill / Demo Bypass Helper */}
-      <div style={{
-        background: '#FEF3C7',
-        border: '1px solid #F59E0B',
-        borderRadius: '12px',
-        padding: '10px 14px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        fontSize: '0.84rem',
-        color: '#92400E',
-        fontWeight: 700
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Zap size={16} color="#D97706" />
-          <span>Need Demo OTP?</span>
-        </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <button
-            type="button"
-            onClick={() => onChange('123456')}
-            style={{
-              background: '#F59E0B',
-              color: '#FFF',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '4px 8px',
-              fontSize: '0.75rem',
-              fontWeight: 800,
-              cursor: 'pointer'
-            }}
-          >
-            Fill 123456
-          </button>
-          <button
-            type="button"
-            onClick={handleDemoBypass}
-            style={{
-              background: '#0B5ED7',
-              color: '#FFF',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '4px 8px',
-              fontSize: '0.75rem',
-              fontWeight: 800,
-              cursor: 'pointer'
-            }}
-          >
-            ⚡ Instant Pass
-          </button>
-        </div>
-      </div>
-
       {/* OTP boxes */}
       <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', margin: '8px 0' }}>
         {[0, 1, 2, 3, 4, 5].map(idx => (
@@ -223,22 +161,7 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
           <span style={{ color: '#EF4444', fontSize: '0.85rem', fontWeight: 700, textAlign: 'center' }}>
             {error}
           </span>
-          <button
-            type="button"
-            onClick={handleDemoBypass}
-            style={{
-              background: '#DC2626',
-              color: '#FFF',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '6px 14px',
-              fontSize: '0.8rem',
-              fontWeight: 800,
-              cursor: 'pointer'
-            }}
-          >
-            ⚡ Bypass OTP Restriction (Demo Account)
-          </button>
+
         </div>
       )}
 
@@ -276,21 +199,7 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
         )}
       </button>
 
-      <button
-        type="button"
-        onClick={handleDemoBypass}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: '#0B5ED7',
-          fontSize: '0.85rem',
-          cursor: 'pointer',
-          textAlign: 'center',
-          fontWeight: 700
-        }}
-      >
-        ⚡ Skip & Bypass Server Verification (Demo Mode)
-      </button>
+
     </div>
   );
 
@@ -422,16 +331,7 @@ export default function VerificationModal({ email, onClose, onVerified }: Verifi
 
             {renderOtpInput(phoneOtp, setPhoneOtp, handleVerifyPhone, isVerifyingPhone)}
 
-            <button
-              type="button"
-              onClick={handleDemoBypass}
-              style={{
-                background: 'none', border: 'none', color: '#64748B',
-                fontSize: '0.85rem', cursor: 'pointer', textAlign: 'center', fontWeight: 600
-              }}
-            >
-              Skip for now
-            </button>
+
           </div>
         )}
 

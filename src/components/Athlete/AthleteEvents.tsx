@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Trophy, Calendar, MapPin, CheckCircle2, X, ShieldCheck, AlertTriangle, Users } from 'lucide-react';
-import { MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
 import { useGetPublishedEventsQuery, useApplyForEventMutation } from '../../store/api/athleteApi';
 import type { Athlete } from '../../types';
@@ -15,9 +14,7 @@ export default function AthleteEvents({ onUpdateAthlete, onNotify }: AthleteEven
   const { data: publishedEvents = [] } = useGetPublishedEventsQuery();
   const [applyForEventMutation, { isLoading: isApplying }] = useApplyForEventMutation();
 
-  const [meets, setMeets] = useState(() => {
-    return MOCK_MEETS.map(m => ({ ...m, athleteEnrolled: false, enrolledDiscipline: null }));
-  });
+  const [meets, setMeets] = useState<any[]>([]);
 
   // Merge published events from backend database into meets
   useEffect(() => {

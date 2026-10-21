@@ -1,77 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useGetAthleteNotificationsQuery } from '../../store/api/athleteApi';
-import { Bell, Check, Clock, CheckSquare, Trash2 } from 'lucide-react';
-import { useAppSelector } from '../../store/hooks';
-import type { Athlete } from '../../types';
+import { Bell, Clock } from 'lucide-react';
 
 interface AthleteNotificationsProps {
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-export default function AthleteNotifications({ onNotify }: AthleteNotificationsProps) {
-  const athlete = useAppSelector((state) => state.auth.athlete);
+export default function AthleteNotifications(_props: AthleteNotificationsProps) {
   const { data: backendNotifs = [] } = useGetAthleteNotificationsQuery(undefined, { pollingInterval: 4000 });
-  const [notifications, setNotifications] = useState(athlete.notifications || [
-    {
-      id: "notif-1",
-      title: "Registration Approved",
-      message: "Your application for the 5,000m event at Addis Ababa International Grand Prix 2026 has been approved. Your Bib number will be assigned soon.",
-      date: "2026-07-28",
-      type: "success",
-      read: false
-    },
-    {
-      id: "notif-2",
-      title: "License Renewed Successfully",
-      message: "Your annual EAF license (EAF-LIC-2026-8891) is active and valid until Dec 31, 2026.",
-      date: "2026-07-20",
-      type: "info",
-      read: true
-    },
-    {
-      id: "notif-3",
-      title: "Geofence Check-in Reminder",
-      message: "Friendly reminder: GPS-based Call Room check-in opens 2 hours before the start of the 5,000m event.",
-      date: "2026-07-19",
-      type: "warning",
-      read: true
-    }
-  ]);
-
+  const [notifications, setNotifications] = useState<any[]>([]);
   useEffect(() => {
-    if (backendNotifs && backendNotifs.length > 0) {
-      setNotifications(prev => {
-        const merged = [...prev];
-        backendNotifs.forEach((bn: any) => {
-          if (!merged.some(m => m.id === bn.id || (m.title === bn.title && m.message === bn.message))) {
-            merged.unshift({
-              id: bn.id,
-              title: bn.title,
-              message: bn.message,
-              date: bn.date || new Date().toISOString().split('T')[0],
-              type: bn.type || 'success',
-              read: bn.read || false
-            });
-          }
-        });
-        return merged;
-      });
-    }
+    setNotifications((backendNotifs || []).map((item: any) => ({
+      id: item.id,
+      title: item.title || 'Notification',
+      message: item.message || '',
+      date: item.date || item.createdAt || 'Date not recorded',
+      type: item.type || 'info',
+      read: Boolean(item.read),
+    })));
   }, [backendNotifs]);
-
-  const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    onNotify('All notifications marked as read', 'success');
-  };
-
-  const handleToggleRead = (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: !n.read } : n));
-  };
-
-  const handleDelete = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    onNotify('Notification removed', 'info');
-  };
 
   const getNotifStyle = (type: string, read: boolean): React.CSSProperties => {
     let border = 'rgba(226, 232, 240, 0.8)';
@@ -101,14 +48,7 @@ export default function AthleteNotifications({ onNotify }: AthleteNotificationsP
           </p>
         </div>
         
-        {notifications.some(n => !n.read) && (
-          <button 
-            className="btn-gov-secondary text-[0.82rem] flex items-center gap-1.5"
-            onClick={handleMarkAllRead}
-          >
-            <CheckSquare size={14} /> Mark all as read
-          </button>
-        )}
+
       </div>
 
       <div className="max-w-[800px]">
@@ -142,26 +82,7 @@ export default function AthleteNotifications({ onNotify }: AthleteNotificationsP
                 </p>
               </div>
 
-              <div className="flex gap-1.5">
-                <button 
-                  onClick={() => handleToggleRead(n.id)}
-                  className="border-0 w-8 h-8 rounded-full cursor-pointer flex items-center justify-center"
-                  style={{
-                    background: n.read ? '#F1F5F9' : 'rgba(11,87,142,0.08)',
-                    color: n.read ? 'var(--text-muted)' : 'var(--primary)'
-                  }}
-                  title={n.read ? "Mark as unread" : "Mark as read"}
-                >
-                  <Check size={14} />
-                </button>
-                <button 
-                  onClick={() => handleDelete(n.id)}
-                  className="bg-[#FEF2F2] border-0 w-8 h-8 rounded-full cursor-pointer flex items-center justify-center text-[#EF4444]"
-                  title="Delete notification"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
+
             </div>
           ))
         )}
