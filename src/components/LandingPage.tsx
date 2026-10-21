@@ -6,6 +6,7 @@ import GalleryDetail from './GalleryDetail';
 import { ResponsiveSeeMoreText } from './ResponsiveSeeMoreText';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '../i18n';
+import { getEventRegistrationStatus } from '../utils/eventRegistration';
 import { useGetNewsQuery, type NewsArticle } from '../store/api/newsApi';
 import { useGetPublishedEventsQuery, useGetOverviewStatsQuery, useGetGalleryQuery, useGetSiteContentQuery, useSubmitContactFormMutation } from '../store/api/apiSlice';
 import { useGetAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
@@ -59,6 +60,56 @@ export interface GalleryItem {
 const ENRICHED_MEETS: any[] = [];
 const ATHLETES: any[] = [];
 const GALLERY_IMAGES: GalleryItem[] = [];
+const TAG_COLORS: Record<string, { bg: string; color: string }> = {
+  NEWS: { bg: '#DBEAFE', color: '#1D4ED8' },
+  COMPETITION: { bg: '#DCFCE7', color: '#15803D' },
+  ANNOUNCEMENT: { bg: '#FEF3C7', color: '#B45309' },
+};
+
+const QUICK_LINKS: [string, string, string][] = [
+  ['Home', 'መነሻ', '#home'],
+  ['Competitions', 'ውድድሮች', '#competitions'],
+  ['Athletes', 'አትሌቶች', '#athletes'],
+  ['News', 'ዜና', '#news'],
+  ['Media', 'ሚዲያ', '#media'],
+  ['Contact', 'ያግኙን', '#contact'],
+];
+
+// Platform governance areas; individual office holders and member counts come from live records.
+const STRUCTURE_ITEMS = [
+  {
+    title: 'Ethiopian Athletics Federation',
+    icon: <Building2 size={24} color="var(--primary)" />,
+    amharic: 'የኢትዮጵያ አትሌቲክስ ፌዴሬሽን',
+    description: 'The federation provides national oversight for athlete and club registration, licensing, competition administration, and federation records.',
+    members: 'Federation administrators and authorized officials',
+    meets: 'National competition calendar and published results',
+  },
+  {
+    title: 'Regional Athletics Offices',
+    icon: <Map size={24} color="var(--primary)" />,
+    amharic: 'የክልል አትሌቲክስ ጽሕፈት ቤቶች',
+    description: 'Regional officers manage clubs and athlete applications in their assigned regions, subject to federation oversight.',
+    members: 'Regional officers and registered regional clubs',
+    meets: 'Regional competition records when entered in the system',
+  },
+  {
+    title: 'Clubs and Athlete Development',
+    icon: <Users size={24} color="var(--primary)" />,
+    amharic: 'ክለቦችና የአትሌቶች ልማት',
+    description: 'Clubs maintain their rosters and support athlete development. Athlete identity and eligibility information is linked to verified records.',
+    members: 'Registered clubs, athletes, and coaches',
+    meets: 'Club and athlete event entries',
+  },
+  {
+    title: 'Authorized Medical and Integrity Officials',
+    icon: <ShieldAlert size={24} color="var(--primary)" />,
+    amharic: 'የተፈቀደላቸው የሕክምናና የታማኝነት ባለሙያዎች',
+    description: 'Designated professionals handle restricted medical and integrity records with role-based access and accountable updates.',
+    members: 'Authorized medical, anti-doping, and integrity personnel',
+    meets: 'Eligibility reviews and authorized record verification',
+  },
+];
 
 function mapArticleToNewsItem(article: NewsArticle, index: number): NewsItem {
   return {
@@ -151,7 +202,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         venue: evt.venue || '',
         date: scheduleDate,
         dateString: dateStr,
-        status: evt.status === 'PUBLISHED' ? 'REGISTRATION_OPEN' : (evt.status || 'REGISTRATION_OPEN'),
+        status: getEventRegistrationStatus(evt),
+        registrationDeadline: evt.registrationDeadline || '',
         disciplines: Array.isArray(evt.disciplines) ? evt.disciplines : [],
         region: evt.region || '',
         img: evt.bannerUrl || '',
@@ -198,7 +250,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     event: ath.primaryEvent || '',
     club: ath.clubName || '',
     faydaFin: '',
-    faydaStatus: ath.faydaVerified ? 'VERIFIED' : '',
+    faydaStatus: ath.faydaStatus || (ath.faydaVerified === true ? 'VERIFIED' : 'NOT_VERIFIED'),
     dob: ath.dateOfBirth || '',
     gender: ath.gender || '',
     ageTier: ath.ageTier || '',
@@ -822,14 +874,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           <div style={{ position: 'absolute', top: '10%', left: '15%', width: '480px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0) 70%)', filter: 'blur(55px)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', top: '20%', right: '15%', width: '480px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(16, 185, 129, 0) 70%)', filter: 'blur(55px)', pointerEvents: 'none' }} />
 
-          {/* Subtle Vector track background accents */}
-          <VectorTrackLines />
-          <div style={{ position: 'absolute', right: '-40px', top: '20px', pointerEvents: 'none', opacity: 0.12 }}>
-            <VectorRunnerDecoration />
-          </div>
-          <div style={{ position: 'absolute', left: '-60px', bottom: '10px', pointerEvents: 'none', transform: 'scaleX(-1)', opacity: 0.12 }}>
-            <VectorRunnerDecoration />
-          </div>
 
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '1040px', margin: '0 auto', width: '100%' }}>
 
@@ -919,7 +963,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.75) 100%)' }} />
-                    
+
                     {/* Pulsing Live Badge */}
                     <div style={{
                       position: 'absolute',
@@ -1084,7 +1128,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 </button>
               ) : (
                 <button
-                  onClick={() => onRegister('ATHLETE')}
+                  onClick={() => window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { method: 'FAYDA' } }))}
                   className="btn-accent"
                   style={{
                     background: '#1D4ED8',
@@ -1103,35 +1147,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   }}
                 >
                   <CheckCircle size={20} />
-                  {siteContent?.hero?.primaryBtnText || 'Register with Fayda National ID'}
+                  Sign In to Your Portal
                 </button>
               )}
 
-              {/* Register as a Club CTA */}
-              <button
-                onClick={() => onRegister('CLUB')}
-                className="btn-accent"
-                style={{
-                  background: darkMode ? "rgba(29, 78, 216, 0.15)" : "#EFF6FF",
-                  color: "#1D4ED8",
-                  border: "2px solid #BFDBFE",
-                  fontWeight: 800,
-                  fontSize: "0.98rem",
-                  padding: "14px 28px",
-                  borderRadius: "14px",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  transition: "all 0.25s ease"
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#DBEAFE"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = darkMode ? "rgba(29, 78, 216, 0.15)" : "#EFF6FF"; e.currentTarget.style.transform = "none"; }}
-              >
-                <Building2 size={20} color="#1D4ED8" />
-                Register as a Club
-              </button>
+
 
               {/* Secondary CTA */}
               <button
@@ -1876,7 +1896,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                         </div>
 
                         <div style={{ color: '#94A3B8', fontSize: '0.82rem', marginBottom: 8, fontWeight: 600 }}>
-                          🗓️ {selectedNews.date} · 📍 {selectedNews.location || 'Addis Ababa'}
+                          🗓️ {selectedNews.date || 'Date not recorded'} · 📍 {selectedNews.location || 'Location not recorded'}
                         </div>
 
                         <h3 style={{ color: '#FFFFFF', fontSize: '1.6rem', fontWeight: 900, marginBottom: 12, lineHeight: 1.3 }}>
@@ -1979,9 +1999,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {[
                   { label: 'Founded', value: '1964' },
-                  { label: 'Licensed Clubs', value: overviewStats?.clubsCount ? `${overviewStats.clubsCount} Clubs` : '48 Clubs' },
-                  { label: 'Registered Athletes', value: overviewStats?.athletesCount ? `${overviewStats.athletesCount} Athletes` : '1,200+ Athletes' },
-                  { label: 'Annual Competitions', value: overviewStats?.publishedEventsCount ? `${overviewStats.publishedEventsCount} Events` : '24+ Events' },
+                  { label: 'Licensed Clubs', value: Number.isFinite(overviewStats?.clubsCount) ? `${overviewStats.clubsCount} Clubs` : 'Unavailable' },
+                  { label: 'Registered Athletes', value: Number.isFinite(overviewStats?.athletesCount) ? `${overviewStats.athletesCount} Athletes` : 'Unavailable' },
+                  { label: 'Annual Competitions', value: Number.isFinite(overviewStats?.publishedEventsCount) ? `${overviewStats.publishedEventsCount} Events` : 'Unavailable' },
                 ].map(s => (
                   <div key={s.label} style={{
                     background: t.bgAlt, borderRadius: 14,
@@ -2264,7 +2284,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               gap: '24px'
             }}>
               {visibleGalleryImages.map((item, idx) => {
-                const capturesCount = item.captures?.length || 1;
+                const capturesCount = item.captures?.length ?? 0;
                 return (
                   <motion.div
                     key={item.id}
@@ -2667,7 +2687,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   { icon: <Phone size={18} />, text: siteContent?.contactHq?.phone || '+251 11 551 7777' },
                   { icon: <Mail size={18} />, text: siteContent?.contactHq?.email || 'info@eaf.org.et' },
                   { icon: <Globe size={18} />, text: siteContent?.contactHq?.website || 'www.eaf.org.et' },
-                  { icon: <MapPin size={18} />, text: siteContent?.contactHq?.address || 'Addis Ababa National Stadium Compound, Ethiopia' },
+          { icon: <MapPin size={18} />, text: siteContent?.contactHq?.address || 'Address not recorded' },
                 ].map(c => (
                   <div key={c.text} style={{ display: 'flex', alignItems: 'center', gap: 12, color: '#FFFFFF', fontSize: '0.9rem', fontWeight: 600 }}>
                     <span style={{ color: '#FEF08A', flexShrink: 0 }}>{c.icon}</span>
@@ -2708,7 +2728,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 />
                 <div>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#DCFCE7', color: '#15803D', padding: '3px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
-                    <ShieldCheck size={14} /> Fayda Verified ({selectedAthleteModal.faydaFin})
+                    <ShieldCheck size={14} /> Fayda {selectedAthleteModal.faydaStatus === 'VERIFIED' ? 'Verified' : 'status unavailable'}
                   </div>
                   <h3 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0F172A', lineHeight: 1.3, marginBottom: '2px' }}>
                     {selectedAthleteModal.name}
@@ -2731,8 +2751,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Club Affiliation</td><td style={{ fontWeight: 800, color: 'var(--primary)' }}>{selectedAthleteModal.club}</td></tr>
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Personal Best</td><td style={{ fontWeight: 800, color: '#D97706' }}>{selectedAthleteModal.pb}</td></tr>
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Age Division</td><td style={{ fontWeight: 800, color: '#15803D' }}>{selectedAthleteModal.ageTier}</td></tr>
-                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>World Athletics Sync</td><td style={{ fontWeight: 800, color: '#0284C7' }}>WA-14207842 · Global Ranking #1 · 1,412 pts (Verified)</td></tr>
-                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Passport & FAN Verification</td><td style={{ fontWeight: 800, color: '#475569' }}>EP4829104 (ETH) · FAN-9842-1084-3310 (International Eligible)</td></tr>
+
+
                 </tbody>
               </table>
             </div>

@@ -3,6 +3,7 @@ import { Home, UserCheck, Bell, BookOpen, LogOut, Sun, Moon, ArrowLeft, Calendar
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSelector } from '../../store/hooks';
 import { LanguageSelector } from '../../i18n';
+import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 
 interface ClientLayoutProps {
   activeSubPage: string;
@@ -137,8 +138,9 @@ export default function ClientLayout({
               title="Manage Athlete Profile & Credentials"
             >
               <img
-                src={currentAthlete.photoUrl || '/images/runner_marathon.png'}
+                src={getProfilePhotoUrl({ photoUrl: currentAthlete.photoUrl, faydaFin: currentAthlete.faydaFin }) || '/images/profile-placeholder.svg'}
                 alt="Profile"
+                onError={(e) => { e.currentTarget.src = '/images/profile-placeholder.svg'; }}
                 className="client-avatar w-10 h-10 rounded-full border-2 border-primary object-cover shadow-sm block"
               />
               <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full" />

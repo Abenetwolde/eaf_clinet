@@ -158,6 +158,14 @@ export const authApi = apiSlice.injectEndpoints({
       },
     }),
 
+    loginWithFayda: builder.mutation<LoginResponse, { verificationToken: string }>({
+      query: (body) => ({
+        url: '/auth/login/fayda',
+        method: 'POST',
+        body,
+      }),
+    }),
+
     // POST /auth/register
     registerUser: builder.mutation<RegisterUserResponse, RegisterUserRequest>({
       query: (body) => ({
@@ -226,6 +234,7 @@ export const authApi = apiSlice.injectEndpoints({
 
 export const {
   useLoginMutation,
+  useLoginWithFaydaMutation,
   useRegisterUserMutation,
   useGetMeQuery,
   useLazyGetMeQuery,

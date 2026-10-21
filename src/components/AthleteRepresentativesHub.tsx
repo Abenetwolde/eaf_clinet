@@ -20,107 +20,7 @@ interface AthleteRepresentativesHubProps {
 }
 
 export default function AthleteRepresentativesHub({ darkMode = false }: AthleteRepresentativesHubProps) {
-  const [representatives, setRepresentatives] = useState([
-    {
-      id: 'AR-001',
-      name: 'Jos Hermens',
-      agency: 'Global Sports Communication (GSC)',
-      licenseNumber: 'WA-AR-0014',
-      licensedSince: '1994',
-      headquarters: 'Nijmegen, Netherlands & Kaptagat / Addis Ababa',
-      email: 'management@globalsportscommunication.nl',
-      phone: '+31 24 378 1289',
-      representedAthletes: [
-        {
-          id: 'ATH-KEN',
-          name: 'Kenenisa Bekele',
-          worldAthleticsId: '14207842',
-          eventFocus: 'Marathon & 10,000m Legend',
-          status: 'ACTIVE',
-          contractPeriod: '2023 - 2027',
-          waGlobalRanking: '#12 World Marathon (2:01:41)'
-        },
-        {
-          id: 'ATH-GUD',
-          name: 'Gudaf Tsegay',
-          worldAthleticsId: '14561234',
-          eventFocus: '5000m World Record Holder / 10000m',
-          status: 'ACTIVE',
-          contractPeriod: '2022 - 2028',
-          waGlobalRanking: "#1 Women's 5000m (WR 14:00.21)"
-        },
-        {
-          id: 'ATH-SELE',
-          name: 'Selemon Barega',
-          worldAthleticsId: '14689012',
-          eventFocus: '10,000m Olympic Champion',
-          status: 'ACTIVE',
-          contractPeriod: '2021 - 2027',
-          waGlobalRanking: "#2 Men's 10,000m (Olympic Gold)"
-        }
-      ]
-    },
-    {
-      id: 'AR-002',
-      name: 'Federico Rosa & Gabriele Rosa',
-      agency: 'Rosa & Associati Sports Agency',
-      licenseNumber: 'WA-AR-0042',
-      licensedSince: '1999',
-      headquarters: 'Brescia, Italy & Addis Ababa',
-      email: 'athletes@rosassociati.it',
-      phone: '+39 030 242 8190',
-      representedAthletes: [
-        {
-          id: 'ATH-SIS',
-          name: 'Sisay Lemma',
-          worldAthleticsId: '14389021',
-          eventFocus: 'Boston & Valencia Marathon Champion',
-          status: 'ACTIVE',
-          contractPeriod: '2022 - 2026',
-          waGlobalRanking: '#1 World Marathon Leader (2:01:48)'
-        },
-        {
-          id: 'ATH-GOT',
-          name: 'Gotytom Gebreslase',
-          worldAthleticsId: '14498701',
-          eventFocus: 'World Marathon Champion',
-          status: 'ACTIVE',
-          contractPeriod: '2021 - 2026',
-          waGlobalRanking: "#4 Women's World Marathon (Oregon 2022 Gold)"
-        }
-      ]
-    },
-    {
-      id: 'AR-003',
-      name: 'Gianni Demadonna',
-      agency: 'Demadonna Athletic Associates',
-      licenseNumber: 'WA-AR-0031',
-      licensedSince: '2001',
-      headquarters: 'Trento, Italy & Addis Ababa',
-      email: 'info@demadonna.com',
-      phone: '+39 0461 823 400',
-      representedAthletes: [
-        {
-          id: 'ATH-TAM',
-          name: 'Tamirat Tola',
-          worldAthleticsId: '14451299',
-          eventFocus: 'Paris 2024 Olympic Marathon Champion & OR',
-          status: 'ACTIVE',
-          contractPeriod: '2020 - 2028',
-          waGlobalRanking: "#1 Men's Marathon Olympic Gold (2:06:26 OR)"
-        },
-        {
-          id: 'ATH-ASE',
-          name: 'Amane Beriso Shankule',
-          worldAthleticsId: '14512034',
-          eventFocus: 'World Champion Marathon (Valencia 2:14:58)',
-          status: 'ACTIVE',
-          contractPeriod: '2022 - 2027',
-          waGlobalRanking: "#3 Women's World Marathon"
-        }
-      ]
-    }
-  ]);
+  const [representatives, setRepresentatives] = useState<any[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -129,9 +29,7 @@ export default function AthleteRepresentativesHub({ darkMode = false }: AthleteR
     fetch('http://localhost:3000/api/v1/athlete-representatives')
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.data && data.data.length > 0) {
-          setRepresentatives(data.data);
-        }
+        if (data.success && Array.isArray(data.data)) setRepresentatives(data.data);
       })
       .catch(() => {});
   }, []);
@@ -141,7 +39,7 @@ export default function AthleteRepresentativesHub({ darkMode = false }: AthleteR
     const matchesRep = rep.name.toLowerCase().includes(q) ||
                        rep.agency.toLowerCase().includes(q) ||
                        rep.licenseNumber.toLowerCase().includes(q);
-    const matchesAthlete = rep.representedAthletes.some(a =>
+    const matchesAthlete = (rep.representedAthletes || []).some((a: any) =>
       a.name.toLowerCase().includes(q) || a.eventFocus.toLowerCase().includes(q)
     );
     return matchesRep || matchesAthlete;

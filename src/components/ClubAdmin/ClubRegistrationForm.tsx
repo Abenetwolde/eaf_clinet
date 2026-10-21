@@ -238,7 +238,6 @@ export default function ClubRegistrationForm({
     const splitNames = repName.trim().split(' ');
     const firstName = splitNames[0] || 'Club';
     const lastName = splitNames.slice(1).join(' ') || 'President';
-    const cleanRef = licenseRef.trim() || `ETH-CL-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
 
     const payload = {
       email: adminEmail.trim(),
@@ -250,10 +249,10 @@ export default function ClubRegistrationForm({
       clubShortName: shortCode,
       clubEmail: clubEmail.trim(),
       clubPhone: clubPhone.trim(),
-      clubAddress: clubAddress.trim() || `${clubCity}, Ethiopia`,
+      clubAddress: clubAddress.trim(),
       clubCity: clubCity.trim(),
       clubRegion,
-      licenseNumber: cleanRef,
+      licenseNumber: licenseRef.trim() || undefined,
       logoUrl: resolvedLogo,
     };
 
@@ -319,11 +318,11 @@ export default function ClubRegistrationForm({
       (newClub as any).charterAuthority = repTitle.trim();
       (newClub as any).verificationStatus = persistedClub.verificationStatus;
       (newClub as any).status = persistedClub.verificationStatus === 'VERIFIED' ? 'ACTIVE' : persistedClub.verificationStatus;
-      (newClub as any).licenseNumber = persistedClub.licenseNumber || cleanRef;
+      (newClub as any).licenseNumber = persistedClub.licenseNumber || persistedClub.id;
       (newClub as any).logoUrl = persistedClub.logoUrl || resolvedLogo;
 
       setRegisteredClub(newClub);
-      setReferenceId(persistedClub.licenseNumber || cleanRef);
+      setReferenceId(persistedClub.licenseNumber || persistedClub.id);
       setStep(4); // Show success screen
     } catch (err: any) {
       setErrorMessage(err?.message || 'Unable to connect to the registration service. Please try again.');

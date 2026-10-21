@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Sparkles, Layers, CheckCircle2, FileText, ArrowRight, Zap, RefreshCw } from 'lucide-react';
-import { MOCK_ATHLETES } from '../../data/mockData';
+import { useGetAthletesQuery } from '../../store/api/athleteApi';
 import { useI18n } from '../../i18n';
 import { useAppSelector } from '../../store/hooks';
 
@@ -20,22 +20,27 @@ interface StartListItem {
 export default function SeedingGenerator({ onNotify }: SeedingGeneratorProps) {
   const { t } = useI18n();
   const club = useAppSelector((state) => state.auth.club);
-  const [selectedEvent, setSelectedEvent] = useState<string>('5,000m Final');
+  const [selectedEvent, setSelectedEvent] = useState<string>('');
   const [seedingMethod, setSeedingMethod] = useState<string>('SB_PB_HYBRID'); // 'SB_PB_HYBRID' or 'RANDOM'
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [startList, setStartList] = useState<StartListItem[]>([
-    { laneBib: 1, athlete: 'Haile Demisse (Defense AC)', sb: '12:51.20', pb: '12:49.00', rankSeed: 1, heat: 'Heat 1' },
-    { laneBib: 2, athlete: 'Yomif Kejelcha (CBE AC)', sb: '12:53.10', pb: '12:50.10', rankSeed: 2, heat: 'Heat 1' },
-    { laneBib: 3, athlete: 'Tilahun Regassa (Oromia AC)', sb: '12:58.40', pb: '12:55.00', rankSeed: 3, heat: 'Heat 1' },
-    { laneBib: 4, athlete: 'Biniam Mehary (Defense AC)', sb: '13:02.15', pb: '13:00.00', rankSeed: 4, heat: 'Heat 1' },
-    { laneBib: 5, athlete: 'Selemon Barega (Police AC)', sb: '13:05.80', pb: '12:52.00', rankSeed: 5, heat: 'Heat 1' },
-  ]);
+  const { data: roster = [] } = useGetAthletesQuery(club?.id ? { clubId: club.id } : undefined);
+  const startList: StartListItem[] = roster
+    .filter((athlete: any) => !selectedEvent || (athlete.primaryEvent || '').toLowerCase() === selectedEvent.toLowerCase())
+    .map((athlete: any, index: number) => ({
+      laneBib: index + 1,
+      athlete: athlete.name || `${athlete.user?.firstName || ''} ${athlete.user?.lastName || ''}`.trim(),
+      sb: athlete.seasonBest || '',
+      pb: athlete.personalBest || athlete.pb || '',
+      rankSeed: index + 1,
+      heat: '',
+    }));
 
   const handleGenerateSeeding = () => {
     setIsGenerating(true);
     setTimeout(() => {
       setIsGenerating(false);
-      onNotify(t('toast.seedingCalculated', { event: selectedEvent }), 'success');
+      if (!startList.length) onNotify('No registered athletes with this event are available to seed.', 'info');
+      else onNotify(t('toast.seedingCalculated', { event: selectedEvent }), 'success');
     }, 1000);
   };
 
@@ -72,10 +77,8 @@ export default function SeedingGenerator({ onNotify }: SeedingGeneratorProps) {
               value={selectedEvent}
               onChange={(e) => setSelectedEvent(e.target.value)}
             >
-              <option value="5,000m Final">Men's 5,000m Final</option>
-              <option value="1,500m Semi-Final">Men's 1,500m Semi-Final</option>
-              <option value="10,000m Final">Women's 10,000m Final</option>
-              <option value="3,000m Steeplechase">Men's 3,000m Steeplechase</option>
+              <option value="">All roster athletes</option>
+              {[...new Set(roster.map((a: any) => a.primaryEvent).filter(Boolean))].map((event: any) => <option key={event} value={event}>{event}</option>)}
             </select>
           </div>
 

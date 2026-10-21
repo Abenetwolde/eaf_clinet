@@ -177,22 +177,20 @@ export async function launchFaydaPortal(
   customRedirectUri?: string,
   asPopup = false
 ): Promise<void> {
+  // Open the popup synchronously from the user's click so browser popup
+  // blockers do not reject it while the backend creates the OIDC session.
+  const popup = asPopup
+    ? window.open('about:blank', 'VeriFaydaAuth', 'width=540,height=760,resizable=yes,scrollbars=yes,status=yes')
+    : null;
   const authUrl = await buildFaydaAuthorizationUrl(customRedirectUri);
 
   console.log('[FaydaOIDC] Launching official Fayda portal:', authUrl);
 
   if (asPopup) {
-    const width = 540;
-    const height = 760;
-    const left = Math.max(0, (window.innerWidth - width) / 2 + window.screenX);
-    const top  = Math.max(0, (window.innerHeight - height) / 2 + window.screenY);
-    const popup = window.open(
-      authUrl,
-      'VeriFaydaAuth',
-      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
-    );
     if (!popup || popup.closed) {
       window.location.href = authUrl;
+    } else {
+      popup.location.href = authUrl;
     }
   } else {
     window.location.href = authUrl;

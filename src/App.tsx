@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getProfilePhotoUrl } from './utils/profilePhoto';
 import LandingPage from './components/LandingPage';
 import AuthModal from './components/AuthModal';
 import LoginPage from './components/LoginPage';
@@ -169,11 +170,11 @@ export default function App() {
 
   // User profile avatar displayed whenever user is logged in
   const userProfileAvatar = Boolean(isLoggedIn || isUserRegistered)
-    ? ((userData as any)?.picture ||
-      (currentRole === 'CLUB'
-        ? ((userData as any)?.faydaNin ? `http://localhost:3000/api/v1/fayda/photo/${encodeURIComponent((userData as any).faydaNin)}` : null)
-        : currentAthlete?.photoUrl || registeredInfo?.photoUrl ||
-          (typeof window !== 'undefined' ? (localStorage.getItem('fayda_photo') || localStorage.getItem('eaf_user_avatar')) : null)))
+    ? getProfilePhotoUrl({
+        picture: (userData as any)?.picture,
+        photoUrl: currentRole === 'ATHLETE' ? currentAthlete?.photoUrl || registeredInfo?.photoUrl : undefined,
+        faydaFin: (userData as any)?.faydaNin || currentAthlete?.faydaFin,
+      })
     : null;
   const signedInName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim();
 
@@ -690,7 +691,7 @@ export default function App() {
           className={`sticky top-0 z-50 px-4 md:px-6 h-[64px] md:h-[72px] flex items-center justify-between w-full transition-all duration-300
             ${darkMode
               ? 'bg-[rgba(15,23,42,0.92)] border-b border-[#1E293B] shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
-              : 'bg-[rgba(255,255,255,0.96)] border-b border-[#E2E8F0] shadow-[0_8px_32px_rgba(0,0,0,0.08)]'
+              : 'bg-transparent border-b border-transparent shadow-none'
             }
             backdrop-blur-[16px]`}
         >
@@ -1164,8 +1165,10 @@ export default function App() {
             onToggleDarkMode={() => setDarkMode(!darkMode)}
             onLogin={() => setAuthModalConfig({ isOpen: true, method: 'FIN', credential: '' })}
             onRegister={(role: 'CLUB' | 'ATHLETE') => {
+              setPublicSubPage('HOME');
               setRegModalRole(role);
               window.history.pushState(null, '', role === 'CLUB' ? '/register?role=club' : '/register');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             onChangePublicSubPage={setPublicSubPage}
             publicSubPage="HOME"
@@ -1204,8 +1207,10 @@ export default function App() {
               else handleLoginSuccess('ATHLETE', { athlete: currentAthlete });
             }}
             onRegister={(role: 'CLUB' | 'ATHLETE') => {
+              setPublicSubPage('HOME');
               setRegModalRole(role);
               window.history.pushState(null, '', role === 'CLUB' ? '/register?role=club' : '/register');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           />
         )}
@@ -1340,6 +1345,7 @@ export default function App() {
             onChangeSubPage={setAthleteSubPage}
             onPayLicense={handleInitiateLicensePayment}
             onUpdateAthlete={handleUpdateAthlete}
+            onNotify={handleNotify}
           />
         )}
         {athleteSubPage === 'APPLIED' && (

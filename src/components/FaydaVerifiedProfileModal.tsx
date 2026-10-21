@@ -20,6 +20,7 @@ export interface FaydaResidentIdentity {
   ageTier?: string;
   hash?: string;
   nationality?: string;
+  fanNumber?: string;
 }
 
 interface FaydaVerifiedProfileModalProps {
@@ -57,24 +58,10 @@ export default function FaydaVerifiedProfileModal({
     (typeof window !== "undefined"
       ? localStorage.getItem("fayda_photo") || sessionStorage.getItem("fayda_photo")
       : null) ||
-    "/images/fayda_resident_photo.jpg";
+    "";
 
-  const dobYear = identity.birthDate ? parseInt(identity.birthDate.substring(0, 4)) : 2001;
-  const age = 2026 - (isNaN(dobYear) ? 2001 : dobYear);
-  const tier =
-    identity.ageTier ||
-    (age <= 16
-      ? "U16 Junior Division"
-      : age <= 18
-      ? "U18 Youth Division"
-      : age <= 20
-      ? "U20 Junior Division"
-      : age >= 35
-      ? `Masters Division (${age} yrs)`
-      : `Senior Division (${age} yrs)`);
-
-  const cleanDigits = identity.nin ? identity.nin.replace(/\D/g, "") : "98421084";
-  const fan = "FAN-" + (cleanDigits.slice(-8) || "98421084");
+  const fan = identity.fanNumber;
+  const tier = identity.ageTier || 'Not calculated';
 
   return (
     <div
@@ -162,9 +149,9 @@ export default function FaydaVerifiedProfileModal({
                   </div>
                 )}
                 <div className="text-xs text-slate-600 font-semibold mt-1.5 flex items-center gap-2 flex-wrap">
-                  <span>{identity.birthDate || "1980-12-01"}</span>
+                  <span>{identity.birthDate || "Date of birth not provided"}</span>
                   <span>•</span>
-                  <span>{identity.gender || "Male"}</span>
+                  <span>{identity.gender || "Gender not provided"}</span>
                   <span>•</span>
                   <span>{tier}</span>
                 </div>
@@ -200,22 +187,22 @@ export default function FaydaVerifiedProfileModal({
               <div className="bg-white border-2 border-emerald-100 rounded-xl p-3.5 shadow-2xs">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[11px] font-black uppercase tracking-wider text-emerald-800">
-                    Access Number (FAN)
+                    Federation Access Number (FAN)
                   </span>
-                  <button
+                  {fan && <button
                     type="button"
                     onClick={() => handleCopy(fan, 'FAN')}
                     className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-100 cursor-pointer inline-flex items-center gap-1"
                   >
                     {copied === 'FAN' ? <Check size={11} /> : <Copy size={11} />}
                     <span>{copied === 'FAN' ? 'Copied' : 'Copy'}</span>
-                  </button>
+                  </button>}
                 </div>
                 <div className="text-base font-black text-slate-900 font-mono tracking-tight">
-                  {fan}
+                  {fan || "Not provided by Fayda"}
                 </div>
                 <div className="text-[11px] text-slate-500 font-medium mt-0.5">
-                  Tokenized Digital Credential
+                  Issued by the federation when available
                 </div>
               </div>
             </div>
@@ -225,17 +212,17 @@ export default function FaydaVerifiedProfileModal({
               <div className="flex items-center gap-1.5">
                 <Phone size={13} className="text-slate-400" />
                 <span className="font-bold">Phone:</span>
-                <span className="font-semibold">{identity.phoneNumber || "+251 90 909 0909"}</span>
+                <span className="font-semibold">{identity.phoneNumber || "Not provided"}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Mail size={13} className="text-slate-400" />
                 <span className="font-bold">Email:</span>
-                <span className="font-semibold">{identity.email || "chere@id.et"}</span>
+                <span className="font-semibold">{identity.email || "Not provided"}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <MapPin size={13} className="text-slate-400" />
                 <span className="font-bold">Region:</span>
-                <span className="font-semibold">{identity.address || "Addis Ababa / Federal"}</span>
+                <span className="font-semibold">{identity.address || "Not provided"}</span>
               </div>
             </div>
           </div>
