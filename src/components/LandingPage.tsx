@@ -822,14 +822,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           <div style={{ position: 'absolute', top: '10%', left: '15%', width: '480px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0) 70%)', filter: 'blur(55px)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', top: '20%', right: '15%', width: '480px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(16, 185, 129, 0) 70%)', filter: 'blur(55px)', pointerEvents: 'none' }} />
 
-          {/* Subtle Vector track background accents */}
-          <VectorTrackLines />
-          <div style={{ position: 'absolute', right: '-40px', top: '20px', pointerEvents: 'none', opacity: 0.12 }}>
-            <VectorRunnerDecoration />
-          </div>
-          <div style={{ position: 'absolute', left: '-60px', bottom: '10px', pointerEvents: 'none', transform: 'scaleX(-1)', opacity: 0.12 }}>
-            <VectorRunnerDecoration />
-          </div>
 
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '1040px', margin: '0 auto', width: '100%' }}>
 
