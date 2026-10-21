@@ -6,6 +6,7 @@ import GalleryDetail from './GalleryDetail';
 import { ResponsiveSeeMoreText } from './ResponsiveSeeMoreText';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n } from '../i18n';
+import { getEventRegistrationStatus } from '../utils/eventRegistration';
 import { useGetNewsQuery, type NewsArticle } from '../store/api/newsApi';
 import { useGetPublishedEventsQuery, useGetOverviewStatsQuery, useGetGalleryQuery, useGetSiteContentQuery, useSubmitContactFormMutation } from '../store/api/apiSlice';
 import { useGetAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
@@ -201,7 +202,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         venue: evt.venue || '',
         date: scheduleDate,
         dateString: dateStr,
-        status: evt.status === 'PUBLISHED' ? 'REGISTRATION_OPEN' : (evt.status || 'REGISTRATION_OPEN'),
+        status: getEventRegistrationStatus(evt),
+        registrationDeadline: evt.registrationDeadline || '',
         disciplines: Array.isArray(evt.disciplines) ? evt.disciplines : [],
         region: evt.region || '',
         img: evt.bannerUrl || '',
@@ -1126,7 +1128,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 </button>
               ) : (
                 <button
-                  onClick={() => onRegister('ATHLETE')}
+                  onClick={() => window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { method: 'FAYDA' } }))}
                   className="btn-accent"
                   style={{
                     background: '#1D4ED8',
@@ -1145,35 +1147,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   }}
                 >
                   <CheckCircle size={20} />
-                  {siteContent?.hero?.primaryBtnText || 'Register with Fayda National ID'}
+                  Sign In to Your Portal
                 </button>
               )}
 
-              {/* Register as a Club CTA */}
-              <button
-                onClick={() => onRegister('CLUB')}
-                className="btn-accent"
-                style={{
-                  background: darkMode ? "rgba(29, 78, 216, 0.15)" : "#EFF6FF",
-                  color: "#1D4ED8",
-                  border: "2px solid #BFDBFE",
-                  fontWeight: 800,
-                  fontSize: "0.98rem",
-                  padding: "14px 28px",
-                  borderRadius: "14px",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  transition: "all 0.25s ease"
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#DBEAFE"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = darkMode ? "rgba(29, 78, 216, 0.15)" : "#EFF6FF"; e.currentTarget.style.transform = "none"; }}
-              >
-                <Building2 size={20} color="#1D4ED8" />
-                Register as a Club
-              </button>
+
 
               {/* Secondary CTA */}
               <button

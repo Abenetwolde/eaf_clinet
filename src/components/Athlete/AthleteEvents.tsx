@@ -3,6 +3,7 @@ import { Trophy, Calendar, MapPin, CheckCircle2, X, ShieldCheck, AlertTriangle, 
 import { useAppSelector } from '../../store/hooks';
 import { useGetPublishedEventsQuery, useApplyForEventMutation } from '../../store/api/athleteApi';
 import type { Athlete } from '../../types';
+import { getEventRegistrationStatus } from '../../utils/eventRegistration';
 
 interface AthleteEventsProps {
   onUpdateAthlete: (athlete: Athlete) => void;
@@ -30,7 +31,7 @@ export default function AthleteEvents({ onUpdateAthlete, onNotify }: AthleteEven
             date: pe.schedule?.[0]?.date || '',
             location: pe.venue || '',
             registrationDeadline: pe.registrationDeadline || '',
-            status: 'REGISTRATION_OPEN',
+            status: getEventRegistrationStatus(pe),
             disciplines: Array.isArray(pe.disciplines) ? pe.disciplines : [],
             totalAthletesEnrolled: pe.totalAthletesEnrolled || 0,
             athleteEnrolled: false,

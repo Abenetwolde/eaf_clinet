@@ -6,6 +6,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useI18n } from '../i18n';
+import { getProfilePhotoUrl } from '../utils/profilePhoto';
+import { getEventRegistrationStatus } from '../utils/eventRegistration';
 
 // Helper to determine banner image based on meet ID
 const getBannerUrl = (meet: any) => {
@@ -147,14 +149,12 @@ export default function CompetitionDetail({
 
     const fetchDetail = async () => {
       try {
-        const token = localStorage.getItem('token') || localStorage.getItem('eaf_token');
+        const token = localStorage.getItem('eaf_accessToken') || localStorage.getItem('token') || localStorage.getItem('eaf_token');
         const headers: Record<string, string> = {};
         if (token) headers['Authorization'] = "Bearer " + token;
 
-        const endpoints = [
-          "http://localhost:3000/api/v1/events/" + effectiveId + "/detail",
-          "/api/v1/events/" + effectiveId + "/detail",
-        ];
+        const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+        const endpoints = [`${apiBase}/events/${effectiveId}/detail`];
 
         for (const url of endpoints) {
           try {
@@ -185,7 +185,7 @@ export default function CompetitionDetail({
     const parsedDate = scheduleDate ? new Date(scheduleDate) : null;
     const dateStr = parsedDate && !isNaN(parsedDate.getTime())
       ? parsedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-      : (initialMeet?.dateString || 'November 15, 2026');
+      : (initialMeet?.dateString || '');
 
     return {
       ...initialMeet,
@@ -195,16 +195,14 @@ export default function CompetitionDetail({
       venue: liveEventDetail.venue || initialMeet?.venue,
       date: scheduleDate || initialMeet?.date,
       dateString: dateStr,
-      disciplines: (Array.isArray(liveEventDetail.disciplines) && liveEventDetail.disciplines.length > 0)
-        ? liveEventDetail.disciplines
-        : (initialMeet?.disciplines || ['10,000m', '5,000m', 'Marathon']),
+      disciplines: Array.isArray(liveEventDetail.disciplines) ? liveEventDetail.disciplines : (initialMeet?.disciplines || []),
       description: liveEventDetail.description || initialMeet?.description,
       rules: liveEventDetail.rules || initialMeet?.rules,
       bannerUrl: liveEventDetail.bannerUrl || initialMeet?.bannerUrl || initialMeet?.img || '/images/banner_grand_prix.png',
       img: liveEventDetail.bannerUrl || initialMeet?.bannerUrl || initialMeet?.img || '/images/banner_grand_prix.png',
-      status: liveEventDetail.status === 'PUBLISHED' ? 'REGISTRATION_OPEN' : (liveEventDetail.status || initialMeet?.status || 'REGISTRATION_OPEN'),
-      organizerName: liveEventDetail.organizerName || initialMeet?.organizerName || 'Ethiopian Athletics Federation',
-      organizerEmail: liveEventDetail.organizerEmail || initialMeet?.organizerEmail || 'competitions@eaf.gov.et',
+      status: getEventRegistrationStatus(liveEventDetail),
+      organizerName: liveEventDetail.organizerName || initialMeet?.organizerName || '',
+      organizerEmail: liveEventDetail.organizerEmail || initialMeet?.organizerEmail || '',
     };
   }, [initialMeet, liveEventDetail]);
   const { t } = useI18n();
@@ -217,7 +215,7 @@ export default function CompetitionDetail({
 
   // Individual Meet Registration Modal State
   const [showIndividualModal, setShowIndividualModal] = useState<boolean>(false);
-  const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>(meet ? [meet.disciplines[0]] : []);
+  const [selectedDisciplines, setSelectedDisciplines] = useState<string[]>([]);
   const [registrationPass, setRegistrationPass] = useState<any>(null);
   const [isPendingApproval, setIsPendingApproval] = useState<boolean>(false);
 
@@ -251,9 +249,6 @@ export default function CompetitionDetail({
     }
   };
 
-  if (!meet) return null;
-
-
   // Use only Fayda identity and athlete details actually present in the authenticated session.
   const realAthleteData = useMemo(() => {
     let savedCitizen: any = null;
@@ -272,7 +267,11 @@ export default function CompetitionDetail({
       houseNo: '',
       club: currentAthlete?.clubName || currentAthlete?.club || '',
       primaryEvent: currentAthlete?.primaryEvent || '',
-      photoUrl: currentAthlete?.photoUrl || savedCitizen?.photoUrl || savedCitizen?.picture || '',
+      photoUrl: getProfilePhotoUrl({
+        photoUrl: currentAthlete?.photoUrl || savedCitizen?.photoUrl || savedCitizen?.photo,
+        picture: currentAthlete?.user?.picture || savedCitizen?.picture,
+        faydaFin: currentAthlete?.faydaFin || currentAthlete?.user?.faydaIdentity?.nin || savedCitizen?.fin || savedCitizen?.nin,
+      }) || '/images/profile-placeholder.svg',
       emergencyContact: currentAthlete?.emergencyContact || '',
       seasonBest: currentAthlete?.seasonBests?.[0]?.mark || currentAthlete?.personalBests?.[0]?.mark || '',
       faydaVerified: Boolean(currentAthlete?.faydaStatus === 'VERIFIED' || savedCitizen?.verified),
@@ -282,6 +281,13 @@ export default function CompetitionDetail({
   }, [currentAthlete, meet]);
 
   const faydaNationalIdData = realAthleteData;
+
+  const availableDisciplines: string[] = Array.isArray(meet?.disciplines) ? meet.disciplines : [];
+  useEffect(() => {
+    setSelectedDisciplines((previous) => previous.filter((discipline) => availableDisciplines.includes(discipline)));
+  }, [meet?.id, availableDisciplines.join('|')]);
+
+  if (!meet) return null;
 
   // Registration approval check: users must complete registration and wait for admin approval
   const isRegistrationApproved = currentAthlete?.status === 'APPROVED' ||
@@ -297,15 +303,23 @@ export default function CompetitionDetail({
   );
 
   const handleApplyClick = () => {
-    const token = localStorage.getItem('token') || localStorage.getItem('eaf_token');
-    const isAuth = Boolean(token || currentRole === 'ATHLETE' || currentRole === 'CLUB');
-    if (!isAuth) {
+    const token = localStorage.getItem('eaf_accessToken') || localStorage.getItem('token') || localStorage.getItem('eaf_token');
+    if (!token || currentRole !== 'ATHLETE') {
       window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { method: 'FIN' } }));
       return;
     }
     if (isRegistrationPending) {
       return;
     }
+    if (!isRegistrationApproved) {
+      window.dispatchEvent(new CustomEvent('eaf-notify', { detail: { message: 'Your athlete registration must be approved before you can apply for a competition.', type: 'error' } }));
+      return;
+    }
+    if (!availableDisciplines.length) {
+      window.dispatchEvent(new CustomEvent('eaf-notify', { detail: { message: 'This competition has no published disciplines available for entry.', type: 'error' } }));
+      return;
+    }
+    setSelectedDisciplines([availableDisciplines[0]]);
     setShowIndividualModal(true);
   };
 
@@ -320,13 +334,18 @@ export default function CompetitionDetail({
   };
 
   const handleSubmitMeetRegistration = async () => {
-    if (isRegistrationPending) return;
+    if (isRegistrationPending || !isRegistrationApproved) return;
+    if (!selectedDisciplines.length || selectedDisciplines.some((discipline) => !availableDisciplines.includes(discipline))) {
+      window.dispatchEvent(new CustomEvent('eaf-notify', { detail: { message: 'Select at least one published discipline.', type: 'error' } }));
+      return;
+    }
     setIsPendingApproval(true);
-    const token = localStorage.getItem('token') || localStorage.getItem('eaf_token') || localStorage.getItem('eaf_accessToken');
+    const token = localStorage.getItem('eaf_accessToken') || localStorage.getItem('token') || localStorage.getItem('eaf_token');
     const disciplinesToApply = selectedDisciplines;
 
     try {
-      const res = await fetch(`/api/v1/events/${meet.id}/apply`, {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const res = await fetch(`${apiBase}/events/${meet.id}/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ eventId: meet.id, disciplines: disciplinesToApply }),
@@ -334,6 +353,7 @@ export default function CompetitionDetail({
       const body = await res.json();
       if (!res.ok) throw new Error(body?.message || 'Competition entry failed.');
       const result = body?.data || body;
+      if (!result || typeof result !== 'object') throw new Error('The server returned an invalid competition application response.');
       setRegistrationPass({
         passId: result.registrationNumber || result.id || '',
         bib: result.bibNumber || '',
@@ -1179,6 +1199,7 @@ export default function CompetitionDetail({
                         <img
                           src={faydaNationalIdData.photoUrl}
                           alt="Passport Photo"
+                          onError={(event) => { event.currentTarget.src = '/images/profile-placeholder.svg'; }}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
                         <span style={{ position: 'absolute', bottom: 0, insetX: 0, background: 'rgba(15,23,42,0.85)', color: '#FFF', fontSize: '0.55rem', fontWeight: 900, textAlign: 'center', padding: '2px 0' }}>

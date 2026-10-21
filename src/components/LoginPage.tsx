@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useLoginMutation } from '../store/api/authApi';
+import { useLoginMutation, useLoginWithFaydaMutation } from '../store/api/authApi';
 import { useAppDispatch } from '../store/hooks';
 import { login } from '../store/slices/authSlice';
 import {
   ShieldCheck, Phone, Mail, AlertCircle, ArrowRight, ArrowLeft, Eye, EyeOff, User, Lock, Home, Building2, CheckCircle2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { FAYDA_CONFIG, launchFaydaPortal } from '../constants/fayda';
 
 export type LoginMethod = 'FAYDA' | 'PHONE' | 'EMAIL';
 
@@ -28,6 +29,8 @@ export default function LoginPage({
 }: LoginPageProps) {
   const dispatch = useAppDispatch();
   const [loginApi, { isLoading }] = useLoginMutation();
+  const [loginWithFaydaApi, { isLoading: isFaydaLoginLoading }] = useLoginWithFaydaMutation();
+  const [isLaunchingFayda, setIsLaunchingFayda] = useState(false);
 
   const [method, setMethod] = useState<LoginMethod>(() => {
     if (initialMethod === 'PHONE') return 'PHONE';
@@ -56,6 +59,88 @@ export default function LoginPage({
     }
     return '';
   });
+
+  const finishLogin = (data: any) => {
+    const userRole = (data.userRole || '').toLowerCase();
+    const roles: string[] = data.user?.roles || data.roles || [];
+    const isCoach = userRole.includes('coach') || roles.some((r: string) => r.toUpperCase() === 'COACH');
+    const isClub = userRole.includes('club') || roles.some((r: string) => r.toUpperCase().includes('CLUB'));
+    const userData = {
+      id: data.user?.id || data.userId || data.id,
+      email: data.user?.email || data.email || '',
+      firstName: data.user?.firstName || data.firstName || '',
+      lastName: data.user?.lastName || data.lastName || '',
+      phoneNumber: data.user?.phoneNumber || data.phoneNumber || '',
+      faydaNin: data.faydaNin || data.user?.faydaIdentity?.nin || '',
+      picture: data.user?.picture || data.user?.photoUrl || data.picture || data.photoUrl || '',
+      status: data.status || data.user?.status || 'ACTIVE',
+      roles,
+    };
+
+    if (isClub) {
+      const club = data.club || {
+        id: data.clubId || '', name: data.clubName || '', shortName: '', region: '',
+        manager: `${userData.firstName} ${userData.lastName}`.trim(), email: userData.email,
+        phone: userData.phoneNumber, licensedAthletes: 0, pendingVerifications: 0,
+        unlicensedAthletes: 0, transfersCount: 0, logo: '', clubRank: 0, totalPoints: 0,
+      };
+      dispatch(login({ role: 'CLUB', club, token: data.token || data.accessToken, refreshToken: data.refreshToken, userId: data.userId || data.user?.id, userData }));
+      onLoginSuccess('CLUB', { club });
+      return;
+    }
+
+    if (isCoach) {
+      const coach = data.coach || { id: '', name: `${userData.firstName} ${userData.lastName}`.trim(), email: userData.email, phoneNumber: userData.phoneNumber, user: data.user, faydaFin: data.faydaNin || '' };
+      dispatch(login({ role: 'COACH', coach, token: data.token || data.accessToken, refreshToken: data.refreshToken, userId: data.userId || data.user?.id, userData }));
+      onLoginSuccess('COACH', { coach });
+      return;
+    }
+
+    const athlete = data.athlete || {
+      id: '', name: `${userData.firstName} ${userData.lastName}`.trim(), email: userData.email,
+      phone: userData.phoneNumber, faydaFin: data.faydaNin || '', photoUrl: userData.picture || '',
+      licenseStatus: data.registrationStatus || data.status || '', personalBests: [], seasonBests: [],
+      weightLog: [], trainingLog: [], achievements: [],
+    };
+    dispatch(login({ role: 'ATHLETE', athlete, token: data.token || data.accessToken, refreshToken: data.refreshToken, userId: data.userId || data.user?.id, userData }));
+    onLoginSuccess('ATHLETE', { athlete });
+  };
+
+  React.useEffect(() => {
+    const handleFaydaLogin = async (event: MessageEvent) => {
+      if (event.origin !== new URL(FAYDA_CONFIG.redirectUri).origin) return;
+      if (event.data?.type === 'FAYDA_OIDC_ERROR') {
+        setError(event.data.error || 'Fayda sign-in could not be completed. Please try again.');
+        return;
+      }
+      if (event.data?.type !== 'FAYDA_OIDC_SUCCESS') return;
+      const verificationToken = event.data.payload?.verificationToken;
+      if (!verificationToken) {
+        setError('Fayda could not confirm your identity with the federation service. Please try again.');
+        return;
+      }
+      try {
+        const response = await loginWithFaydaApi({ verificationToken }).unwrap();
+        finishLogin(response.data);
+      } catch (err: any) {
+        setError(err?.data?.message || 'No active EAF account is linked to this Fayda identity.');
+      }
+    };
+    window.addEventListener('message', handleFaydaLogin);
+    return () => window.removeEventListener('message', handleFaydaLogin);
+  }, [loginWithFaydaApi]);
+
+  const handleFaydaLoginClick = async () => {
+    setError('');
+    setIsLaunchingFayda(true);
+    try {
+      await launchFaydaPortal(FAYDA_CONFIG.redirectUri, true);
+    } catch {
+      setError('Could not connect to the Fayda sign-in service. Please try again.');
+    } finally {
+      setIsLaunchingFayda(false);
+    }
+  };
 
   // Pre-fill registered FIN if present
   React.useEffect(() => {
@@ -280,7 +365,7 @@ export default function LoginPage({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              <span>🇪🇹</span>
+              {/* <span>🇪🇹</span> */}
               <span>Fayda ID (FIN / FAN)</span>
             </button>
             <button
@@ -330,7 +415,29 @@ export default function LoginPage({
             </div>
           )}
 
-          {/* Form */}
+          {method === 'FAYDA' ? (
+            <div className="space-y-4">
+              <p className="text-sm text-slate-600 dark:text-slate-300 text-center">
+                Continue securely with your verified Fayda identity. You do not need to enter your FIN or password here.
+              </p>
+              <button
+                type="button"
+                onClick={handleFaydaLoginClick}
+                disabled={isLaunchingFayda || isFaydaLoginLoading}
+                className="w-full py-2.5 px-5 rounded-xl font-black text-sm text-white bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-800 hover:to-indigo-800 transition shadow-lg shadow-blue-700/25 flex items-center justify-center gap-3 cursor-pointer disabled:opacity-60"
+              >
+                {isLaunchingFayda || isFaydaLoginLoading ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Connecting to Fayda…</span></>
+                ) : (
+                  <>
+                    <img src="/images/fayda_logo.png" alt="Fayda" className="w-10 h-10 rounded-full bg-white object-contain p-0.5" />
+                    <span>Continue with Fayda</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
@@ -398,6 +505,7 @@ export default function LoginPage({
               )}
             </button>
           </form>
+          )}
 
           {/* Footer Registration Link */}
           <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">

@@ -664,7 +664,7 @@ export default function App() {
           className={`sticky top-0 z-50 px-4 md:px-6 h-[64px] md:h-[72px] flex items-center justify-between w-full transition-all duration-300
             ${darkMode
               ? 'bg-[rgba(15,23,42,0.92)] border-b border-[#1E293B] shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
-              : 'bg-[rgba(255,255,255,0.96)] border-b border-[#E2E8F0] shadow-[0_8px_32px_rgba(0,0,0,0.08)]'
+              : 'bg-transparent border-b border-transparent shadow-none'
             }
             backdrop-blur-[16px]`}
         >
@@ -1138,8 +1138,10 @@ export default function App() {
             onToggleDarkMode={() => setDarkMode(!darkMode)}
             onLogin={() => setAuthModalConfig({ isOpen: true, method: 'FIN', credential: '' })}
             onRegister={(role: 'CLUB' | 'ATHLETE') => {
+              setPublicSubPage('HOME');
               setRegModalRole(role);
               window.history.pushState(null, '', role === 'CLUB' ? '/register?role=club' : '/register');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             onChangePublicSubPage={setPublicSubPage}
             publicSubPage="HOME"
@@ -1178,8 +1180,10 @@ export default function App() {
               else handleLoginSuccess('ATHLETE', { athlete: currentAthlete });
             }}
             onRegister={(role: 'CLUB' | 'ATHLETE') => {
+              setPublicSubPage('HOME');
               setRegModalRole(role);
               window.history.pushState(null, '', role === 'CLUB' ? '/register?role=club' : '/register');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           />
         )}
