@@ -60,6 +60,42 @@ const ENRICHED_MEETS: any[] = [];
 const ATHLETES: any[] = [];
 const GALLERY_IMAGES: GalleryItem[] = [];
 
+// Platform governance areas; individual office holders and member counts come from live records.
+const STRUCTURE_ITEMS = [
+  {
+    title: 'Ethiopian Athletics Federation',
+    icon: <Building2 size={24} color="var(--primary)" />,
+    amharic: 'የኢትዮጵያ አትሌቲክስ ፌዴሬሽን',
+    description: 'The federation provides national oversight for athlete and club registration, licensing, competition administration, and federation records.',
+    members: 'Federation administrators and authorized officials',
+    meets: 'National competition calendar and published results',
+  },
+  {
+    title: 'Regional Athletics Offices',
+    icon: <Map size={24} color="var(--primary)" />,
+    amharic: 'የክልል አትሌቲክስ ጽሕፈት ቤቶች',
+    description: 'Regional officers manage clubs and athlete applications in their assigned regions, subject to federation oversight.',
+    members: 'Regional officers and registered regional clubs',
+    meets: 'Regional competition records when entered in the system',
+  },
+  {
+    title: 'Clubs and Athlete Development',
+    icon: <Users size={24} color="var(--primary)" />,
+    amharic: 'ክለቦችና የአትሌቶች ልማት',
+    description: 'Clubs maintain their rosters and support athlete development. Athlete identity and eligibility information is linked to verified records.',
+    members: 'Registered clubs, athletes, and coaches',
+    meets: 'Club and athlete event entries',
+  },
+  {
+    title: 'Authorized Medical and Integrity Officials',
+    icon: <ShieldAlert size={24} color="var(--primary)" />,
+    amharic: 'የተፈቀደላቸው የሕክምናና የታማኝነት ባለሙያዎች',
+    description: 'Designated professionals handle restricted medical and integrity records with role-based access and accountable updates.',
+    members: 'Authorized medical, anti-doping, and integrity personnel',
+    meets: 'Eligibility reviews and authorized record verification',
+  },
+];
+
 function mapArticleToNewsItem(article: NewsArticle, index: number): NewsItem {
   return {
     id: article.id,
