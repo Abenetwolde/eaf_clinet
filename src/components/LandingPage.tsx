@@ -198,7 +198,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     event: ath.primaryEvent || '',
     club: ath.clubName || '',
     faydaFin: '',
-    faydaStatus: ath.faydaVerified ? 'VERIFIED' : '',
+    faydaStatus: ath.faydaStatus || (ath.faydaVerified === true ? 'VERIFIED' : 'NOT_VERIFIED'),
     dob: ath.dateOfBirth || '',
     gender: ath.gender || '',
     ageTier: ath.ageTier || '',
@@ -2708,7 +2708,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 />
                 <div>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#DCFCE7', color: '#15803D', padding: '3px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
-                    <ShieldCheck size={14} /> Fayda Verified ({Identity verified})
+                    <ShieldCheck size={14} /> Fayda {selectedAthleteModal.faydaStatus === 'VERIFIED' ? 'Verified' : 'status unavailable'}
                   </div>
                   <h3 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0F172A', lineHeight: 1.3, marginBottom: '2px' }}>
                     {selectedAthleteModal.name}
