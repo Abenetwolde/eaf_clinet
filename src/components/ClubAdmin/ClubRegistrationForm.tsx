@@ -9,7 +9,7 @@ import type { Club } from '../../types';
 
 interface ClubRegistrationFormProps {
   onClose: () => void;
-  onRegisterSuccess: (data: { type: 'CLUB'; payload: { club: Club; targetSubPage?: string } }) => void;
+  onRegisterSuccess: (data: { type: 'CLUB'; payload: { club: Club; targetSubPage?: string; session?: { token: string; refreshToken?: string; userId: string; userData?: any } } }) => void;
   onSwitchToAthlete?: () => void;
 }
 
@@ -159,6 +159,7 @@ export default function ClubRegistrationForm({
   const [errorMessage, setErrorMessage] = useState('');
   const [registeredClub, setRegisteredClub] = useState<Club | null>(null);
   const [referenceId, setReferenceId] = useState('');
+  const [registeredSession, setRegisteredSession] = useState<{ token: string; refreshToken?: string; userId: string; userData?: any } | undefined>();
 
   // Auto-sync admin email with club email if empty
   const handleClubEmailChange = (val: string) => {
@@ -273,6 +274,26 @@ export default function ClubRegistrationForm({
       if (!persistedClub?.id || !json?.data?.user?.id) {
         throw new Error('The server did not confirm the club account. Please try again.');
       }
+
+      // Registration creates the admin account but does not create a browser
+      // session. Sign in with the submitted credentials so protected portal
+      // requests (including member registration) have a bearer token.
+      const loginRes = await fetch(`${apiBase.replace(/\/$/, '')}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: adminEmail.trim(), password }),
+      });
+      const loginJson = await loginRes.json().catch(() => ({}));
+      const sessionToken = loginJson?.token || loginJson?.accessToken;
+      if (!loginRes.ok || !sessionToken || !loginJson?.userId) {
+        throw new Error('Club registered, but automatic sign-in failed. Please sign in with your club admin email and password before adding members.');
+      }
+      setRegisteredSession({
+        token: sessionToken,
+        refreshToken: loginJson.refreshToken,
+        userId: loginJson.userId,
+        userData: loginJson.user,
+      });
 
       const newClub: Club = {
         id: persistedClub.id,
@@ -1106,7 +1127,7 @@ export default function ClubRegistrationForm({
                   onClick={() => {
                     onRegisterSuccess({
                       type: 'CLUB',
-                      payload: { club: registeredClub, targetSubPage: 'REGISTER_MEMBER' },
+                      payload: { club: registeredClub, targetSubPage: 'REGISTER_MEMBER', session: registeredSession },
                     });
                   }}
                   className="flex-1 py-4 px-6 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-xs cursor-pointer border-0"
@@ -1120,7 +1141,7 @@ export default function ClubRegistrationForm({
                   onClick={() => {
                     onRegisterSuccess({
                       type: 'CLUB',
-                      payload: { club: registeredClub, targetSubPage: 'OVERVIEW' },
+                      payload: { club: registeredClub, targetSubPage: 'OVERVIEW', session: registeredSession },
                     });
                   }}
                   className="py-4 px-6 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-sm sm:text-base cursor-pointer"

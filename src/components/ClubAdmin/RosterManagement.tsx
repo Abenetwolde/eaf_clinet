@@ -3,7 +3,6 @@ import {
   ShieldCheck, 
   AlertTriangle, 
   Search, 
-  CreditCard, 
   CheckCircle2, 
   Clock,
   UserPlus,
@@ -12,35 +11,21 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { useAppSelector } from '../../store/hooks';
-import { useGetAthletesQuery, useRegisterAthleteMutation } from '../../store/api/athleteApi';
-import { useInitiateFaydaMutation, useConfirmFaydaOtpMutation } from '../../store/api/authApi';
+import { useGetAthletesQuery } from '../../store/api/athleteApi';
 import type { Athlete } from '../../types';
 
 interface RosterManagementProps {
   onRenewLicense: (athlete: Athlete) => void;
-  onAddAthlete: (athlete: Athlete) => void;
+  onRegisterMember: () => void;
   onUpdateAthlete?: (athlete: Athlete) => void;
 }
 
-interface FaydaVerifiedData {
-  fin: string;
-  fullName: string;
-  amharicName: string;
-  dob: string;
-  computedTier: string;
-  verificationHash: string;
-  photoUrl: string;
-  gender?: string;
-}
-
-export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdateAthlete }: RosterManagementProps) {
+export default function RosterManagement({ onRenewLicense, onRegisterMember, onUpdateAthlete }: RosterManagementProps) {
   const { t } = useI18n();
-  const athletes = useAppSelector((state) => state.athletes);
   const club = useAppSelector((state) => state.auth.club);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filterTier, setFilterTier] = useState<string>('ALL');
   const [filterLicense, setFilterLicense] = useState<string>('ALL');
-  const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [editingAthlete, setEditingAthlete] = useState<Athlete | null>(null);
 
   // Edit Athlete form state
@@ -50,36 +35,9 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
   const [editPb, setEditPb] = useState<string>('');
   const [editPhoto, setEditPhoto] = useState<string>('/images/runner_marathon.png');
 
-  // New Athlete form state
-  const [newAthleteName, setNewAthleteName] = useState<string>('');
-  const [newAthleteFin, setNewAthleteFin] = useState<string>('');
-  const [newAthleteDob, setNewAthleteDob] = useState<string>('2006-05-14');
-  const [newAthleteEvent, setNewAthleteEvent] = useState<string>('1,500m / 5,000m');
-  const [faydaLookupLoading, setFaydaLookupLoading] = useState<boolean>(false);
-  const [newAthleteWeight, setNewAthleteWeight] = useState<string>('');
-  const [newAthleteHeight, setNewAthleteHeight] = useState<string>('');
-  const [newAthleteCoach, setNewAthleteCoach] = useState<string>('');
-  const [newAthleteEmergency, setNewAthleteEmergency] = useState<string>('');
-  const [newAthleteMedical, setNewAthleteMedical] = useState<string>('');
-  
   // State for view detail modal
   const [viewingAthlete, setViewingAthlete] = useState<Athlete | null>(null);
-  const [faydaVerifiedData, setFaydaVerifiedData] = useState<FaydaVerifiedData | null>(null);
-  const [otpStep, setOtpStep] = useState<boolean>(false);
-  const [otpValue, setOtpValue] = useState<string>('');
-  const [otpVerified, setOtpVerified] = useState<boolean>(false);
-  const [passportPhoto, setPassportPhoto] = useState<File | null>(null);
-  const [passportPhotoUrl, setPassportPhotoUrl] = useState<string>('');
-  const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
-  const [registrationSubmitted, setRegistrationSubmitted] = useState<boolean>(false);
 
-  // Real Fayda Integration Hooks
-  const [initiateFayda] = useInitiateFaydaMutation();
-  const [confirmFaydaOtp] = useConfirmFaydaOtpMutation();
-  const [registerAthlete] = useRegisterAthleteMutation();
-  const [faydaVerificationId, setFaydaVerificationId] = useState<string>('');
-  const [faydaVerificationToken, setFaydaVerificationToken] = useState<string>('');
-  const [faydaError, setFaydaError] = useState<string>('');
 
   const handleOpenEditModal = (athlete: Athlete) => {
     setEditingAthlete(athlete);
@@ -111,7 +69,7 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
   const { data: backendAthletes = [] } = useGetAthletesQuery({ clubId: club.id });
 
   // Merge backend athletes with local athletes
-  const allAthletes = [...athletes];
+  const allAthletes: Athlete[] = [];
   if (backendAthletes && backendAthletes.length > 0) {
     backendAthletes.forEach((b: any) => {
       const bName = b.name || `${b.user?.firstName || ''} ${b.user?.lastName || ''}`.trim();
@@ -153,148 +111,6 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
     return matchesSearch && matchesTier && matchesLicense;
   });
 
-  const handleInitiateRealFayda = async () => {
-    const cleanNin = newAthleteFin.replace(/\D/g, '');
-    if (!cleanNin || cleanNin.length < 8) {
-      setFaydaError('Please enter a valid Fayda National ID Number (at least 8 digits)');
-      return;
-    }
-    setFaydaError('');
-    setFaydaLookupLoading(true);
-    try {
-      const res = await initiateFayda({ nin: cleanNin }).unwrap();
-      if (res.data?.verificationId) {
-        setFaydaVerificationId(res.data.verificationId);
-        if (res.data.otp) setOtpValue(res.data.otp);
-        setOtpStep(true);
-      } else {
-        setFaydaError('Verification session could not be initiated.');
-      }
-    } catch (err: any) {
-      console.warn('Fayda initiate fallback', err);
-      // Seamless sandbox fallback
-      setFaydaVerificationId('FAYDA-VERIF-' + cleanNin.slice(-6));
-      setOtpValue('111111');
-      setOtpStep(true);
-    } finally {
-      setFaydaLookupLoading(false);
-    }
-  };
-
-  const handleConfirmRealOtp = async () => {
-    if (!otpValue || otpValue.length < 4) {
-      setFaydaError('Please enter the 6-digit verification code');
-      return;
-    }
-    setFaydaError('');
-    setFaydaLookupLoading(true);
-    try {
-      const cleanNin = newAthleteFin.replace(/\D/g, '');
-      let identity: any = null;
-      let token = 'fayda_vtoken_' + cleanNin;
-
-      try {
-        const res = await confirmFaydaOtp({
-          verificationId: faydaVerificationId || ('FAYDA-VERIF-' + cleanNin.slice(-6)),
-          otp: otpValue
-        }).unwrap();
-        identity = res.data?.identity || res.data?.userInfo;
-        if (res.data?.verificationToken) token = res.data.verificationToken;
-      } catch (otpErr) {
-        console.warn('OTP confirm fallback', otpErr);
-      }
-
-      setFaydaVerificationToken(token);
-
-      const dob = identity?.birthDate || identity?.dob || newAthleteDob || '2004-05-14';
-      const birthYear = parseInt(dob.substring(0, 4));
-      const age = 2026 - (isNaN(birthYear) ? 2004 : birthYear);
-      let calculatedTier = 'Senior';
-      if (age <= 16) calculatedTier = 'U16';
-      else if (age <= 18) calculatedTier = 'U18';
-      else if (age <= 20) calculatedTier = 'U20';
-
-      setFaydaVerifiedData({
-        fin: cleanNin,
-        fullName: identity?.fullName || identity?.name || newAthleteName || "Bekele Tadesse Gudeta",
-        amharicName: identity?.fullNameAmharic || identity?.amharic || "በቀለ ታደሰ ጉደታ",
-        dob,
-        computedTier: calculatedTier,
-        verificationHash: "0xFAYDA_" + cleanNin.slice(-8),
-        photoUrl: identity?.picture || identity?.photoUrl || "/images/runner_marathon.png",
-        gender: identity?.gender || "Male"
-      });
-      setOtpVerified(true);
-      setOtpStep(false);
-    } catch (err: any) {
-      setFaydaError(err?.data?.message || err?.error || 'Invalid OTP verification code');
-    } finally {
-      setFaydaLookupLoading(false);
-    }
-  };
-
-  const handleCreateAthleteSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!faydaVerifiedData) return;
-
-    const cleanFin = (faydaVerifiedData.fin || "").replace(/\D/g, "");
-    const regEmail = `athlete.${cleanFin.slice(-6)}@${(club.shortName || "club").toLowerCase().replace(/\s+/g, "")}.et`;
-
-    try {
-      await registerAthlete({
-        email: regEmail,
-        password: "AthletePassword2026!",
-        phoneNumber: "+251 91 100 2233",
-        faydaVerificationToken: faydaVerificationToken || "demo_token_athlete_2026",
-        fanNumber: `FAN-${cleanFin.slice(-8)}`,
-        clubId: club.id,
-        clubName: club.name,
-        region: club.region || "Addis Ababa",
-      }).unwrap().catch(() => {});
-    } catch {}
-
-    const createdAthlete: Athlete = {
-      id: `ATH-2026-${Math.floor(100 + Math.random() * 900)}`,
-      name: faydaVerifiedData.fullName,
-      amharicName: faydaVerifiedData.amharicName,
-      dob: faydaVerifiedData.dob,
-      gender: (faydaVerifiedData.gender as any) || "Male",
-      ageTier: faydaVerifiedData.computedTier,
-      clubId: club.id,
-      clubName: club.name,
-      region: club.region || "Addis Ababa",
-      faydaFin: faydaVerifiedData.fin,
-      faydaStatus: "VERIFIED",
-      faydaHash: faydaVerifiedData.verificationHash,
-      primaryEvent: newAthleteEvent,
-      licenseStatus: "ACTIVE",
-      licenseNumber: `ETH-LIC-${Math.floor(1000 + Math.random() * 9000)}`,
-      licenseExpiry: "2027-12-31",
-      photoUrl: passportPhotoUrl || faydaVerifiedData.photoUrl || "/images/runner_marathon.png",
-      checkinStatus: "NOT_CHECKED_IN",
-      secondaryDoc: null,
-      weight: newAthleteWeight ? Number(newAthleteWeight) : 60,
-      height: newAthleteHeight ? Number(newAthleteHeight) : 175,
-      restingHR: 46,
-      trainingLoad: "75",
-      coach: newAthleteCoach || "Club Head Coach",
-      emergencyContact: newAthleteEmergency || "+251 91 122 3344",
-      medicalConditions: newAthleteMedical || "Fit to compete",
-      personalBests: [], seasonBests: [], weightLog: [], trainingLog: [], achievements: []
-    };
-
-    onAddAthlete(createdAthlete);
-    setShowAddModal(false);
-    setFaydaVerifiedData(null);
-    setNewAthleteName("");
-    setNewAthleteFin("");
-    setNewAthleteWeight("");
-    setNewAthleteHeight("");
-    setNewAthleteCoach("");
-    setNewAthleteEmergency("");
-    setNewAthleteMedical("");
-  };
-
   return (
     <div>
       {/* Top Header */}
@@ -309,7 +125,7 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
         </div>
 
         <button 
-          onClick={() => setShowAddModal(true)}
+          onClick={onRegisterMember}
           className="btn-gov-primary"
         >
           <UserPlus size={16} />
@@ -480,248 +296,6 @@ export default function RosterManagement({ onRenewLicense, onAddAthlete, onUpdat
         </div>
       </div>
 
-      {/* Add New Athlete Modal */}
-      {showAddModal && (
-        <div className="modal-backdrop" onClick={() => { setShowAddModal(false); setOtpStep(false); setOtpVerified(false); setShowConfirmation(false); setRegistrationSubmitted(false); setFaydaVerifiedData(null); }}>
-          <div className="modal-content p-[36px] max-w-[860px] w-[95vw]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-[20px]">
-              <h3 className="text-[1.3rem] font-extrabold text-text-heading">
-                {t('club.registerViaFaydaTitle')}
-              </h3>
-              <button onClick={() => setShowAddModal(false)} className="btn-gov-secondary px-[10px] py-[4px]">✕</button>
-            </div>
-
-            {/* Info note */}
-            <div className="bg-primary-light border border-[rgba(0,80,160,0.2)] rounded-[8px] px-[14px] py-[10px] mb-[16px] text-[0.8rem] text-primary font-semibold leading-[1.5]">
-              {t('club.faydaInfoNote')}
-            </div>
-
-            <form onSubmit={(e) => { e.preventDefault(); if(!showConfirmation) { setShowConfirmation(true); } else { setRegistrationSubmitted(true); } }}>
-              {faydaError && <div className="bg-red-50 border border-red-300 text-red-700 text-xs font-bold rounded-lg p-3 mb-3">{faydaError}</div>}
-              {!otpStep && !otpVerified && (
-              <div className="form-group">
-                <label className="form-label">{t('club.faydaFinLabel')}</label>
-                <div className="flex gap-[8px]">
-                  <input 
-                    type="text" 
-                    className="form-input flex-1 font-mono text-[1.1rem] tracking-[0.1em]"
-                    value={newAthleteFin} 
-                    onChange={(e) => {
-                      let v = e.target.value.replace(/[^0-9]/g,'');
-                      if(v.length > 12) v = v.slice(0,12);
-                      let fmt = '';
-                      if(v.length>0) fmt += v.slice(0,4);
-                      if(v.length>4) fmt += '-' + v.slice(4,8);
-                      if(v.length>8) fmt += '-' + v.slice(8,12);
-                      setNewAthleteFin(fmt);
-                    }}
-                    maxLength={14}
-                    placeholder="XXXX-XXXX-XXXX" 
-                    required
-                  />
-                  <button 
-                    type="button" 
-                    onClick={handleInitiateRealFayda}
-                    className="btn-gov-primary text-[0.8rem] whitespace-nowrap px-[14px] py-[10px]"
-                    disabled={faydaLookupLoading || newAthleteFin.replace(/\D/g,'').length < 8}
-                  >
-                    {faydaLookupLoading ? "Verifying..." : "Verify Fayda ID"}
-                  </button>
-                </div>
-              </div>
-              )}
-
-              {otpStep && !otpVerified && (
-                <div className="form-group bg-[#F0FDF4] border border-[#86EFAC] rounded-[12px] p-[20px]">
-                  <div className="font-extrabold text-[#15803D] mb-[8px] text-[0.95rem]">{t('club.otpSentTitle')}</div>
-                  <div className="text-[0.82rem] text-[#64748B] mb-[16px]">{t('club.otpSentSub')}</div>
-                  <div className="flex gap-[8px]">
-                    <input 
-                      type="text" className="form-input flex-1 font-mono text-[1.4rem] text-center tracking-[0.3em]"
-                      value={otpValue} 
-                      onChange={e => setOtpValue(e.target.value.replace(/[^0-9]/g,'').slice(0,6))}
-                      placeholder="_ _ _ _ _ _" maxLength={6}
-                    />
-                    <button type="button" className="btn-gov-primary px-[20px] py-[10px]"
-                      onClick={handleConfirmRealOtp}
-                      disabled={faydaLookupLoading || otpValue.length < 4}
-                    >{faydaLookupLoading ? "Confirming..." : t('club.verifyOtp')}</button>
-                  </div>
-                </div>
-              )}
-
-              <div className="form-group">
-                <label className="form-label">{t('club.primaryEventLabel')}</label>
-                <select 
-                  className="form-select"
-                  value={newAthleteEvent}
-                  onChange={(e) => setNewAthleteEvent(e.target.value)}
-                >
-                  <option value="100m Sprint / 200m">{t('club.eventSprint')}</option>
-                  <option value="800m / 1,500m">{t('club.eventMiddleDistance')}</option>
-                  <option value="5,000m / 10,000m">{t('club.eventLongDistance')}</option>
-                  <option value="3,000m Steeplechase">{t('club.eventSteeplechase')}</option>
-                  <option value="Marathon / Half-Marathon">{t('club.eventMarathon')}</option>
-                </select>
-              </div>
-
-              
-              <div className="stack-on-mobile grid grid-cols-2 gap-[12px]">
-                <div className="form-group">
-                  <label className="form-label">{t('club.weightLabel')}</label>
-                  <input type="number" className="form-input" value={newAthleteWeight} onChange={e => setNewAthleteWeight(e.target.value)} placeholder={t('club.weightKgPlaceholder')} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">{t('club.heightLabel')}</label>
-                  <input type="number" className="form-input" value={newAthleteHeight} onChange={e => setNewAthleteHeight(e.target.value)} placeholder={t('club.heightCmPlaceholder')} />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">{t('club.primaryCoachLabel')}</label>
-                <input type="text" className="form-input" value={newAthleteCoach} onChange={e => setNewAthleteCoach(e.target.value)} placeholder={t('club.coachPlaceholder')} />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">{t('club.emergencyContactLabel')}</label>
-                <input type="text" className="form-input" value={newAthleteEmergency} onChange={e => setNewAthleteEmergency(e.target.value)} placeholder={t('club.emergencyPhonePlaceholder')} />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">{t('club.medicalConditionsLabel')}</label>
-                <input type="text" className="form-input" value={newAthleteMedical} onChange={e => setNewAthleteMedical(e.target.value)} placeholder={t('club.nonePlaceholder')} />
-              </div>
-
-              {/* Fayda Response Result Display */}
-              {faydaVerifiedData && otpVerified && !showConfirmation && (
-                <div className="bg-[#F0FDF4] border-2 border-[#86EFAC] rounded-[14px] p-[20px] mb-[20px]">
-                  <div className="flex items-center gap-[10px] mb-[16px]">
-                    <ShieldCheck color="#15803D" size={22} />
-                    <span className="font-extrabold text-[#15803D] text-[1rem]">{t('club.faydaIdentityVerified')}</span>
-                  </div>
-                  <div className="flex gap-[20px] flex-wrap">
-                    {/* Passport Photo upload */}
-                    <div className="shrink-0">
-                      <label className="block font-bold text-[0.8rem] text-[#374151] mb-[8px]">{t('club.passportPhotoLabel')}</label>
-                      <div 
-                        onClick={() => document.getElementById('passportPhotoInput').click()}
-                        className="w-[120px] h-[150px] border-2 border-dashed border-[#86EFAC] rounded-[8px] cursor-pointer flex items-center justify-center overflow-hidden bg-white relative"
-                      >
-                        {passportPhotoUrl ? (
-                          <img src={passportPhotoUrl} alt="Passport" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="text-center text-[#9CA3AF] text-[0.75rem]">
-                            <div className="text-[2rem]">📷</div>
-                            <div>{t('club.clickToUpload')}</div>
-                            <div>{t('club.passportDimensions')}</div>
-                          </div>
-                        )}
-                        <input id="passportPhotoInput" type="file" accept="image/*" className="hidden"
-                          onChange={e => {
-                            const f = e.target.files[0];
-                            if(f) { setPassportPhoto(f); setPassportPhotoUrl(URL.createObjectURL(f)); }
-                          }}
-                        />
-                      </div>
-                    </div>
-                    {/* Personal Info List */}
-                    <div className="flex-1 min-w-[200px]">
-                      <div className="font-bold text-[#374151] mb-[10px] text-[0.85rem]">{t('club.personalInfoTitle')}</div>
-                      <ul className="list-none p-0 m-0 flex flex-col gap-[8px]">
-                        {[
-                          [t('club.fullNameEnglish'), faydaVerifiedData.fullName],
-                          [t('club.fullNameAmharic'), faydaVerifiedData.amharicName],
-                          [t('club.dateOfBirthLabel'), faydaVerifiedData.dob],
-                          [t('club.ageDivisionLabel'), faydaVerifiedData.computedTier],
-                          [t('club.genderLabel'), 'Male'],
-                          [t('club.regionLabel'), 'Oromia Region'],
-                          [t('club.finLabel'), faydaVerifiedData.fin],
-                          [t('club.verificationHashLabel'), faydaVerifiedData.verificationHash.slice(0,18)+'...'],
-                        ].map(([k,v]) => (
-                          <li key={k} className="flex gap-[8px] text-[0.82rem] border-b border-[#D1FAE5] pb-[6px]">
-                            <span className="font-bold text-[#374151] min-w-[140px]">{k}:</span>
-                            <span className="text-[#4B5563]">{v}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Final Confirmation Panel */}
-              {showConfirmation && faydaVerifiedData && !registrationSubmitted && (
-                <div className="bg-[#EFF6FF] border-2 border-[#93C5FD] rounded-[14px] p-[24px] mb-[20px]">
-                  <div className="font-extrabold text-[#1D4ED8] text-[1.1rem] mb-[20px] flex items-center gap-[8px]">
-                    {t('club.finalConfirmationTitle')}
-                  </div>
-                  <div className="flex gap-[24px] flex-wrap">
-                    {passportPhotoUrl && (
-                      <div className="shrink-0">
-                        <img src={passportPhotoUrl} alt="Passport" className="w-[120px] h-[150px] object-cover rounded-[8px] border-2 border-[#93C5FD]" />
-                        <div className="text-[0.72rem] text-center text-[#6B7280] mt-[4px]">{t('club.passportPhotoCaption')}</div>
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-[200px]">
-                      <ul className="stack-on-mobile list-none p-0 m-0 grid grid-cols-2 gap-[8px]">
-                        {[
-                          [t('club.fullNameShort'), faydaVerifiedData.fullName],
-                          [t('club.amharicNameShort'), faydaVerifiedData.amharicName],
-                          [t('club.dateOfBirthLabel'), faydaVerifiedData.dob],
-                          [t('club.ageDivisionLabel'), faydaVerifiedData.computedTier],
-                          [t('club.genderLabel'), 'Male'],
-                          [t('club.finLabel'), faydaVerifiedData.fin],
-                          [t('club.clubLabel'), 'Bekoji AC'],
-                          [t('club.primaryEventLabel'), newAthleteEvent],
-                          [t('club.weightLabel'), newAthleteWeight ? t('club.kgValue', { value: newAthleteWeight }) : t('club.nA')],
-                          [t('club.heightLabel'), newAthleteHeight ? t('club.cmValue', { value: newAthleteHeight }) : t('club.nA')],
-                          [t('club.primaryCoachLabel'), newAthleteCoach || t('club.nA')],
-                          [t('club.emergencyContactLabel'), newAthleteEmergency || t('club.nA')],
-                          [t('club.medicalNotes'), newAthleteMedical || t('club.nonePlaceholder')],
-                          [t('club.licenseStatusLabel'), t('club.unlicensedPending')],
-                        ].map(([k,v]) => (
-                          <li key={k} className="text-[0.8rem] border-b border-[#BFDBFE] pb-[6px]">
-                            <div className="font-bold text-[#1E3A8A] text-[0.72rem]">{k}</div>
-                            <div className="text-[#374151]">{v}</div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* After submission — awaiting approval */}
-              {registrationSubmitted && (
-                <div className="bg-[#FFF7ED] border-2 border-[#FCD34D] rounded-[14px] p-[32px] text-center mb-[20px]">
-                  <div className="text-[3rem] mb-[12px]">⏳</div>
-                  <div className="font-black text-[#92400E] text-[1.4rem] mb-[12px]">{t('club.regSubmittedTitle')}</div>
-                  <div className="text-[#78350F] text-[0.9rem] leading-[1.6]">
-                    {t('club.regSubmittedLead', { name: faydaVerifiedData?.fullName })}<br/><br/>
-                    {t('club.regSubmittedRef', { ref: `EAF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}` })}<br/>
-                    {t('club.regSubmittedTime')}<br/>
-                    {t('club.regSubmittedNotif')}<br/>
-                    {t('club.regSubmittedStatus')}<br/><br/>
-                    {t('club.regSubmittedClose')}
-                  </div>
-                </div>
-              )}
-
-              {!registrationSubmitted && (
-                <button 
-                  type="submit" 
-                  className="btn-gov-primary w-full p-[14px] text-[1rem] font-extrabold"
-                  disabled={otpVerified && !faydaVerifiedData}
-                >
-                  {showConfirmation ? t('club.confirmSubmitBtn') : (!faydaVerifiedData ? t('club.completeFaydaFirst') : t('club.reviewConfirmBtn'))}
-                </button>
-              )}
-            </form>
-          </div>
-        </div>
-      )}
-
-      
       {/* View Athlete Detail Modal */}
       {viewingAthlete && (
         <div className="modal-backdrop" onClick={() => setViewingAthlete(null)}>

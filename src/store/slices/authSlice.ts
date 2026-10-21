@@ -1,6 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { Role, Club, Athlete, Coach } from '../../types';
-import { MOCK_CLUBS, MOCK_ATHLETES } from '../../data/mockData';
 import {
   STORAGE_KEYS,
   readJSON,
@@ -52,22 +51,10 @@ function readInitialRole(): Role {
 }
 
 function readInitialClub(): Club {
-  const savedId = readString(STORAGE_KEYS.currentClubId);
-  if (savedId) {
-    const pool: Club[] = readJSON<Club[]>(STORAGE_KEYS.clubs, MOCK_CLUBS);
-    const found = pool.find((c) => c.id === savedId);
-    if (found) return found;
-  }
   return EMPTY_CLUB;
 }
 
 function readInitialAthlete(): Athlete {
-  const savedId = readString(STORAGE_KEYS.currentAthleteId);
-  if (savedId) {
-    const pool: Athlete[] = readJSON<Athlete[]>(STORAGE_KEYS.athletes, MOCK_ATHLETES);
-    const found = pool.find((a) => a.id === savedId);
-    if (found) return found;
-  }
   return EMPTY_ATHLETE;
 }
 

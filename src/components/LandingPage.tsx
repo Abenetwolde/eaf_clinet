@@ -9,7 +9,6 @@ import { useI18n } from '../i18n';
 import { useGetNewsQuery, type NewsArticle } from '../store/api/newsApi';
 import { useGetPublishedEventsQuery, useGetOverviewStatsQuery, useGetGalleryQuery, useGetSiteContentQuery, useSubmitContactFormMutation } from '../store/api/apiSlice';
 import { useGetAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
-import { MOCK_NEWS } from '../data/mockData';
 
 /* ─────────────────────────────────────────────
    STATIC DATA & GALLERY IMAGES
@@ -57,430 +56,26 @@ export interface GalleryItem {
 }
 
 
-const ENRICHED_MEETS = [
-  {
-    id: "MEET-2026-01",
-    title: "Addis Ababa International Grand Prix 2026",
-    amharic: "አዲስ አበባ ዓለም አቀፍ ግራንድ ፕሪ 2026",
-    venue: "Addis Ababa National Stadium",
-    date: "2026-08-12",
-    dateString: "August 12–14, 2026",
-    status: "REGISTRATION_OPEN",
-    disciplines: ["100m Sprint", "5,000m", "10,000m", "800m", "1,500m", "3,000m Steeplechase", "Marathon"],
-    region: "Addis Ababa",
-    img: "/images/banner_grand_prix.png"
-  },
-  {
-    id: "MEET-2026-02",
-    title: "Ethiopian National Youth Olympic Games U18/U20",
-    amharic: "ብሔራዊ የወጣቶች ኦሊምፒክ ጨዋታዎች U18/U20",
-    venue: "Hawassa International Stadium",
-    date: "2026-09-05",
-    dateString: "September 5–8, 2026",
-    status: "REGISTRATION_OPEN",
-    disciplines: ["100m Sprint", "800m", "1,500m", "5,000m", "3,000m Steeplechase", "High Jump", "Long Jump"],
-    region: "Sidama",
-    img: "/images/banner_youth_games.png"
-  },
-  {
-    id: "MEET-2026-03",
-    title: "Jan Meda National Cross-Country Olympic Trials",
-    amharic: "ጃን ሜዳ ብሔራዊ የኦሊምፒክ ማጣሪያ ውድድር",
-    venue: "Jan Meda Race Course, Addis Ababa",
-    date: "2026-10-20",
-    dateString: "October 20, 2026",
-    status: "UPCOMING",
-    disciplines: ["10km Senior Men", "10km Senior Women", "8km U20 Men", "6km U18 Mixed"],
-    region: "Addis Ababa",
-    img: "/images/banner_jan_meda.png"
-  },
-  {
-    id: "MEET-2026-04",
-    title: "Oromia Athletics Championship 2026",
-    amharic: "የኦሮሚያ አትሌቲክስ ሻምፒዮና 2026",
-    venue: "Asella Stadium",
-    date: "2026-07-10",
-    dateString: "July 10-12, 2026",
-    status: "LIVE",
-    disciplines: ["5,000m", "10,000m", "800m"],
-    region: "Oromia",
-    img: "/images/d1.jpg"
-  },
-  {
-    id: "MEET-2026-05",
-    title: "Amhara Track & Field Open",
-    amharic: "የአማራ ትራክ እና ፊልድ ክፍት ውድድር",
-    venue: "Bahir Dar International Stadium",
-    date: "2026-11-14",
-    dateString: "November 14-16, 2026",
-    status: "UPCOMING",
-    disciplines: ["800m", "1,500m", "High Jump"],
-    region: "Amhara",
-    img: "/images/runners_training.png"
-  },
-  {
-    id: "MEET-2026-06",
-    title: "Tigray Regional Athletics Meet",
-    amharic: "የትግራይ ክልላዊ አትሌቲክስ ውድድር",
-    venue: "Mekelle Stadium",
-    date: "2026-06-25",
-    dateString: "June 25-27, 2026",
-    status: "REGISTRATION_CLOSED",
-    disciplines: ["5,000m", "10,000m", "1,500m"],
-    region: "Tigray",
-    img: "/images/d2.jpeg"
-  }
-];
-
-const ATHLETES = [
-  {
-    id: 1,
-    name: 'Tigst Assefa',
-    amharicName: 'ትግስት አሰፋ',
-    achievement: '2023 Berlin Marathon World Record — 2:11:53',
-    event: 'Marathon',
-    club: 'Ethiopian National Team / Adidas',
-    faydaFin: '9840-2210-4491',
-    faydaStatus: 'VERIFIED',
-    dob: '1996-12-03',
-    gender: 'Female',
-    ageTier: 'Senior',
-    pb: '2:11:53 (World Record)',
-    quote: 'Hard work in Bekoji and dedication to my country bring world records to Ethiopia.',
-    img: '/images/a1.jpg',
-    medals: ['🥇 Berlin Marathon 2023 (WR)', '🥇 Berlin Marathon 2022', '🥈 Olympic Games 2024'],
-  },
-  {
-    id: 2,
-    name: 'Selemon Barega',
-    amharicName: 'ሰለሞን ባረጋ',
-    achievement: 'Olympic 10,000m Champion — Tokyo 2020',
-    event: '5,000m / 10,000m',
-    club: 'Ethiopian National Team / Defense AC',
-    faydaFin: '4410-9830-1120',
-    faydaStatus: 'VERIFIED',
-    dob: '2000-01-20',
-    gender: 'Male',
-    ageTier: 'Senior',
-    pb: '12:43.02 (5000m) / 26:44.73 (10000m)',
-    quote: 'Stepping onto the track with the green, yellow, and red flag is my greatest honor.',
-    img: '/images/a2.jpg',
-    medals: ['🥇 Tokyo 2020 Olympic Gold 10,000m', '🥇 World Indoor Champion 3000m', '🥈 World Championships Silver'],
-  },
-  {
-    id: 3,
-    name: 'Haile Demisse Tadesse',
-    amharicName: 'ኃይሌ ደሚሴ ታደሰ',
-    achievement: 'Addis Ababa Grand Prix 5,000m Champion',
-    event: '5,000m / 10,000m',
-    club: 'Defense Athletics Club',
-    faydaFin: '9840-3920-1124',
-    faydaStatus: 'VERIFIED',
-    dob: '2002-04-12',
-    gender: 'Male',
-    ageTier: 'Senior',
-    pb: '12:51.44 (5000m) / 26:58.20 (10000m)',
-    quote: 'Every altitude training run in Entoto prepares us to conquer global competitions.',
-    img: '/images/runner_marathon.png',
-    medals: ['🥇 2025 Addis Ababa GP Gold', '🥈 National Championships Silver'],
-  },
-  {
-    id: 4,
-    name: 'Sifan Mengistu Wolde',
-    amharicName: 'ሲፋን መንግስቱ ወልዴ',
-    achievement: 'Ethiopian Olympic Trials 10,000m Champion',
-    event: '10,000m / Marathon',
-    club: 'Oromia Police Sports Club',
-    faydaFin: '6021-9983-4112',
-    faydaStatus: 'VERIFIED',
-    dob: '2004-01-30',
-    gender: 'Female',
-    ageTier: 'Senior',
-    pb: '29:42.10 (10000m) / 1:04:30 (Half Marathon)',
-    quote: 'Perseverance and faith turn every challenging kilometer into victory.',
-    img: '/images/runner_female.png',
-    medals: ['🥇 2025 Ethiopian Olympic Trial Champion', '🥇 Hawassa Half Marathon Winner'],
-  }
-];
-
-const GALLERY_IMAGES: GalleryItem[] = [
-  {
-    id: 1,
-    title: 'African Championships 2026 Medal Ceremony',
-    category: 'Championships',
-    img: '/images/d1.jpg',
-    location: 'Accra Stadium, Ghana',
-    date: 'May 2026',
-    type: 'PHOTO',
-    description: 'Historic podium sweep and gold medal ceremony celebrating Ethiopian distance dominance at the 24th African Athletics Championships in Accra.',
-    captures: [
-      { id: 101, img: '/images/d1.jpg', title: 'Podium Gold Medal Presentation', caption: 'Ethiopian medalists stand tall on the podium receiving gold medals as the national anthem resonates across Accra Stadium.', photographer: 'EAF Media Unit' },
-      { id: 102, img: '/images/d5.jpg', title: 'National Delegation Flag Celebration', caption: 'Coaches and teammates celebrate together trackside draped in the Ethiopian flag after the medal sweep.', photographer: 'EAF Media / Ghana Press' },
-      { id: 103, img: '/images/d4.jpg', title: 'EAF Presidential Stand', caption: 'EAF executive committee members applauding from the presidential pavilion at Accra Stadium.', photographer: 'AAC Official' }
-    ]
-  },
-  {
-    id: 2,
-    title: 'London Marathon Ethiopian Elite Champions',
-    category: 'Marathons',
-    img: '/images/d2.jpeg',
-    location: 'London, UK',
-    date: 'April 2026',
-    type: 'VIDEO',
-    description: 'Breathtaking moments from the London Marathon through iconic landmarks and Thames river bridges.',
-    captures: [
-      { id: 201, img: '/images/d2.jpeg', title: 'Lead Breakaway at River Thames', caption: 'Ethiopian elite pack dictating a blistering world-record pace along the Victoria Embankment.', photographer: 'London Marathon Press / Getty' },
-      { id: 202, img: '/images/runner_marathon.png', title: 'Tower Bridge 20K Split', caption: 'Crossing Tower Bridge amid roaring applause from thousands of Ethiopian diaspora supporters.', photographer: 'EAF International Desk' },
-      { id: 203, img: '/images/d3.jpeg', title: 'Sprint Finish at The Mall', caption: 'Sprinting toward the finish line in front of Buckingham Palace to claim the elite crown.', photographer: 'London Marathon Media' },
-      { id: 204, img: '/images/runner_female.png', title: 'Women\'s Champion — Post-Race Finish', caption: 'Ethiopian women\'s champion draped in the national flag celebrating with fans along the boulevard.', photographer: 'EAF Press' }
-    ]
-  },
-  {
-    id: 3,
-    title: '4th Ethiopia Tamirt 10KM Start Line',
-    category: 'Track & Field',
-    img: '/images/d3.jpeg',
-    location: 'Meskel Square, Addis Ababa',
-    date: 'April 2026',
-    type: 'PHOTO',
-    description: 'A sea of 22,000+ runners filling Meskel Square in the annual Ethiopia Tamirt festival of athletics.',
-    captures: [
-      { id: 301, img: '/images/d3.jpeg', title: 'Mass Start at Meskel Square', caption: 'Over 20,000 runners charge forward across Meskel Square in a vibrant sea of green, yellow, and red.', photographer: 'EAF Photography / Dawit K.' },
-      { id: 302, img: '/images/runners_training.png', title: 'Elite Leaders Surge at 5KM', caption: 'Nibret Kinde and Birtukan Mola pacing the elite field along Menelik II Avenue.', photographer: 'EAF Media Unit' },
-      { id: 303, img: '/images/runner_marathon.png', title: 'Uphill Push to Mexico Square', caption: 'Runners tackling the steep capital altitude climb with grit and determination.', photographer: 'Addis Ababa Sports Bureau' },
-      { id: 304, img: '/images/runner_female.png', title: 'Women\'s Tamirt 10KM Champions', caption: 'Women\'s race winner crossing the tape at the Addis Ababa National Stadium finish line.', photographer: 'EAF Press' }
-    ]
-  },
-  {
-    id: 4,
-    title: 'Technical Athletics Officials & Judging Seminar',
-    category: 'Ceremonies',
-    img: '/images/d4.jpg',
-    location: 'EAF HQ, Addis Ababa',
-    date: 'April 2026',
-    type: 'PHOTO',
-    description: 'Classroom and track workshops training 60 officials in electronic timing, photo-finish and World Athletics rules.',
-    captures: [
-      { id: 401, img: '/images/d4.jpg', title: 'Judging Seminar Classroom', caption: 'Sixty regional technical officials studying modern electronic timing and World Athletics officiating protocols.', photographer: 'EAF Technical Desk' },
-      { id: 402, img: '/images/d5.jpg', title: 'Officials Practical Track Session', caption: 'Hands-on practical training with photo-finish cameras at the National Stadium.', photographer: 'EAF IT Dept' },
-      { id: 403, img: '/images/logo.jpeg', title: 'Graduation & Certificate Handover', caption: 'Officials proudly receiving their World Athletics accredited certification diplomas.', photographer: 'EAF Media Unit' }
-    ]
-  },
-  {
-    id: 5,
-    title: 'National Team Delegation Send-Off Ceremony',
-    category: 'Ceremonies',
-    img: '/images/d5.jpg',
-    location: 'Skylight Hotel, Addis Ababa',
-    date: 'May 2026',
-    type: 'VIDEO',
-    description: 'Official national banquet and flag handover ceremony honoring the athletes representing Ethiopia abroad.',
-    captures: [
-      { id: 501, img: '/images/d5.jpg', title: 'Ceremonial Flag Handover', caption: 'Government ministers and EAF President hand over the sacred Ethiopian flag to team captain.', photographer: 'EAF Communications' },
-      { id: 502, img: '/images/d4.jpg', title: 'Keynote Address by Legends', caption: 'Olympic champions sharing wisdom and inspiring words of encouragement with the national squad.', photographer: 'Skylight Media' },
-      { id: 503, img: '/images/a1.jpg', title: 'Official Squad Portrait', caption: 'The complete Ethiopian delegation of 42 athletes and coaches in their national tracksuits.', photographer: 'EAF Official Photo' }
-    ]
-  },
-  {
-    id: 6,
-    title: 'Tigst Assefa Berlin World Record Moment',
-    category: 'Marathons',
-    img: '/images/a1.jpg',
-    location: 'Berlin, Germany',
-    date: 'September 2023',
-    type: 'PHOTO',
-    description: 'The monumental 2:11:53 world record that redefined women\'s marathon history forever.',
-    captures: [
-      { id: 601, img: '/images/a1.jpg', title: 'Brandenburg Gate Finish — 2:11:53', caption: 'Tigst Assefa crossing the line under the iconic Brandenburg Gate, shattering the world record by over two minutes.', photographer: 'Berlin Marathon / SCC Events' },
-      { id: 602, img: '/images/runner_female.png', title: 'Flawless 30KM Pacing Rhythm', caption: 'Maintaining an astonishing 3:07 per kilometer pace through the tree-lined streets of Berlin.', photographer: 'World Athletics' },
-      { id: 603, img: '/images/d2.jpeg', title: 'Post-Race Press Celebration', caption: 'Assefa pointing in triumph to the official Seiko timing board displaying the new 2:11:53 world mark.', photographer: 'Getty Images / Sport' },
-      { id: 604, img: '/images/runner_marathon.png', title: 'Global Press Conference', caption: 'Tigst Assefa addressing international sports correspondents draped in the Ethiopian flag.', photographer: 'EAF Media International' }
-    ]
-  },
-  {
-    id: 7,
-    title: 'Selemon Barega Olympic Gold Victory Lap',
-    category: 'Championships',
-    img: '/images/a2.jpg',
-    location: 'Tokyo Olympic Stadium',
-    date: 'August 2021',
-    type: 'VIDEO',
-    description: 'Electrifying 10,000m Olympic gold sprint and celebratory lap at the Tokyo Olympic Stadium.',
-    captures: [
-      { id: 701, img: '/images/a2.jpg', title: 'Tears of Joy on the Victory Lap', caption: 'Selemon Barega draped in the green, yellow, and red flag celebrating his dramatic 10,000m Olympic triumph.', photographer: 'IOC Media / Olympic Games' },
-      { id: 702, img: '/images/athlete_haile.jpeg', title: 'Mentors & Coaching Staff Embrace', caption: 'Emotional embrace trackside with veteran Ethiopian coaching legends and technical advisors.', photographer: 'EAF Media Unit' },
-      { id: 703, img: '/images/d1.jpg', title: 'Olympic Stadium Post-Race Ceremony', caption: 'Barega receiving his gold medal at the Tokyo Olympic podium ceremony.', photographer: 'World Athletics Photo' }
-    ]
-  },
-  {
-    id: 8,
-    title: 'High Altitude Endurance Training in Sululta',
-    category: 'Track & Field',
-    img: '/images/runners_training.png',
-    location: 'Sululta, Ethiopia',
-    date: 'June 2026',
-    type: 'PHOTO',
-    description: 'Dawn endurance runs and hill strides at 2,800m altitude through the legendary eucalyptus trails of Sululta.',
-    captures: [
-      { id: 801, img: '/images/runners_training.png', title: 'Dawn Long Run through Eucalyptus Forest', caption: 'Elite athletes completing a 32km progression run at 2,800m altitude in misty Sululta dawn conditions.', photographer: 'EAF Training Camp Photo' },
-      { id: 802, img: '/images/runner_marathon.png', title: 'Hill Repeat Intervals', caption: 'Power strides and hill sprints developing neuromuscular cadence and uphill power.', photographer: 'National Team Coach Desk' },
-      { id: 803, img: '/images/runner_female.png', title: 'Hydration & Recovery Monitoring', caption: 'Sports science and medical staff recording heart rate recovery and hydration metrics post-interval session.', photographer: 'EAF Sports Science Lab' }
-    ]
-  },
-  {
-    id: 9,
-    title: 'Addis Ababa International Grand Prix Warmup',
-    category: 'Championships',
-    img: '/images/banner_grand_prix.png',
-    location: 'Addis Ababa National Stadium',
-    date: 'August 2026',
-    type: 'PHOTO',
-    description: 'Intense warmup drills, starting block practice, and stadium preparations for the International Grand Prix.',
-    captures: [
-      { id: 901, img: '/images/banner_grand_prix.png', title: 'Starting Block Explosive Drills', caption: 'Sprinters fine-tuning reaction times and drive phase mechanics on the brand-new Mondo track surface.', photographer: 'EAF Grand Prix Media' },
-      { id: 902, img: '/images/runners_training.png', title: 'Distance Athletes Warmup Strides', caption: '1,500m and 800m contenders pacing their rhythm under the gaze of federation scouts.', photographer: 'EAF Photography' },
-      { id: 903, img: '/images/d1.jpg', title: 'Packed Grandstands at Kickoff', caption: 'Passionate Ethiopian athletics fans packing the historic stadium stands in full national colors.', photographer: 'Addis Stadium Media' }
-    ]
-  },
-  {
-    id: 10,
-    title: 'Jan Meda National Cross-Country Olympic Trials',
-    category: 'Track & Field',
-    img: '/images/banner_jan_meda.png',
-    location: 'Jan Meda Course, Addis Ababa',
-    date: 'October 2026',
-    type: 'VIDEO',
-    description: 'High-stakes Olympic trials through the legendary mud, ditches, and uphill loops of Jan Meda.',
-    captures: [
-      { id: 1001, img: '/images/banner_jan_meda.png', title: 'Senior Men 10KM Uphill Charge', caption: 'Over 150 elite runners from 35 clubs storming up the iconic Jan Meda hill in the opening loop.', photographer: 'EAF Cross-Country Media' },
-      { id: 1002, img: '/images/banner_youth_games.png', title: 'U20 Junior Division — Youth Prospects', caption: 'Young prospects battling through natural water ditches and rugged cross-country terrain at Jan Meda.', photographer: 'EAF Youth Academy' },
-      { id: 1003, img: '/images/runners_training.png', title: 'Senior Women 10KM Lead Pack', caption: 'World-ranked marathon and 10k stars matching stride-for-stride along the outer Jan Meda circuit.', photographer: 'EAF Official' }
-    ]
-  }
-];
-
-const STRUCTURE_ITEMS = [
-  {
-    icon: <Users size={22} color="var(--primary)" />,
-    title: 'General Assembly',
-    amharic: 'ጠቅላላ ጉባኤ',
-    description: 'The General Assembly is the supreme governing body of the Ethiopian Athletics Federation. It convenes at least once a year and comprises representatives from all affiliated regional federations and member clubs. It is responsible for electing the Executive Committee, approving the budget, and setting strategic policies for athletics development in Ethiopia.',
-    members: '120+ delegates from 11 regional federations',
-    meets: 'Annually (extraordinary sessions as needed)',
-  },
-  {
-    icon: <Award size={22} color="var(--primary)" />,
-    title: 'Executive Committee',
-    amharic: 'ሥራ አስፈፃሚ ኮሚቴ',
-    description: 'The Executive Committee is elected by the General Assembly and handles the day-to-day administration of the federation. It implements General Assembly decisions, manages federation finances, appoints technical staff, and oversees national team selection and international relations with World Athletics (WA) and the African Athletics Confederation (AAC).',
-    members: '11 elected officials: President, VP, Secretary General, Treasurer & 7 members',
-    meets: 'Monthly (at least quarterly)',
-  },
-  {
-    icon: <Activity size={22} color="var(--primary)" />,
-    title: 'Technical Committee',
-    amharic: 'ቴክኒክ ኮሚቴ',
-    description: 'The Technical Committee oversees all sporting and competition matters. This includes drafting competition rules aligned with World Athletics standards, accrediting coaches and officials, managing athlete licensing, organizing national championships, and approving the national competition calendar for track, field, road, cross-country, and marathon events.',
-    members: '7 technical experts: Head Coach, Chief Official, Medical Officer & specialists',
-    meets: 'Bi-monthly and before all major national championships',
-  },
-  {
-    icon: <BookOpen size={22} color="var(--primary)" />,
-    title: 'Training & Research',
-    amharic: 'ስልጠና እና ምርምር',
-    description: 'The Training & Research Department drives the scientific development of Ethiopian athletics. It designs national coaching education programs, conducts sports science research, provides nutritional and anti-doping guidance, coordinates with universities and sports institutes, and monitors the Long-Term Athlete Development (LTAD) pathway from youth to elite level.',
-    members: 'Department Head, 4 senior coaches, 2 sports scientists, anti-doping officer',
-    meets: 'Weekly (training camps) and quarterly (research reviews)',
-  },
-];
-
-
-const QUICK_LINKS = [
-  ['Home', 'ቅድመ ገጽ', '#home'],
-  ['Competitions', 'ውድድሮች', '#competitions'],
-  ['Athletes', 'አትሌቶች', '#athletes'],
-  ['News & Updates', 'ዜና እና መረጃዎች', '#news'],
-  ['Media Gallery', 'ማዕከለ ስዕላት / ሚዲያ', '#media'],
-  ['Contact HQ', 'ያግኙን', '#contact'],
-];
-
-const TAG_COLORS: Record<string, { bg: string; color: string }> = {
-  Championship: { bg: '#E0F2FE', color: '#0369A1' },
-  CHAMPIONSHIP: { bg: '#E0F2FE', color: '#0369A1' },
-  Marathon: { bg: '#FEF3C7', color: '#B45309' },
-  MARATHON: { bg: '#FEF3C7', color: '#B45309' },
-  'Road Race': { bg: '#DCFCE7', color: '#15803D' },
-  ROAD_RACE: { bg: '#DCFCE7', color: '#15803D' },
-  Training: { bg: '#F3E8FF', color: '#6B21A8' },
-  TRAINING: { bg: '#F3E8FF', color: '#6B21A8' },
-  'National Team': { bg: '#FEE2E2', color: '#B91C1C' },
-  NATIONAL_TEAM: { bg: '#FEE2E2', color: '#B91C1C' },
-  RECOGNITION: { bg: '#FEF3C7', color: '#B45309' },
-  ANNOUNCEMENT: { bg: '#E0E7FF', color: '#4338CA' },
-  COMMUNITY: { bg: '#DCFCE7', color: '#15803D' },
-  GENERAL: { bg: '#F1F5F9', color: '#475569' },
-};
-
-function formatNewsDate(dateStr: string) {
-  try {
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch {
-    return dateStr;
-  }
-}
-
-const DEFAULT_NEWS_IMAGES = [
-  '/images/d1.jpg',
-  '/images/d2.jpeg',
-  '/images/d3.jpeg',
-  '/images/d4.jpg',
-  '/images/d5.jpg',
-  '/images/runner_marathon.png',
-];
+const ENRICHED_MEETS: any[] = [];
+const ATHLETES: any[] = [];
+const GALLERY_IMAGES: GalleryItem[] = [];
 
 function mapArticleToNewsItem(article: NewsArticle, index: number): NewsItem {
   return {
     id: article.id,
-    date: formatNewsDate(article.date),
-    title: article.title,
-    summary: article.shortDescription,
-    tag: article.category || 'General',
-    img: article.imageUrl || DEFAULT_NEWS_IMAGES[index % DEFAULT_NEWS_IMAGES.length],
-    featured: article.isFeatured,
-    author: article.author || 'EAF Communications Department',
-    readTime: '3 min read',
-    location: 'Addis Ababa, Ethiopia',
-    paragraphs: article.shortDescription ? [article.shortDescription] : [],
+    date: article.date || '',
+    title: article.title || '',
+    amharicTitle: article.amharicTitle || undefined,
+    summary: article.shortDescription || '',
+    tag: article.category || '',
+    img: article.imageUrl || '',
+    featured: Boolean(article.isFeatured),
+    author: article.author || '',
+    readTime: '',
+    location: '',
+    paragraphs: [],
   };
 }
-
-/* ─────────────────────────────────────────────
-   VECTOR ILLUSTRATION COMPONENTS
-   ───────────────────────────────────────────── */
-const VectorRunnerDecoration = () => (
-  <svg width="340" height="280" viewBox="0 0 340 280" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.15 }}>
-    <path d="M40 240 Q 120 180, 200 220 T 320 160" stroke="var(--primary)" strokeWidth="6" strokeDasharray="8 8" fill="none" />
-    <path d="M20 260 Q 100 200, 180 240 T 300 180" stroke="#38BDF8" strokeWidth="4" fill="none" />
-    <circle cx="220" cy="80" r="35" fill="url(#grad1)" />
-    <polygon points="120,40 140,80 180,90 150,120 160,160 120,140 80,160 90,120 60,90 100,80" fill="none" stroke="#F59E0B" strokeWidth="2" />
-    <defs>
-      <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.4" />
-        <stop offset="100%" stopColor="var(--primary-dark)" stopOpacity="0.0" />
-      </linearGradient>
-    </defs>
-  </svg>
-);
-
-const VectorTrackLines = () => (
-  <svg width="100%" height="100%" viewBox="0 0 800 200" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: 'absolute', inset: 0, opacity: 0.08, pointerEvents: 'none' }}>
-    <path d="M-50 180 C 200 80, 400 220, 850 40" stroke="var(--primary)" strokeWidth="8" />
-    <path d="M-50 160 C 200 60, 400 200, 850 20" stroke="var(--primary)" strokeWidth="6" />
-    <path d="M-50 140 C 200 40, 400 180, 850 0" stroke="#F59E0B" strokeWidth="6" />
-  </svg>
-);
 
 interface LandingPageProps {
   onSelectRole: (role: string) => void;
@@ -515,11 +110,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         id: alb.id || idx + 1,
         title: alb.title,
         category: alb.category ? (alb.category.charAt(0).toUpperCase() + alb.category.slice(1).toLowerCase().replace(/_/g, ' ')) : 'Championship',
-        img: alb.coverImage || '/images/c1.jpg',
-        location: alb.location || 'Addis Ababa National Stadium',
-        date: alb.eventDate ? new Date(alb.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '2026 Season',
+        img: alb.coverImage || '',
+        location: alb.location || '',
+        date: alb.eventDate ? new Date(alb.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
         type: (alb.type || 'PHOTO') as 'PHOTO' | 'VIDEO',
-        description: alb.description || 'EAF Championship Highlights',
+        description: alb.description || '',
         captures: Array.isArray(alb.captures) && alb.captures.length > 0 ? alb.captures.map((c: any, cIdx: number) => ({
           id: c.id || cIdx + 1,
           img: c.url || alb.coverImage,
@@ -528,38 +123,38 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           photographer: c.photographer || alb.photographer || 'EAF Media Unit',
         })) : [{
           id: 1,
-          img: alb.coverImage || '/images/c1.jpg',
+          img: alb.coverImage || '',
           title: alb.title,
           caption: alb.description || 'EAF Press Photography',
           photographer: alb.photographer || 'EAF Media Unit',
         }],
       }));
     }
-    return GALLERY_IMAGES;
+    return [];
   }, [apiGallery]);
 
   const allMeets = useMemo(() => {
     if (!apiEvents || !Array.isArray(apiEvents) || apiEvents.length === 0) {
-      return ENRICHED_MEETS;
+      return [];
     }
     return apiEvents.map((evt: any, idx: number) => {
-      const scheduleDate = evt.schedule?.[0]?.date || evt.registrationDeadline?.slice(0, 10) || '2026-11-15';
+      const scheduleDate = evt.schedule?.[0]?.date || evt.registrationDeadline?.slice(0, 10) || '';
       const parsedDate = new Date(scheduleDate);
       const dateStr = !isNaN(parsedDate.getTime())
         ? parsedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-        : 'November 15, 2026';
+        : '';
 
       return {
         id: evt.id,
-        title: evt.title || 'National Athletics Competition',
+        title: evt.title || '',
         amharic: evt.title,
-        venue: evt.venue || 'Meskel Square / National Stadium, Addis Ababa',
+        venue: evt.venue || '',
         date: scheduleDate,
         dateString: dateStr,
         status: evt.status === 'PUBLISHED' ? 'REGISTRATION_OPEN' : (evt.status || 'REGISTRATION_OPEN'),
-        disciplines: Array.isArray(evt.disciplines) && evt.disciplines.length > 0 ? evt.disciplines : ['10,000m', '5,000m', 'Marathon'],
-        region: evt.venue?.toLowerCase().includes('hawassa') ? 'Sidama' : evt.venue?.toLowerCase().includes('oromia') || evt.venue?.toLowerCase().includes('asella') ? 'Oromia' : 'Addis Ababa',
-        img: evt.bannerUrl || (idx % 2 === 0 ? '/images/banner_grand_prix.png' : '/images/banner_jan_meda.png'),
+        disciplines: Array.isArray(evt.disciplines) ? evt.disciplines : [],
+        region: evt.region || '',
+        img: evt.bannerUrl || '',
         description: evt.description,
         rules: evt.rules,
         schedule: evt.schedule,
@@ -588,117 +183,30 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     }
   }, [apiNews]);
 
-  const fallbackNews: NewsItem[] = useMemo(() => {
-    return MOCK_NEWS.map((item, idx) => ({
-      id: item.id,
-      date: item.date,
-      title: item.title,
-      summary: item.summary,
-      tag: item.tag || item.category || 'General',
-      img: item.imageUrl || DEFAULT_NEWS_IMAGES[idx % DEFAULT_NEWS_IMAGES.length],
-      featured: idx === 0,
-      author: 'EAF Communications Department',
-      readTime: '3 min read',
-      location: 'Addis Ababa, Ethiopia',
-      paragraphs: [
-        item.summary,
-        'The Ethiopian Athletics Federation continues to expand competition infrastructure and athlete support systems across all regional member associations.',
-        'Official dispatches and tournament event schedules are synchronized regularly through the EAF Federation Hub platform.'
-      ],
-    }));
-  }, []);
-
   const newsList: NewsItem[] = useMemo(() => {
-    if (apiNews && apiNews.length > 0) {
-      return apiNews.map((article, idx) => mapArticleToNewsItem(article, idx));
-    }
-    if (cachedNews && cachedNews.length > 0) {
-      return cachedNews;
-    }
-    return fallbackNews;
-  }, [apiNews, cachedNews, fallbackNews]);
+    if (apiNews) return apiNews.map((article, idx) => mapArticleToNewsItem(article, idx));
+    return [];
+  }, [apiNews, cachedNews]);
 
   // ── Fetch Athletes from Backend API (with instant 0ms localStorage cache) ──
   const { data: apiAthletes } = useGetAthletesQuery();
-  const [cachedAthletes, setCachedAthletes] = useState<any[]>(() => {
-    try {
-      const saved = localStorage.getItem('eaf_athletes_cache');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    if (apiAthletes && apiAthletes.length > 0) {
-      const mapped = apiAthletes.map((ath, idx) => ({
-        id: ath.id || idx + 1,
-        name: ath.name || (ath.user ? `${ath.user.firstName} ${ath.user.lastName}` : 'Ethiopian Athlete'),
-        amharicName: ath.amharicName || ath.name,
-        achievement: ath.achievement || `${ath.primaryEvent || 'Track & Field'} Competitor`,
-        event: ath.primaryEvent || 'Track & Field',
-        club: ath.clubName || 'Ethiopian National Team',
-        faydaFin: 'VERIFIED',
-        faydaStatus: ath.faydaVerified ? 'VERIFIED' : 'PENDING',
-        dob: '2000-01-01',
-        gender: ath.gender || 'Senior',
-        ageTier: ath.ageTier || 'Senior',
-        pb: ath.personalBest || 'Personal Best Mark',
-        quote: ath.quote || 'Dedicating every stride to Ethiopia.',
-        img: ath.photoUrl || (idx % 2 === 0 ? '/images/a1.jpg' : '/images/a2.jpg'),
-        medals: ['🥇 National Competitor', '🥈 Elite Athlete'],
-      }));
-      setCachedAthletes(mapped);
-      try {
-        localStorage.setItem('eaf_athletes_cache', JSON.stringify(mapped));
-      } catch {}
-    }
-  }, [apiAthletes]);
-
-  const athleteList = useMemo(() => {
-    if (siteContent?.featuredStars && Array.isArray(siteContent.featuredStars) && siteContent.featuredStars.length > 0) {
-      const activeStars = siteContent.featuredStars.filter((s: any) => s.active !== false);
-      if (activeStars.length > 0) {
-        return activeStars.map((s: any, idx: number) => ({
-          id: s.id || `star-${idx}`,
-          name: s.name,
-          amharicName: s.amharic || s.name,
-          achievement: `${s.event || 'Athletics'} Champion`,
-          event: s.event || 'Long Distance',
-          club: s.club || 'National Team',
-          faydaFin: 'VERIFIED',
-          faydaStatus: 'VERIFIED',
-          dob: '1998-01-01',
-          gender: 'Senior',
-          ageTier: 'Senior',
-          pb: s.pb || 'World Class Mark',
-          quote: 'Representing Ethiopia on the world stage.',
-          img: s.img || '/images/a1.jpg',
-          medals: Array.isArray(s.medals) && s.medals.length > 0 ? s.medals : ['🥇 National Record Holder', '🥇 World Champion'],
-        }));
-      }
-    }
-    if (apiAthletes && apiAthletes.length > 0) {
-      return apiAthletes.map((ath, idx) => ({
-        id: ath.id || idx + 1,
-        name: ath.name || (ath.user ? `${ath.user.firstName} ${ath.user.lastName}` : 'Ethiopian Athlete'),
-        amharicName: ath.amharicName || ath.name,
-        achievement: ath.achievement || `${ath.primaryEvent || 'Track & Field'} Competitor`,
-        event: ath.primaryEvent || 'Track & Field',
-        club: ath.clubName || 'Ethiopian National Team',
-        faydaFin: 'VERIFIED',
-        faydaStatus: ath.faydaVerified ? 'VERIFIED' : 'PENDING',
-        dob: '2000-01-01',
-        gender: ath.gender || 'Senior',
-        ageTier: ath.ageTier || 'Senior',
-        pb: ath.personalBest || 'Personal Best Mark',
-        quote: ath.quote || 'Dedicating every stride to Ethiopia.',
-        img: ath.photoUrl || (idx % 2 === 0 ? '/images/a1.jpg' : '/images/a2.jpg'),
-        medals: ['🥇 National Competitor', '🥈 Elite Athlete'],
-      }));
-    }
-    return cachedAthletes.length > 0 ? cachedAthletes : ATHLETES;
-  }, [apiAthletes, cachedAthletes, siteContent?.featuredStars]);
+  const athleteList = useMemo(() => (apiAthletes || []).map((ath: any) => ({
+    id: ath.id,
+    name: ath.name || `${ath.user?.firstName || ''} ${ath.user?.lastName || ''}`.trim(),
+    amharicName: ath.amharicName || '',
+    achievement: ath.achievement || '',
+    event: ath.primaryEvent || '',
+    club: ath.clubName || '',
+    faydaFin: '',
+    faydaStatus: ath.faydaVerified ? 'VERIFIED' : '',
+    dob: ath.dateOfBirth || '',
+    gender: ath.gender || '',
+    ageTier: ath.ageTier || '',
+    pb: ath.personalBest || '',
+    quote: '',
+    img: ath.photoUrl || '',
+    medals: [],
+  })), [apiAthletes]);
 
   const [selectedMeetId, setSelectedMeetId] = useState<string | null>(null);
   const [selectedAthleteModal, setSelectedAthleteModal] = useState<any>(null);
@@ -715,12 +223,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         list.push({
           id: m.id,
           title: m.title,
-          location: m.venue || 'Addis Ababa National Stadium',
-          category: (m.disciplines && m.disciplines.length > 0) ? `${m.disciplines[0]} Final` : 'Track & Field Final',
-          leader: m.organizerName || 'Ethiopian Athletics Federation',
+          location: m.venue || '',
+          category: (m.disciplines && m.disciplines.length > 0) ? `${m.disciplines[0]}` : '',
+          leader: m.organizerName || '',
           time: m.dateString || 'Scheduled',
           status: m.status === 'REGISTRATION_OPEN' ? 'REGISTRATION OPEN' : 'LIVE NOW',
-          img: m.img || (idx % 2 === 0 ? '/images/banner_grand_prix.png' : '/images/banner_jan_meda.png'),
+          img: m.img || '',
         });
       });
     }
@@ -730,65 +238,22 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
           list.push({
             id: n.id,
             title: n.title,
-            location: 'EAF Official Notice • Addis Ababa',
+            location: '',
             category: n.category?.replace(/_/g, ' ') || 'Official Announcement',
-            leader: n.author || 'EAF Communications',
+            leader: n.author || '',
             time: 'Latest Release',
             status: 'FEATURED NOTICE',
-            img: n.imageUrl || '/images/banner_grand_prix.png',
+            img: n.imageUrl || '',
           });
         }
       });
     }
-    if (list.length > 0) return list;
-    return [
-      {
-        id: "MEET-2026-04",
-        title: "Oromia Athletics Championship 2026",
-        location: "Asella Stadium • Oromia Region",
-        category: "Men 10,000m Track Final",
-        leader: "Lamecha Girma (Oromia Police)",
-        time: "26:48.30",
-        status: "LIVE NOW",
-        img: "/images/d1.jpg",
-      },
-      {
-        id: "MEET-2026-01",
-        title: "Addis Ababa International Grand Prix 2026",
-        location: "National Stadium • Addis Ababa",
-        category: "Men 5,000m Track Final",
-        leader: "Berihu Aregawi (Commercial Bank)",
-        time: "12:54.20",
-        status: "LIVE NOW",
-        img: "/images/banner_grand_prix.png",
-      },
-      {
-        id: "MEET-2026-03",
-        title: "Jan Meda National Cross-Country Olympic Trials",
-        location: "Jan Meda Race Course • Addis Ababa",
-        category: "Senior Men 10km Cross Country",
-        leader: "Selemon Barega (Police Sports)",
-        time: "28:12.05",
-        status: "LIVE NOW",
-        img: "/images/banner_jan_meda.png",
-      },
-      {
-        id: "MEET-2026-02",
-        title: "Ethiopian National Youth Olympic Games U18/U20",
-        location: "Hawassa International Stadium • Sidama",
-        category: "Women 1,500m Track Final",
-        leader: "Birke Haylom (CBO Club)",
-        time: "03:56.40",
-        status: "LIVE NOW",
-        img: "/images/banner_youth_games.png",
-      },
-    ];
+    return list;
   }, [allMeets, apiNews]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setHeroTickerIndex(prev => (prev + 1) % HERO_LIVE_RESULTS.length);
-    }, 4000);
+    if (HERO_LIVE_RESULTS.length < 2) return;
+    const timer = setInterval(() => setHeroTickerIndex(prev => (prev + 1) % HERO_LIVE_RESULTS.length), 4000);
     return () => clearInterval(timer);
   }, [HERO_LIVE_RESULTS.length]);
 
@@ -1397,6 +862,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </span>
             </motion.h1>
 
+            {HERO_LIVE_RESULTS.length > 0 && <>
             {/* Animated Live Results Showcase Card (Bento Floating Glassmorphic Card) */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -1557,6 +1023,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               </div>
             </motion.div>
 
+            </>}
             {/* Action Buttons (Primary & Secondary CTAs) */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}

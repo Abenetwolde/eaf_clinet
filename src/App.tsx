@@ -38,7 +38,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n, LanguageSelector } from './i18n';
 
 import { useAppDispatch, useAppSelector } from './store/hooks';
-import { setRole, setClub, setAthlete, setCoach, logout, setAuthLoading, setUserData } from './store/slices/authSlice';
+import { login, setRole, setClub, setAthlete, setCoach, logout, setAuthLoading, setUserData } from './store/slices/authSlice';
 import { addAthlete, updateAthlete, setAthletes } from './store/slices/athleteSlice';
 import { addClub, addTransfer } from './store/slices/clubSlice';
 import { useLazyGetMeQuery, useLogoutApiMutation } from './store/api/authApi';
@@ -331,8 +331,10 @@ export default function App() {
             verificationToken: token,
           });
           sessionStorage.setItem('eaf_fayda_verified', serialized);
-          localStorage.setItem('eaf_fayda_verified', serialized);
-          localStorage.setItem('fayda_auth_payload', JSON.stringify({ identity: citizenObj, verificationToken: token }));
+          if (sessionStorage.getItem('eaf_club_member_registration') !== '1') {
+            localStorage.setItem('eaf_fayda_verified', serialized);
+            localStorage.setItem('fayda_auth_payload', JSON.stringify({ identity: citizenObj, verificationToken: token }));
+          }
         } catch (e) {}
       }
 
@@ -442,6 +444,17 @@ export default function App() {
   useEffect(() => {
     const handleFaydaMessage = (e: MessageEvent) => {
       if (e.data?.type === 'FAYDA_OIDC_SUCCESS' && e.data.payload?.userInfo) {
+        if (sessionStorage.getItem('eaf_club_member_registration') === '1') {
+          const identity = {
+            ...e.data.payload.userInfo,
+            verificationToken: e.data.payload.verificationToken || e.data.payload.userInfo.verificationToken,
+          };
+          const verified = JSON.stringify({ identity, verificationToken: identity.verificationToken });
+          sessionStorage.setItem('eaf_fayda_verified', verified);
+          window.dispatchEvent(new CustomEvent('eaf-fayda-verified', { detail: verified }));
+          setClubSubPage('REGISTER_MEMBER');
+          return;
+        }
         if (isUserRegistered) {
           handleNotify('You have already completed registration with the Ethiopian Athletics Federation.', 'info');
           setPublicSubPage('DASHBOARD');
@@ -495,9 +508,21 @@ export default function App() {
     localStorage.setItem('eaf_registration_status', 'completed');
     if (registrationData.type === 'CLUB') {
       const newClub = registrationData.payload.club as Club;
+      const session = registrationData.payload.session;
+      if (!session?.token) {
+        setPublicSubPage('LOGIN');
+        handleNotify('Club registered. Sign in with the club admin credentials before adding members.', 'info');
+        return;
+      }
       dispatch(addClub(newClub));
-      dispatch(setClub(newClub));
-      dispatch(setRole('CLUB'));
+      dispatch(login({
+        role: 'CLUB',
+        club: newClub,
+        token: session.token,
+        refreshToken: session.refreshToken,
+        userId: session.userId,
+        userData: session.userData,
+      }));
       const targetSubPage = registrationData.payload.targetSubPage || 'OVERVIEW';
       setClubSubPage(targetSubPage);
       setPublicSubPage('DASHBOARD');
@@ -1266,13 +1291,13 @@ export default function App() {
           <RegisterMember
             onBack={() => setClubSubPage('ROSTER')}
             onNotify={handleNotify}
-            onAddAthlete={handleAddAthlete}
           />
         )}
         {clubSubPage === 'ROSTER' && (
           <RosterManagement
             onRenewLicense={handleInitiateLicensePayment}
-            onAddAthlete={handleAddAthlete} onUpdateAthlete={handleUpdateAthlete}
+            onRegisterMember={() => setClubSubPage('REGISTER_MEMBER')}
+            onUpdateAthlete={handleUpdateAthlete}
           />
         )}
         {clubSubPage === 'MEETS' && (
