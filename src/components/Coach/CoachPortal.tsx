@@ -772,7 +772,7 @@ export default function CoachPortal({
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1 text-emerald-800 text-[10px] font-black uppercase">
-                        {ath.faydaVerified && <><ShieldCheck size={12} /> Fayda Verified</>} Resident
+                        <ShieldCheck size={12} /> Fayda identity verified
                       </div>
                       <div className="font-black text-sm text-slate-900 truncate mt-0.5">
                         {faydaVerifiedData.fullName}

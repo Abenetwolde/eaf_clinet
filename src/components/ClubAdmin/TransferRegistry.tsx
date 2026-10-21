@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowRightLeft, Lock, Calendar, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { useAppSelector } from '../../store/hooks';
 import type { Transfer } from '../../types';
 
 interface TransferRegistryProps {

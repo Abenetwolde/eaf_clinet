@@ -750,14 +750,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDownloadCompetitionPass(app)}
-                      className="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer border-0"
-                    >
-                      <Download size={13} />
-                      <span>Download Official Accreditation Pass (SVG)</span>
-                    </button>
+
                   </div>
                 ))}
               </div>

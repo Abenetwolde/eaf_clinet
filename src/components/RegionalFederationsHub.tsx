@@ -66,6 +66,7 @@ export default function RegionalFederationsHub({ darkMode = false }: RegionalFed
     e.preventDefault();
     if (!newCompTitle || !newCompVenue || !newCompStartDate) return;
     const matchedRegion = regionalFederations.find(r => r.id === newCompRegion);
+    const token = localStorage.getItem('token') || localStorage.getItem('eaf_token') || localStorage.getItem('eaf_accessToken');
     const payload = {
       title: newCompTitle,
       regionId: newCompRegion,

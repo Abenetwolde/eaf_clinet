@@ -318,11 +318,11 @@ export default function ClubRegistrationForm({
       (newClub as any).charterAuthority = repTitle.trim();
       (newClub as any).verificationStatus = persistedClub.verificationStatus;
       (newClub as any).status = persistedClub.verificationStatus === 'VERIFIED' ? 'ACTIVE' : persistedClub.verificationStatus;
-      (newClub as any).licenseNumber = persistedClub.licenseNumber || cleanRef;
+      (newClub as any).licenseNumber = persistedClub.licenseNumber || persistedClub.id;
       (newClub as any).logoUrl = persistedClub.logoUrl || resolvedLogo;
 
       setRegisteredClub(newClub);
-      setReferenceId(persistedClub.licenseNumber || cleanRef);
+      setReferenceId(persistedClub.licenseNumber || persistedClub.id);
       setStep(4); // Show success screen
     } catch (err: any) {
       setErrorMessage(err?.message || 'Unable to connect to the registration service. Please try again.');

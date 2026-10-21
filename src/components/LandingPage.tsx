@@ -59,6 +59,20 @@ export interface GalleryItem {
 const ENRICHED_MEETS: any[] = [];
 const ATHLETES: any[] = [];
 const GALLERY_IMAGES: GalleryItem[] = [];
+const TAG_COLORS: Record<string, { bg: string; color: string }> = {
+  NEWS: { bg: '#DBEAFE', color: '#1D4ED8' },
+  COMPETITION: { bg: '#DCFCE7', color: '#15803D' },
+  ANNOUNCEMENT: { bg: '#FEF3C7', color: '#B45309' },
+};
+
+const QUICK_LINKS: [string, string, string][] = [
+  ['Home', 'መነሻ', '#home'],
+  ['Competitions', 'ውድድሮች', '#competitions'],
+  ['Athletes', 'አትሌቶች', '#athletes'],
+  ['News', 'ዜና', '#news'],
+  ['Media', 'ሚዲያ', '#media'],
+  ['Contact', 'ያግኙን', '#contact'],
+];
 
 // Platform governance areas; individual office holders and member counts come from live records.
 const STRUCTURE_ITEMS = [
