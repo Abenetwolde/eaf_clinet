@@ -173,17 +173,10 @@ export default function LoginPage({
 
       if (appRole === 'COACH') {
         const resolvedCoach = data.coach || {
-          id: data.userId || data.user?.id,
-          name: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim() || data.userName || 'Coach',
-          email: data.user?.email || '',
-          phoneNumber: data.user?.phoneNumber || credential,
-          licenseNumber: data.licenseNumber || 'WA-COA-ETH-2026-21593',
-          specialization: data.specialization || 'Distance & Steeplechase',
-          yearsOfExperience: 24,
-          status: 'ACTIVE',
-          user: data.user,
-          faydaFin: identifierToSend,
-          faydaFan: data.fanNumber,
+          id: data.coach?.id || '', name: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim(),
+          email: data.user?.email || '', phoneNumber: data.user?.phoneNumber || '',
+          licenseNumber: '', specialization: '', yearsOfExperience: 0, status: data.coach?.status || '',
+          user: data.user, faydaFin: data.faydaNin || '', faydaFan: data.fanNumber || '',
         };
 
         dispatch(login({
@@ -198,20 +191,11 @@ export default function LoginPage({
         onLoginSuccess('COACH', { coach: resolvedCoach });
       } else if (appRole === 'CLUB') {
         const resolvedClub = data.club || {
-          id: data.clubId || 'CLUB-' + data.userId,
-          name: data.clubName || 'Addis Ababa Runners Club',
-          shortName: data.clubName ? data.clubName.split(' ')[0] : 'AARC',
-          region: 'Addis Ababa',
-          manager: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim() || 'Club Administrator',
-          email: data.user?.email || credential,
-          phone: '',
-          licensedAthletes: 14,
-          pendingVerifications: 2,
-          unlicensedAthletes: 0,
-          transfersCount: 1,
-          logo: '🏃',
-          clubRank: 1,
-          totalPoints: 850,
+          id: data.clubId || '', name: data.clubName || '', shortName: data.club?.shortName || '',
+          region: data.club?.region || '', manager: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim(),
+          email: data.club?.email || data.user?.email || '', phone: data.club?.phone || '',
+          licensedAthletes: 0, pendingVerifications: 0, unlicensedAthletes: 0, transfersCount: 0,
+          logo: data.club?.logoUrl || '', clubRank: 0, totalPoints: 0,
         };
 
         dispatch(login({
@@ -226,26 +210,11 @@ export default function LoginPage({
         onLoginSuccess('CLUB', { club: resolvedClub });
       } else {
         const resolvedAthlete = data.athlete || {
-          id: data.userId || data.user?.id,
-          name: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim() || data.userName || 'Athlete',
-          amharicName: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim() || data.userName,
-          dob: '2000-01-01',
-          gender: 'MALE',
-          ageTier: 'Senior Division',
-          clubId: data.clubId || undefined,
-          clubName: data.clubName || 'Independent',
-          faydaFin: data.fanNumber || identifierToSend,
-          faydaFan: data.fanNumber,
-          faydaStatus: 'VERIFIED',
-          licenseStatus: 'APPROVED',
-          photoUrl: '/images/fayda_resident_photo.jpg',
-          email: data.user?.email || '',
-          phone: '',
-          personalBests: [],
-          seasonBests: [],
-          weightLog: [],
-          trainingLog: [],
-          achievements: [],
+          id: '', name: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim(),
+          amharicName: '', dob: '', gender: '', ageTier: '', clubId: data.clubId || undefined,
+          clubName: data.clubName || '', faydaFin: data.faydaNin || '', faydaFan: data.fanNumber || '',
+          faydaStatus: '', licenseStatus: data.registrationStatus || data.status || '', photoUrl: data.user?.picture || '',
+          email: data.user?.email || '', phone: data.user?.phoneNumber || '', personalBests: [], seasonBests: [], weightLog: [], trainingLog: [], achievements: [],
         };
 
         dispatch(login({
@@ -257,16 +226,7 @@ export default function LoginPage({
           userData,
         }));
 
-        try {
-          localStorage.setItem('eaf_registered_athlete', JSON.stringify({
-            userId: userData.id,
-            name: `${userData.firstName} ${userData.lastName}`.trim() || data.userName,
-            fanNumber: data.fanNumber,
-            role: 'ATHLETE',
-            status: 'ACTIVE',
-            isRegistered: true,
-          }));
-        } catch (e) {}
+
 
         onLoginSuccess('ATHLETE', { athlete: resolvedAthlete });
       }

@@ -919,7 +919,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.75) 100%)' }} />
-                    
+
                     {/* Pulsing Live Badge */}
                     <div style={{
                       position: 'absolute',
@@ -2708,7 +2708,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 />
                 <div>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#DCFCE7', color: '#15803D', padding: '3px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '6px' }}>
-                    <ShieldCheck size={14} /> Fayda Verified ({selectedAthleteModal.faydaFin})
+                    <ShieldCheck size={14} /> Fayda Verified ({Identity verified})
                   </div>
                   <h3 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#0F172A', lineHeight: 1.3, marginBottom: '2px' }}>
                     {selectedAthleteModal.name}
@@ -2731,8 +2731,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Club Affiliation</td><td style={{ fontWeight: 800, color: 'var(--primary)' }}>{selectedAthleteModal.club}</td></tr>
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Personal Best</td><td style={{ fontWeight: 800, color: '#D97706' }}>{selectedAthleteModal.pb}</td></tr>
                   <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Age Division</td><td style={{ fontWeight: 800, color: '#15803D' }}>{selectedAthleteModal.ageTier}</td></tr>
-                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>World Athletics Sync</td><td style={{ fontWeight: 800, color: '#0284C7' }}>WA-14207842 · Global Ranking #1 · 1,412 pts (Verified)</td></tr>
-                  <tr><td style={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>Passport & FAN Verification</td><td style={{ fontWeight: 800, color: '#475569' }}>EP4829104 (ETH) · FAN-9842-1084-3310 (International Eligible)</td></tr>
+
+
                 </tbody>
               </table>
             </div>

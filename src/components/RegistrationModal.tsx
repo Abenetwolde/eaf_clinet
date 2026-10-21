@@ -185,7 +185,7 @@ function resolveStoredFaydaIdentity(propIdentity?: FaydaResidentIdentity | null)
     const dob = raw.dob || raw.birthDate || raw.birthdate || '';
     const verificationToken = raw.verificationToken || '';
     if (!fin || !name || !dob || !verificationToken) return null;
-    const age = new Date().getFullYear() - new Date(dob).getFullYear();
+    const age = dob ? new Date().getFullYear() - new Date(dob).getFullYear() : 0;
     return {
       name,
       amharic: raw.amharic || raw.fullNameAmharic || '',
@@ -390,59 +390,56 @@ export default function RegistrationModal({
   const [region, setRegion] = useState(initialFayda?.region || '');
 
   // Club President specific
-  const [clubName, setClubName] = useState('Ethiopian Electric Athletics Club');
-  const [clubShortName, setClubShortName] = useState('EEAC');
-  const [clubCity, setClubCity] = useState('Addis Ababa');
-  const [clubAddress, setClubAddress] = useState('Mexico Square, EEP Compound, Bldg 4');
-  const [clubOfficialEmail, setClubOfficialEmail] = useState('admin@eeac-athletics.et');
-  const [clubOfficialPhone, setClubOfficialPhone] = useState('+251 11 551 2233');
-  const [clubLogo, setClubLogo] = useState('⚡');
-  const [supportingDocsNumber, setSupportingDocsNumber] = useState('RSB-AA-2024-C9842');
-  const [charterAuthority, setCharterAuthority] = useState('Executive President & Charter Signatory');
-  const [executiveTerm, setExecutiveTerm] = useState('2024 - 2028 Olympic Quadrennial');
-  const [charterAgreed, setCharterAgreed] = useState(true);
+  const [clubName, setClubName] = useState('');
+  const [clubShortName, setClubShortName] = useState('');
+  const [clubCity, setClubCity] = useState('');
+  const [clubAddress, setClubAddress] = useState('');
+  const [clubOfficialEmail, setClubOfficialEmail] = useState('');
+  const [clubOfficialPhone, setClubOfficialPhone] = useState('');
+  const [clubLogo, setClubLogo] = useState('');
+  const [supportingDocsNumber, setSupportingDocsNumber] = useState('');
+  const [charterAuthority, setCharterAuthority] = useState('');
+  const [executiveTerm, setExecutiveTerm] = useState('');
+  const [charterAgreed, setCharterAgreed] = useState(false);
 
   // Coach specific
-  const [coachSpecialization, setCoachSpecialization] = useState('Endurance & Marathon High Performance');
-  const [waCoachLevel, setWaCoachLevel] = useState('World Athletics Level 3 (High Performance)');
-  const [coachLicenseNumber, setCoachLicenseNumber] = useState('WA-ETH-COA-2026-088');
-  const [assignedTrainingCenter, setAssignedTrainingCenter] = useState('Bekoji High Altitude Center / EEAC');
+  const [coachSpecialization, setCoachSpecialization] = useState('');
+  const [waCoachLevel, setWaCoachLevel] = useState('');
+  const [coachLicenseNumber, setCoachLicenseNumber] = useState('');
+  const [assignedTrainingCenter, setAssignedTrainingCenter] = useState('');
 
   // Medical Head specific
-  const [medicalDesignation, setMedicalDesignation] = useState('Team Physician (MD) & Sports Medicine Head');
-  const [mohLicenseNumber, setMohLicenseNumber] = useState('MoH-ET-MD-2019-9482');
-  const [hospitalAffiliation, setHospitalAffiliation] = useState('Tikur Anbessa Hospital / National Sports Clinic');
-  const [isTueCoordinator, setIsTueCoordinator] = useState(true);
+  const [medicalDesignation, setMedicalDesignation] = useState('');
+  const [mohLicenseNumber, setMohLicenseNumber] = useState('');
+  const [hospitalAffiliation, setHospitalAffiliation] = useState('');
+  const [isTueCoordinator, setIsTueCoordinator] = useState(false);
 
   // Technical Official specific
-  const [officiatingRole, setOfficiatingRole] = useState('Technical Delegate & Track Referee');
-  const [waOfficialLevel, setWaOfficialLevel] = useState('World Athletics Level 2 Technical Official');
-  const [waOfficialId, setWaOfficialId] = useState('WA-ETO-ETH-4412');
+  const [officiatingRole, setOfficiatingRole] = useState('');
+  const [waOfficialLevel, setWaOfficialLevel] = useState('');
+  const [waOfficialId, setWaOfficialId] = useState('');
 
   // Athlete Digitization: Performance PBs & SBs
-  const [primaryEvent, setPrimaryEvent] = useState<string[]>(['5,000m Long Distance']);
+  const [primaryEvent, setPrimaryEvent] = useState<string[]>([]);
   const [selectedClubId, setSelectedClubId] = useState('NONE');
-  const [weight, setWeight] = useState(58);
-  const [height, setHeight] = useState(172);
-  const [restingHR, setRestingHR] = useState(44);
-  const [dominantFoot, setDominantFoot] = useState<'RIGHT' | 'LEFT'>('RIGHT');
-  const [nationalRankingTier, setNationalRankingTier] = useState('Senior National Podium Tier (Top 5)');
+  const [weight, setWeight] = useState(0);
+  const [height, setHeight] = useState(0);
+  const [restingHR, setRestingHR] = useState(0);
+  const [dominantFoot, setDominantFoot] = useState<'RIGHT' | 'LEFT' | ''>('');
+  const [nationalRankingTier, setNationalRankingTier] = useState('');
 
   // Performance Personal Bests (PBs) list
-  const [personalBests, setPersonalBests] = useState<Array<{ event: string; mark: string; isFat: boolean; date: string; venue: string }>>([
-    { event: '5,000m Track', mark: '12:45.32', isFat: true, date: '2025-06-12', venue: 'FBK Games, Hengelo' },
-    { event: '10,000m Track', mark: '26:54.10', isFat: true, date: '2025-05-24', venue: 'Prefontaine Classic, Eugene' },
-  ]);
-  const [newPbEvent, setNewPbEvent] = useState('Half Marathon');
-  const [newPbMark, setNewPbMark] = useState('59:14');
-  const [newPbVenue, setNewPbVenue] = useState('Valencia Half Marathon');
+  const [personalBests, setPersonalBests] = useState<Array<{ event: string; mark: string; isFat: boolean; date: string; venue: string }>>([]);
+  const [newPbEvent, setNewPbEvent] = useState('');
+  const [newPbMark, setNewPbMark] = useState('');
+  const [newPbVenue, setNewPbVenue] = useState('');
 
   // Medical Clearance & Fit-to-Compete
-  const [ecgStatus, setEcgStatus] = useState('NORMAL_ECG_CERTIFIED');
-  const [fitToCompeteAgreed, setFitToCompeteAgreed] = useState(true);
-  const [antiDopingCompliance, setAntiDopingCompliance] = useState(true);
-  const [emergencyContact, setEmergencyContact] = useState('+251 91 123 4567');
-  const [medicalNotes, setMedicalNotes] = useState('Blood Group O+ · Athletic sinus bradycardia resting HR 44 bpm');
+  const [ecgStatus, setEcgStatus] = useState('');
+  const [fitToCompeteAgreed, setFitToCompeteAgreed] = useState(false);
+  const [antiDopingCompliance, setAntiDopingCompliance] = useState(false);
+  const [emergencyContact, setEmergencyContact] = useState('');
+  const [medicalNotes, setMedicalNotes] = useState('');
 
   // UI state
   const [serverRegistrationId, setServerRegistrationId] = useState<string | null>(null);
@@ -474,16 +471,16 @@ export default function RegistrationModal({
     const handleMessage = (event: MessageEvent) => {
       if (event.data?.type === 'FAYDA_OIDC_SUCCESS' && event.data.payload) {
         const payload = event.data.payload;
+        if (!payload.verificationToken) { setFaydaError('Fayda identity claims could not be verified by the federation server. Please retry.'); return; }
         const identity = payload.userInfo || payload.identity || {};
         const fullName = identity['name#en'] || identity.fullName || identity.name || '';
         const amharic = identity['name#am'] || identity.fullNameAmharic || '';
         const dob = identity.birthdate || identity.birthDate || '';
         const dobYear = parseInt(dob.substring(0, 4));
-        const age = 2026 - (isNaN(dobYear) ? 1980 : dobYear);
+        const age = dob && !isNaN(dobYear) ? new Date().getFullYear() - dobYear : 0;
         const tier = age <= 16 ? 'U16 Junior' : age <= 18 ? 'U18 Youth' : age <= 20 ? 'U20 Junior' : age >= 35 ? `Masters Division (${age} yrs)` : 'Senior Division';
         const nin = identity.nin || identity.national_id || '';
-        const cleanDigits = nin.replace(/\D/g, '');
-        const fan = 'FAN-' + (cleanDigits.slice(-8) || '98421084');
+        const fan = identity.fan || identity.fanNumber || identity.fan_number || '';
         const phoneVal = identity.phone_number || identity.phoneNumber || '';
         const emailVal = identity.email || '';
         const photo = identity.picture || '';
@@ -492,18 +489,18 @@ export default function RegistrationModal({
           name: fullName,
           amharic,
           dob,
-          gender: (identity.gender || 'MALE').toUpperCase() === 'MALE' ? 'Male' : 'Female',
-          blood: 'O+',
-          region: 'Addis Ababa / Federal',
+          gender: (identity.gender || '').toUpperCase() === 'MALE' ? 'Male' : (identity.gender || '').toUpperCase() === 'FEMALE' ? 'Female' : '',
+          blood: '',
+          region: identity.region || identity.address || '',
           photoUrl: photo,
           ageTier: tier,
           fin: nin,
           fan,
-          hash: '0xFAYDA_' + cleanDigits.slice(-6),
+          hash: '',
           verificationDate: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
           phoneNumber: phoneVal,
           email: emailVal,
-          address: 'Addis Ababa / Federal',
+          address: identity.address || identity.region || '',
           verificationToken: payload.verificationToken || '',
         };
 
@@ -704,7 +701,7 @@ export default function RegistrationModal({
           clubAddress: clubAddress.trim(),
           clubCity: clubCity.trim(),
           clubRegion: region,
-          licenseNumber: 'ETH-CL-2026-' + Math.floor(100 + Math.random() * 900),
+          licenseNumber: 'ETH-CL-2026-' + '',
           logoUrl: clubLogo,
         };
 
@@ -738,9 +735,9 @@ export default function RegistrationModal({
           transfersCount: 0,
           logo: persistedClub.logoUrl || clubLogo,
           logoUrl: persistedClub.logoUrl || clubLogo,
-          clubRank: 1,
-          totalPoints: 100,
-          presidentName: faydaResult?.name || 'Club President',
+          clubRank: 0,
+          totalPoints: 0,
+          presidentName: faydaResult?.name || '',
           charterSigned: charterAgreed,
           verificationStatus: persistedClub.verificationStatus,
           status: persistedClub.verificationStatus === 'VERIFIED' ? 'ACTIVE' : persistedClub.verificationStatus,
@@ -755,31 +752,8 @@ export default function RegistrationModal({
       }
     }
 
-    const officialPayload: OfficialPayload = {
-      id: `${selectedRole}-2026-` + Math.floor(100 + Math.random() * 900),
-      role: selectedRole,
-      name: faydaResult?.name || '',
-      amharicName: faydaResult?.amharic,
-      faydaFin: faydaResult?.fin || faydaFin,
-      faydaFan: faydaResult?.fan || faydaFan,
-      photoUrl: faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg',
-      email,
-      phone,
-      clubName: selectedRole === 'COACH' ? clubName : undefined,
-      specialization: selectedRole === 'COACH' ? coachSpecialization : undefined,
-      certificationLevel: selectedRole === 'COACH' ? waCoachLevel : selectedRole === 'OFFICIAL' ? waOfficialLevel : undefined,
-      licenseNumber: selectedRole === 'COACH' ? coachLicenseNumber : undefined,
-      mohLicenseNumber: selectedRole === 'MEDICAL_HEAD' ? mohLicenseNumber : undefined,
-      hospitalAffiliation: selectedRole === 'MEDICAL_HEAD' ? hospitalAffiliation : undefined,
-      tueCoordinator: selectedRole === 'MEDICAL_HEAD' ? isTueCoordinator : undefined,
-      officiatingRole: selectedRole === 'OFFICIAL' ? officiatingRole : undefined,
-      waOfficialId: selectedRole === 'OFFICIAL' ? waOfficialId : undefined,
-      charterAuthority: selectedRole === 'CLUB_PRESIDENT' ? charterAuthority : undefined,
-    };
-
-    setServerRegistrationId(officialPayload.id);
-    setPendingRegistrationData({ type: 'OFFICIAL', payload: { official: officialPayload } });
-    setIsSubmittedPending(true);
+    setSubmissionError('Registration for this role is not connected to a persistent federation workflow yet. Contact your federation administrator.');
+    return;
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1991,7 +1965,7 @@ export default function RegistrationModal({
 
   const renderSuccessScreen = () => {
     if (!pendingRegistrationData) return null;
-    const refNumber = serverRegistrationId || ('EAF-REG-2026-' + Math.floor(100000 + Math.random() * 900000));
+    const refNumber = serverRegistrationId || 'Reference not provided by server';
 
     return (
       <div className="flex flex-col items-center text-center py-6 sm:py-8 max-w-xl mx-auto">
@@ -2023,7 +1997,7 @@ export default function RegistrationModal({
 
           <div className="flex items-center gap-4">
             <img
-              src={faydaResult?.photoUrl || '/images/fayda_resident_photo.jpg'}
+              src={faydaResult?.photoUrl || '/images/avatar-placeholder.svg'}
               alt="Portrait"
               className="w-14 h-16 object-cover rounded-xl border border-slate-300 shadow-sm"
             />

@@ -30,21 +30,7 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
 
   const handleUploadDoc = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsUploading(true);
-    setTimeout(() => {
-      setIsUploading(false);
-      onUpdateAthlete({
-        ...athlete,
-        secondaryDoc: {
-          type: selectedDocType,
-          docNumber: 'DOC-ETH-2026-' + Math.floor(1000 + Math.random() * 9000),
-          fileName: docFile ? docFile.name : 'Scanned_Document.pdf',
-          uploadDate: new Date().toLocaleDateString(),
-          verificationStatus: 'AUDITED_AND_APPROVED'
-        }
-      });
-      onNotify('Secondary KYC document uploaded to EAF Audit Queue.', 'success');
-    }, 1400);
+    onNotify('Supporting identity documents cannot be securely stored yet. No file was uploaded or recorded.', 'info');
   };
 
   return (
@@ -161,26 +147,19 @@ export default function FaydaVerification({ athlete, onUpdateAthlete, onNotify }
             <h4 className="text-[1.05rem] font-bold">Secondary KYC Document</h4>
           </div>
           <p className="text-[0.82rem] text-text-muted mb-4 leading-[1.5]">
-            Upload supporting identity verification document (passport, birth certificate, or student record).
+            Supporting identity document storage is not configured. Do not enter document data here.
           </p>
           <form onSubmit={handleUploadDoc}>
             <div className="form-group">
               <label className="form-label">Document Type</label>
-              <select className="form-select" value={selectedDocType} onChange={e => setSelectedDocType(e.target.value)}>
-                <option value="BIRTH_CERTIFICATE">Official Certified Birth Certificate</option>
-                <option value="PASSPORT">Ethiopian / Foreign Passport</option>
-                <option value="SCHOOL_RECORD">Ministry of Education Student Record</option>
-              </select>
+              <select className="form-select" value={selectedDocType} disabled><option value="BIRTH_CERTIFICATE">Unavailable</option></select>
             </div>
             <div className="form-group">
               <label className="form-label">Upload Scanned File (PDF / JPEG)</label>
-              <input type="file" className="form-input" onChange={e => setDocFile(e.target.files ? e.target.files[0] : null)} accept=".pdf,.png,.jpg,.jpeg" />
+              <input type="file" className="form-input" disabled accept=".pdf,.png,.jpg,.jpeg" />
             </div>
-            <button type="submit" className="btn-gov-secondary w-full mb-4" disabled={isUploading}>
-              {isUploading
-                ? <><RefreshCw size={14} className="animate-spin" /> Uploading...</>
-                : <><Upload size={14} /> Upload to EAF Audit Queue</>
-              }
+            <button type="submit" className="btn-gov-secondary w-full mb-4" disabled>
+              <Upload size={14} /> Secure document storage unavailable
             </button>
           </form>
 

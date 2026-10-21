@@ -26,209 +26,36 @@ interface RegionalFederationsHubProps {
 
 export default function RegionalFederationsHub({ darkMode = false }: RegionalFederationsHubProps) {
   const [activeTab, setActiveTab] = useState<'FEDERATIONS' | 'CALENDAR' | 'RESULTS'>('FEDERATIONS');
-  const [selectedRegionId, setSelectedRegionId] = useState<string>('REG-ORO');
+  const [selectedRegionId, setSelectedRegionId] = useState<string>('');
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
 
   // Form State for new regional competition
   const [newCompTitle, setNewCompTitle] = useState('');
-  const [newCompRegion, setNewCompRegion] = useState('REG-ORO');
+  const [newCompRegion, setNewCompRegion] = useState('');
   const [newCompVenue, setNewCompVenue] = useState('');
   const [newCompStartDate, setNewCompStartDate] = useState('');
   const [newCompEndDate, setNewCompEndDate] = useState('');
-  const [newCompDisciplines, setNewCompDisciplines] = useState('1500m, 5000m, 10000m');
+  const [newCompDisciplines, setNewCompDisciplines] = useState('');
   const [publishSuccess, setPublishSuccess] = useState(false);
 
-  // Regional Federations & Structures Data
-  const [regionalFederations, setRegionalFederations] = useState([
-    {
-      id: 'REG-ORO',
-      name: 'Oromia Regional Athletics Federation',
-      amharicName: 'የኦሮሚያ አትሌቲክስ ፌዴሬሽን',
-      headquarters: 'Adama & Sululta',
-      president: 'Chala Degefa',
-      technicalDirector: 'Dube Jillo',
-      contactEmail: 'athletics@oromia.gov.et',
-      phone: '+251 22 111 8492',
-      activeAthletesCount: 1420,
-      clubsCount: 18,
-      clubs: [
-        { id: 'CL-OWW', name: 'Oromia Water Works Club', city: 'Sululta', memberCount: 64 },
-        { id: 'CL-MUG', name: 'Muger Cement Athletics Club', city: 'Muger', memberCount: 52 },
-        { id: 'CL-BEK', name: 'Bekoji Young Runners Club', city: 'Bekoji', memberCount: 78 }
-      ],
-      trainingCenters: [
-        { id: 'TC-01', name: 'Bekoji High Altitude Training Center', altitudeMeters: 2810, focus: '5,000m - Marathon' },
-        { id: 'TC-02', name: 'Sululta High Altitude Training Complex', altitudeMeters: 2750, focus: 'Endurance & Recovery' }
-      ],
-      developmentProjects: [
-        { id: 'PRJ-01', name: 'Arsi Talent Identification & Nurturing Site', trainees: 120, target: 'U18 & U20 Distance' },
-        { id: 'PRJ-02', name: 'Bale Mountain Steeplechase Grassroots Hub', trainees: 45, target: '3,000m Steeplechase' }
-      ],
-      facilities: ['Bekoji Stadium & Clay Track', 'Sululta Tartan 400m Track', 'Adama Regional Stadium']
-    },
-    {
-      id: 'REG-AMH',
-      name: 'Amhara Regional Athletics Federation',
-      amharicName: 'የአማራ አትሌቲክስ ፌዴሬሽን',
-      headquarters: 'Bahir Dar',
-      president: 'Dr. Getachew Reda',
-      technicalDirector: 'Worku Bikila',
-      contactEmail: 'athletics@amhara.gov.et',
-      phone: '+251 58 220 1480',
-      activeAthletesCount: 980,
-      clubsCount: 12,
-      clubs: [
-        { id: 'CL-BD', name: 'Bahir Dar City Athletics Club', city: 'Bahir Dar', memberCount: 48 },
-        { id: 'CL-GON', name: 'Fasil Kenema Athletics Club', city: 'Gondar', memberCount: 42 },
-        { id: 'CL-DB', name: 'Debre Birhan High Altitude Athletics', city: 'Debre Birhan', memberCount: 56 }
-      ],
-      trainingCenters: [
-        { id: 'TC-03', name: 'Debre Birhan Extreme Altitude Training Hub', altitudeMeters: 2840, focus: 'Marathon & 10,000m' }
-      ],
-      developmentProjects: [
-        { id: 'PRJ-03', name: 'Wollo Middle Distance Project', trainees: 85, target: '800m & 1,500m' }
-      ],
-      facilities: ['Bahir Dar International Stadium', 'Debre Birhan Tartan Training Facility']
-    },
-    {
-      id: 'REG-AA',
-      name: 'Addis Ababa Athletics Federation',
-      amharicName: 'የአዲስ አበባ አትሌቲክስ ፌዴሬሽን',
-      headquarters: 'Addis Ababa',
-      president: 'Bililign Mekoya',
-      technicalDirector: 'Tolosa Kotu',
-      contactEmail: 'info@addisathletics.et',
-      phone: '+251 11 551 2488',
-      activeAthletesCount: 2150,
-      clubsCount: 22,
-      clubs: [
-        { id: 'CL-EEAC', name: 'Ethiopian Electric Athletics Club', city: 'Addis Ababa', memberCount: 92 },
-        { id: 'CL-DEF', name: 'Defense Sports Club Athletics', city: 'Addis Ababa', memberCount: 88 },
-        { id: 'CL-CBE', name: 'Commercial Bank of Ethiopia Club', city: 'Addis Ababa', memberCount: 74 },
-        { id: 'CL-POL', name: 'Federal Police Athletics Club', city: 'Addis Ababa', memberCount: 68 }
-      ],
-      trainingCenters: [
-        { id: 'TC-04', name: 'Yaya Africa Athletics Village', altitudeMeters: 2700, focus: 'International Acclimatization' }
-      ],
-      developmentProjects: [
-        { id: 'PRJ-04', name: 'Metropolitan Sprint & Hurdle Academy', trainees: 60, target: '100m, 200m, 400m Hurdles' }
-      ],
-      facilities: ['Abebe Bikila Stadium', 'Addis Ababa National Stadium', 'Jan Meda Cross Country Course']
-    },
-    {
-      id: 'REG-SID',
-      name: 'Sidama Regional Athletics Federation',
-      amharicName: 'የሲዳማ አትሌቲክስ ፌዴሬሽን',
-      headquarters: 'Hawassa',
-      president: 'Tsegaye Wolde',
-      technicalDirector: 'Abebech Negussie',
-      contactEmail: 'sidama.athletics@gov.et',
-      phone: '+251 46 220 5410',
-      activeAthletesCount: 620,
-      clubsCount: 8,
-      clubs: [
-        { id: 'CL-HW', name: 'Hawassa Kenema Athletics Club', city: 'Hawassa', memberCount: 46 }
-      ],
-      trainingCenters: [
-        { id: 'TC-05', name: 'Hawassa Lakeview Sprint & Jump Academy', altitudeMeters: 1700, focus: 'Sprints, Relays & Jumps' }
-      ],
-      developmentProjects: [
-        { id: 'PRJ-05', name: 'Aleta Wondo Endurance Initiative', trainees: 40, target: 'Road Racing' }
-      ],
-      facilities: ['Hawassa International Stadium']
-    },
-    {
-      id: 'REG-TIG',
-      name: 'Tigray Regional Athletics Federation',
-      amharicName: 'የትግራይ አትሌቲክስ ፌዴሬሽን',
-      headquarters: 'Mekelle',
-      president: 'Kahsay Berhe',
-      technicalDirector: 'Gebremedhin Hailu',
-      contactEmail: 'tigray.athletics@et',
-      phone: '+251 34 440 2199',
-      activeAthletesCount: 540,
-      clubsCount: 7,
-      clubs: [
-        { id: 'CL-MEK', name: 'Mekelle 70 Enderta Athletics', city: 'Mekelle', memberCount: 38 }
-      ],
-      trainingCenters: [
-        { id: 'TC-06', name: 'Mekelle High Plateau Training Base', altitudeMeters: 2250, focus: 'Middle Distance' }
-      ],
-      developmentProjects: [
-        { id: 'PRJ-06', name: 'North Highlands Youth Track Clinic', trainees: 50, target: 'Grassroots Track' }
-      ],
-      facilities: ['Tigray International Stadium (Mekelle)']
-    }
-  ]);
-
-  // Regional Competitions Calendar
-  const [competitions, setCompetitions] = useState([
-    {
-      id: 'RCOMP-2026-01',
-      title: 'Oromia Regional High-Altitude Championship',
-      regionId: 'REG-ORO',
-      regionName: 'Oromia',
-      startDate: '2026-11-14',
-      endDate: '2026-11-16',
-      venue: 'Sululta National Stadium',
-      categories: ['U18 Youth', 'U20 Junior', 'Senior Division'],
-      disciplines: ['1500m', '5000m', '10000m', '3000m Steeplechase'],
-      status: 'SCHEDULED',
-      registeredClubsCount: 16,
-      hasOfficialResults: false
-    },
-    {
-      id: 'RCOMP-2026-02',
-      title: '54th Ethiopian National Championship Regional Qualifier',
-      regionId: 'REG-AA',
-      regionName: 'Addis Ababa',
-      startDate: '2026-10-24',
-      endDate: '2026-10-26',
-      venue: 'Abebe Bikila Stadium',
-      categories: ['Senior Division'],
-      disciplines: ['100m', '400m', '800m', '1500m', '5000m', '10000m', '4x400m Relay'],
-      status: 'SCHEDULED',
-      registeredClubsCount: 22,
-      hasOfficialResults: false
-    },
-    {
-      id: 'RCOMP-2026-03',
-      title: 'Amhara Highland Cross Country Trials',
-      regionId: 'REG-AMH',
-      regionName: 'Amhara',
-      startDate: '2026-09-18',
-      endDate: '2026-09-18',
-      venue: 'Debre Birhan Extreme Elevation Loop',
-      categories: ['U20 Junior 6km', 'Senior Men 10km', 'Senior Women 10km'],
-      disciplines: ['Cross Country 10km', 'Cross Country 6km'],
-      status: 'COMPLETED',
-      registeredClubsCount: 11,
-      hasOfficialResults: true,
-      results: [
-        { event: 'Senior Men 10km', rank: 1, athleteName: 'Tadese Worku', club: 'Debre Birhan Athletics', time: '29:14.2', note: 'Course Record' },
-        { event: 'Senior Men 10km', rank: 2, athleteName: 'Biniam Mehary', club: 'Bahir Dar City AC', time: '29:22.8', note: 'FAT Official' },
-        { event: 'Senior Women 10km', rank: 1, athleteName: 'Senbere Teferi', club: 'Fasil Kenema AC', time: '32:45.0', note: 'National Standard' }
-      ]
-    }
-  ]);
+  const [regionalFederations, setRegionalFederations] = useState<any[]>([]);
+  const [competitions, setCompetitions] = useState<any[]>([]);
 
   // Load backend data if available
   useEffect(() => {
-    fetch('http://localhost:3000/api/v1/regional-federations')
+    const token = localStorage.getItem('token') || localStorage.getItem('eaf_token') || localStorage.getItem('eaf_accessToken');
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+    fetch('http://localhost:3000/api/v1/regional-federations', { headers })
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.data && data.data.length > 0) {
-          setRegionalFederations(data.data);
-        }
+        if (data.success && Array.isArray(data.data)) setRegionalFederations(data.data);
       })
       .catch(() => {});
 
-    fetch('http://localhost:3000/api/v1/regional-competitions')
+    fetch('http://localhost:3000/api/v1/regional-competitions', { headers })
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.data && data.data.length > 0) {
-          setCompetitions(data.data);
-        }
+        if (data.success && Array.isArray(data.data)) setCompetitions(data.data);
       })
       .catch(() => {});
   }, []);
@@ -238,58 +65,40 @@ export default function RegionalFederationsHub({ darkMode = false }: RegionalFed
   const handlePublishSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCompTitle || !newCompVenue || !newCompStartDate) return;
-
     const matchedRegion = regionalFederations.find(r => r.id === newCompRegion);
     const payload = {
       title: newCompTitle,
       regionId: newCompRegion,
-      regionName: matchedRegion ? matchedRegion.name.split(' ')[0] : 'Regional Federation',
+      regionName: matchedRegion?.name || '',
       startDate: newCompStartDate,
       endDate: newCompEndDate || newCompStartDate,
       venue: newCompVenue,
-      categories: ['Senior Division', 'U20 Junior'],
-      disciplines: newCompDisciplines.split(',').map(s => s.trim())
+      disciplines: newCompDisciplines.split(',').map(s => s.trim()).filter(Boolean),
     };
-
     try {
       const res = await fetch('http://localhost:3000/api/v1/regional-competitions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (data.success && data.data) {
-        setCompetitions(prev => [data.data, ...prev]);
-      } else {
-        const fallback = {
-          id: 'RCOMP-2026-' + String(competitions.length + 1).padStart(2, '0'),
-          ...payload,
-          status: 'SCHEDULED',
-          registeredClubsCount: 1,
-          hasOfficialResults: false
-        };
-        setCompetitions(prev => [fallback, ...prev]);
-      }
-    } catch {
-      const fallback = {
-        id: 'RCOMP-2026-' + String(competitions.length + 1).padStart(2, '0'),
-        ...payload,
-        status: 'SCHEDULED',
-        registeredClubsCount: 1,
-        hasOfficialResults: false
-      };
-      setCompetitions(prev => [fallback, ...prev]);
+      if (!res.ok || !data.success || !data.data) throw new Error(data?.message || 'Regional competition storage is unavailable.');
+      setCompetitions(prev => [data.data, ...prev]);
+      setPublishSuccess(true);
+      setTimeout(() => {
+        setPublishSuccess(false);
+        setIsPublishModalOpen(false);
+        setNewCompTitle('');
+        setNewCompVenue('');
+        setNewCompStartDate('');
+        setNewCompEndDate('');
+      }, 1500);
+    } catch (error: any) {
+      window.dispatchEvent(new CustomEvent('eaf-notify', { detail: { message: error?.message || 'Could not save regional competition.', type: 'error' } }));
     }
-
-    setPublishSuccess(true);
-    setTimeout(() => {
-      setPublishSuccess(false);
-      setIsPublishModalOpen(false);
-      setNewCompTitle('');
-      setNewCompVenue('');
-      setNewCompStartDate('');
-      setNewCompEndDate('');
-    }, 1500);
   };
 
   return (
@@ -384,7 +193,7 @@ export default function RegionalFederationsHub({ darkMode = false }: RegionalFed
                   <div className="mt-3 flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 font-bold">
                     <span>{reg.clubsCount} Clubs</span>
                     <span>•</span>
-                    <span>{reg.activeAthletesCount} Registered Athletes</span>
+                    <span>{reg.athletesCount ?? 0} Registered Athletes</span>
                   </div>
                 </div>
               ))}
@@ -397,17 +206,17 @@ export default function RegionalFederationsHub({ darkMode = false }: RegionalFed
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                   <div>
                     <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                      {selectedRegion.id}
+                      {selectedRegion?.id || 'No regional federation records'}
                     </span>
                     <h2 className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-                      {selectedRegion.name}
+                      {selectedRegion?.name || 'No regional records available'}
                     </h2>
-                    <p className="text-xs text-slate-500 font-semibold">{selectedRegion.amharicName}</p>
+                    <p className="text-xs text-slate-500 font-semibold">{selectedRegion?.amharicName || ''}</p>
                   </div>
 
                   <div className="text-right">
                     <span className="text-xs text-slate-500 font-bold block">Headquarters & Secretariat</span>
-                    <span className="text-sm font-black text-slate-900 dark:text-white">{selectedRegion.headquarters}</span>
+                    <span className="text-sm font-black text-slate-900 dark:text-white">{selectedRegion?.headquarters || 'Not recorded'}</span>
                   </div>
                 </div>
 
@@ -415,13 +224,13 @@ export default function RegionalFederationsHub({ darkMode = false }: RegionalFed
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 mb-6">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-400">Regional President</span>
-                    <div className="text-sm font-black text-slate-900 dark:text-white">{selectedRegion.president}</div>
-                    <div className="text-xs text-slate-500">{selectedRegion.contactEmail}</div>
+                    <div className="text-sm font-black text-slate-900 dark:text-white">{selectedRegion?.president || 'Not recorded'}</div>
+                    <div className="text-xs text-slate-500">{selectedRegion?.contactEmail || ''}</div>
                   </div>
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-400">Technical Director</span>
-                    <div className="text-sm font-black text-slate-900 dark:text-white">{selectedRegion.technicalDirector}</div>
-                    <div className="text-xs text-slate-500">{selectedRegion.phone}</div>
+                    <div className="text-sm font-black text-slate-900 dark:text-white">{selectedRegion?.technicalDirector || 'Not recorded'}</div>
+                    <div className="text-xs text-slate-500">{selectedRegion?.phone || ''}</div>
                   </div>
                 </div>
 
@@ -429,10 +238,10 @@ export default function RegionalFederationsHub({ darkMode = false }: RegionalFed
                 <div className="mb-6">
                   <h4 className="text-sm font-black text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                     <Users size={16} className="text-sky-600" />
-                    <span>Affiliated Athletics Clubs ({selectedRegion.clubs.length} Clubs Registered)</span>
+                    <span>Affiliated Athletics Clubs ({selectedRegion?.clubs?.length || 0} Clubs Registered)</span>
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {selectedRegion.clubs.map(c => (
+                    {(selectedRegion?.clubs || []).map(c => (
                       <div key={c.id} className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800/60 shadow-xs">
                         <div className="font-bold text-xs text-slate-900 dark:text-white leading-tight">{c.name}</div>
                         <div className="text-[11px] text-slate-500 mt-1 flex justify-between">
@@ -451,7 +260,7 @@ export default function RegionalFederationsHub({ darkMode = false }: RegionalFed
                     <span>Accredited High-Altitude Training Centers</span>
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {selectedRegion.trainingCenters.map(tc => (
+                    {(selectedRegion?.trainingCenters || []).map(tc => (
                       <div key={tc.id} className="p-4 rounded-xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40">
                         <div className="font-bold text-xs text-emerald-950 dark:text-emerald-200">{tc.name}</div>
                         <div className="flex items-center justify-between text-[11px] text-emerald-800 dark:text-emerald-400 font-semibold mt-1">
@@ -470,7 +279,7 @@ export default function RegionalFederationsHub({ darkMode = false }: RegionalFed
                     <span>Grassroots Talent Projects & Development Sites</span>
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {selectedRegion.developmentProjects.map(prj => (
+                    {(selectedRegion?.developmentProjects || []).map(prj => (
                       <div key={prj.id} className="p-4 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40">
                         <div className="font-bold text-xs text-purple-950 dark:text-purple-200">{prj.name}</div>
                         <div className="flex items-center justify-between text-[11px] text-purple-800 dark:text-purple-400 font-semibold mt-1">
@@ -488,7 +297,7 @@ export default function RegionalFederationsHub({ darkMode = false }: RegionalFed
                     Certified Tracks & Facilities
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    {selectedRegion.facilities.map((f, i) => (
+                    {(selectedRegion?.facilities || []).map((f, i) => (
                       <span key={i} className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300">
                         🏟️ {f}
                       </span>

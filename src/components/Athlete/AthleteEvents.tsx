@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trophy, Calendar, MapPin, CheckCircle2, X, ShieldCheck, AlertTriangle, Users } from 'lucide-react';
 import { MOCK_MEETS } from '../../data/mockData';
 import { useAppSelector } from '../../store/hooks';
@@ -30,15 +30,15 @@ export default function AthleteEvents({ onUpdateAthlete, onNotify }: AthleteEven
             id: pe.id,
             title: pe.title,
             category: pe.category || 'National Championship',
-            date: pe.schedule?.[0]?.date || '2026-11-20',
-            location: pe.venue || 'Addis Ababa Stadium',
-            registrationDeadline: '2026-11-10',
+            date: pe.schedule?.[0]?.date || '',
+            location: pe.venue || '',
+            registrationDeadline: pe.registrationDeadline || '',
             status: 'REGISTRATION_OPEN',
-            disciplines: Array.isArray(pe.disciplines) ? pe.disciplines : ['5,000m Long Distance', '10,000m'],
-            totalAthletesEnrolled: pe.totalAthletesEnrolled || 42,
+            disciplines: Array.isArray(pe.disciplines) ? pe.disciplines : [],
+            totalAthletesEnrolled: pe.totalAthletesEnrolled || 0,
             athleteEnrolled: false,
             enrolledDiscipline: null,
-            image: pe.bannerUrl || '/images/event1.jpg',
+            image: pe.bannerUrl || '',
           };
           if (idx !== -1) {
             merged[idx] = { ...merged[idx], ...mappedMeet, athleteEnrolled: merged[idx].athleteEnrolled, enrolledDiscipline: merged[idx].enrolledDiscipline };
@@ -74,7 +74,8 @@ export default function AthleteEvents({ onUpdateAthlete, onNotify }: AthleteEven
       onNotify(`Entry submitted successfully for ${selectedDisc} at ${enrollModal.title}!`, 'success');
     } catch (err: any) {
       console.warn('API event enrollment response:', err);
-      onNotify(`Enrolled in ${selectedDisc} at ${enrollModal.title}!`, 'success');
+      onNotify(err?.data?.message || 'The event application could not be submitted. Please try again.', 'error');
+      return;
     }
 
     // Update local meets state

@@ -346,58 +346,30 @@ export default function CompetitionDetail({
     const disciplinesToApply = selectedDisciplines.length > 0 ? selectedDisciplines : (meet.disciplines || ['General Entry']);
 
     try {
-      const endpoints = [
-        `http://localhost:3000/api/v1/events/${meet.id}/apply`,
-        `/api/v1/events/${meet.id}/apply`,
-      ];
-      for (const ep of endpoints) {
-        try {
-          const res = await fetch(ep, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            },
-            body: JSON.stringify({
-              eventId: meet.id,
-              disciplines: disciplinesToApply,
-            }),
-          });
-          if (res.ok) break;
-        } catch {}
-      }
-    } catch (e) {
-      console.warn('Event entry API notice:', e);
-    }
-
-    const pass = {
-      passId: `EAF-PASS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      bib: `BIB-${Math.floor(1000 + Math.random() * 9000)}`,
-      meetTitle: meet.title,
-      venue: meet.venue,
-      date: meet.date,
-      bannerUrl: getBannerUrl(meet),
-      athlete: realAthleteData,
-      events: disciplinesToApply,
-      registeredAt: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-      status: 'Pending',
-    };
-    setRegistrationPass(pass);
-    try {
-      const existing = JSON.parse(localStorage.getItem('eaf_user_registrations') || '[]');
-      const newEntry = {
-        id: `reg-${Date.now()}`,
-        eventId: meet.id,
-        eventTitle: meet.title,
-        disciplines: disciplinesToApply,
-        appliedAt: new Date().toISOString(),
-        status: 'PENDING',
+      const res = await fetch(`/api/v1/events/${meet.id}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ eventId: meet.id, disciplines: disciplinesToApply }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body?.message || 'Competition entry failed.');
+      const result = body?.data || body;
+      setRegistrationPass({
+        passId: result.registrationNumber || result.id || '',
+        bib: result.bibNumber || '',
+        meetTitle: meet.title,
         venue: meet.venue,
         date: meet.date,
-      };
-      existing.unshift(newEntry);
-      localStorage.setItem('eaf_user_registrations', JSON.stringify(existing));
-    } catch (e) {}
+        bannerUrl: getBannerUrl(meet),
+        athlete: realAthleteData,
+        events: disciplinesToApply,
+        registeredAt: result.createdAt || '',
+        status: result.status || 'PENDING',
+      });
+    } catch (error: any) {
+      setIsPendingApproval(false);
+      window.dispatchEvent(new CustomEvent('eaf-notify', { detail: { message: error?.message || 'Competition entry could not be saved.', type: 'error' } }));
+    }
   };
 
   // Dynamic about info prioritizing database values configured from admin hub
@@ -406,22 +378,10 @@ export default function CompetitionDetail({
   const dynamicPrizes = meet?.prizes || schedFirst?.prizes || null;
 
   const aboutInfo = {
-    overview: meet?.description || meet?.overview || (meet?.id === 'MEET-2026-01'
-      ? 'The Addis Ababa International Grand Prix is the pinnacle track and field event in Ethiopia, gathering world-class runners, local elite athletes, and international competitors. Sanctioned by EAF and accredited under regional development programs.'
-      : meet?.id === 'MEET-2026-02'
-        ? 'The National Youth Olympic Games (U18/U20) serves as the primary talent identification platform in Ethiopia. The championship aims to discover the next generation of distance runners to represent Ethiopia in international youth competitions.'
-        : 'The Jan Meda Cross-Country trials hold deep historical significance as the ultimate selection criteria for the Ethiopian National Team representing the nation in the World Athletics Cross Country Championships.'),
-    rules: meet?.rules || 'All participants must comply with World Athletics Technical Rules and EAF local statutes. Athletes must hold an active EAF Athlete License for the 2026 season. Doping control will be carried out in accordance with WADA guidelines.',
-    standards: dynamicStandards || (meet?.id === 'MEET-2026-01'
-      ? '5,000m Men: Under 13:45.00 | 10,000m Women: Under 32:30.00 | 800m Men: Under 1:48.00. Standards must be achieved in EAF-certified events.'
-      : meet?.id === 'MEET-2026-02'
-        ? 'Open to athletes aged U18 (born 2009-2010) and U20 (born 2007-2008). Must be affiliated with an EAF-registered regional club or academy.'
-        : 'Open entry for registered club teams (max 6 runners per category). Top 4 finishers automatically qualify for selection pools.'),
-    prizes: dynamicPrizes || (meet?.id === 'MEET-2026-01'
-      ? 'Gold: 100,000 ETB | Silver: 60,000 ETB | Bronze: 40,000 ETB. A special record-breaking bonus of 150,000 ETB is awarded for breaking national records.'
-      : meet?.id === 'MEET-2026-02'
-        ? 'EAF youth development grants: 30,000 ETB for top finishers. Training gear packages provided by Adidas Ethiopia for top 6 finalists.'
-        : 'National team training camp selection for top 6. Cash prizes up to 50,000 ETB for club delegations.')
+    overview: meet?.description || meet?.overview || (''),
+    rules: meet?.rules || '',
+    standards: dynamicStandards || '',
+    prizes: dynamicPrizes || ''
   };
 
   // Generate sub-events for Events Tab
@@ -430,12 +390,12 @@ export default function CompetitionDetail({
     if (d.toLowerCase().includes('men')) gender = 'Men';
     else if (d.toLowerCase().includes('women')) gender = 'Women';
     else {
-      gender = d.length % 2 === 0 ? 'Men' : 'Women';
+      gender = 'Mixed';
     }
 
     let ageGroup = 'Senior';
     if (meet.id === 'MEET-2026-02') {
-      ageGroup = d.length % 2 === 0 ? 'U20' : 'U18';
+      ageGroup = 'Senior';
     } else if (d.toLowerCase().includes('u20')) {
       ageGroup = 'U20';
     } else if (d.toLowerCase().includes('u18')) {

@@ -1018,13 +1018,13 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
             <div className="space-y-2 text-xs">
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                 <div className="text-[10px] text-slate-400 font-bold uppercase">Fayda Access Number (FAN)</div>
-                <div className="font-mono font-black text-slate-900 dark:text-white mt-0.5">{athlete.faydaFan || 'FAN-9842-1084-3310'}</div>
+                <div className="font-mono font-black text-slate-900 dark:text-white mt-0.5">{athlete.faydaFan || 'Not provided'}</div>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
                 <div className="text-[10px] text-slate-400 font-bold uppercase">Passport Number & Country</div>
-                <div className="font-mono font-black text-slate-900 dark:text-white mt-0.5">EP4829104 (ETH - Ethiopia)</div>
-                <div className="text-[10px] text-emerald-600 font-bold mt-1">✓ Valid until 20 Nov 2028 · Visa Cleared</div>
+                <div className="font-mono font-black text-slate-900 dark:text-white mt-0.5">Not provided in this profile</div>
+                <div className="text-[10px] text-emerald-600 font-bold mt-1"></div>
               </div>
             </div>
           </div>

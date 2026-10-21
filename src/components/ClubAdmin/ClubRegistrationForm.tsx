@@ -238,7 +238,6 @@ export default function ClubRegistrationForm({
     const splitNames = repName.trim().split(' ');
     const firstName = splitNames[0] || 'Club';
     const lastName = splitNames.slice(1).join(' ') || 'President';
-    const cleanRef = licenseRef.trim() || `ETH-CL-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
 
     const payload = {
       email: adminEmail.trim(),
@@ -250,10 +249,10 @@ export default function ClubRegistrationForm({
       clubShortName: shortCode,
       clubEmail: clubEmail.trim(),
       clubPhone: clubPhone.trim(),
-      clubAddress: clubAddress.trim() || `${clubCity}, Ethiopia`,
+      clubAddress: clubAddress.trim(),
       clubCity: clubCity.trim(),
       clubRegion,
-      licenseNumber: cleanRef,
+      licenseNumber: licenseRef.trim() || undefined,
       logoUrl: resolvedLogo,
     };
 

@@ -5,7 +5,7 @@ import {
   TrendingUp, Clock, Filter, LogOut, RefreshCw, AlertCircle, Dumbbell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGetAthletesQuery, useRegisterAthleteMutation } from '../../store/api/athleteApi';
+import { useGetAthletesQuery } from '../../store/api/athleteApi';
 import { useInitiateFaydaMutation, useConfirmFaydaOtpMutation } from '../../store/api/authApi';
 import type { Coach } from '../../types';
 
@@ -35,14 +35,12 @@ export default function CoachPortal({
   const [faydaLoading, setFaydaLoading] = useState(false);
   const [faydaError, setFaydaError] = useState("");
   const [faydaVerificationId, setFaydaVerificationId] = useState("");
-  const [faydaVerificationToken, setFaydaVerificationToken] = useState("");
   const [regEvent, setRegEvent] = useState("5,000m");
   const [regWeight, setRegWeight] = useState("58");
   const [regHeight, setRegHeight] = useState("172");
 
   const [initiateFayda] = useInitiateFaydaMutation();
   const [confirmFaydaOtp] = useConfirmFaydaOtpMutation();
-  const [registerAthlete, { isLoading: isRegistering }] = useRegisterAthleteMutation();
 
   const handleInitiateFayda = async () => {
     const cleanNin = faydaFin.replace(/\D/g, "");
@@ -60,9 +58,7 @@ export default function CoachPortal({
         setOtpStep(true);
       }
     } catch (err: any) {
-      setFaydaVerificationId("VERIF-" + cleanNin.slice(-6));
-      setOtpValue("111111");
-      setOtpStep(true);
+      setFaydaError(err?.data?.message || "Fayda verification could not be started. Please try again.");
     } finally {
       setFaydaLoading(false);
     }
@@ -77,28 +73,25 @@ export default function CoachPortal({
     setFaydaLoading(true);
     try {
       const cleanNin = faydaFin.replace(/\D/g, "");
-      let identity: any = null;
-      let token = "fayda_coach_tok_" + cleanNin;
-      try {
-        const res = await confirmFaydaOtp({ verificationId: faydaVerificationId || ("VERIF-" + cleanNin.slice(-6)), otp: otpValue }).unwrap();
-        identity = res.data?.identity || res.data?.userInfo;
-        if (res.data?.verificationToken) token = res.data.verificationToken;
-      } catch {}
-      setFaydaVerificationToken(token);
+      const res = await confirmFaydaOtp({ verificationId: faydaVerificationId, otp: otpValue }).unwrap();
+      const identity: any = res.data?.identity || res.data?.userInfo;
+      const token = res.data?.verificationToken;
+      if (!identity || !token) throw new Error("Fayda did not return a verified identity token.");
 
-      const dob = identity?.birthDate || identity?.dob || "2005-04-12";
+      const dob = identity.birthDate || identity.dob;
+      if (!dob || !(identity.fullName || identity.name) || !identity.gender) throw new Error("Fayda returned incomplete identity details.");
       const birthYear = parseInt(dob.substring(0, 4));
-      const age = 2026 - (isNaN(birthYear) ? 2005 : birthYear);
+      const age = new Date().getFullYear() - birthYear;
       const tier = age <= 16 ? "U16 Junior" : age <= 18 ? "U18 Youth" : age <= 20 ? "U20 Junior" : "Senior Division";
 
       setFaydaVerifiedData({
         fin: cleanNin,
-        fullName: identity?.fullName || identity?.name || "Taye Girma Tola",
-        amharicName: identity?.fullNameAmharic || identity?.amharic || "ታየ ግርማ ቶላ",
+        fullName: identity.fullName || identity.name,
+        amharicName: identity.fullNameAmharic || identity.amharic || "",
         dob,
         ageTier: tier,
-        photoUrl: identity?.picture || identity?.photoUrl || "/images/runner_marathon.png",
-        gender: identity?.gender || "Male",
+        photoUrl: identity.picture || identity.photoUrl || "",
+        gender: identity.gender,
       });
       setOtpStep(false);
     } catch (err: any) {
@@ -111,41 +104,11 @@ export default function CoachPortal({
   const handleEnrollAthlete = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!faydaVerifiedData) return;
-    setFaydaLoading(true);
-    try {
-      const cleanNin = (faydaVerifiedData.fin || "").replace(/\D/g, "");
-      const clubId = coachProfile?.clubId || "CL-BEK";
-      const clubName = coachProfile?.clubName || "Bekoji Training Center";
-
-      await registerAthlete({
-        email: `athlete.${cleanNin.slice(-6)}@bekoji.et`,
-        password: "AthletePassword2026!",
-        phoneNumber: "+251 91 223 4455",
-        faydaVerificationToken: faydaVerificationToken || "coach_enroll_token",
-        fanNumber: `FAN-${cleanNin.slice(-8)}`,
-        clubId,
-        clubName,
-        region: "Oromia / Bekoji",
-      }).unwrap().catch(() => {});
-
-      onNotify(`Athlete "${faydaVerifiedData.fullName}" enrolled successfully to ${clubName}!`, "success");
-      setShowRegisterModal(false);
-      setFaydaVerifiedData(null);
-      setFaydaFin("");
-      setOtpValue("");
-      refetchAthletes();
-    } catch (err: any) {
-      onNotify("Enrollment completed in club roster.", "info");
-      setShowRegisterModal(false);
-      setFaydaVerifiedData(null);
-      refetchAthletes();
-    } finally {
-      setFaydaLoading(false);
-    }
+    onNotify("Use the club member registration workflow to add an athlete with verified Fayda and complete contact details.", "info");
   };
 
   // Real API: Fetch athletes from backend
-  const { data: athletes = [], isLoading: isLoadingAthletes, refetch: refetchAthletes } = useGetAthletesQuery();
+  const { data: athletes = [], isLoading: isLoadingAthletes } = useGetAthletesQuery();
 
   // Real API: Fetch published events
   const [events, setEvents] = useState<any[]>([]);
@@ -200,12 +163,12 @@ export default function CoachPortal({
 
   const coachName = coachProfile?.user?.firstName
     ? `${coachProfile.user.firstName} ${coachProfile.user.lastName}`
-    : coachProfile?.name || 'Coach Tolosa Kotu';
+    : coachProfile?.name || 'Not recorded';
 
-  const licenseNo = coachProfile?.licenseNumber || 'WA-COA-ETH-2026-21593';
-  const specialization = coachProfile?.specialization || 'Distance & Steeplechase High Performance';
-  const finNumber = coachProfile?.user?.faydaIdentity?.nin || coachProfile?.faydaFin || '3849 0182 9941 2026';
-  const fanNumber = coachProfile?.user?.faydaIdentity?.faydaSub || coachProfile?.faydaFan || 'FAN-3849-0182-2026';
+  const licenseNo = coachProfile?.licenseNumber || 'Not recorded';
+  const specialization = coachProfile?.specialization || 'Not recorded';
+  const finNumber = coachProfile?.user?.faydaIdentity?.nin || coachProfile?.faydaFin || 'Not recorded';
+  const fanNumber = coachProfile?.user?.faydaIdentity?.fanNumber || coachProfile?.faydaFan || 'Not provided';
 
   // Filter athletes
   const filteredAthletes = athletes.filter((ath) => {
@@ -244,7 +207,7 @@ export default function CoachPortal({
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50/60">
             <div className="w-8 h-8 rounded-full bg-blue-700 text-white font-black text-xs flex items-center justify-center shadow-xs">
-              TK
+              {(coachName || 'U').split(/\s+/).map((part: string) => part[0]).join('').slice(0, 2).toUpperCase()}
             </div>
             <div className="text-left">
               <div className="text-xs font-black text-slate-900 leading-tight">
@@ -877,7 +840,7 @@ export default function CoachPortal({
                     </button>
                     <button
                       type="submit"
-                      disabled={faydaLoading || isRegistering}
+                      disabled={faydaLoading}
                       className="flex-2 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs cursor-pointer shadow-sm border-0"
                     >
                       {faydaLoading ? "Enrolling..." : "Complete Club Enrollment"}

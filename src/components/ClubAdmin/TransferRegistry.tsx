@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowRightLeft, Lock, Calendar, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useI18n } from '../../i18n';
-import { useAppSelector } from '../../store/hooks';
 import type { Transfer } from '../../types';
 
 interface TransferRegistryProps {
@@ -11,29 +10,14 @@ interface TransferRegistryProps {
 export default function TransferRegistry({ onInitiateTransfer }: TransferRegistryProps) {
   const { t } = useI18n();
   const transfers = useAppSelector((state) => state.club.transfers);
-  const currentClub = useAppSelector((state) => state.auth.club);
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [athleteName, setAthleteName] = useState<string>('Girmay Legese');
-  const [targetClub, setTargetClub] = useState<string>('CBE AC (Commercial Bank)');
-  const [transferFee, setTransferFee] = useState<string>('450,000');
-  const [reason, setReason] = useState<string>('National squad development agreement');
+  const [athleteName, setAthleteName] = useState<string>('');
+  const [targetClub, setTargetClub] = useState<string>('');
+  const [transferFee, setTransferFee] = useState<string>('');
+  const [reason, setReason] = useState<string>('');
 
   const handleSubmitTransfer = (e: React.FormEvent) => {
     e.preventDefault();
-    const newTx = {
-      id: `TRX-2026-${Math.floor(100 + Math.random() * 900)}`,
-      athleteName,
-      fromClub: currentClub.name,
-      toClub: targetClub,
-      transferFee: `${transferFee} ETB`,
-      status: "FEDERATION_LOCKED",
-      effectiveDate: "2026-08-15",
-      contractHash: "0xTRANSFER_" + Math.random().toString(36).substring(2, 10).toUpperCase(),
-      eafClearanceStatus: "PENDING_APPROVAL"
-    };
-
-    onInitiateTransfer(newTx);
-    setShowModal(false);
   };
 
   return (
@@ -101,27 +85,7 @@ export default function TransferRegistry({ onInitiateTransfer }: TransferRegistr
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td className="font-bold text-text-heading">Tadesse Worku</td>
-                    <td className="text-[0.85rem] font-semibold text-primary">Defense Sports Club (Mekelakeya)</td>
-                    <td className="font-bold font-mono text-text-heading">850,000 ETB</td>
-                    <td className="text-[0.85rem]">National team alignment strategy</td>
-                    <td>
-                      <div className="flex gap-[8px]">
-                        <button className="btn-gov-primary px-[12px] py-[6px] text-[0.75rem]">{t('club.approve')}</button>
-                        <button className="btn-gov-secondary px-[12px] py-[6px] text-[0.75rem] border-accent text-accent">{t('club.reject')}</button>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="font-bold text-text-heading">Diribe Welteji</td>
-                    <td className="text-[0.85rem] font-semibold text-primary">Ethiopian Airlines AC</td>
-                    <td className="font-bold font-mono text-text-heading">1,200,000 ETB</td>
-                    <td className="text-[0.85rem]">Contract buyout clause activation</td>
-                    <td>
-                      <span className="badge badge-amber"><AlertCircle size={12} /> {t('club.underNegotiation')}</span>
-                    </td>
-                  </tr>
+                  <tr><td colSpan={5} className="text-center text-text-muted py-8">No transfer requests are recorded.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -188,6 +152,9 @@ export default function TransferRegistry({ onInitiateTransfer }: TransferRegistr
             </div>
 
             <form onSubmit={handleSubmitTransfer}>
+              <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 mb-4 text-sm text-amber-900">
+                Transfer applications cannot be saved because the backend transfer workflow is not configured. This form will not create a transfer record.
+              </div>
               <div className="form-group">
                 <label className="form-label">{t('club.athleteName')}</label>
                 <input 
@@ -231,8 +198,8 @@ export default function TransferRegistry({ onInitiateTransfer }: TransferRegistr
                 />
               </div>
 
-              <button type="submit" className="btn-gov-primary w-full p-[12px]">
-                {t('club.submitToEafRegistry')}
+              <button type="submit" disabled className="btn-gov-primary w-full p-[12px] opacity-60 cursor-not-allowed">
+                Transfer submission unavailable
               </button>
             </form>
           </div>

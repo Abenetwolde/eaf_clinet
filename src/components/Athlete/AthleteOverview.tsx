@@ -228,7 +228,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  FAN: <strong className="font-mono text-emerald-300 font-bold">{athlete.faydaFan || 'FAN-9842-1084-3310'}</strong>
+                  FAN: <strong className="font-mono text-emerald-300 font-bold">{athlete.faydaFan || 'Not provided'}</strong>
                 </span>
               </div>
             </div>
@@ -528,7 +528,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                       </button>
                     </div>
                     <div className="flex items-center gap-1">
-                      FAN: <strong className="text-emerald-300 font-mono text-[0.72rem]">{athlete.faydaFan || 'FAN-9842-1084-3310'}</strong>
+                      FAN: <strong className="text-emerald-300 font-mono text-[0.72rem]">{athlete.faydaFan || 'Not provided'}</strong>
                     </div>
                   </div>
                 </div>
