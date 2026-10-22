@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   Trophy, Calendar, MapPin, Phone, Mail, Award, Users, Filter,
   CheckCircle2, User, UserCheck, Building, Clock, ChevronRight, ShieldCheck, X, Download, Printer, Check,
@@ -8,6 +8,7 @@ import {
 import { useI18n } from '../i18n';
 import { getProfilePhotoUrl } from '../utils/profilePhoto';
 import { getEventRegistrationStatus } from '../utils/eventRegistration';
+import { STORAGE_KEYS } from '../store/persistence';
 
 // Helper to determine banner image based on meet ID
 const getBannerUrl = (meet: any) => {
@@ -228,6 +229,64 @@ export default function CompetitionDetail({
   // QR Code Scanner Modal State
   const [showQrScannerModal, setShowQrScannerModal] = useState<boolean>(false);
   const [scannedPassResult, setScannedPassResult] = useState<any>(null);
+  const [qrScanError, setQrScanError] = useState('');
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (!showQrScannerModal || scannedPassResult) return;
+    let active = true;
+    let stream: MediaStream | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const scan = async () => {
+      try {
+        if (!('BarcodeDetector' in window)) {
+          setQrScanError('QR scanning is not supported by this browser. Use a recent Chrome or Edge browser.');
+          return;
+        }
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (!active) { stream.getTracks().forEach(track => track.stop()); return; }
+        const video = videoRef.current;
+        if (!video) return;
+        video.srcObject = stream;
+        await video.play();
+        const Detector = (window as any).BarcodeDetector;
+        const detector = new Detector({ formats: ['qr_code'] });
+        const detect = async () => {
+          if (!active || !videoRef.current) return;
+          try {
+            const codes = await detector.detect(videoRef.current);
+            if (codes[0]?.rawValue) {
+              active = false;
+              const apiBase = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '');
+              const token = localStorage.getItem(STORAGE_KEYS.accessToken) || localStorage.getItem('token') || localStorage.getItem('eaf_token');
+              const response = await fetch(`${apiBase}/events/${meet.id}/check-ins/scan`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                body: JSON.stringify({ token: codes[0].rawValue }),
+              });
+              const payload = await response.json().catch(() => ({}));
+              if (!response.ok) throw new Error(payload?.message || 'Could not validate this QR code.');
+              setScannedPassResult(payload?.data);
+              return;
+            }
+          } catch (err: any) {
+            if (err?.name !== 'NotFoundException') setQrScanError(err?.message || 'Could not read this QR code.');
+          }
+          if (active) timer = setTimeout(detect, 250);
+        };
+        detect();
+      } catch (err: any) {
+        setQrScanError(err?.name === 'NotAllowedError' ? 'Allow camera access to scan a competition pass.' : err?.message || 'Camera could not be started.');
+      }
+    };
+    setQrScanError('');
+    scan();
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+      stream?.getTracks().forEach(track => track.stop());
+    };
+  }, [showQrScannerModal, scannedPassResult, meet.id]);
 
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1435,7 +1494,7 @@ export default function CompetitionDetail({
       {/* ── QR CODE SCANNER MODAL FOR ATHLETE PASS & ACCREDITATION ── */}
       {showQrScannerModal && (
         <div className="modal-backdrop" onClick={() => { setShowQrScannerModal(false); setScannedPassResult(null); }} style={{ zIndex: 9999, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '32px 28px', maxWidth: '520px', width: '95%', borderRadius: '24px', boxShadow: '0 25px 60px rgba(15,23,42,0.35)', border: '1px solid #E2E8F0', background: '#FFFFFF', position: 'relative' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ padding: '32px 28px', maxWidth: '760px', width: '95%', borderRadius: '24px', boxShadow: '0 25px 60px rgba(15,23,42,0.35)', border: '1px solid #E2E8F0', background: '#FFFFFF', position: 'relative' }}>
             
             {/* Close button */}
             <button
@@ -1459,37 +1518,56 @@ export default function CompetitionDetail({
             </div>
 
             {scannedPassResult ? (
-              /* Verified Scan Result Screen */
-              <div style={{ background: '#F0FDF4', border: '2px solid #86EFAC', borderRadius: '20px', padding: '24px', textAlign: 'center', marginBottom: '20px' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#DCFCE7', color: '#16A34A', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-                  <CheckCircle2 size={36} />
-                </div>
-                <span className="badge badge-green" style={{ fontSize: '0.78rem', padding: '4px 12px', fontWeight: 900, marginBottom: '12px', display: 'inline-block' }}>
-                  Validation status unavailable
-                </span>
-                <h4 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0F172A', marginBottom: '4px' }}>
-                  {scannedPassResult.athleteName}
-                </h4>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary-dark)', marginBottom: '16px' }}>
-                  {scannedPassResult.bib} · PASS ID: {scannedPassResult.passId}
-                </div>
-
-                <div style={{ background: '#FFFFFF', border: '1px solid #BBF7D0', borderRadius: '14px', padding: '16px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
-                  <div><span style={{ color: '#64748B', fontWeight: 700 }}>Event:</span> <strong>{meet.title}</strong></div>
-                  <div><span style={{ color: '#64748B', fontWeight: 700 }}>Disciplines:</span> <strong>{scannedPassResult.disciplines.join(', ')}</strong></div>
-                  <div><span style={{ color: '#64748B', fontWeight: 700 }}>Fayda FIN:</span> <strong style={{ fontFamily: 'var(--font-mono)' }}>{scannedPassResult.faydaFin}</strong></div>
-                  <div><span style={{ color: '#64748B', fontWeight: 700 }}>Venue Access:</span> <strong style={{ color: '#16A34A' }}>Staging Tunnel &amp; Track Access Granted</strong></div>
-                </div>
+              <div style={{ background: '#F0FDF4', border: '2px solid #86EFAC', borderRadius: '20px', padding: '24px', textAlign: 'center', marginBottom: '20px', maxHeight: '65vh', overflowY: 'auto' }}>
+                {(() => {
+                  const attendee = scannedPassResult.attendee;
+                  const athlete = attendee?.athlete;
+                  const user = athlete?.user;
+                  const event = attendee?.event;
+                  const club = athlete?.club || attendee?.club;
+                  const registration = athlete?.eventRegistrations?.[0];
+                  const name = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || club?.name || 'Attendee';
+                  const photo = athlete ? getProfilePhotoUrl({ photoUrl: athlete.photoUrl, faydaNin: athlete.faydaIdentity?.nin }) : club?.logoUrl;
+                  const rows: [string, string][] = [
+                    ['Check-in', 'Successful'], ['Event', event?.title || meet.title], ['Venue', event?.venue || 'Not provided'],
+                    ['Event dates', [event?.startDate && new Date(event.startDate).toLocaleDateString(), event?.endDate && new Date(event.endDate).toLocaleDateString()].filter(Boolean).join(' – ') || 'Not provided'],
+                    ['Registration', registration?.status || 'Confirmed'], ['Disciplines', registration?.disciplines?.join(', ') || athlete?.primaryEvent || 'Not provided'],
+                    ['Club', club?.name || athlete?.clubName || 'Independent'], ['Club verification', club?.verificationStatus || 'Not applicable'],
+                    ['Date of birth', athlete?.dateOfBirth ? new Date(athlete.dateOfBirth).toLocaleDateString() : 'Not provided'],
+                    ['Gender', athlete?.gender || 'Not provided'], ['Nationality', athlete?.nationality || 'Not provided'], ['Region', athlete?.region || 'Not provided'],
+                    ['Email', user?.email || 'Not provided'], ['Phone', user?.phoneNumber || 'Not provided'],
+                    ['Height', athlete?.height ? `${athlete.height} cm` : 'Not provided'], ['Position', athlete?.position || 'Not provided'],
+                    ['Jersey number', athlete?.jerseyNumber?.toString() || 'Not provided'],
+                    ['Sports', athlete?.athleteSports?.map((item: any) => item.sport?.name).filter(Boolean).join(', ') || 'Not provided'],
+                    ['Fayda verification', athlete?.faydaIdentity?.verified ? `Verified${athlete.faydaIdentity?.verifiedAt ? ` · ${new Date(athlete.faydaIdentity.verifiedAt).toLocaleDateString()}` : ''}` : 'Not verified'],
+                    ['Fayda NIN', athlete?.faydaIdentity?.nin || 'Not available'], ['Athlete status', athlete?.status || 'Not applicable'],
+                    ['Entry payment', registration?.payment?.status || 'Not applicable'],
+                    ['Personal bests', athlete?.personalBests?.map((pb: any) => `${pb.event}: ${pb.mark}${pb.venue ? ` (${pb.venue})` : ''}`).join(' · ') || 'No results recorded'],
+                  ];
+                  return <>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginBottom: 14 }}>
+                      {photo && <img src={photo} alt="Attendee" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: '50%', border: '3px solid #86EFAC' }} />}
+                      <div style={{ textAlign: 'left' }}>
+                        <span className="badge badge-green" style={{ fontSize: '0.78rem', padding: '4px 12px', fontWeight: 900, marginBottom: '6px', display: 'inline-block' }}>Checked in</span>
+                        <h4 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0F172A', margin: 0 }}>{name}</h4>
+                        {athlete?.id && <div style={{ fontSize: '0.8rem', color: '#475569' }}>Athlete ID: {athlete.id}</div>}
+                      </div>
+                    </div>
+                    <div style={{ background: '#FFFFFF', border: '1px solid #BBF7D0', borderRadius: '14px', padding: '16px', textAlign: 'left', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', fontSize: '0.83rem' }}>
+                      {rows.map(([label, value]) => <div key={label}><span style={{ color: '#64748B', fontWeight: 700 }}>{label}:</span><br /><strong style={{ color: '#0F172A', overflowWrap: 'anywhere' }}>{value}</strong></div>)}
+                    </div>
+                  </>;
+                })()}
 
                 <button
-                  onClick={() => setScannedPassResult(null)}
+                  onClick={() => { setScannedPassResult(null); setQrScanError(''); }}
                   style={{ width: '100%', marginTop: '16px', padding: '12px', borderRadius: '10px', background: '#16A34A', color: '#FFF', fontWeight: 800, border: 'none', cursor: 'pointer' }}
                 >
                   Scan Another Pass
                 </button>
               </div>
             ) : (
-              /* Simulated Camera Scanner Box */
+              /* Live camera scanner */
               <div>
                 <div style={{
                   position: 'relative',
@@ -1505,6 +1583,7 @@ export default function CompetitionDetail({
                   boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
                   marginBottom: '20px'
                 }}>
+                  <video ref={videoRef} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   {/* Scanner Grid Overlay */}
                   <div style={{ position: 'absolute', inset: '30px', border: '2px dashed var(--primary)', borderRadius: '16px', opacity: 0.8 }} />
                   
@@ -1526,10 +1605,10 @@ export default function CompetitionDetail({
                     }}
                   />
 
-                  <div style={{ color: '#94A3B8', textAlign: 'center', zIndex: 2, padding: '0 20px' }}>
+                  <div style={{ position: 'absolute', color: '#FFFFFF', textAlign: 'center', zIndex: 2, padding: '0 20px', textShadow: '0 1px 4px #0F172A' }}>
                     <Camera size={36} color="#38BDF8" style={{ marginBottom: '8px' }} />
-                    <div style={{ fontSize: '0.85rem', color: '#F8FAFC', fontWeight: 700 }}>Align Athlete QR Pass within frame</div>
-                    <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '4px' }}>Camera feed active · Searching for barcode...</div>
+                    <div style={{ fontSize: '0.85rem', color: '#F8FAFC', fontWeight: 700 }}>Align the competition QR pass within the frame</div>
+                    <div style={{ fontSize: '0.72rem', color: '#F8FAFC', marginTop: '4px' }}>The pass will be checked against this event</div>
                   </div>
                 </div>
 
@@ -1541,7 +1620,7 @@ export default function CompetitionDetail({
                     100% { top: 20%; }
                   }
                 `}</style>
-
+                {qrScanError && <div role="alert" style={{ color: '#B91C1C', background: '#FEF2F2', padding: '10px 12px', borderRadius: 10, fontSize: '0.84rem', marginBottom: 12 }}>{qrScanError}</div>}
 
               </div>
             )}

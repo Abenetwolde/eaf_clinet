@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Users, UserCheck } from 'lucide-react';
-import { useAppSelector } from '../../store/hooks';
-import { useRegisterAthleteByClubAdminMutation, useRegisterCoachByClubAdminMutation } from '../../store/api/athleteApi';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { setClub } from '../../store/slices/authSlice';
+import { useGetMeQuery } from '../../store/api/authApi';
+import { useGetRegistrationOptionsQuery, useRegisterAthleteByClubAdminMutation, useRegisterCoachByClubAdminMutation } from '../../store/api/athleteApi';
 import { FAYDA_CONFIG, launchFaydaPortal } from '../../constants/fayda';
 
 interface RegisterMemberProps {
@@ -47,7 +49,35 @@ function profileFromIdentity(raw: string): { profile: FaydaProfile; fin: string 
 }
 
 export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps) {
-  const club = useAppSelector((state) => state.auth.club);
+  const dispatch = useAppDispatch();
+  const storedClub = useAppSelector((state) => state.auth.club);
+  // Club details are intentionally not persisted in browser storage. Reload
+  // them from the authenticated account when the portal is opened directly.
+  const { data: accountResponse, isLoading: isLoadingAccount } = useGetMeQuery(undefined, {
+    skip: Boolean(storedClub?.id),
+  });
+  const accountClub = accountResponse?.data?.club;
+  const club = storedClub?.id ? storedClub : accountClub?.id ? {
+    id: accountClub.id,
+    name: accountClub.name,
+    shortName: accountClub.shortName || '',
+    region: accountClub.region || '',
+    manager: accountClub.manager || '',
+    email: accountClub.email || '',
+    phone: accountClub.phone || '',
+    licensedAthletes: 0,
+    pendingVerifications: 0,
+    unlicensedAthletes: 0,
+    transfersCount: 0,
+    logo: accountClub.logo || '',
+    clubRank: 0,
+    totalPoints: 0,
+  } : storedClub;
+  const { data: registrationOptions } = useGetRegistrationOptionsQuery();
+  const regions = registrationOptions?.regions || [];
+  const regionOptions = club?.region && !regions.some((region) => region.name === club.region)
+    ? [...regions, { id: `club-${club.id}`, name: club.region, flag: '🏃', flagImageUrl: null }]
+    : regions;
   const [registerAthlete] = useRegisterAthleteByClubAdminMutation();
   const [registerCoach] = useRegisterCoachByClubAdminMutation();
   const [type, setType] = useState<MemberType | null>(null);
@@ -66,6 +96,10 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!storedClub?.id && club?.id) dispatch(setClub(club));
+  }, [club, dispatch, storedClub?.id]);
+
+  useEffect(() => {
     const acceptFaydaIdentity = (raw?: string) => {
       if (sessionStorage.getItem('eaf_club_member_registration') !== '1') return;
       const savedType = sessionStorage.getItem('eaf_club_member_type');
@@ -73,6 +107,7 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
       const serialized = raw || sessionStorage.getItem('eaf_fayda_verified') || '';
       const verified = serialized ? profileFromIdentity(serialized) : null;
       if (!verified?.profile.verificationToken) return;
+      if (club?.region) verified.profile.region = club.region;
       setType(savedType);
       setProfile(verified.profile);
       setFin(verified.fin);
@@ -127,17 +162,17 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
         await registerAthlete({
           email: email.trim(), password, phoneNumber: phone.trim(), firstName: names[0], lastName: names.slice(1).join(' '),
           amharicName: profile.amharic, faydaFin: nin, nin, dateOfBirth: profile.dob,
-          gender: profile.gender.toUpperCase(), nationality: profile.nationality,
+          gender: profile.gender.toUpperCase(),
           photoUrl: profile.photoUrl, primaryEvent: event, faydaVerificationToken: profile.verificationToken || '',
           fanNumber: profile.fanNumber, clubId: club.id, clubName: club.name, sportIds: [event], sportId: event,
-          region: profile.region, emergencyContactPhone: emergencyContactPhone.trim(),
+          region: profile.region, nationality: profile.nationality, address: profile.address, emergencyContactPhone: emergencyContactPhone.trim(),
         }).unwrap();
         // The API response is the source of truth; the roster reads the saved member from the server.
       } else {
         await registerCoach({
           email: email.trim(), password, phoneNumber: phone.trim(), firstName: names[0], lastName: names.slice(1).join(' '),
           faydaFin: nin, nin, amharicName: profile.amharic, faydaVerificationToken: profile.verificationToken,
-          fanNumber: profile.fanNumber, clubId: club.id, licenseNumber: licenseNumber.trim() || undefined,
+          fanNumber: profile.fanNumber, clubId: club.id, address: profile.address, licenseNumber: licenseNumber.trim() || undefined,
           specialization: specialization.trim() || 'Athletics', yearsOfExperience: Number(yearsOfExperience) || 0,
         }).unwrap();
       }
@@ -167,7 +202,8 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
     {type && !profile && <div className="gov-card" style={{ padding: 28, borderRadius: 16 }}>
       <h3>Verify this member with Fayda</h3><p style={{ color: '#64748B' }}>Continue to the official Fayda sign-in page. Their verified profile will return here to complete registration.</p>
       {error && <p style={{ color: '#B91C1C' }}>{error}</p>}
-      <div style={{ display: 'flex', gap: 12 }}><button type="button" className="btn-gov-secondary" onClick={() => setType(null)}>Change role</button><button type="button" className="btn-accent" disabled={loading} onClick={verifyWithFayda}>{loading ? 'Opening Fayda…' : 'Continue to Fayda'}</button></div>
+      {!club?.id && <p style={{ color: '#64748B' }}>{isLoadingAccount ? 'Loading your club account…' : 'This login is not linked to an active club account. Please contact federation support.'}</p>}
+      <div style={{ display: 'flex', gap: 12 }}><button type="button" className="btn-gov-secondary" onClick={() => setType(null)}>Change role</button><button type="button" className="btn-accent" disabled={loading || isLoadingAccount || !club?.id} onClick={verifyWithFayda}>{loading ? 'Opening Fayda…' : 'Continue to Fayda'}</button></div>
     </div>}
     {profile && <form className="gov-card" onSubmit={submit} style={{ padding: 28, borderRadius: 16, display: 'grid', gap: 18 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>
@@ -180,11 +216,14 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
         {([
           ['Full name', profile.name], ['Full name (Amharic)', profile.amharic], ['FIN / National ID', fin],
-          ['FAN number', profile.fanNumber], ['Date of birth', profile.dob], ['Gender', profile.gender],
-          ['Nationality', profile.nationality], ['Address', profile.address], ['Region', profile.region],
+          ['Date of birth', profile.dob], ['Gender', profile.gender],
           ['Fayda email', profile.email], ['Fayda phone', profile.phoneNumber],
         ] as const).map(([label, value]) => <label key={label} style={{ color: '#475569', fontSize: 13 }}>{label}<input readOnly value={value || 'Not provided by Fayda'} style={{ ...inputStyle, background: '#F8FAFC', color: value ? '#0F172A' : '#94A3B8' }}/></label>)}
       </div>
+      <h3 style={{ margin: 0 }}>Editable details</h3>
+      <label style={{ color: '#475569', fontSize: 13 }}>Nationality<input value={profile.nationality} onChange={(e) => setProfile({ ...profile, nationality: e.target.value })} style={inputStyle} placeholder="Enter nationality" /></label>
+      <label style={{ color: '#475569', fontSize: 13 }}>Address<input value={profile.address} onChange={(e) => setProfile({ ...profile, address: e.target.value })} style={inputStyle} placeholder="Enter current address" /></label>
+      <label style={{ color: '#475569', fontSize: 13 }}>Region<select required value={profile.region} onChange={(e) => setProfile({ ...profile, region: e.target.value })} style={inputStyle}><option value="">Select region</option>{regionOptions.map((region) => <option key={region.id} value={region.name}>{region.name}</option>)}</select></label>
       <h3 style={{ margin: 0 }}>Account and contact details</h3>
       <label>Email<input required type="email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle}/></label>
       <label>Phone number<input required value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle}/></label>

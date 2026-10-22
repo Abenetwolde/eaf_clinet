@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Building2, ShieldCheck, CheckCircle2, ArrowRight, ArrowLeft,
   AlertCircle, RefreshCw, Eye, EyeOff, User, Phone, Mail, MapPin,
@@ -6,29 +6,13 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Club } from '../../types';
+import { useGetRegistrationOptionsQuery } from '../../store/api/athleteApi';
 
 interface ClubRegistrationFormProps {
   onClose: () => void;
   onRegisterSuccess: (data: { type: 'CLUB'; payload: { club: Club; targetSubPage?: string; session?: { token: string; refreshToken?: string; userId: string; userData?: any } } }) => void;
   onSwitchToAthlete?: () => void;
 }
-
-const ETHIOPIAN_REGIONS = [
-  'Addis Ababa (Federal City)',
-  'Oromia Regional State',
-  'Amhara Regional State',
-  'Sidama Regional State',
-  'Tigray Regional State',
-  'Somali Regional State',
-  'South Ethiopia Regional State',
-  'Central Ethiopia Regional State',
-  'Dire Dawa (Chartered City)',
-  'Afar Regional State',
-  'Benishangul-Gumuz Regional State',
-  'Gambela Regional State',
-  'Harari Regional State',
-  'Federal Defense / Police Command',
-];
 
 const CLUB_EMBLEMS = ['⚡', '🦅', '🦁', '🏃', '🏆', '🌟', '🛡️', '🏔️', '🐆', '🌲'];
 
@@ -37,13 +21,15 @@ export default function ClubRegistrationForm({
   onRegisterSuccess,
   onSwitchToAthlete,
 }: ClubRegistrationFormProps) {
+  const { data: registrationOptions, isLoading: loadingRegions, error: regionsError } = useGetRegistrationOptionsQuery();
+  const regions = registrationOptions?.regions || [];
   // Wizard step (0: Organization Info, 1: Leadership & Accreditation, 2: Account & Charter, 3: Review, 4: Success)
   const [step, setStep] = useState<number>(0);
 
   // Step 1: Club Identity & Location
   const [clubName, setClubName] = useState('');
   const [clubShortName, setClubShortName] = useState('');
-  const [clubRegion, setClubRegion] = useState(ETHIOPIAN_REGIONS[0]);
+  const [clubRegion, setClubRegion] = useState('');
   const [clubCity, setClubCity] = useState('');
   const [clubAddress, setClubAddress] = useState('');
   const [clubEmail, setClubEmail] = useState('');
@@ -55,6 +41,10 @@ export default function ClubRegistrationForm({
   const [logoUploadError, setLogoUploadError] = useState('');
   const [logoFileName, setLogoFileName] = useState('');
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  useEffect(() => {
+    if (!clubRegion && regions.length) setClubRegion(regions[0].name);
+  }, [clubRegion, regions]);
 
   const handleLogoFile = async (file: File) => {
     if (!file) return;
@@ -474,14 +464,19 @@ export default function ClubRegistrationForm({
                     <select
                       value={clubRegion}
                       onChange={(e) => setClubRegion(e.target.value)}
+                      required
+                      disabled={loadingRegions || !regions.length}
                       className="w-full p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
                     >
-                      {ETHIOPIAN_REGIONS.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
+                      {!regions.length && <option value="">{loadingRegions ? 'Loading regions…' : 'No regions available'}</option>}
+                      {regions.map((region) => (
+                        <option key={region.id} value={region.name}>
+                          {region.name}
                         </option>
                       ))}
                     </select>
+                    {regionsError && <p className="mt-1 text-xs text-red-600">Could not load regions. Please check the server connection and retry.</p>}
+                    {regions.find((region) => region.name === clubRegion)?.flagImageUrl && <img className="mt-2 h-8 w-12 rounded border object-cover" src={regions.find((region) => region.name === clubRegion)?.flagImageUrl || ''} alt={`${clubRegion} flag`} />}
                   </div>
 
                   <div>

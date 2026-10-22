@@ -81,6 +81,17 @@ export interface MeResponse {
   data: UserData & {
     roles: string[];
     permissions: string[];
+    club?: {
+      id: string;
+      name: string;
+      shortName?: string | null;
+      region?: string | null;
+      city?: string | null;
+      manager?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      logo?: string | null;
+    } | null;
   };
 }
 

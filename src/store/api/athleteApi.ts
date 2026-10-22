@@ -13,10 +13,17 @@ export interface ClubOption {
   city?: string | null;
 }
 
+export interface RegionOption {
+  id: string;
+  name: string;
+  flag: string;
+  flagImageUrl?: string | null;
+}
+
 export interface RegistrationOptionsData {
   disciplines: DisciplineOption[];
   clubs: ClubOption[];
-  regions: string[];
+  regions: RegionOption[];
 }
 
 export interface RegistrationOptionsResponse {
@@ -81,6 +88,7 @@ export interface AthleteRegistrationRequest {
   dominantFoot?: 'LEFT' | 'RIGHT' | 'BOTH';
   bloodType?: string;
   nationality?: string;
+  address?: string;
   firstName?: string;
   lastName?: string;
   amharicName?: string;
