@@ -34,7 +34,7 @@ import RegionalFederationsHub from './components/RegionalFederationsHub';
 import AthleteRepresentativesHub from './components/AthleteRepresentativesHub';
 import NotificationToast from './components/NotificationToast';
 
-import { Sun, Moon, Menu, X, ShieldCheck, Sparkles, ArrowRight, UserCheck, Eye, CheckCircle2, User, Building2 } from 'lucide-react';
+import { Sun, Moon, Menu, X, ShieldCheck, Sparkles, ArrowRight, UserCheck, Eye, CheckCircle2, User, Building2, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n, LanguageSelector } from './i18n';
 
@@ -68,9 +68,38 @@ export default function App() {
   const [fetchMe] = useLazyGetMeQuery();
   const [logoutApi] = useLogoutApiMutation();
 
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState<string | null>(null);
+
+  // Listen for session expiration events across RTK Query and global API calls
+  useEffect(() => {
+    const handleExpired = (e: Event) => {
+      const customEvent = e as CustomEvent<{ message?: string }>;
+      const msg = customEvent.detail?.message || "Your session has expired. Please sign in again to continue.";
+      setSessionExpiredNotice(msg);
+      handleNotify(msg, 'error');
+    };
+    window.addEventListener("eaf:session-expired", handleExpired);
+    return () => window.removeEventListener("eaf:session-expired", handleExpired);
+  }, []);
+
   // Auto-login: validate saved token on mount
   useEffect(() => {
     if (authToken && currentRole !== 'LANDING') {
+      const refreshToken = localStorage.getItem('eaf_refreshToken') || sessionStorage.getItem('eaf_refreshToken');
+      try {
+        const parts = authToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          // Only force logout on mount if expired AND there is no refresh token
+          if (payload.exp && Date.now() >= payload.exp * 1000 && !refreshToken) {
+            handleLogout();
+            setSessionExpiredNotice("Your session has expired. Please sign in again to continue.");
+            handleNotify("Your session has expired. Please sign in again to continue.", "error");
+            return;
+          }
+        }
+      } catch (e) {}
+
       dispatch(setAuthLoading());
       fetchMe()
         .unwrap()
@@ -94,9 +123,13 @@ export default function App() {
             }
           }
         })
-        .catch(() => {
-          // Token invalid/expired — clear auth
-          dispatch(logout());
+        .catch((err) => {
+          // Token invalid/expired — only clear auth if unauthorized (401) and unrefreshable
+          if (err?.status === 401) {
+            handleLogout();
+            setSessionExpiredNotice("Your session has expired. Please sign in again to continue.");
+            handleNotify("Your session has expired. Please sign in again to continue.", "error");
+          }
         });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -635,6 +668,39 @@ export default function App() {
     dispatch(addTransfer(newTransfer));
     handleNotify(`Transfer for ${newTransfer.athleteName} submitted to EAF Registry.`, 'success');
   };
+
+  const sessionExpiredModal = sessionExpiredNotice && (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 text-center">
+        <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200">
+          <Lock size={28} />
+        </div>
+        <h3 className="text-xl font-black text-slate-900 mb-2">
+          Session Expired
+        </h3>
+        <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+          {sessionExpiredNotice}
+        </p>
+        <div className="flex flex-col gap-2.5">
+          <button
+            onClick={() => {
+              setSessionExpiredNotice(null);
+              handleOpenAuthModal();
+            }}
+            className="w-full py-3 px-4 rounded-xl font-bold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm cursor-pointer border-0"
+          >
+            Sign In Again
+          </button>
+          <button
+            onClick={() => setSessionExpiredNotice(null)}
+            className="w-full py-2.5 px-4 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition-colors text-sm cursor-pointer border-0 bg-transparent"
+          >
+            Continue as Guest
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   // ── LANDING PAGE ──
   if (currentRole === 'LANDING' ||
@@ -1216,6 +1282,8 @@ export default function App() {
             }}
           />
         )}
+
+        {sessionExpiredModal}
       </div>
     );
   }
@@ -1247,6 +1315,7 @@ export default function App() {
       )}
       <RBACSecurityMatrix isOpen={showRbacMatrix} onClose={() => setShowRbacMatrix(false)} />
       <NotificationToast toast={toast} onClose={() => setToast(null)} />
+      {sessionExpiredModal}
     </>
   );
 

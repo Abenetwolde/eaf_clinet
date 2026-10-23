@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSelector } from '../../store/hooks';
+import { useGetClubsQuery } from '../../store/api/apiSlice';
 import { LanguageSelector } from '../../i18n';
 
 function EAFLogo({ size = 36 }: { size?: number }) {
@@ -34,13 +35,33 @@ export default function AppLayout({
   darkMode, onToggleDarkMode, children
 }: AppLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
   const currentRole = useAppSelector((state) => state.auth.role);
   const currentClub = useAppSelector((state) => state.auth.club);
   const currentAthlete = useAppSelector((state) => state.auth.athlete);
   const userData = useAppSelector((state) => state.auth.userData);
   const clubAdminName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || currentClub.manager || 'Club Admin';
-  const clubAdminPhoto = getProfilePhotoUrl({ picture: userData?.picture, faydaNin: userData?.faydaNin });
   const isClub = currentRole === 'CLUB';
+
+  // Live lookup from clubs list to get up-to-date club crest
+  const { data: clubsList = [] } = useGetClubsQuery();
+  const matchedClub = (clubsList as any[]).find(
+    (c: any) => c.id === currentClub.id || (c.name && currentClub.name && c.name.trim().toLowerCase() === currentClub.name.trim().toLowerCase())
+  );
+  const resolvedClubLogo = (
+    currentClub.logoUrl ||
+    (currentClub as any).logo ||
+    matchedClub?.logoUrl ||
+    matchedClub?.logo ||
+    ''
+  );
+  const clubDisplayName = currentClub.name || matchedClub?.name || 'Club Portal';
+
+  const athleteClubName = currentAthlete?.club || (currentAthlete as any)?.clubName || '';
+  const athleteMatchedClub = athleteClubName ? (clubsList as any[]).find(
+    (c: any) => (c.name && c.name.trim().toLowerCase() === athleteClubName.trim().toLowerCase())
+  ) : null;
+  const athleteClubLogo = athleteMatchedClub?.logoUrl || (athleteMatchedClub as any)?.logo || '';
 
   const clubNavItems = [
     { id: 'OVERVIEW',   label: 'Dashboard',                   icon: Home },
@@ -95,8 +116,8 @@ export default function AppLayout({
 
         {/* EAF Brand Header - Clickable redirect to Home */}
         <div
-          className="px-4.5 py-5 border-b border-[#2D3A5A] flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-90"
-          style={{ padding: '20px 18px' }}
+          className="px-4.5 py-4 border-b border-[#2D3A5A] flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-90"
+          style={{ padding: '16px 18px' }}
           onClick={() => onSwitchRole('LANDING')}
           role="button"
           tabIndex={0}
@@ -107,38 +128,90 @@ export default function AppLayout({
           </div>
           <div>
             <div className="text-[0.95rem] font-black text-white tracking-tight leading-tight">EAF Portal</div>
-            <div className="text-[0.68rem] text-accent font-bold mt-px">EAF</div>
+            <div className="text-[0.68rem] text-accent font-bold mt-px">Ethiopian Athletics Federation</div>
           </div>
         </div>
 
+        {/* ── Prominent Club Crest / Logo Banner in Sidebar ── */}
+        {isClub && (
+          <div className="mx-3.5 mt-3.5 mb-2.5 p-3 rounded-2xl bg-gradient-to-br from-[#1E293B] to-[#0A101D] border border-accent/40 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="relative w-12 h-12 rounded-xl bg-white p-1 shrink-0 overflow-hidden shadow-sm border border-slate-200 flex items-center justify-center">
+                {resolvedClubLogo && !logoFailed ? (
+                  <img
+                    src={resolvedClubLogo}
+                    alt={clubDisplayName}
+                    className="w-full h-full object-contain"
+                    onError={() => setLogoFailed(true)}
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-lg bg-gradient-to-br from-blue-700 to-indigo-900 flex items-center justify-center text-white font-black text-xs tracking-wider shadow-inner">
+                    {(currentClub.shortName || currentClub.name?.slice(0, 3) || 'CLUB').toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-accent leading-none mb-1">
+                  <ShieldCheck size={11} className="text-accent shrink-0" />
+                  Official Club Crest
+                </div>
+                <div className="text-sm font-black text-white truncate leading-tight" title={clubDisplayName}>
+                  {clubDisplayName}
+                </div>
+                <div className="text-[11px] text-slate-300 font-semibold truncate mt-0.5">
+                  {currentClub.region || matchedClub?.region || "Affiliated Club"}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Identity Card */}
-        <div className="px-4 py-3.5 bg-white/[0.04] border-b border-[#2D3A5A] flex items-center gap-2.5">
+        <div className="px-4 py-3 bg-white/[0.04] border-b border-[#2D3A5A] flex items-center gap-2.5">
           {isClub ? (
-            <>
-              <div className="relative w-10 h-10 shrink-0 overflow-hidden rounded-full border-2 border-accent bg-primary/20 flex items-center justify-center text-white font-bold">
-                <span>{clubAdminName.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>
-                {clubAdminPhoto && <img src={clubAdminPhoto} alt={clubAdminName} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { e.currentTarget.remove(); }} />}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-blue-900/60 border border-blue-400/40 text-blue-200 flex items-center justify-center font-black text-xs shrink-0">
+                <Building2 size={16} />
               </div>
               <div className="min-w-0">
-                <div className="text-[0.84rem] font-bold text-white truncate">{clubAdminName}</div>
-                <div className="text-[0.68rem] text-accent font-bold truncate">{userData?.email || currentClub.name}</div>
+                <div className="text-[0.78rem] font-bold text-white truncate">Administrator: {clubAdminName}</div>
+                <div className="text-[0.66rem] text-[#8FA8BC] font-medium truncate">Authorized Club Official</div>
               </div>
-            </>
+            </div>
           ) : (
             <>
               <img
-                src={getProfilePhotoUrl({ photoUrl: currentAthlete.photoUrl, picture: userData?.picture, faydaFin: currentAthlete.faydaFin || userData?.faydaNin }) || '/images/profile-placeholder.svg'}
+                src={getProfilePhotoUrl({ photoUrl: currentAthlete.photoUrl, picture: userData?.picture, faydaFin: currentAthlete.faydaFin || userData?.faydaNin }) || '/images/fayda_resident_photo.jpg'}
                 alt={currentAthlete.name}
-                onError={(e) => { e.currentTarget.src = '/images/profile-placeholder.svg'; }}
-                className="w-8 h-8 rounded-full object-cover shrink-0 border-2 border-accent"
+                onError={(e) => { e.currentTarget.src = '/images/fayda_resident_photo.jpg'; }}
+                className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-accent shadow-xs"
               />
               <div>
                 <div className="text-[0.84rem] font-bold text-white leading-tight">{currentAthlete.name}</div>
-                <div className="text-[0.68rem] text-[#8FA8BC] font-bold">{currentAthlete.ageTier} · ID Verified</div>
+                <div className="text-[0.68rem] text-[#8FA8BC] font-bold">{currentAthlete.ageTier || 'Athlete'} · ID Verified</div>
               </div>
             </>
           )}
         </div>
+
+        {/* Athlete Affiliated Club Badge */}
+        {!isClub && athleteClubName && (
+          <div className="mx-3.5 mt-2.5 mb-1 p-2 rounded-xl bg-white/[0.04] border border-[#2D3A5A] flex items-center gap-2.5">
+            <div className="relative w-8 h-8 rounded-lg bg-white p-0.5 shrink-0 overflow-hidden shadow-xs flex items-center justify-center border border-slate-200">
+              {athleteClubLogo ? (
+                <img src={athleteClubLogo} alt={athleteClubName} className="w-full h-full object-contain" />
+              ) : (
+                <div className="w-full h-full rounded bg-slate-800 text-accent font-black text-[10px] flex items-center justify-center">
+                  {athleteClubName.slice(0, 3).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[9px] uppercase font-black text-accent tracking-wider leading-none">Affiliated Club</div>
+              <div className="text-xs font-bold text-white truncate mt-0.5" title={athleteClubName}>{athleteClubName}</div>
+            </div>
+          </div>
+        )}
 
         {/* Nav Items */}
         <div className="p-3 flex-1 overflow-y-auto" style={{ padding: '16px 12px' }}>

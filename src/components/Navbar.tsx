@@ -143,10 +143,20 @@ export default function Navbar({
               {/* Active Session Indicator */}
               <div className="bg-white border border-slate-200 px-3.5 py-1.5 rounded-2xl flex items-center gap-2.5 shadow-xs">
                 {currentRole === "CLUB" ? (
-                  <>
-                    <span className="text-xl">{currentClub.logo}</span>
+                    <div className="w-7 h-7 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-slate-50 flex items-center justify-center">
+                      {(currentClub.logoUrl || currentClub.logo) && ((currentClub.logoUrl || currentClub.logo).startsWith("http") || (currentClub.logoUrl || currentClub.logo).startsWith("/") || (currentClub.logoUrl || currentClub.logo).startsWith("data:")) ? (
+                        <img
+                          src={currentClub.logoUrl || currentClub.logo}
+                          alt={currentClub.name}
+                          className="w-full h-full object-contain"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <span className="text-xs font-black text-slate-700">{currentClub.shortName?.slice(0, 2) || "CL"}</span>
+                      )}
+                    </div>
                     <div className="text-left">
-                      <div className="text-[0.8rem] font-black text-slate-900">{currentClub.shortName}</div>
+                      <div className="text-[0.8rem] font-black text-slate-900">{currentClub.shortName || currentClub.name}</div>
                       <div className="text-[0.65rem] text-slate-500 font-bold">Admin Portal</div>
                     </div>
                   </>

@@ -133,27 +133,41 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   return (
     <div>
       {/* Page Title Header */}
-      <div className="flex items-center justify-between mb-[20px] flex-wrap gap-[12px]">
-        <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h2 className="text-[1.6rem] font-extrabold text-text-heading">
-              {club.name} — Executive Dashboard
-            </h2>
-            {((club as any).verificationStatus === "PENDING" || (club as any).status === "PENDING") ? (
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                Accreditation Pending
-              </span>
+      <div className="flex items-center justify-between mb-[20px] flex-wrap gap-[16px]">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
+            {(club.logoUrl || (club as any).logo) && ((club.logoUrl || (club as any).logo).startsWith("http") || (club.logoUrl || (club as any).logo).startsWith("/") || (club.logoUrl || (club as any).logo).startsWith("data:")) ? (
+              <img
+                src={club.logoUrl || (club as any).logo}
+                alt={club.name}
+                className="w-full h-full object-contain p-1.5"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
             ) : (
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5">
-                <ShieldCheck size={13} className="text-emerald-600" />
-                Official Accredited Club
-              </span>
+              <span className="text-xl font-black text-primary">{(club.shortName || club.name?.slice(0, 3) || "CLB").toUpperCase()}</span>
             )}
           </div>
-          <p className="text-[0.88rem] text-text-muted mt-[2px]">
-            Federation Club ID: <strong>{club.id}</strong> | Region: <strong>{club.region}</strong> | Manager: <strong>{club.manager || (club as any).presidentName || "Club Admin"}</strong>
-          </p>
+          <div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="text-[1.6rem] font-extrabold text-text-heading">
+                {club.name} — Executive Dashboard
+              </h2>
+              {((club as any).verificationStatus === "PENDING" || (club as any).status === "PENDING") ? (
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  Accreditation Pending
+                </span>
+              ) : (
+                <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5">
+                  <ShieldCheck size={13} className="text-emerald-600" />
+                  Official Accredited Club
+                </span>
+              )}
+            </div>
+            <p className="text-[0.88rem] text-text-muted mt-[2px]">
+              Federation Club ID: <strong>{club.id}</strong> | Region: <strong>{club.region}</strong> | Manager: <strong>{club.manager || (club as any).presidentName || "Club Admin"}</strong>
+            </p>
+          </div>
         </div>
 
         <div className="flex gap-[12px] flex-wrap">

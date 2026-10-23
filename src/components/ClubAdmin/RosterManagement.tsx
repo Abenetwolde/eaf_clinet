@@ -21,13 +21,15 @@ import {
   ChevronRight,
   Download,
   XCircle,
-  HelpCircle
+  HelpCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { useAppSelector } from '../../store/hooks';
 import { useGetMeQuery } from '../../store/api/authApi';
 import { useGetAthletesQuery } from '../../store/api/athleteApi';
 import { useGetClubCoachesQuery } from '../../store/api/clubApi';
+import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 import type { Athlete } from '../../types';
 
 interface RosterManagementProps {
@@ -250,7 +252,12 @@ export default function RosterManagement({
         primaryEvent,
         pb: primaryPb,
         personalBests,
-        photoUrl: b.photoUrl || '/images/runner_marathon.png',
+        photoUrl: getProfilePhotoUrl({
+          photoUrl: b.photoUrl,
+          picture: b.user?.picture,
+          faydaFin,
+          faydaNin: faydaFin,
+        }) || '/images/fayda_resident_photo.jpg',
         bloodType: b.bloodType,
         height: b.height || b.fitnessStats?.heightCm || undefined,
         weight: b.weight || b.fitnessStats?.weightKg || undefined,
@@ -292,7 +299,12 @@ export default function RosterManagement({
         licenseNumber: c.licenseNumber || `ETH-COACH-${c.id.slice(-4).toUpperCase()}`,
         specialization: c.specialization || c.sport?.name || 'Technical Coaching',
         yearsOfExperience: c.yearsOfExperience || 0,
-        photoUrl: '/images/runners_training.png',
+        photoUrl: getProfilePhotoUrl({
+          photoUrl: c.photoUrl,
+          picture: c.user?.picture,
+          faydaFin,
+          faydaNin: faydaFin,
+        }) || '/images/fayda_resident_photo.jpg',
         isEligible: false,
         ineligibilityReasons: ['Coaches are accredited for technical leadership, not athlete competition entry'],
         completenessScore: faydaVerified ? 100 : 70,
@@ -390,7 +402,353 @@ export default function RosterManagement({
 
   return (
     <div className="space-y-6">
-      {/* ── Top Header Bar ── */}
+      {viewingMember ? (
+        <div className="space-y-6">
+          {/* ── Detail Page Top Navigation & Action Bar ── */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+            <button
+              onClick={() => setViewingMember(null)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 cursor-pointer transition-all shadow-xs"
+            >
+              <ArrowLeft size={16} /> Back to Athlete & Member Management
+            </button>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const m = viewingMember;
+                  handleOpenEdit(m);
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+              >
+                <Edit size={14} /> Edit Records
+              </button>
+              {viewingMember.memberType === 'ATHLETE' && onRenewLicense && (
+                <button
+                  onClick={() => {
+                    const ath: Athlete = {
+                      id: viewingMember.id,
+                      name: viewingMember.name,
+                      dob: viewingMember.dob || '',
+                      gender: viewingMember.gender || '',
+                      ageTier: viewingMember.ageTier || 'Senior',
+                      club: viewingMember.clubName || club?.name || '',
+                      faydaFin: viewingMember.faydaFin,
+                      faydaStatus: viewingMember.faydaStatus,
+                      licenseStatus: viewingMember.licenseStatus,
+                      licenseNumber: viewingMember.licenseNumber,
+                      primaryEvent: viewingMember.primaryEvent,
+                      photoUrl: viewingMember.photoUrl,
+                    };
+                    onRenewLicense(ath);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-600 text-slate-950 cursor-pointer border-0 shadow-xs transition-colors"
+                >
+                  <Award size={14} /> Renew License
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* ── Executive Member Profile Dossier Banner ── */}
+          <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 text-white border border-slate-700 shadow-xl relative overflow-hidden">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 relative z-10">
+              <img
+                src={viewingMember.photoUrl}
+                alt={viewingMember.name}
+                className="w-24 h-24 md:w-32 md:h-32 rounded-3xl object-cover border-4 border-emerald-500 shadow-2xl shrink-0"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/images/fayda_resident_photo.jpg';
+                }}
+              />
+              <div className="flex-1 text-center md:text-left space-y-2">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                  <h1 className="text-2xl md:text-3xl font-black text-white m-0 tracking-tight">
+                    {viewingMember.name}
+                  </h1>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wider ${
+                    viewingMember.memberType === 'ATHLETE'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-purple-600 text-white'
+                  }`}>
+                    {viewingMember.memberType}
+                  </span>
+                  {viewingMember.faydaStatus === 'VERIFIED' && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                      <ShieldCheck size={13} /> Fayda Verified
+                    </span>
+                  )}
+                </div>
+
+                <div className="text-base font-bold text-emerald-400">
+                  {viewingMember.amharicName || '—'}
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-1 text-xs text-slate-300 font-semibold">
+                  <span>Club: <strong className="text-white">{viewingMember.clubName || club?.name || 'Club Roster'}</strong></span>
+                  <span>·</span>
+                  <span>Region: <strong className="text-white">{viewingMember.region || club?.region || 'Ethiopia'}</strong></span>
+                  <span>·</span>
+                  <span>Division: <strong className="text-white">{viewingMember.ageTier}</strong></span>
+                  <span>·</span>
+                  <span>License: <strong className="font-mono text-emerald-400">{viewingMember.licenseNumber || 'Pending'}</strong></span>
+                  <span>·</span>
+                  <span>ID: <strong className="font-mono text-slate-400">{viewingMember.id}</strong></span>
+                </div>
+              </div>
+
+              {/* Quick Metrics Badges */}
+              <div className="flex md:flex-col items-center md:items-end gap-2 shrink-0">
+                <div className="text-right p-3 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-xs min-w-[120px]">
+                  <div className="text-[10px] font-black uppercase tracking-wider text-slate-300">Completeness</div>
+                  <div className="text-xl font-black text-emerald-400">{viewingMember.completenessScore}%</div>
+                </div>
+                {viewingMember.memberType === 'ATHLETE' && (
+                  <div className="text-right p-3 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-xs min-w-[120px]">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-slate-300">Competition</div>
+                    <div className={`text-xs font-black ${viewingMember.isEligible ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {viewingMember.isEligible ? '✓ Eligible' : '✕ Restricted'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── 2-Column Detail Sections ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Section 1: Fayda National Biometric Identity */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  <ShieldCheck size={18} /> Verified Fayda Identity
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300">
+                  Immutable Source
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">National ID (FIN)</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-slate-100 text-sm">
+                    {formatFaydaFin(viewingMember.faydaFin) || viewingMember.faydaFan || 'Fayda Verified'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Fayda Access Number (FAN)</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+                    {viewingMember.faydaFan || '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Date of Birth & Division</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {viewingMember.dob ? `${viewingMember.dob} (${viewingMember.ageTier})` : '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Gender</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {viewingMember.gender || '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Region of Origin</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {viewingMember.region || club?.region || '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Amharic Legal Name</span>
+                  <span className="font-bold text-emerald-600 text-sm">
+                    {viewingMember.amharicName || '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Registration & Contact Information */}
+            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  <UserPlus size={18} className="text-blue-600" /> Registration & Contact Info
+                </div>
+                <span className="text-[10px] text-slate-400 font-semibold">
+                  Federation Registry
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Contact Email</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 truncate block">
+                    {viewingMember.email || '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Mobile Phone</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {viewingMember.phone || '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Emergency Contact</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {viewingMember.emergencyContactPhone || '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Blood Type</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {formatBloodType(viewingMember.bloodType)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Height & Weight</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                    {viewingMember.height ? `${viewingMember.height} cm` : '—'} / {viewingMember.weight ? `${viewingMember.weight} kg` : '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Permanent Address</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 truncate block" title={viewingMember.address}>
+                    {viewingMember.address || '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Section 3: Official Personal Bests & Sanctioned Records ── */}
+          {viewingMember.memberType === 'ATHLETE' && (
+            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  <Award size={18} className="text-amber-500" /> Official Personal Bests & Sanctioned Records
+                </div>
+                <span className="text-[10px] text-slate-400 font-semibold">
+                  Federation Verified Marks
+                </span>
+              </div>
+
+              {viewingMember.personalBests && viewingMember.personalBests.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-left text-slate-400 font-semibold">
+                        <th className="pb-2.5">Discipline / Event</th>
+                        <th className="pb-2.5">Official Mark</th>
+                        <th className="pb-2.5">Date Recorded</th>
+                        <th className="pb-2.5">Competition Venue</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                      {viewingMember.personalBests.map((rec, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                          <td className="py-3 font-bold text-slate-800 dark:text-slate-200">{rec.discipline}</td>
+                          <td className="py-3 font-mono font-black text-blue-600 dark:text-blue-400 text-sm">{rec.mark}</td>
+                          <td className="py-3 text-slate-600 dark:text-slate-400">{rec.date || '—'}</td>
+                          <td className="py-3 text-slate-600 dark:text-slate-400">{rec.venue || 'Federation Championship'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/40 text-center text-slate-400 text-xs">
+                  No personal bests registered yet. New marks are automatically updated from official meet results.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Section 4: Athletic Performance & Eligibility Checklist ── */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                <Activity size={18} className="text-emerald-600" /> Federation Clearance & Eligibility Checklist
+              </div>
+              {viewingMember.memberType === 'ATHLETE' && (
+                viewingMember.isEligible ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300">
+                    ✓ Cleared for Federation Competitions
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300">
+                    ✕ Ineligible for Competitions
+                  </span>
+                )
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="text-slate-400 font-semibold block mb-0.5">License Number</span>
+                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                  {viewingMember.licenseNumber || 'Unassigned'}
+                </span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="text-slate-400 font-semibold block mb-0.5">License Status</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {viewingMember.licenseStatus}
+                </span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="text-slate-400 font-semibold block mb-0.5">
+                  {viewingMember.memberType === 'ATHLETE' ? 'Primary Event' : 'Specialization'}
+                </span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {viewingMember.primaryEvent || viewingMember.specialization || 'Athletics'}
+                </span>
+              </div>
+              <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                <span className="text-slate-400 font-semibold block mb-0.5">
+                  {viewingMember.memberType === 'ATHLETE' ? 'Personal Best' : 'Experience'}
+                </span>
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {viewingMember.memberType === 'ATHLETE' ? viewingMember.pb || 'N/A' : `${viewingMember.yearsOfExperience} Years`}
+                </span>
+              </div>
+            </div>
+
+            {/* Ineligibility reasons if any */}
+            {viewingMember.memberType === 'ATHLETE' && !viewingMember.isEligible && (
+              <div className="mt-3 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 text-rose-800 dark:text-rose-300 text-xs">
+                <div className="font-bold mb-1">Outstanding Requirements for Competition Clearance:</div>
+                <ul className="list-disc pl-4 space-y-0.5 m-0">
+                  {viewingMember.ineligibilityReasons.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* ── Bottom Navigation & Actions Bar ── */}
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+            <button
+              onClick={() => setViewingMember(null)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black bg-white dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 hover:bg-slate-50 cursor-pointer shadow-xs"
+            >
+              <ArrowLeft size={16} /> Back to Athlete & Member Management
+            </button>
+
+            <button
+              onClick={() => {
+                const m = viewingMember;
+                handleOpenEdit(m);
+              }}
+              className="px-5 py-2.5 rounded-xl text-xs font-black bg-blue-600 hover:bg-blue-700 text-white cursor-pointer border-0 shadow-xs"
+            >
+              Edit Member Records
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* ── Top Header Bar ── */}
       <div className="flex items-center justify-between flex-wrap gap-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-lg border border-slate-700">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
@@ -624,7 +982,7 @@ export default function RosterManagement({
                             alt={member.name}
                             className="w-10 h-10 rounded-full object-cover border-2 border-slate-200 dark:border-slate-700 shrink-0"
                             onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = '/images/runner_marathon.png';
+                              (e.currentTarget as HTMLImageElement).src = '/images/fayda_resident_photo.jpg';
                             }}
                           />
                           <div>
@@ -775,307 +1133,7 @@ export default function RosterManagement({
           </table>
         </div>
       </div>
-
-      {/* ── Comprehensive Member Profile Modal ── */}
-      {viewingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs" onClick={() => setViewingMember(null)}>
-          <div
-            className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 md:p-8 space-y-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-5">
-              <div className="flex items-center gap-4">
-                <img
-                  src={viewingMember.photoUrl}
-                  alt={viewingMember.name}
-                  className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-500 shadow-md"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = '/images/runner_marathon.png';
-                  }}
-                />
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-black text-slate-900 dark:text-white m-0">
-                      {viewingMember.name}
-                    </h3>
-                    <span className="px-2 py-0.5 rounded text-xs font-black uppercase bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                      {viewingMember.memberType}
-                    </span>
-                  </div>
-                  <div className="text-sm font-semibold text-emerald-600 mt-0.5">
-                    {viewingMember.amharicName || '—'} · Club: {viewingMember.clubName || club?.name}
-                  </div>
-                  <div className="text-xs text-slate-400 mt-1">
-                    System ID: {viewingMember.id}
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => setViewingMember(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center border-0 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Profile Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Section 1: Fayda Verified Identity */}
-              <div className="p-5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
-                    <ShieldCheck size={16} /> Verified Fayda Identity
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white">
-                    Immutable Source
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <span className="text-slate-400 font-semibold block">National ID (FIN)</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                      {formatFaydaFin(viewingMember.faydaFin) || viewingMember.faydaFan || 'Fayda Verified'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Fayda Access Number (FAN)</span>
-                    <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                      {viewingMember.faydaFan || '—'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Date of Birth & Division</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {viewingMember.dob ? `${viewingMember.dob} (${viewingMember.ageTier})` : '—'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Gender</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {viewingMember.gender || '—'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Region of Origin</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {viewingMember.region || club?.region || '—'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Amharic Legal Name</span>
-                    <span className="font-bold text-emerald-600">
-                      {viewingMember.amharicName || '—'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 2: Registration & Contact Information */}
-              <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    <UserPlus size={16} /> Registration & Contact Info
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-semibold">
-                    Athlete-Entered Records
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Email</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">
-                      {viewingMember.email || '—'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Phone</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {viewingMember.phone || '—'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Emergency Contact</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {viewingMember.emergencyContactPhone || '—'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Blood Type</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {formatBloodType(viewingMember.bloodType)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Height / Weight</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {viewingMember.height ? `${viewingMember.height} cm` : '—'} / {viewingMember.weight ? `${viewingMember.weight} kg` : '—'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-semibold block">Permanent Address</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate block" title={viewingMember.address}>
-                      {viewingMember.address || '—'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 3: Official Personal Bests & Sporting Records */}
-            {viewingMember.memberType === 'ATHLETE' && (
-              <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    <Award size={16} className="text-amber-500" /> Official Personal Bests & Sanctioned Records
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-semibold">
-                    Federation Verified Results
-                  </span>
-                </div>
-
-                {viewingMember.personalBests && viewingMember.personalBests.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-800 text-left text-slate-400 font-semibold">
-                          <th className="pb-2">Discipline / Event</th>
-                          <th className="pb-2">Official Mark</th>
-                          <th className="pb-2">Date Recorded</th>
-                          <th className="pb-2">Competition Venue</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                        {viewingMember.personalBests.map((rec, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
-                            <td className="py-2.5 font-bold text-slate-800 dark:text-slate-200">{rec.discipline}</td>
-                            <td className="py-2.5 font-mono font-black text-blue-600 dark:text-blue-400 text-sm">{rec.mark}</td>
-                            <td className="py-2.5 text-slate-600 dark:text-slate-400">{rec.date || '—'}</td>
-                            <td className="py-2.5 text-slate-600 dark:text-slate-400">{rec.venue || 'Federation Championship'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-center text-slate-400 text-xs">
-                    No personal bests registered yet. New marks are automatically updated from official meet results.
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Section 4: Athletic Performance & Eligibility */}
-            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  <Activity size={16} /> Federation Status & Eligibility
-                </div>
-                {viewingMember.memberType === 'ATHLETE' && (
-                  viewingMember.isEligible ? (
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                      ✓ Cleared for Federation Competitions
-                    </span>
-                  ) : (
-                    <span className="px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-300">
-                      ✕ Ineligible for Competitions
-                    </span>
-                  )
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                <div>
-                  <span className="text-slate-400 font-semibold block">License Number</span>
-                  <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
-                    {viewingMember.licenseNumber || 'Unassigned'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-semibold block">License Status</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">
-                    {viewingMember.licenseStatus}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-semibold block">
-                    {viewingMember.memberType === 'ATHLETE' ? 'Primary Event' : 'Specialization'}
-                  </span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">
-                    {viewingMember.primaryEvent || viewingMember.specialization || 'Athletics'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-slate-400 font-semibold block">
-                    {viewingMember.memberType === 'ATHLETE' ? 'Personal Best' : 'Experience'}
-                  </span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">
-                    {viewingMember.memberType === 'ATHLETE' ? viewingMember.pb || 'N/A' : `${viewingMember.yearsOfExperience} Years`}
-                  </span>
-                </div>
-              </div>
-
-              {/* Ineligibility reasons if any */}
-              {viewingMember.memberType === 'ATHLETE' && !viewingMember.isEligible && (
-                <div className="mt-3 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 text-rose-800 dark:text-rose-300 text-xs">
-                  <div className="font-bold mb-1">Outstanding Requirements for Competition Clearance:</div>
-                  <ul className="list-disc pl-4 space-y-0.5 m-0">
-                    {viewingMember.ineligibilityReasons.map((r, i) => (
-                      <li key={i}>{r}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button
-                onClick={() => {
-                  const m = viewingMember;
-                  setViewingMember(null);
-                  handleOpenEdit(m);
-                }}
-                className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 cursor-pointer"
-              >
-                Edit Records
-              </button>
-              {viewingMember.memberType === 'ATHLETE' && onRenewLicense && (
-                <button
-                  onClick={() => {
-                    const ath: Athlete = {
-                      id: viewingMember.id,
-                      name: viewingMember.name,
-                      dob: viewingMember.dob || '',
-                      gender: viewingMember.gender || '',
-                      ageTier: viewingMember.ageTier || 'Senior',
-                      club: viewingMember.clubName || club?.name || '',
-                      faydaFin: viewingMember.faydaFin,
-                      faydaStatus: viewingMember.faydaStatus,
-                      licenseStatus: viewingMember.licenseStatus,
-                      licenseNumber: viewingMember.licenseNumber,
-                      primaryEvent: viewingMember.primaryEvent,
-                      photoUrl: viewingMember.photoUrl,
-                    };
-                    setViewingMember(null);
-                    onRenewLicense(ath);
-                  }}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 cursor-pointer border-0"
-                >
-                  Renew License
-                </button>
-              )}
-              <button
-                onClick={() => setViewingMember(null)}
-                className="px-5 py-2 rounded-xl text-xs font-black bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 cursor-pointer border-0"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        </>
       )}
 
       {/* ── Edit Member Modal ── */}

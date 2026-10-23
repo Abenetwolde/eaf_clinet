@@ -34,8 +34,17 @@ export default function ClubDashboard({ club, athletes, transfers, onRenewLicens
       {/* Club Banner Header */}
       <div className="glass-panel flex items-center justify-between flex-wrap gap-[20px] p-[32px] mb-[28px] bg-gradient-to-br from-white to-[#F8FAFC] border-2 border-[rgba(255,184,0,0.4)]">
         <div className="flex items-center gap-[20px]">
-          <div className="text-[3.2rem] p-[14px] bg-white rounded-[20px] shadow-[0_8px_24px_rgba(0,114,206,0.1)] border border-[rgba(226,232,240,0.8)]">
-            {club.logo}
+          <div className="w-20 h-20 p-2 bg-white rounded-[20px] shadow-[0_8px_24px_rgba(0,114,206,0.1)] border border-[rgba(226,232,240,0.8)] flex items-center justify-center overflow-hidden shrink-0">
+            {(club.logoUrl || (club as any).logo) && ((club.logoUrl || (club as any).logo).startsWith("http") || (club.logoUrl || (club as any).logo).startsWith("/") || (club.logoUrl || (club as any).logo).startsWith("data:")) ? (
+              <img
+                src={club.logoUrl || (club as any).logo}
+                alt={club.name}
+                className="w-full h-full object-contain"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <span className="text-[2.2rem]">{(club as any).logo || "🛡️"}</span>
+            )}
           </div>
 
           <div>

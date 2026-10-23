@@ -48,9 +48,10 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
   const [isSavingWb, setIsSavingWb] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('eafAccessToken') || localStorage.getItem('eaf_accessToken') || localStorage.getItem('token') || localStorage.getItem('eaf_token');
+    const token = localStorage.getItem('eaf_accessToken') || localStorage.getItem('eafAccessToken') || localStorage.getItem('token') || localStorage.getItem('eaf_token');
     if (!token) return;
-    fetch("http://localhost:3000/api/v1/antidoping/summary", {
+    const apiBase = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '');
+    fetch(`${apiBase}/antidoping/summary`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.ok ? res.json() : null)
@@ -62,8 +63,9 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
     e.preventDefault();
     setIsSavingWb(true);
     try {
-      const token = localStorage.getItem('eafAccessToken') || localStorage.getItem('eaf_accessToken') || localStorage.getItem('token') || localStorage.getItem('eaf_token');
-      const res = await fetch("http://localhost:3000/api/v1/antidoping/whereabouts", {
+      const token = localStorage.getItem('eaf_accessToken') || localStorage.getItem('eafAccessToken') || localStorage.getItem('token') || localStorage.getItem('eaf_token');
+      const apiBase = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '');
+      const res = await fetch(`${apiBase}/antidoping/whereabouts`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ athleteId: athlete.id, timeSlot: wbWindow, trainingVenue: wbVenue, location: wbVenue, overnightAddress: wbAddress, emergencyPhone: wbEmergency, quarter: wbQuarter }),
@@ -122,6 +124,29 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
   return (
     <div className="space-y-6">
 
+      {/* ── Top Floating Action Bar with Accessible Sign Out ── */}
+      <div className="flex items-center justify-between gap-4 p-3.5 bg-white dark:bg-[#121829] rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex-wrap">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            Athlete Management Section
+          </span>
+        </div>
+        <div className="flex items-center gap-2.5 ml-auto">
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 font-extrabold text-xs transition border border-red-200 dark:border-red-900/60 cursor-pointer shadow-xs active:scale-95"
+              title="Log out of your active athlete session"
+            >
+              <LogOut size={15} className="text-red-600 dark:text-red-400" />
+              <span>Log Out</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* ── 1. Top Executive Profile Banner ── */}
       <div className="rounded-2xl bg-gradient-to-r from-[#071C3D] via-[#012E7A] to-[#0140A7] p-6 sm:p-8 text-white shadow-lg border border-white/10 relative overflow-hidden">
         {/* Decorative rings */}
@@ -133,6 +158,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
               <img
                 src={getProfilePhotoUrl({ photoUrl: athlete.photoUrl, faydaFin: athlete.faydaFin }) || '/images/profile-placeholder.svg'}
                 alt={athlete.name}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/profile-placeholder.svg'; }}
                 className="w-20 h-24 sm:w-24 sm:h-28 rounded-2xl object-cover border-4 border-white/90 shadow-xl bg-slate-800"
               />
               {athlete.faydaStatus === 'VERIFIED' && <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white rounded-full p-1 border-2 border-white shadow-md"><CheckCircle2 size={16} /></div>}
@@ -161,11 +187,26 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
             </div>
           </div>
 
-          <div className="text-left sm:text-right space-y-1 border-t sm:border-t-0 pt-3 sm:pt-0 border-white/10 w-full sm:w-auto">
-            <div className="text-xs text-slate-300">Registration Status</div>
-            <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black px-3 py-1 rounded-lg">
-              {athlete.licenseStatus === 'ACTIVE' ? 'Active license' : athlete.licenseStatus || 'Status not recorded'}
+          <div className="flex flex-col sm:items-end gap-3 w-full sm:w-auto border-t sm:border-t-0 pt-4 sm:pt-0 border-white/10">
+            <div className="space-y-1 text-left sm:text-right">
+              <div className="text-xs text-slate-300">Registration Status</div>
+              <div className="inline-flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black px-3 py-1 rounded-lg">
+                {athlete.licenseStatus === 'ACTIVE' ? 'Active license' : athlete.licenseStatus || 'Status not recorded'}
+              </div>
             </div>
+
+            {/* Readily accessible top logout button */}
+            {onLogout && (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white font-extrabold text-xs transition-all shadow-md shadow-red-900/40 border border-red-400/30 cursor-pointer"
+                title="Sign out of athlete portal"
+              >
+                <LogOut size={14} />
+                <span>Sign Out</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

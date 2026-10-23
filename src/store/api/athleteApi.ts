@@ -248,60 +248,60 @@ export const athleteApi = apiSlice.injectEndpoints({
     }),
 
     getPublishedEvents: builder.query<PublishedEvent[], void>({
-      query: () => '/events/published',
+      query: () => 'events/published',
       transformResponse: (response: { success: boolean; data: PublishedEvent[] }) => response.data || [],
       providesTags: ['Athletes'],
     }),
 
     getAthleteApplications: builder.query<EventApplicationResponse[], void>({
-      query: () => '/athletes/profile/applications',
+      query: () => 'athletes/profile/applications',
       transformResponse: (response: { success: boolean; data: EventApplicationResponse[] }) => response.data || [],
       providesTags: ['Athletes'],
     }),
 
     getAthleteDashboard: builder.query<any, void>({
-      query: () => '/athletes/profile',
+      query: () => 'athletes/profile',
       transformResponse: (response: any) => response?.data || null,
       providesTags: ['Athletes'],
     }),
     getAthletePersonalBests: builder.query<any, void>({
-      query: () => '/athletes/profile/personal-bests',
+      query: () => 'athletes/profile/personal-bests',
       transformResponse: (response: any) => response?.data || { allTime: [], season: [] },
       providesTags: ['Athletes'],
     }),
     getAthleteTrainingLogs: builder.query<any[], void>({
-      query: () => '/athletes/profile/training-logs',
+      query: () => 'athletes/profile/training-logs',
       transformResponse: (response: any) => response?.data || [],
       providesTags: ['Athletes'],
     }),
     getAthleteWeightLogs: builder.query<any[], void>({
-      query: () => '/athletes/profile/weight-logs',
+      query: () => 'athletes/profile/weight-logs',
       transformResponse: (response: any) => response?.data || [],
       providesTags: ['Athletes'],
     }),
     getMyAthleteResults: builder.query<any[], void>({
-      query: () => '/results/my-results',
+      query: () => 'results/my-results',
       transformResponse: (response: any) => response?.data?.data || [],
       providesTags: ['Results' as any],
     }),
 
     updateAthleteProfile: builder.mutation<any, Record<string, unknown>>({
-      query: (body) => ({ url: '/athletes/profile', method: 'PATCH', body }),
+      query: (body) => ({ url: 'athletes/profile', method: 'PATCH', body }),
       invalidatesTags: ['Athletes'],
     }),
 
     createAthletePersonalBest: builder.mutation<any, { event: string; mark: string; date?: string; venue?: string }>({
-      query: (body) => ({ url: '/athletes/profile/personal-bests', method: 'POST', body }),
+      query: (body) => ({ url: 'athletes/profile/personal-bests', method: 'POST', body }),
       invalidatesTags: ['Athletes'],
     }),
 
     createAthleteTrainingLog: builder.mutation<any, { date: string; type: string; distanceKm: number; durationMinutes: number; notes?: string }>({
-      query: (body) => ({ url: '/athletes/profile/training-logs', method: 'POST', body }),
+      query: (body) => ({ url: 'athletes/profile/training-logs', method: 'POST', body }),
       invalidatesTags: ['Athletes'],
     }),
 
     createAthleteWeightLog: builder.mutation<any, { date: string; weightKg: number }>({
-      query: (body) => ({ url: '/athletes/profile/weight-logs', method: 'POST', body }),
+      query: (body) => ({ url: 'athletes/profile/weight-logs', method: 'POST', body }),
       invalidatesTags: ['Athletes'],
     }),
 
@@ -310,7 +310,7 @@ export const athleteApi = apiSlice.injectEndpoints({
       { eventId: string; athleteId?: string; disciplines?: string[] }
     >({
       query: ({ eventId, disciplines }) => ({
-        url: `/events/${eventId}/apply`,
+        url: `events/${eventId}/apply`,
         method: 'POST',
         body: { eventId, disciplines },
       }),
@@ -318,25 +318,25 @@ export const athleteApi = apiSlice.injectEndpoints({
     }),
 
     getAthleteNotifications: builder.query<any[], void>({
-      query: () => '/athletes/profile/notifications',
+      query: () => 'athletes/profile/notifications',
       transformResponse: (response: any) => response?.data || response || [],
       providesTags: ['Athletes'],
     }),
 
     getPublishedResults: builder.query<any[], void>({
-      query: () => '/results/published',
+      query: () => 'results/published',
       transformResponse: (response: any) => response?.data || response || [],
       providesTags: ['Results' as any],
     }),
 
     getResultDetail: builder.query<any, string>({
-      query: (id) => `/results/${id}`,
+      query: (id) => `results/${id}`,
       transformResponse: (response: any) => response?.data || response || null,
       providesTags: ['Results' as any],
     }),
 
     getMyClubResults: builder.query<any, void>({
-      query: () => '/results/my-club',
+      query: () => 'results/my-club',
       transformResponse: (response: any) => response?.data || response || null,
       providesTags: ['Results' as any],
     }),

@@ -154,7 +154,7 @@ export const authApi = apiSlice.injectEndpoints({
     // POST /auth/login
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (body) => ({
-        url: '/auth/login',
+        url: 'auth/login',
         method: 'POST',
         body: {
           identifier: body.identifier || body.email,
@@ -171,7 +171,7 @@ export const authApi = apiSlice.injectEndpoints({
 
     loginWithFayda: builder.mutation<LoginResponse, { verificationToken: string }>({
       query: (body) => ({
-        url: '/auth/login/fayda',
+        url: 'auth/login/fayda',
         method: 'POST',
         body,
       }),
@@ -180,7 +180,7 @@ export const authApi = apiSlice.injectEndpoints({
     // POST /auth/register
     registerUser: builder.mutation<RegisterUserResponse, RegisterUserRequest>({
       query: (body) => ({
-        url: '/auth/register',
+        url: 'auth/register',
         method: 'POST',
         body,
       }),
@@ -188,14 +188,14 @@ export const authApi = apiSlice.injectEndpoints({
 
     // GET /auth/me
     getMe: builder.query<MeResponse, void>({
-      query: () => '/auth/me',
+      query: () => 'auth/me',
       providesTags: ['Users'],
     }),
 
     // POST /auth/logout
     logoutApi: builder.mutation<LogoutResponse, void>({
       query: () => ({
-        url: '/auth/logout',
+        url: 'auth/logout',
         method: 'POST',
       }),
     }),
@@ -203,7 +203,7 @@ export const authApi = apiSlice.injectEndpoints({
     // POST /auth/verify/email
     verifyEmail: builder.mutation<VerifyEmailResponse, VerifyEmailRequest>({
       query: (body) => ({
-        url: '/auth/verify/email',
+        url: 'auth/verify/email',
         method: 'POST',
         body,
       }),
@@ -212,7 +212,7 @@ export const authApi = apiSlice.injectEndpoints({
     // POST /auth/verify/phone/request
     requestPhoneOtp: builder.mutation<RequestPhoneOtpResponse, void>({
       query: () => ({
-        url: '/auth/verify/phone/request',
+        url: 'auth/verify/phone/request',
         method: 'POST',
       }),
     }),
@@ -220,7 +220,7 @@ export const authApi = apiSlice.injectEndpoints({
     // POST /auth/verify/phone
     verifyPhone: builder.mutation<VerifyPhoneResponse, VerifyPhoneRequest>({
       query: (body) => ({
-        url: '/auth/verify/phone',
+        url: 'auth/verify/phone',
         method: 'POST',
         body,
       }),
@@ -229,7 +229,7 @@ export const authApi = apiSlice.injectEndpoints({
     // POST /auth/verify/resend
     resendVerification: builder.mutation<ResendVerificationResponse, ResendVerificationRequest>({
       query: (body) => ({
-        url: '/auth/verify/resend',
+        url: 'auth/verify/resend',
         method: 'POST',
         body,
       }),
