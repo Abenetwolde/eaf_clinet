@@ -3,6 +3,7 @@ import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, 
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import type { Club, Athlete, Transfer } from '../../types';
 import { useAppSelector } from '../../store/hooks';
+import { useGetMeQuery } from '../../store/api/authApi';
 import { useGetAthletesQuery } from '../../store/api/athleteApi';
 import { useGetOverviewStatsQuery } from '../../store/api/apiSlice';
 
@@ -18,37 +19,77 @@ interface ClubOverviewProps {
 export default function ClubOverview({ club: propClub, athletes: propAthletes, transfers: propTransfers, onChangeSubPage, onNotify, onAddClub }: ClubOverviewProps) {
   const storeClub = useAppSelector((state) => state.auth.club);
   const storeTransfers = useAppSelector((state) => state.club.transfers);
+  const { data: accountResponse } = useGetMeQuery(undefined, {
+    skip: Boolean((propClub?.id && propClub.name) || (storeClub?.id && storeClub.name)),
+  });
+  const accountClub = accountResponse?.data?.club;
 
-  const club = propClub || storeClub;
+  const club = (propClub?.id && propClub.name)
+    ? propClub
+    : (storeClub?.id && storeClub.name)
+    ? storeClub
+    : accountClub?.id
+    ? {
+        id: accountClub.id,
+        name: accountClub.name,
+        shortName: accountClub.shortName || '',
+        region: accountClub.region || '',
+        manager: accountClub.manager || '',
+        email: accountClub.email || '',
+        phone: accountClub.phone || '',
+        licensedAthletes: 0,
+        pendingVerifications: 0,
+        unlicensedAthletes: 0,
+        transfersCount: 0,
+        logo: accountClub.logo || '',
+        clubRank: 0,
+        totalPoints: 0,
+      }
+    : propClub || storeClub;
+
+  const activeClubId = club?.id || accountClub?.id || (typeof window !== 'undefined' ? localStorage.getItem('eaf_currentClubId') : '') || '';
+  const activeClubName = club?.name || accountClub?.name || '';
   const transfers = propTransfers || storeTransfers;
 
-  // Retrieve club members dynamically from database
+  // Retrieve club members dynamically from database strictly for active club
   const { data: backendAthletes } = useGetAthletesQuery(
-    club?.id ? { clubId: club.id } : undefined
+    activeClubId ? { clubId: activeClubId } : undefined
   );
 
   // Retrieve live federation overview & analytics for charts
   const { data: overviewStats } = useGetOverviewStatsQuery();
 
-  const dynamicAthletes: Athlete[] = React.useMemo(() => (backendAthletes || []).map((b: any) => ({
-    id: b.id,
-    name: b.name || `${b.user?.firstName || ""} ${b.user?.lastName || ""}`.trim(),
-    amharicName: b.amharicName,
-    dob: b.dateOfBirth,
-    gender: b.gender,
-    ageTier: b.ageTier,
-    clubId: b.clubId,
-    clubName: b.clubName,
-    faydaFin: b.faydaFin || b.user?.faydaIdentity?.nin,
-    faydaFan: b.faydaFan || b.fanNumber,
-    faydaStatus: b.user?.faydaIdentity?.verified ? "VERIFIED" : "PENDING",
-    primaryEvent: b.primaryEvent,
-    licenseStatus: b.status,
-    licenseNumber: b.licenseNumber,
-    photoUrl: b.photoUrl || "",
-    checkinStatus: "NOT_CHECKED_IN",
-    personalBests: [], seasonBests: [], weightLog: [], trainingLog: [], achievements: [],
-  } as Athlete)), [backendAthletes]);
+  const dynamicAthletes: Athlete[] = React.useMemo(() => {
+    return (backendAthletes || [])
+      .filter((b: any) => {
+        if (!activeClubId) return true;
+        const matchesId = b.clubId === activeClubId;
+        const matchesName = activeClubName && b.clubName && (
+          b.clubName.trim().toLowerCase() === activeClubName.trim().toLowerCase()
+        );
+        return matchesId || matchesName;
+      })
+      .map((b: any) => ({
+        id: b.id,
+        name: b.name || `${b.user?.firstName || ""} ${b.user?.lastName || ""}`.trim() || 'Athlete',
+        amharicName: b.amharicName,
+        dob: b.dateOfBirth,
+        gender: b.gender,
+        ageTier: b.ageTier,
+        clubId: b.clubId || activeClubId,
+        clubName: b.clubName || activeClubName,
+        faydaFin: b.faydaFin || b.user?.faydaIdentity?.nin,
+        faydaFan: b.faydaFan || b.fanNumber || b.user?.faydaIdentity?.faydaSub,
+        faydaStatus: (b.user?.faydaIdentity?.verified || b.faydaVerified) ? "VERIFIED" : "PENDING",
+        primaryEvent: b.primaryEvent || b.athleteSports?.[0]?.sport?.name || 'Athletics',
+        licenseStatus: b.status,
+        licenseNumber: b.licenseNumber || (b.status === 'ACTIVE' || b.status === 'APPROVED' ? `ETH-${b.id.slice(-6).toUpperCase()}` : undefined),
+        photoUrl: b.photoUrl || "",
+        checkinStatus: "NOT_CHECKED_IN",
+        personalBests: Array.isArray(b.personalBests) ? b.personalBests : [],
+        seasonBests: [], weightLog: [], trainingLog: [], achievements: [],
+      } as Athlete));
+  }, [backendAthletes, activeClubId, activeClubName]);
 
   const athletes = dynamicAthletes;
 
@@ -115,9 +156,9 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
           </p>
         </div>
 
-        <div className="flex gap-[12px]">
+        <div className="flex gap-[12px] flex-wrap">
           <button
-            onClick={() => onChangeSubPage('REGISTER_MEMBER')}
+            onClick={() => onChangeSubPage('ROSTER')}
             className="btn-accent"
             style={{
               display: 'inline-flex',
@@ -129,7 +170,7 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
             }}
           >
             <Users size={16} />
-            Register Members
+            Athlete & Member Management
           </button>
 
           <button
@@ -165,7 +206,11 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
 
       {/* Metrics Row */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-[16px] mb-[28px]">
-        <div className="gov-card">
+        <div
+          className="gov-card cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => onChangeSubPage('ROSTER')}
+          title="Click to open Athlete & Member Management"
+        >
           <div className="flex justify-between items-center mb-[10px]">
             <span className="text-[0.8rem] font-bold text-text-muted">Registered Roster</span>
             <Users size={20} color="var(--eth-blue)" />

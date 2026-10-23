@@ -241,6 +241,7 @@ export default function App() {
       localStorage.removeItem('eaf_currentRole');
       localStorage.removeItem('eaf_currentAthleteId');
       localStorage.removeItem('eaf_currentClubId');
+      localStorage.removeItem('eaf_currentClub');
       localStorage.removeItem('eaf_registered_athlete');
       localStorage.removeItem('eaf_registered_info');
       localStorage.removeItem('eaf_user_avatar');
