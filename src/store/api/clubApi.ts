@@ -177,7 +177,7 @@ export const clubApi = apiSlice.injectEndpoints({
     >({
       query: ({ clubId, eventId }) => `/clubs/${clubId}/athletes/eligible-for-competition/${eventId}`,
       transformResponse: (response: { success: boolean; data: EligibleAthletesResponse }) => response.data,
-      providesTags: ['Athletes'],
+      providesTags: [{ type: 'Athletes' as const, id: 'LIST' }, 'Athletes'],
     }),
 
     submitClubCompetitionApplication: builder.mutation<
@@ -189,7 +189,7 @@ export const clubApi = apiSlice.injectEndpoints({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['Competitions', 'Events', 'Athletes', 'Registrations'],
+      invalidatesTags: ['Competitions', 'Events', 'Athletes', 'Registrations', { type: 'Athletes' as const, id: 'LIST' }],
     }),
 
     getClubApplications: builder.query<ClubApplication[], string>({

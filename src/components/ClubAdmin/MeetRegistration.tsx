@@ -35,6 +35,7 @@ import {
   type ClubApplication,
 } from '../../store/api/clubApi';
 import { useGetPublishedResultsQuery } from '../../store/api/athleteApi';
+import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 
 interface MeetRegistrationProps {
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -671,9 +672,15 @@ export default function MeetRegistration({
                           className="w-4 h-4 rounded text-blue-600 accent-blue-600 mt-1 cursor-pointer shrink-0"
                         />
                         <img
-                          src={ath.photoUrl || '/images/profile-placeholder.svg'}
+                          src={
+                            getProfilePhotoUrl({
+                              photoUrl: ath.photoUrl,
+                              faydaFin: ath.faydaFin,
+                              faydaNin: ath.faydaFin,
+                            }) || '/images/profile-placeholder.svg'
+                          }
                           alt={ath.name}
-                          className="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0"
+                          className="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).src = '/images/profile-placeholder.svg';
                           }}
@@ -806,9 +813,15 @@ export default function MeetRegistration({
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
                         <div className="flex items-center gap-3">
                           <img
-                            src={ath.photoUrl || '/images/profile-placeholder.svg'}
+                            src={
+                              getProfilePhotoUrl({
+                                photoUrl: ath.photoUrl,
+                                faydaFin: ath.faydaFin,
+                                faydaNin: ath.faydaFin,
+                              }) || '/images/profile-placeholder.svg'
+                            }
                             alt={ath.name}
-                            className="w-10 h-10 rounded-lg object-cover border border-slate-200"
+                            className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
                             onError={(e) => {
                               (e.currentTarget as HTMLImageElement).src = '/images/profile-placeholder.svg';
                             }}

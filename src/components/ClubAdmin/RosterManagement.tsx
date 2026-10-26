@@ -22,7 +22,8 @@ import {
   Download,
   XCircle,
   HelpCircle,
-  ArrowLeft
+  ArrowLeft,
+  RefreshCw
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { useAppSelector } from '../../store/hooks';
@@ -167,10 +168,18 @@ export default function RosterManagement({
   const [editPhoto, setEditPhoto] = useState<string>('/images/runner_marathon.png');
 
   // Live queries from backend scoped strictly to activeClubId
-  const { data: backendAthletes = [], isLoading: isLoadingAthletes } = useGetAthletesQuery(
+  const {
+    data: backendAthletes = [],
+    isLoading: isLoadingAthletes,
+    refetch: refetchAthletes,
+  } = useGetAthletesQuery(
     activeClubId ? { clubId: activeClubId } : undefined
   );
-  const { data: backendCoaches = [], isLoading: isLoadingCoaches } = useGetClubCoachesQuery(
+  const {
+    data: backendCoaches = [],
+    isLoading: isLoadingCoaches,
+    refetch: refetchCoaches,
+  } = useGetClubCoachesQuery(
     activeClubId || '',
     { skip: !activeClubId }
   );
@@ -182,11 +191,12 @@ export default function RosterManagement({
     // 1. Process Athletes - strictly only members of this club!
     (backendAthletes || []).forEach((b: any) => {
       if (activeClubId) {
-        const matchesId = b.clubId === activeClubId;
+        const matchesId = b.clubId === activeClubId || b.club?.id === activeClubId;
         const matchesName = activeClubName && b.clubName && (
-          b.clubName.trim().toLowerCase() === activeClubName.trim().toLowerCase()
+          b.clubName.trim().toLowerCase().includes(activeClubName.trim().toLowerCase()) ||
+          activeClubName.trim().toLowerCase().includes(b.clubName.trim().toLowerCase())
         );
-        if (!matchesId && !matchesName) {
+        if (!matchesId && !matchesName && b.clubId && b.clubId !== activeClubId) {
           return; // Exclude athlete belonging to another club
         }
       }
@@ -766,7 +776,20 @@ export default function RosterManagement({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => {
+              refetchAthletes();
+              refetchCoaches();
+            }}
+            disabled={isLoadingAthletes || isLoadingCoaches}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all cursor-pointer shadow-xs"
+            title="Refresh Member Roster"
+          >
+            <RefreshCw size={14} className={isLoadingAthletes || isLoadingCoaches ? 'animate-spin' : ''} />
+            <span>Refresh Roster</span>
+          </button>
+
           <button
             onClick={onRegisterMember}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm bg-emerald-500 hover:bg-emerald-600 text-slate-950 transition-all shadow-md hover:shadow-emerald-500/25 cursor-pointer border-0"

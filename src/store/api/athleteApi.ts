@@ -194,8 +194,8 @@ export const athleteApi = apiSlice.injectEndpoints({
         params: params || undefined,
       }),
       transformResponse: (response: AthleteListResponse) => response.data || [],
-      providesTags: [{ type: 'Athletes' as const, id: 'LIST' }],
-      keepUnusedDataFor: 86400,
+      providesTags: [{ type: 'Athletes' as const, id: 'LIST' }, 'Athletes'],
+      keepUnusedDataFor: 60,
     }),
 
     getRegistrationOptions: builder.query<RegistrationOptionsData, void>({
@@ -226,7 +226,7 @@ export const athleteApi = apiSlice.injectEndpoints({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['Athletes'],
+      invalidatesTags: [{ type: 'Athletes' as const, id: 'LIST' }, 'Athletes'],
     }),
 
     registerAthleteByClubAdmin: builder.mutation<AthleteRegistrationResponse, AthleteRegistrationRequest>({
@@ -235,7 +235,7 @@ export const athleteApi = apiSlice.injectEndpoints({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['Athletes'],
+      invalidatesTags: [{ type: 'Athletes' as const, id: 'LIST' }, 'Athletes'],
     }),
 
     registerCoachByClubAdmin: builder.mutation<any, Record<string, unknown>>({
@@ -244,7 +244,7 @@ export const athleteApi = apiSlice.injectEndpoints({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['Athletes'],
+      invalidatesTags: [{ type: 'Athletes' as const, id: 'LIST' }, 'Athletes', 'Coaches'],
     }),
 
     getPublishedEvents: builder.query<PublishedEvent[], void>({
