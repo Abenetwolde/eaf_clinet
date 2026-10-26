@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   Trophy, Calendar, MapPin, Phone, Mail, Award, Users, Filter,
-  CheckCircle2, User, UserCheck, Building, Clock, ChevronRight, ShieldCheck, X, Download, Printer, Check,
+  CheckCircle2, User, UserCheck, UserPlus, Building, Clock, ChevronRight, ShieldCheck, X, Download, Printer, Check,
   Lock, QrCode, Camera,
   AlertTriangle
 } from 'lucide-react';
@@ -362,6 +362,14 @@ export default function CompetitionDetail({
   );
 
   const handleApplyClick = () => {
+    if (currentRole === 'CLUB') {
+      window.dispatchEvent(
+        new CustomEvent('eaf-open-club-enrollment', {
+          detail: { competition: meet, competitionId: meet?.id },
+        })
+      );
+      return;
+    }
     const token = localStorage.getItem('eaf_accessToken') || localStorage.getItem('token') || localStorage.getItem('eaf_token');
     if (!token || currentRole !== 'ATHLETE') {
       window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { method: 'FIN' } }));
@@ -766,7 +774,15 @@ export default function CompetitionDetail({
                 }}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.98rem' }}>
-                  <UserCheck size={20} color="var(--primary-dark)" /> Apply for Competition
+                  {currentRole === 'CLUB' ? (
+                    <>
+                      <UserPlus size={20} color="var(--primary-dark)" /> Start Club Athlete Enrollment
+                    </>
+                  ) : (
+                    <>
+                      <UserCheck size={20} color="var(--primary-dark)" /> Apply for Competition
+                    </>
+                  )}
                 </span>
                 <ChevronRight size={18} color="var(--primary-dark)" />
               </button>

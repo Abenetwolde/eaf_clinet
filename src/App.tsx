@@ -164,8 +164,24 @@ export default function App() {
   const [clubSubPage, setClubSubPage] = useState('OVERVIEW');
   const [athleteSubPage, setAthleteSubPage] = useState('OVERVIEW');
   const [publicSubPage, setPublicSubPage] = useState('HOME');
+  const [activeEnrollmentCompetition, setActiveEnrollmentCompetition] = useState<any | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useI18n();
+
+  // Listen for direct club competition enrollment triggers
+  useEffect(() => {
+    const handleClubEnrollment = (e: any) => {
+      const comp = e.detail?.competition;
+      if (comp) {
+        setActiveEnrollmentCompetition(comp);
+        dispatch(setRole('CLUB'));
+        setClubSubPage('MEETS');
+        setPublicSubPage('DASHBOARD');
+      }
+    };
+    window.addEventListener('eaf-open-club-enrollment', handleClubEnrollment);
+    return () => window.removeEventListener('eaf-open-club-enrollment', handleClubEnrollment);
+  }, [dispatch]);
   const [darkMode, setDarkMode] = useState(() => {
     try {
       return localStorage.getItem('eaf_darkMode') === 'true';
@@ -1360,6 +1376,8 @@ export default function App() {
         )}
         {clubSubPage === 'MEETS' && (
           <MeetRegistration
+            initialCompetition={activeEnrollmentCompetition}
+            onCloseWizard={() => setActiveEnrollmentCompetition(null)}
             onNotify={handleNotify}
           />
         )}

@@ -203,6 +203,12 @@ export const clubApi = apiSlice.injectEndpoints({
       transformResponse: (response: { success: boolean; data: ClubCoach[] }) => response.data || [],
       providesTags: ['Athletes'],
     }),
+
+    getVerifiedClubs: builder.query<any[], void>({
+      query: () => '/clubs/verified',
+      transformResponse: (response: { success: boolean; data: any[] }) => response.data || [],
+      providesTags: ['Clubs'],
+    }),
   }),
   overrideExisting: false,
 });
@@ -213,4 +219,5 @@ export const {
   useSubmitClubCompetitionApplicationMutation,
   useGetClubApplicationsQuery,
   useGetClubCoachesQuery,
+  useGetVerifiedClubsQuery,
 } = clubApi;
