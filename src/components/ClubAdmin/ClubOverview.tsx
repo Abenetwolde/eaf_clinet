@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2, Smartphone } from 'lucide-react';
+import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2, Smartphone, Calendar, Clock } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import type { Club, Athlete, Transfer } from '../../types';
 import { useAppSelector } from '../../store/hooks';
 import { useGetAthletesQuery } from '../../store/api/athleteApi';
+import { useGetPaymentConfigQuery } from '../../store/api/paymentApi';
 
 interface ClubOverviewProps {
   club?: Club;
@@ -12,8 +13,9 @@ interface ClubOverviewProps {
   onChangeSubPage: (page: string) => void;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
   onAddClub?: (club: Club) => void;
-  onPayClubMembership?: (club: any) => void;
+  onPayClubMembership?: (club: any, amount?: number) => void;
 }
+
 
 export default function ClubOverview({ club: propClub, athletes: propAthletes, transfers: propTransfers, onChangeSubPage, onNotify, onAddClub, onPayClubMembership }: ClubOverviewProps) {
   const storeClub = useAppSelector((state) => state.auth.club);
@@ -26,6 +28,16 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   const { data: backendAthletes } = useGetAthletesQuery(
     club?.id ? { clubId: club.id } : undefined
   );
+
+  // Retrieve federation dynamic pricing configuration
+  const { data: configResp } = useGetPaymentConfigQuery();
+  const paymentConfig = configResp?.data;
+  const renewalFee = paymentConfig?.clubAnnualRenewalFee ?? 5000;
+  const isRenewalOpen = paymentConfig?.isRenewalOpen ?? true;
+  const renewalWindowLabel = paymentConfig?.renewalStartDateFormatted || paymentConfig?.renewalEndDateFormatted
+    ? `${paymentConfig.renewalStartDateFormatted || 'Anytime'} – ${paymentConfig.renewalEndDateFormatted || 'Open'}`
+    : 'Open Year-Round';
+
 
   const dynamicAthletes: Athlete[] = React.useMemo(() => (backendAthletes || []).map((b: any) => ({
     id: b.id,
@@ -249,36 +261,62 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
               </button>
             </div>
 
-            <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '10px', padding: '14px', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '12px', padding: '14px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                 <div style={{ fontWeight: 800, color: '#0369A1' }}>Club Affiliation & Membership (2026/27)</div>
                 <span style={{ fontSize: '0.7rem', background: '#00A3E0', color: 'white', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>TELEBIRR</span>
               </div>
               <p style={{ color: 'var(--text-muted)', marginTop: '4px', fontSize: '0.8rem' }}>
                 Annual club affiliation fee with Ethiopian Athletics Federation.
               </p>
-              <button
-                type="button"
-                onClick={() => onPayClubMembership ? onPayClubMembership(club) : onChangeSubPage('AFFILIATION')}
-                style={{
-                  marginTop: '8px',
-                  padding: '6px 12px',
-                  background: '#00A3E0',
-                  color: 'white',
-                  borderRadius: '8px',
-                  fontWeight: 800,
-                  fontSize: '0.78rem',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  border: 'none',
-                }}
-              >
-                <Smartphone size={13} />
-                Renew Affiliation via Telebirr (5,000 ETB)
-              </button>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '0.75rem', fontWeight: 700, color: isRenewalOpen ? '#0284C7' : '#D97706' }}>
+                <Calendar size={13} />
+                <span>Renewal Window: {renewalWindowLabel}</span>
+                <span style={{
+                  marginLeft: 'auto',
+                  padding: '1px 6px',
+                  borderRadius: '6px',
+                  fontSize: '0.68rem',
+                  fontWeight: 900,
+                  background: isRenewalOpen ? '#DCFCE7' : '#FEF3C7',
+                  color: isRenewalOpen ? '#166534' : '#92400E'
+                }}>
+                  {isRenewalOpen ? 'ELIGIBLE' : 'LOCKED'}
+                </span>
+              </div>
+
+              {isRenewalOpen ? (
+                <button
+                  type="button"
+                  onClick={() => onPayClubMembership ? onPayClubMembership(club, renewalFee) : onChangeSubPage('AFFILIATION')}
+                  style={{
+                    marginTop: '10px',
+                    padding: '7px 14px',
+                    background: '#00A3E0',
+                    color: 'white',
+                    borderRadius: '8px',
+                    fontWeight: 800,
+                    fontSize: '0.78rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    border: 'none',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                  }}
+                >
+                  <Smartphone size={13} />
+                  Renew Affiliation via Telebirr ({renewalFee.toLocaleString()} ETB)
+                </button>
+              ) : (
+                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#B45309', fontWeight: 700, background: '#FFFBEB', padding: '6px 10px', borderRadius: '8px', border: '1px solid #FDE68A' }}>
+                  <Clock size={13} />
+                  <span>Renewal Window Closed ({renewalFee.toLocaleString()} ETB). Contact Federation.</span>
+                </div>
+              )}
             </div>
+
 
             <div className="bg-primary-light border border-[rgba(2,132,199,0.2)] rounded-[10px] p-[14px] text-[0.85rem]">
               <div className="font-bold text-primary">Federation Transfer Window Lockdown</div>

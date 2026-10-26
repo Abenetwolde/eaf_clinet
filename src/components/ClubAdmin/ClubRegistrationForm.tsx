@@ -2,16 +2,20 @@ import React, { useState, useRef } from 'react';
 import {
   Building2, ShieldCheck, CheckCircle2, ArrowRight, ArrowLeft,
   AlertCircle, RefreshCw, Eye, EyeOff, User, Phone, Mail, MapPin,
-  FileCheck, Sparkles, Check, Users, UploadCloud, Image as ImageIcon, Trash2
+  FileCheck, Sparkles, Check, Users, UploadCloud, Image as ImageIcon, Trash2,
+  CreditCard, Smartphone
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Club } from '../../types';
+import { useGetPaymentConfigQuery } from '../../store/api/paymentApi';
+import PaymentModal from '../PaymentModal';
 
 interface ClubRegistrationFormProps {
   onClose: () => void;
   onRegisterSuccess: (data: { type: 'CLUB'; payload: { club: Club; targetSubPage?: string; session?: { token: string; refreshToken?: string; userId: string; userData?: any } } }) => void;
   onSwitchToAthlete?: () => void;
 }
+
 
 const ETHIOPIAN_REGIONS = [
   'Addis Ababa (Federal City)',
@@ -160,6 +164,13 @@ export default function ClubRegistrationForm({
   const [registeredClub, setRegisteredClub] = useState<Club | null>(null);
   const [referenceId, setReferenceId] = useState('');
   const [registeredSession, setRegisteredSession] = useState<{ token: string; refreshToken?: string; userId: string; userData?: any } | undefined>();
+  const [paymentModalData, setPaymentModalData] = useState<any>(null);
+  const [paymentCompleted, setPaymentCompleted] = useState<boolean>(false);
+
+  // Federation Dynamic Payment Configuration
+  const { data: configResp } = useGetPaymentConfigQuery();
+  const paymentConfig = configResp?.data;
+  const registrationFee = paymentConfig?.clubRegistrationFee ?? 5000;
 
   // Auto-sync admin email with club email if empty
   const handleClubEmailChange = (val: string) => {
@@ -323,12 +334,21 @@ export default function ClubRegistrationForm({
 
       setRegisteredClub(newClub);
       setReferenceId(persistedClub.licenseNumber || persistedClub.id);
-      setStep(4); // Show success screen
+
+      // Open Telebirr H5 Payment Modal immediately with dynamic configured fee
+      setPaymentModalData({
+        type: 'CLUB_REGISTRATION_FEE',
+        clubId: persistedClub.id,
+        clubName: persistedClub.name || clubName.trim(),
+        amount: registrationFee,
+        description: 'EAF Official Club Organization Registration & Accreditation Fee',
+      });
     } catch (err: any) {
       setErrorMessage(err?.message || 'Unable to connect to the registration service. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
+
   };
 
   const stepsList = ['1. Club Identity', '2. Governance', '3. Portal Account', '4. Review & Register'];
@@ -1009,6 +1029,38 @@ export default function ClubRegistrationForm({
                   </div>
                 </div>
 
+                {/* Federation Fee Schedule Card */}
+                <div className="bg-sky-50/80 border-2 border-sky-300/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-white border border-sky-200 flex items-center justify-center text-sky-600 shadow-xs shrink-0">
+                      <CreditCard size={24} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black uppercase tracking-wider text-sky-900">
+                          Federation Club Registration Fee
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-200 text-sky-900">
+                          Mandatory
+                        </span>
+                      </div>
+                      <p className="text-xs text-sky-800 mt-0.5 m-0 leading-relaxed">
+                        Official Ethiopian Athletics Federation digital registry & charter fee. Processed securely via Telebirr Web Pay.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="sm:text-right shrink-0 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-sky-200">
+                    <div className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                      {registrationFee.toLocaleString()} ETB
+                    </div>
+                    <div className="text-[11px] font-bold text-sky-700 flex items-center gap-1 sm:justify-end mt-0.5">
+                      <Smartphone size={13} />
+                      <span>Telebirr H5 Checkout</span>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-start gap-2">
                   <CheckCircle2 size={16} className="text-emerald-600 mt-0.5 shrink-0" />
                   <span>
@@ -1041,8 +1093,8 @@ export default function ClubRegistrationForm({
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 size={18} />
-                      <span>Register Club with EAF</span>
+                      <Smartphone size={18} />
+                      <span>Register Club & Pay {registrationFee.toLocaleString()} ETB via Telebirr</span>
                     </>
                   )}
                 </button>
@@ -1068,7 +1120,7 @@ export default function ClubRegistrationForm({
               </h2>
 
               <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6 max-w-md">
-                  <strong>{registeredClub.name}</strong> was saved to the Ethiopian Athletics Federation registry. Sign in with the administrator email and password you registered.
+                <strong>{registeredClub.name}</strong> was recorded in the Ethiopian Athletics Federation registry. Sign in with the administrator email and password you registered.
               </p>
 
               {/* Tracking & Accreditation Card */}
@@ -1079,9 +1131,22 @@ export default function ClubRegistrationForm({
                 </div>
 
                 <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-3">
+                  <span className="text-xs font-bold text-slate-500">Registration Fee Payment</span>
+                  {paymentCompleted ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                      <Check size={12} /> Paid ({registrationFee.toLocaleString()} ETB via Telebirr)
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-300">
+                      Payment Pending ({registrationFee.toLocaleString()} ETB)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-3">
                   <span className="text-xs font-bold text-slate-500">Accreditation Status</span>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-300">
-                    Under Federation Review
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-black ${paymentCompleted ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}`}>
+                    {paymentCompleted ? 'Charter License Active' : 'Under Federation Review'}
                   </span>
                 </div>
 
@@ -1107,6 +1172,28 @@ export default function ClubRegistrationForm({
                   </div>
                 </div>
               </div>
+
+              {/* Complete Payment Button if still pending */}
+              {!paymentCompleted && (
+                <div className="w-full mb-6">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPaymentModalData({
+                        type: 'CLUB_REGISTRATION_FEE',
+                        clubId: registeredClub.id,
+                        clubName: registeredClub.name,
+                        amount: registrationFee,
+                        description: 'EAF Official Club Organization Registration & Accreditation Fee',
+                      })
+                    }
+                    className="w-full py-3.5 px-6 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-xs cursor-pointer border-0"
+                  >
+                    <Smartphone size={18} />
+                    <span>Complete Registration Fee via Telebirr ({registrationFee.toLocaleString()} ETB)</span>
+                  </button>
+                </div>
+              )}
 
               {/* What's Next Callout Card */}
               <div className="bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-200 rounded-2xl p-5 w-full text-left mb-6">
@@ -1153,6 +1240,27 @@ export default function ClubRegistrationForm({
 
         </div>
       </main>
+
+      {/* Telebirr H5 Payment Modal */}
+      {paymentModalData && (
+        <PaymentModal
+          paymentData={paymentModalData}
+          onClose={() => {
+            setPaymentModalData(null);
+            setStep(4);
+          }}
+          onPaymentComplete={(_receipt) => {
+            setPaymentCompleted(true);
+            if (registeredClub) {
+              (registeredClub as any).verificationStatus = 'VERIFIED';
+              (registeredClub as any).status = 'ACTIVE';
+            }
+            setPaymentModalData(null);
+            setStep(4);
+          }}
+        />
+      )}
     </div>
   );
 }
+

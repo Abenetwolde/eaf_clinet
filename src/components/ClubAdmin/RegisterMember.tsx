@@ -24,7 +24,7 @@ function profileFromIdentity(raw: string): { profile: FaydaProfile; fin: string 
     const address = typeof addressValue === 'string'
       ? addressValue
       : [addressValue?.woreda, addressValue?.zone, addressValue?.region, addressValue?.city]
-          .filter(Boolean).join(', ');
+        .filter(Boolean).join(', ');
     const profile: FaydaProfile = {
       name: identity.name || identity.fullName || identity['name#en'] || [identity.given_name || identity.firstName, identity.middle_name, identity.family_name || identity.lastName].filter(Boolean).join(' '),
       amharic: identity.amharic || identity.fullNameAmharic || identity['name#am'] || '',
@@ -158,11 +158,11 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
 
   return <div style={{ maxWidth: 760, margin: '0 auto', paddingBottom: 40 }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
-      <button type="button" onClick={onBack} className="btn-gov-secondary" style={{ padding: '8px 14px', borderRadius: 10, display: 'flex', gap: 6, alignItems: 'center' }}><ArrowLeft size={16}/> Back</button>
+      <button type="button" onClick={onBack} className="btn-gov-secondary" style={{ padding: '8px 14px', borderRadius: 10, display: 'flex', gap: 6, alignItems: 'center' }}><ArrowLeft size={16} /> Back</button>
       <div><h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, color: 'var(--text-heading)' }}>Register Club Member</h2><p style={{ margin: '4px 0 0', color: '#64748B' }}>Verify identity with Fayda, then create the member account and select their club role.</p></div>
     </div>
     {!type && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16 }}>
-      {([['ATHLETE', Users, 'Register Athlete', 'Add an athlete to your club roster.'], ['COACH', UserCheck, 'Register Coach', 'Add a coach to your club.']] as const).map(([value, Icon, title, description]) => <button key={value} className="gov-card" onClick={() => setType(value)} style={{ padding: 28, borderRadius: 16, cursor: 'pointer', textAlign: 'center' }}><Icon size={34} color="var(--primary)"/><h3>{title}</h3><p>{description}</p></button>)}
+      {([['ATHLETE', Users, 'Register Athlete', 'Add an athlete to your club roster.'], ['COACH', UserCheck, 'Register Coach', 'Add a coach to your club.']] as const).map(([value, Icon, title, description]) => <button key={value} className="gov-card" onClick={() => setType(value)} style={{ padding: 28, borderRadius: 16, cursor: 'pointer', textAlign: 'center' }}><Icon size={34} color="var(--primary)" /><h3>{title}</h3><p>{description}</p></button>)}
     </div>}
     {type && !profile && <div className="gov-card" style={{ padding: 28, borderRadius: 16 }}>
       <h3>Verify this member with Fayda</h3><p style={{ color: '#64748B' }}>Continue to the official Fayda sign-in page. Their verified profile will return here to complete registration.</p>
@@ -172,32 +172,73 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
     {profile && <form className="gov-card" onSubmit={submit} style={{ padding: 28, borderRadius: 16, display: 'grid', gap: 18 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, paddingBottom: 8, borderBottom: '1px solid #E2E8F0' }}>
         {profile.photoUrl
-          ? <img src={profile.photoUrl} alt={`Fayda profile of ${profile.name}`} style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '3px solid #DBEAFE' }}/>
+          ? <img src={profile.photoUrl} alt={`Fayda profile of ${profile.name}`} style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover', border: '3px solid #DBEAFE' }} />
           : <div aria-label="No Fayda photo available" style={{ width: 96, height: 96, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#E2E8F0', color: '#334155', fontSize: 30, fontWeight: 800 }}>{profile.name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()}</div>}
         <div><h3 style={{ margin: 0 }}>{profile.name}</h3><div style={{ color: '#15803D', fontWeight: 700, marginTop: 4 }}>Fayda identity verified</div></div>
       </div>
       <h3 style={{ margin: '0 0 -8px' }}>Verified Fayda information</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 12,
+        }}
+      >
         {([
-          ['Full name', profile.name], ['Full name (Amharic)', profile.amharic], ['FIN / National ID', fin],
-          ['FAN number', profile.fanNumber], ['Date of birth', profile.dob], ['Gender', profile.gender],
-          ['Nationality', profile.nationality], ['Address', profile.address], ['Region', profile.region],
-          ['Fayda email', profile.email], ['Fayda phone', profile.phoneNumber],
-        ] as const).map(([label, value]) => <label key={label} style={{ color: '#475569', fontSize: 13 }}>{label}<input readOnly value={value || 'Not provided by Fayda'} style={{ ...inputStyle, background: '#F8FAFC', color: value ? '#0F172A' : '#94A3B8' }}/></label>)}
+          ['Full name', 'name', profile.name],
+          ['Full name (Amharic)', 'amharic', profile.amharic],
+          ['FIN / National ID', 'fin', fin],
+          ['FAN number', 'fanNumber', profile.fanNumber],
+          ['Date of birth', 'dob', profile.dob],
+          ['Gender', 'gender', profile.gender],
+          ['Nationality', 'nationality', profile.nationality || 'Ethiopian'],
+          ['Address', 'address', profile.address],
+          ['Region', 'region', profile.region],
+          ['Fayda email', 'email', profile.email],
+          ['Fayda phone', 'phoneNumber', profile.phoneNumber],
+        ] as const).map(([label, key, value]) => (
+          <label
+            key={key}
+            style={{ color: '#475569', fontSize: 13 }}
+          >
+            {label}
+            <input
+              value={value ?? ''}
+              onChange={(e) => {
+                const newValue = e.target.value;
+
+                if (key === 'fin') {
+                  setFin(newValue);
+                } else {
+                  setProfile((prev) => ({
+                    ...prev,
+                    [key]: newValue,
+                  }));
+                }
+              }}
+              placeholder={`Enter ${label.toLowerCase()}`}
+              style={{
+                ...inputStyle,
+                background: '#FFFFFF',
+                color: '#0F172A',
+              }}
+            />
+          </label>
+        ))}
       </div>
       <h3 style={{ margin: 0 }}>Account and contact details</h3>
-      <label>Email<input required type="email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle}/></label>
-      <label>Phone number<input required value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle}/></label>
-      <label>Account password<input required type="password" minLength={8} value={password} onChange={e => setPassword(e.target.value)} style={inputStyle}/></label>
+      <label>Email<input required type="email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} /></label>
+      <label>Phone number<input required value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle} /></label>
+      <label>Account password<input required type="password" minLength={8} value={password} onChange={e => setPassword(e.target.value)} style={inputStyle} /></label>
       {type === 'ATHLETE' ? <>
-        {!profile.dob && <label>Date of birth<input required type="date" value={profile.dob} onChange={e => setProfile({ ...profile, dob: e.target.value })} style={inputStyle}/></label>}
+        {!profile.dob && <label>Date of birth<input required type="date" value={profile.dob} onChange={e => setProfile({ ...profile, dob: e.target.value })} style={inputStyle} /></label>}
         {!profile.gender && <label>Gender<select required value={profile.gender} onChange={e => setProfile({ ...profile, gender: e.target.value })} style={inputStyle}><option value="">Select gender</option><option value="MALE">Male</option><option value="FEMALE">Female</option></select></label>}
-        <label>Primary event<select required value={event} onChange={e => setEvent(e.target.value)} style={inputStyle}><option value="">Select event</option>{['100m Sprint','200m Sprint','400m','800m','1,500m','3,000m Steeplechase','5,000m','10,000m','Half Marathon','Marathon','High Jump','Long Jump','Triple Jump','Javelin Throw','Shot Put'].map(x => <option key={x}>{x}</option>)}</select></label>
-        <label>Emergency contact phone<input required value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} style={inputStyle}/></label>
+        <label>Primary event<select required value={event} onChange={e => setEvent(e.target.value)} style={inputStyle}><option value="">Select event</option>{['100m Sprint', '200m Sprint', '400m', '800m', '1,500m', '3,000m Steeplechase', '5,000m', '10,000m', 'Half Marathon', 'Marathon', 'High Jump', 'Long Jump', 'Triple Jump', 'Javelin Throw', 'Shot Put'].map(x => <option key={x}>{x}</option>)}</select></label>
+        <label>Emergency contact phone<input required value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} style={inputStyle} /></label>
       </> : <>
-        <label>Coach license number<input value={licenseNumber} onChange={e => setLicenseNumber(e.target.value)} style={inputStyle}/></label>
-        <label>Specialization<input value={specialization} onChange={e => setSpecialization(e.target.value)} style={inputStyle}/></label>
-        <label>Years of experience<input type="number" min="0" value={yearsOfExperience} onChange={e => setYearsOfExperience(e.target.value)} style={inputStyle}/></label>
+        <label>Coach license number<input value={licenseNumber} onChange={e => setLicenseNumber(e.target.value)} style={inputStyle} /></label>
+        <label>Specialization<input value={specialization} onChange={e => setSpecialization(e.target.value)} style={inputStyle} /></label>
+        <label>Years of experience<input type="number" min="0" value={yearsOfExperience} onChange={e => setYearsOfExperience(e.target.value)} style={inputStyle} /></label>
       </>}
       {error && <p style={{ color: '#B91C1C', margin: 0 }}>{error}</p>}
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}><button type="button" className="btn-gov-secondary" onClick={() => setProfile(null)}>Restart Fayda verification</button><button type="submit" className="btn-accent" disabled={submitting}>{submitting ? 'Registering…' : `Register ${type === 'ATHLETE' ? 'Athlete' : 'Coach'}`}</button></div>

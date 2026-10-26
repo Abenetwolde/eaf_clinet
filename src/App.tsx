@@ -616,15 +616,16 @@ export default function App() {
     });
   };
 
-  const handleInitiateClubMembershipPayment = (clubObj: any) => {
+  const handleInitiateClubMembershipPayment = (clubObj: any, customAmount?: number) => {
     setPaymentData({
       type: 'CLUB_MEMBERSHIP_FEE',
       clubId: clubObj?.id || 'club-eth-01',
       clubName: clubObj?.name || 'Athletics Club',
-      amount: 5000,
+      amount: customAmount || 5000,
       description: 'EAF Annual Club Affiliation & Membership (2026/27 Season)'
     });
   };
+
 
   const handleInitiateEventPayment = (eventObj: any, athleteObj: any) => {
     setPaymentData({

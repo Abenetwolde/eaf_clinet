@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  CreditCard,
   CheckCircle2,
   Download,
   ShieldCheck,
-  X,
   RefreshCw,
   Smartphone,
   ExternalLink,
@@ -14,18 +12,21 @@ import {
   Building,
   Award,
   Calendar,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import {
   useInitiateEventPaymentMutation,
   useInitiateLicensePaymentMutation,
   useInitiateClubMembershipPaymentMutation,
+  useInitiateClubRegistrationPaymentMutation,
   useLazyVerifyPaymentStatusQuery,
   useSimulateWebhookSuccessMutation,
 } from '../store/api/paymentApi';
 
 export interface PaymentModalProps {
   paymentData: {
-    type?: 'EVENT_REGISTRATION' | 'ATHLETE_LICENSE' | 'COACH_LICENSE' | 'CLUB_MEMBERSHIP_FEE';
+    type?: 'EVENT_REGISTRATION' | 'ATHLETE_LICENSE' | 'COACH_LICENSE' | 'CLUB_MEMBERSHIP_FEE' | 'CLUB_REGISTRATION_FEE';
     eventId?: string;
     athleteId?: string;
     coachId?: string;
@@ -42,7 +43,6 @@ export interface PaymentModalProps {
 }
 
 export default function PaymentModal({ paymentData, onClose, onPaymentComplete }: PaymentModalProps) {
-  const [gateway, setGateway] = useState<'TELEBIRR' | 'CHAPA'>('TELEBIRR');
   const [step, setStep] = useState<'INIT' | 'AWAITING_PAYMENT' | 'COMPLETED'>('INIT');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -51,16 +51,19 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
   const [activeReference, setActiveReference] = useState<string | null>(null);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<any>(null);
+  const [showEmbeddedH5, setShowEmbeddedH5] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Mutations
   const [initiateEventPayment] = useInitiateEventPaymentMutation();
   const [initiateLicensePayment] = useInitiateLicensePaymentMutation();
   const [initiateClubMembershipPayment] = useInitiateClubMembershipPaymentMutation();
+  const [initiateClubRegistrationPayment] = useInitiateClubRegistrationPaymentMutation();
   const [triggerVerifyStatus] = useLazyVerifyPaymentStatusQuery();
   const [simulateWebhook, { isLoading: isSimulating }] = useSimulateWebhookSuccessMutation();
 
   const amount = paymentData.amount || 500;
-  const description = paymentData.description || 'Annual Federation Licensing Renewal';
+  const description = paymentData.description || 'Federation Membership & Service Fee';
   const payerName = paymentData.athleteName || paymentData.clubName || 'Federation Member';
 
   // Determine service type icon
@@ -68,10 +71,19 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
     if (paymentData.eventId || paymentData.type === 'EVENT_REGISTRATION') {
       return <Calendar size={20} className="text-[#00A3E0]" />;
     }
-    if (paymentData.clubId || paymentData.type === 'CLUB_MEMBERSHIP_FEE') {
+    if (paymentData.clubId || paymentData.type === 'CLUB_MEMBERSHIP_FEE' || paymentData.type === 'CLUB_REGISTRATION_FEE') {
       return <Building size={20} className="text-[#00A3E0]" />;
     }
     return <Award size={20} className="text-[#00A3E0]" />;
+  };
+
+  // Open H5 Checkout in a clean, centered popup window
+  const openH5Window = (url: string) => {
+    const width = 480;
+    const height = 740;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    window.open(url, 'TelebirrCheckout', `width=${width},height=${height},left=${left},top=${top}`);
   };
 
   // Initiate Payment with Telebirr Gateway
@@ -93,7 +105,15 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
         }).unwrap();
         resultData = res.data;
       }
-      // 2. Club Membership Fee
+      // 2. Club Initial Registration Fee
+      else if (paymentData.type === 'CLUB_REGISTRATION_FEE') {
+        const res = await initiateClubRegistrationPayment({
+          clubId: paymentData.clubId || 'club-default',
+          amount,
+        }).unwrap();
+        resultData = res.data;
+      }
+      // 3. Club Annual Membership / Renewal Fee
       else if (paymentData.clubId || paymentData.type === 'CLUB_MEMBERSHIP_FEE') {
         const res = await initiateClubMembershipPayment({
           clubId: paymentData.clubId || 'club-default',
@@ -101,7 +121,7 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
         }).unwrap();
         resultData = res.data;
       }
-      // 3. Athlete / Coach Licensing Fee
+      // 4. Athlete / Coach Licensing Fee
       else {
         const isCoach = paymentData.type === 'COACH_LICENSE' || Boolean(paymentData.coachId);
         const res = await initiateLicensePayment({
@@ -115,18 +135,17 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
 
       if (resultData?.reference) {
         setActiveReference(resultData.reference);
-        setCheckoutUrl(resultData.checkoutUrl);
+        const resolvedCheckoutUrl = resultData.checkoutUrl || `http://localhost:3000/api/v1/payments/telebirr/h5-checkout?reference=${encodeURIComponent(resultData.reference)}`;
+        setCheckoutUrl(resolvedCheckoutUrl);
         setStep('AWAITING_PAYMENT');
+        openH5Window(resolvedCheckoutUrl);
       } else {
         throw new Error('Failed to retrieve transaction reference from Telebirr.');
       }
     } catch (err: any) {
       console.error('Payment initiation error:', err);
-      // Fallback for seamless dev if backend endpoint had validation issue
-      const fallbackRef = `EACRMS-TLB-${Date.now()}`;
-      setActiveReference(fallbackRef);
-      setCheckoutUrl(`https://developer.ethiotelecom.et/sandbox/checkout?id=${fallbackRef}`);
-      setStep('AWAITING_PAYMENT');
+      const msg = err?.data?.message || err?.message || 'Unable to connect to Telebirr B2B gateway. Please verify your connection and try again.';
+      setErrorMsg(msg);
     } finally {
       setIsProcessing(false);
     }
@@ -136,25 +155,59 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
   useEffect(() => {
     if (step !== 'AWAITING_PAYMENT' || !activeReference) return;
 
+    let pollCount = 0;
+    const maxPolls = 60; // 2.5 minutes total (60 * 2.5s)
+
     const interval = setInterval(async () => {
+      pollCount++;
       try {
         const res = await triggerVerifyStatus(activeReference).unwrap();
         if (res?.data?.status === 'PAID') {
+          clearInterval(interval);
           handlePaymentSuccess(res.data);
+        } else if (res?.data?.status === 'FAILED' || res?.data?.status === 'EXPIRED') {
+          clearInterval(interval);
+          setErrorMsg(`Payment order ${res.data.status.toLowerCase()} on Telebirr gateway. Please try again.`);
+          setStep('INIT');
         }
-      } catch (err) {
-        // Continue polling
+      } catch (err: any) {
+        if (err?.status === 404) {
+          clearInterval(interval);
+          setErrorMsg(`Payment reference ${activeReference} could not be located in gateway records.`);
+          setStep('INIT');
+        }
       }
-    }, 3000);
+
+      if (pollCount >= maxPolls) {
+        clearInterval(interval);
+      }
+    }, 2500);
 
     return () => clearInterval(interval);
   }, [step, activeReference]);
+
+  // Listen for instant postMessage from Telebirr H5 Portal
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'TELEBIRR_PAYMENT_SUCCESS') {
+        if (activeReference && event.data.reference === activeReference) {
+          handlePaymentSuccess(event.data.payment || { reference: activeReference });
+        }
+      } else if (event.data?.type === 'TELEBIRR_PAYMENT_FAILED') {
+        if (activeReference && event.data.reference === activeReference) {
+          setErrorMsg(event.data.message || 'Telebirr B2B payment authorization was rejected.');
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [activeReference]);
 
   const handlePaymentSuccess = (paymentObj: any) => {
     const generatedReceipt = {
       receiptNo: 'REC-EAF-2026-' + (paymentObj.reference?.slice(-6) || Math.floor(100000 + Math.random() * 900000)),
       txnRef: paymentObj.externalTransactionId || 'TLB_' + Math.random().toString(36).substring(2, 12).toUpperCase(),
-      gateway: 'Ethio Telecom Telebirr H5 Gateway',
+      gateway: 'Ethio Telecom Telebirr H5 C2B Web Checkout',
       payerName,
       description,
       amountEtb: amount,
@@ -167,21 +220,46 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
     onPaymentComplete(generatedReceipt);
   };
 
+  // Manual Gateway Status Check
+  const handleManualCheckStatus = async () => {
+    if (!activeReference) return;
+    setIsVerifying(true);
+    setErrorMsg(null);
+    try {
+      const res = await triggerVerifyStatus(activeReference).unwrap();
+      if (res?.data?.status === 'PAID') {
+        handlePaymentSuccess(res.data);
+      } else if (res?.data?.status === 'FAILED' || res?.data?.status === 'EXPIRED') {
+        setErrorMsg(`Payment order status is ${res.data.status}. The transaction was not completed.`);
+      } else {
+        setErrorMsg('Payment is currently awaiting authorization (WAIT_PAY). Complete the form in the Telebirr window to finish.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.data?.message || 'Unable to verify payment status at this time.');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   // Simulate Instant Webhook Approval (for Sandbox, Testing & Evaluation)
   const handleSimulateWebhook = async () => {
     if (!activeReference) return;
+    setErrorMsg(null);
     try {
       await simulateWebhook({
         reference: activeReference,
         amount,
       }).unwrap();
 
-      // Trigger verification query immediately to refresh
       const res = await triggerVerifyStatus(activeReference).unwrap();
-      handlePaymentSuccess(res?.data || { reference: activeReference });
+      if (res?.data?.status === 'PAID') {
+        handlePaymentSuccess(res.data);
+      } else {
+        setErrorMsg('Payment simulation initiated, but gateway status is still pending.');
+      }
     } catch (err: any) {
-      // Direct local simulation fallback
-      handlePaymentSuccess({ reference: activeReference, externalTransactionId: `TLB_SIM_${Date.now()}` });
+      console.error('Webhook simulation error:', err);
+      setErrorMsg(err?.data?.message || err?.message || 'Failed to simulate payment authorization.');
     }
   };
 
@@ -191,7 +269,7 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
         className="modal-content main-pad"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: '680px',
+          maxWidth: showEmbeddedH5 ? '880px' : '640px',
           width: '95vw',
           maxHeight: '92vh',
           overflowY: 'auto',
@@ -199,6 +277,7 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
           borderRadius: '24px',
           boxShadow: '0 32px 64px rgba(15, 23, 42, 0.25)',
           background: 'var(--bg-card, #FFFFFF)',
+          transition: 'max-width 0.3s ease',
         }}
       >
         {/* Header */}
@@ -206,9 +285,9 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div
               style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '12px',
+                width: '44px',
+                height: '44px',
+                borderRadius: '14px',
                 background: 'linear-gradient(135deg, #00A3E0, #0077B6)',
                 display: 'flex',
                 alignItems: 'center',
@@ -217,14 +296,14 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
                 boxShadow: '0 4px 12px rgba(0, 163, 224, 0.3)',
               }}
             >
-              <Smartphone size={22} />
+              <Smartphone size={24} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
-                Telebirr Payment Gateway
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>
+                Telebirr C2B Payment Gateway
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, margin: 0 }}>
-                Ethio Telecom Fabric API • Proclamation No. 1205/2020
+                Ethio Telecom Fabric API • H5 C2B Web Checkout Integration
               </p>
             </div>
           </div>
@@ -278,78 +357,68 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
               </div>
             </div>
 
-            {/* Provider Selection */}
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label className="form-label" style={{ fontWeight: 800, fontSize: '0.85rem' }}>
-                Select Certified Payment Gateway
+            {/* Certified Gateway Card */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                Certified C2B Payment Provider
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <button
-                  type="button"
-                  onClick={() => setGateway('TELEBIRR')}
-                  style={{
-                    padding: '16px',
-                    borderRadius: '16px',
-                    border: gateway === 'TELEBIRR' ? '2px solid #00A3E0' : '1px solid rgba(203, 213, 225, 0.8)',
-                    background: gateway === 'TELEBIRR' ? 'rgba(0, 163, 224, 0.12)' : '#F8FAFC',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '8px',
-                    position: 'relative',
-                  }}
-                >
-                  <span
+              <div
+                style={{
+                  padding: '16px 20px',
+                  borderRadius: '16px',
+                  border: '2px solid #00A3E0',
+                  background: 'rgba(0, 163, 224, 0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div
                     style={{
-                      position: 'absolute',
-                      top: '8px',
-                      right: '8px',
-                      background: '#00A3E0',
-                      color: 'white',
-                      fontSize: '0.65rem',
-                      fontWeight: 800,
-                      padding: '2px 6px',
-                      borderRadius: '6px',
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '12px',
+                      background: 'white',
+                      border: '1px solid #BAE6FD',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#00A3E0',
                     }}
                   >
-                    RECOMMENDED
-                  </span>
-                  <Smartphone size={24} color="#00A3E0" />
-                  <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
-                    Telebirr SuperApp
-                  </span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Ethio Telecom H5 Web Pay</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setGateway('CHAPA')}
+                    <Smartphone size={26} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 900, fontSize: '1rem', color: 'var(--text-main)' }}>
+                      Ethio Telecom Telebirr C2B
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      H5 C2B Web Checkout • Customer Phone &amp; PIN / QR Code • BuyGoods
+                    </div>
+                  </div>
+                </div>
+                <span
                   style={{
-                    padding: '16px',
-                    borderRadius: '16px',
-                    border: gateway === 'CHAPA' ? '2px solid #10B981' : '1px solid rgba(203, 213, 225, 0.8)',
-                    background: gateway === 'CHAPA' ? 'rgba(16, 185, 129, 0.12)' : '#F8FAFC',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '8px',
+                    background: '#00A3E0',
+                    color: 'white',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    letterSpacing: '0.5px',
                   }}
                 >
-                  <CreditCard size={24} color="#10B981" />
-                  <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-main)' }}>
-                    Chapa / Cards
-                  </span>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>CBE Birr, Visa, Mastercard</span>
-                </button>
+                  C2B ACTIVE
+                </span>
               </div>
             </div>
 
-            {/* Telebirr Details Box */}
+            {/* Security Assurance Box */}
             <div
               style={{
-                padding: '16px',
+                padding: '14px 16px',
                 borderRadius: '14px',
                 background: '#F0F9FF',
                 border: '1px solid #BAE6FD',
@@ -359,11 +428,10 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
                 gap: '12px',
               }}
             >
-              <ShieldCheck size={24} color="#00A3E0" style={{ flexShrink: 0, marginTop: '2px' }} />
-              <div style={{ fontSize: '0.82rem', color: '#0369A1', lineHeight: 1.5 }}>
-                <strong>Secure Telebirr Integration:</strong> On proceeding, an encrypted order is registered via
-                Ethio Telecom's API Fabric with SHA256withRSA signature. You can complete payment on mobile or scan the
-                Telebirr QR code.
+              <ShieldCheck size={22} color="#00A3E0" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '0.8rem', color: '#0369A1', lineHeight: 1.5 }}>
+                <strong>Official Federation C2B Gateway:</strong> Pre-ordered via Ethio Telecom API Fabric
+                with SHA256withRSA signature. Authenticate on the C2B checkout window by entering your telebirr phone number &amp; PIN or scanning the QR code with telebirr SuperApp.
               </div>
             </div>
 
@@ -391,12 +459,12 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
                 {isProcessing ? (
                   <>
                     <RefreshCw className="animate-spin" size={20} />
-                    Connecting to Ethio Telecom Gateway...
+                    Connecting to Ethio Telecom C2B Fabric...
                   </>
                 ) : (
                   <>
                     <Lock size={18} />
-                    Proceed to Telebirr Checkout ({amount.toLocaleString()} ETB)
+                    Proceed to Telebirr C2B Checkout ({amount.toLocaleString()} ETB)
                   </>
                 )}
               </button>
@@ -404,7 +472,7 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
           </div>
         )}
 
-        {/* STEP 2: AWAITING PAYMENT (QR CODE + TO_PAY_URL + SANDBOX SIMULATOR) */}
+        {/* STEP 2: AWAITING PAYMENT (C2B H5 EMBED/POPUP + SIMULATOR) */}
         {step === 'AWAITING_PAYMENT' && (
           <div style={{ textAlign: 'center' }}>
             <div
@@ -431,31 +499,41 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
                 }}
               >
                 <RefreshCw className="animate-spin" size={14} />
-                Awaiting Telebirr Customer Authorization...
+                Awaiting Telebirr C2B Authorization...
               </div>
 
-              {/* Dynamic Telebirr QR Mock Card */}
-              <div
-                style={{
-                  width: '180px',
-                  height: '180px',
-                  margin: '0 auto 16px',
-                  background: 'white',
-                  border: '2px solid #00A3E0',
-                  borderRadius: '16px',
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 8px 24px rgba(0, 163, 224, 0.15)',
-                }}
-              >
-                <QrCode size={110} color="#0F172A" />
-                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#00A3E0', marginTop: '6px' }}>
-                  SCAN WITH TELEBIRR APP
-                </span>
-              </div>
+              {/* Toggle Embedded H5 Portal vs QR Card */}
+              {showEmbeddedH5 && activeReference ? (
+                <div style={{ margin: '0 auto 16px', borderRadius: '16px', overflow: 'hidden', border: '2px solid #00A3E0' }}>
+                  <iframe
+                    src={`http://localhost:3000/api/v1/payments/telebirr/h5-checkout?reference=${encodeURIComponent(activeReference)}&preview=true`}
+                    title="Telebirr H5 C2B Portal"
+                    style={{ width: '100%', height: '520px', border: 'none', background: 'white' }}
+                  />
+                </div>
+              ) : (
+                <div
+                  style={{
+                    width: '180px',
+                    height: '180px',
+                    margin: '0 auto 16px',
+                    background: 'white',
+                    border: '2px solid #00A3E0',
+                    borderRadius: '16px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 8px 24px rgba(0, 163, 224, 0.15)',
+                  }}
+                >
+                  <QrCode size={110} color="#0F172A" />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#00A3E0', marginTop: '6px' }}>
+                    TELEBIRR C2B CHECKOUT
+                  </span>
+                </div>
+              )}
 
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
                 Order Reference:{' '}
@@ -467,26 +545,71 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
                 {amount.toLocaleString()} ETB
               </div>
 
-              <div style={{ marginTop: '16px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              {/* Action Buttons: Open Portal & Toggle Embed */}
+              <div style={{ marginTop: '16px', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 {checkoutUrl && (
-                  <a
-                    href={checkoutUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-primary"
-                    style={{
-                      background: '#00A3E0',
-                      padding: '10px 18px',
-                      fontSize: '0.88rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      textDecoration: 'none',
-                    }}
-                  >
-                    <ExternalLink size={15} />
-                    Open Telebirr H5 Portal
-                  </a>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => openH5Window(checkoutUrl)}
+                      className="btn-primary"
+                      style={{
+                        background: '#00A3E0',
+                        padding: '10px 18px',
+                        fontSize: '0.88rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRadius: '10px',
+                        color: 'white',
+                        fontWeight: 800,
+                      }}
+                    >
+                      <ExternalLink size={15} />
+                      Open Telebirr C2B Portal
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowEmbeddedH5(!showEmbeddedH5)}
+                      className="btn-secondary"
+                      style={{
+                        padding: '10px 16px',
+                        fontSize: '0.88rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        borderRadius: '10px',
+                      }}
+                    >
+                      {showEmbeddedH5 ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                      {showEmbeddedH5 ? 'Show Card View' : 'Embed Portal in Modal'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleManualCheckStatus}
+                      disabled={isVerifying}
+                      className="btn-secondary"
+                      style={{
+                        padding: '10px 16px',
+                        fontSize: '0.88rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        borderRadius: '10px',
+                        color: '#0077B6',
+                        fontWeight: 800,
+                      }}
+                    >
+                      <RefreshCw className={isVerifying ? "animate-spin" : ""} size={15} />
+                      {isVerifying ? 'Checking Status...' : 'Check Payment Status'}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -504,11 +627,10 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400E', fontWeight: 800, fontSize: '0.85rem', marginBottom: '4px' }}>
                 <Zap size={18} color="#D97706" />
-                Sandbox / Developer Testing Simulator
+                Developer / Evaluation Simulator
               </div>
               <p style={{ fontSize: '0.78rem', color: '#78350F', margin: '0 0 12px', lineHeight: 1.4 }}>
-                Simulate an immediate Ethio Telecom async IPN Webhook callback to test cryptographic verification and domain
-                fulfillment (e.g. event confirmation, license activation) in local development.
+                Simulate an instantaneous Ethio Telecom Telebirr C2B payment confirmation (Customer Phone Number + PIN) in development.
               </p>
               <button
                 type="button"
@@ -531,7 +653,7 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
                 }}
               >
                 {isSimulating ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
-                Trigger Instant Webhook Approval
+                Trigger Instant Telebirr C2B Approval
               </button>
             </div>
 
@@ -540,6 +662,7 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
             </button>
           </div>
         )}
+
 
         {/* STEP 3: CERTIFIED OFFICIAL E-RECEIPT VIEW */}
         {step === 'COMPLETED' && receipt && (

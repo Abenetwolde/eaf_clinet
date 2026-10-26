@@ -1,5 +1,18 @@
 import { apiSlice } from "./apiSlice";
 
+export interface PaymentConfig {
+  id: string;
+  clubRegistrationFee: number;
+  clubAnnualRenewalFee: number;
+  renewalStartDate: string | null;
+  renewalEndDate: string | null;
+  renewalStartDateFormatted: string | null;
+  renewalEndDateFormatted: string | null;
+  currency: string;
+  isRenewalOpen: boolean;
+  updatedAt: string;
+}
+
 export interface InitiatePaymentResult {
   success: boolean;
   message: string;
@@ -13,6 +26,11 @@ export interface InitiatePaymentResult {
 
 export const paymentApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+    getPaymentConfig: builder.query<{ success: boolean; data: PaymentConfig }, void>({
+      query: () => "payments/config",
+      providesTags: ["Clubs"],
+    }),
+
     initiateEventPayment: builder.mutation<
       InitiatePaymentResult,
       { eventId: string; athleteId: string; amount: number; disciplines?: string[] }
@@ -49,6 +67,18 @@ export const paymentApi = apiSlice.injectEndpoints({
       invalidatesTags: ["Clubs"],
     }),
 
+    initiateClubRegistrationPayment: builder.mutation<
+      InitiatePaymentResult,
+      { clubId: string; amount?: number }
+    >({
+      query: (body) => ({
+        url: "payments/telebirr/club-registration",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Clubs"],
+    }),
+
     verifyPaymentStatus: builder.query<{ success: boolean; data: any }, string>({
       query: (reference) => `payments/telebirr/verify/${reference}`,
     }),
@@ -75,9 +105,11 @@ export const paymentApi = apiSlice.injectEndpoints({
 });
 
 export const {
+  useGetPaymentConfigQuery,
   useInitiateEventPaymentMutation,
   useInitiateLicensePaymentMutation,
   useInitiateClubMembershipPaymentMutation,
+  useInitiateClubRegistrationPaymentMutation,
   useVerifyPaymentStatusQuery,
   useLazyVerifyPaymentStatusQuery,
   useSimulateWebhookSuccessMutation,
