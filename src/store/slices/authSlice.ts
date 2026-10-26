@@ -7,6 +7,7 @@ import {
   writeString,
   writeJSON,
   removeItem,
+  clearAllSessionData,
 } from '../persistence';
 
 const EMPTY_CLUB: Club = {
@@ -201,13 +202,10 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.userId = null;
       state.userData = null;
-      removeItem(STORAGE_KEYS.role);
-      removeItem(STORAGE_KEYS.currentAthleteId);
-      removeItem(STORAGE_KEYS.currentClubId);
-      removeItem(STORAGE_KEYS.accessToken);
-      removeItem(STORAGE_KEYS.refreshToken);
-      removeItem(STORAGE_KEYS.userId);
-      removeItem(STORAGE_KEYS.userData);
+      state.athlete = EMPTY_ATHLETE;
+      state.club = EMPTY_CLUB;
+      state.coach = null;
+      clearAllSessionData();
     },
   },
 });

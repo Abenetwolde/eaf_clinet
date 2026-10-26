@@ -44,6 +44,7 @@ import { addAthlete, updateAthlete, setAthletes } from './store/slices/athleteSl
 import { addClub, addTransfer } from './store/slices/clubSlice';
 import { useLazyGetMeQuery, useLogoutApiMutation } from './store/api/authApi';
 import { Athlete, Club, Transfer } from './types';
+import { clearAllSessionData } from './store/persistence';
 
 type Role = 'LANDING' | 'CLUB' | 'ATHLETE' | 'COACH';
 
@@ -75,12 +76,41 @@ export default function App() {
     const handleExpired = (e: Event) => {
       const customEvent = e as CustomEvent<{ message?: string }>;
       const msg = customEvent.detail?.message || "Your session has expired. Please sign in again to continue.";
-      setSessionExpiredNotice(msg);
-      handleNotify(msg, 'error');
+      handleLogout(msg, true);
     };
     window.addEventListener("eaf:session-expired", handleExpired);
     return () => window.removeEventListener("eaf:session-expired", handleExpired);
   }, []);
+
+  // Periodic and visibility token expiration verification
+  useEffect(() => {
+    const checkTokenExpiry = () => {
+      const currentToken = localStorage.getItem('eaf_accessToken') || localStorage.getItem('token') || authToken;
+      if (!currentToken || currentRole === 'LANDING') return;
+      try {
+        const parts = currentToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const refreshToken = localStorage.getItem('eaf_refreshToken') || sessionStorage.getItem('eaf_refreshToken');
+          if (payload.exp && Date.now() >= payload.exp * 1000 && !refreshToken) {
+            handleLogout("Your session has expired. Please sign in again to continue.", true);
+          }
+        }
+      } catch {}
+    };
+
+    const interval = setInterval(checkTokenExpiry, 15000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkTokenExpiry();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [authToken, currentRole]);
 
   // Auto-login: validate saved token on mount
   useEffect(() => {
@@ -92,9 +122,7 @@ export default function App() {
           const payload = JSON.parse(atob(parts[1]));
           // Only force logout on mount if expired AND there is no refresh token
           if (payload.exp && Date.now() >= payload.exp * 1000 && !refreshToken) {
-            handleLogout();
-            setSessionExpiredNotice("Your session has expired. Please sign in again to continue.");
-            handleNotify("Your session has expired. Please sign in again to continue.", "error");
+            handleLogout("Your session has expired. Please sign in again to continue.", true);
             return;
           }
         }
@@ -124,11 +152,9 @@ export default function App() {
           }
         })
         .catch((err) => {
-          // Token invalid/expired — only clear auth if unauthorized (401) and unrefreshable
+          // Token invalid/expired — clear auth if unauthorized (401)
           if (err?.status === 401) {
-            handleLogout();
-            setSessionExpiredNotice("Your session has expired. Please sign in again to continue.");
-            handleNotify("Your session has expired. Please sign in again to continue.", "error");
+            handleLogout("Your session has expired. Please sign in again to continue.", true);
           }
         });
     }
@@ -264,31 +290,12 @@ export default function App() {
     handleNotify('National ID session logged out successfully.', 'info');
   };
 
-  const handleLogout = () => {
+  const handleLogout = (customMsg?: string, isExpired = false) => {
     // Call logout API (fire-and-forget — it's stateless on the server)
     if (authToken) {
       logoutApi().catch(() => {});
     }
-    try {
-      sessionStorage.clear();
-      localStorage.removeItem('eaf_currentRole');
-      localStorage.removeItem('eaf_currentAthleteId');
-      localStorage.removeItem('eaf_currentClubId');
-      localStorage.removeItem('eaf_currentClub');
-      localStorage.removeItem('eaf_registered_athlete');
-      localStorage.removeItem('eaf_registered_info');
-      localStorage.removeItem('eaf_user_avatar');
-      localStorage.removeItem('token');
-      localStorage.removeItem('eaf_token');
-      localStorage.removeItem('eaf_accessToken');
-      localStorage.removeItem('eaf_refreshToken');
-      localStorage.removeItem('eaf_userId');
-      localStorage.removeItem('eaf_userData');
-      localStorage.removeItem('fayda_auth_payload');
-      localStorage.removeItem('fayda_photo');
-      localStorage.removeItem('fayda_token');
-      localStorage.removeItem('eaf_fayda_verified');
-    } catch (e) {}
+    clearAllSessionData();
     dispatch(logout());
     setVerifiedCitizen(null);
     setShowCitizenModal(false);
@@ -301,7 +308,13 @@ export default function App() {
       window.history.pushState(null, '', '/');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    handleNotify('Logged out successfully.', 'info');
+    if (isExpired) {
+      const msg = customMsg || 'Your session has expired. Please sign in again to continue.';
+      setSessionExpiredNotice(msg);
+      handleNotify(msg, 'error');
+    } else {
+      handleNotify(customMsg || 'Logged out successfully.', 'info');
+    }
   };
 
   // Check for returning from Fayda verification or callback & load verified identity

@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery, type BaseQueryFn, type FetchArgs, type FetchBaseQueryError } from "@reduxjs/toolkit/query/react";
 import type { RootState } from "../store";
-import { STORAGE_KEYS, removeItem } from "../persistence";
+import { STORAGE_KEYS, removeItem, clearAllSessionData } from "../persistence";
 import { logout, setToken } from "../slices/authSlice";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL || "/api/v1";
@@ -67,18 +67,9 @@ const baseQueryWithReauth: BaseQueryFn<
 
     // Only auto-logout if there was an active authenticated session
     if (hadToken) {
+      clearAllSessionData();
       api.dispatch(logout());
       if (typeof window !== "undefined") {
-        removeItem(STORAGE_KEYS.accessToken);
-        removeItem(STORAGE_KEYS.refreshToken);
-        removeItem(STORAGE_KEYS.userId);
-        removeItem(STORAGE_KEYS.userData);
-        removeItem(STORAGE_KEYS.role);
-        removeItem(STORAGE_KEYS.currentAthleteId);
-        removeItem(STORAGE_KEYS.currentClubId);
-        localStorage.removeItem("token");
-        localStorage.removeItem("eaf_token");
-        localStorage.removeItem("eaf_currentClub");
         window.dispatchEvent(
           new CustomEvent("eaf:session-expired", {
             detail: {

@@ -74,3 +74,44 @@ export function removeItem(key: string): void {
     // Ignore storage failures.
   }
 }
+
+export function clearAllSessionData(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.clear();
+  } catch {}
+
+  const keysToRemove = [
+    STORAGE_KEYS.role,
+    STORAGE_KEYS.currentAthleteId,
+    STORAGE_KEYS.currentClubId,
+    STORAGE_KEYS.accessToken,
+    STORAGE_KEYS.refreshToken,
+    STORAGE_KEYS.userId,
+    STORAGE_KEYS.userData,
+    "token",
+    "eaf_token",
+    "eaf_accessToken",
+    "eaf_refreshToken",
+    "eaf_userId",
+    "eaf_userData",
+    "eaf_currentRole",
+    "eaf_currentAthleteId",
+    "eaf_currentClubId",
+    "eaf_currentClub",
+    "eaf_registered_athlete",
+    "eaf_registered_info",
+    "eaf_user_avatar",
+    "fayda_auth_payload",
+    "fayda_photo",
+    "fayda_token",
+    "eaf_fayda_verified",
+    "eaf_registration_status",
+  ];
+
+  for (const k of keysToRemove) {
+    try {
+      localStorage.removeItem(k);
+    } catch {}
+  }
+}
