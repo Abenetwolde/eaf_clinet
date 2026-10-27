@@ -1411,19 +1411,17 @@ export default function App() {
         onGoHome={() => { setPublicSubPage('HOME'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         onBackToLanding={() => setPublicSubPage('HOME')}
       >
-        {athleteSubPage === 'OVERVIEW' && (
+        {(athleteSubPage === 'OVERVIEW' || athleteSubPage === 'PROFILE') && (
           <AthleteOverview
             onChangeSubPage={setAthleteSubPage}
             onPayLicense={handleInitiateLicensePayment}
             onUpdateAthlete={handleUpdateAthlete}
             onNotify={handleNotify}
+            onLogout={handleLogout}
           />
         )}
         {athleteSubPage === 'APPLIED' && (
           <AthleteApplications onNotify={handleNotify} />
-        )}
-        {athleteSubPage === 'PROFILE' && (
-          <AthleteProfile onUpdateAthlete={handleUpdateAthlete} onNotify={handleNotify} onLogout={handleLogout} />
         )}
         {athleteSubPage === 'NOTIFICATIONS' && (
           <AthleteNotifications onNotify={handleNotify} />

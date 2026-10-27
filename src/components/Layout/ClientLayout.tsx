@@ -144,9 +144,9 @@ export default function ClientLayout({
           {currentAthlete && (
             <motion.div
               className={`relative cursor-pointer shrink-0 rounded-full transition-all duration-150 ${
-                activeSubPage === 'PROFILE' ? 'ring-3 ring-primary ring-offset-2' : ''
+                (activeSubPage === 'OVERVIEW' || activeSubPage === 'PROFILE') ? 'ring-3 ring-primary ring-offset-2' : ''
               }`}
-              onClick={() => onChangeSubPage('PROFILE')}
+              onClick={() => onChangeSubPage('OVERVIEW')}
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.94 }}
               title="Manage Athlete Profile & Credentials"

@@ -542,7 +542,9 @@ export default function CompetitionDetail({
           round: res.round || 'Final',
           gender: res.gender === 'MEN' ? 'Male' : res.gender === 'WOMEN' ? 'Female' : 'Mixed',
           ageGroup: res.category || 'Senior',
-          time: entry.mark || '—',
+          time: entry.mark || entry.bestValidMark || '—',
+          attempts: Array.isArray(entry.attempts) ? entry.attempts : [],
+          bestValidMark: entry.bestValidMark || null,
           wind: res.windReading || null,
           verified: true,
           pb: !!entry.personalBest,
@@ -551,7 +553,9 @@ export default function CompetitionDetail({
           medal: entry.medal ? entry.medal.toLowerCase() : null,
           qualified: entry.qualified || null,
           status: entry.status || 'FINISHED',
+          flag: entry.flag || entry.status || 'OK',
           remarks: entry.remarks || '',
+          dqReason: entry.remarks || '',
           resultStatusLabel: res.statusLabel || 'Official Result',
           version: res.version,
           publishedAt: res.publishedAt,
@@ -1218,6 +1222,53 @@ export default function CompetitionDetail({
               </div>
             ) : (
               <div>
+                {/* World Athletics Status Notices */}
+                {resultsData.some((r: any) => r.resultStatusLabel?.toLowerCase().includes('provisional')) && (
+                  <div style={{
+                    padding: '14px 18px',
+                    background: '#FEF3C7',
+                    border: '1px solid #FCD34D',
+                    borderRadius: '14px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px'
+                  }}>
+                    <Clock size={22} style={{ color: '#D97706', flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <h5 style={{ fontWeight: 800, color: '#92400E', fontSize: '0.9rem', marginBottom: '2px' }}>
+                        World Athletics TR 8 Provisional Protest Window Active (30 Minutes)
+                      </h5>
+                      <p style={{ fontSize: '0.82rem', color: '#B45309', margin: 0, lineHeight: '1.4' }}>
+                        Provisional results have been published. Under World Athletics Technical Rule 8, an official 30-minute protest window is currently open from the publication timestamp. Protests regarding finishing times, lane infringements, or technical violations must be submitted in writing to the Technical Delegate before results become official.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {resultsData.some((r: any) => r.resultStatusLabel?.toLowerCase().includes('appeal')) && (
+                  <div style={{
+                    padding: '14px 18px',
+                    background: '#F3E8FF',
+                    border: '1px solid #D8B4FE',
+                    borderRadius: '14px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px'
+                  }}>
+                    <AlertTriangle size={22} style={{ color: '#7E22CE', flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <h5 style={{ fontWeight: 800, color: '#581C87', fontSize: '0.9rem', marginBottom: '2px' }}>
+                        Official Result Under Appeal (Jury of Appeal Review)
+                      </h5>
+                      <p style={{ fontSize: '0.82rem', color: '#6B21A8', margin: 0, lineHeight: '1.4' }}>
+                        An official appeal has been lodged regarding finishing positions. The Jury of Appeal is reviewing the case under WA Technical Rules. Standings and medal awards remain provisional pending resolution.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div
                   className="gov-card"
                   style={{
@@ -1235,9 +1286,19 @@ export default function CompetitionDetail({
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span className="badge badge-green" style={{ fontSize: '0.75rem', padding: '4px 8px' }}>
-                        Official Confirmed Results
-                      </span>
+                      {resultsData.some((r: any) => r.resultStatusLabel?.toLowerCase().includes('appeal')) ? (
+                        <span className="badge" style={{ fontSize: '0.75rem', padding: '4px 10px', background: '#F3E8FF', color: '#7E22CE', fontWeight: 800 }}>
+                          ⚖️ Under Official Appeal
+                        </span>
+                      ) : resultsData.some((r: any) => r.resultStatusLabel?.toLowerCase().includes('provisional')) ? (
+                        <span className="badge" style={{ fontSize: '0.75rem', padding: '4px 10px', background: '#FEF3C7', color: '#B45309', fontWeight: 800 }}>
+                          ⏱️ Provisional (30-min window)
+                        </span>
+                      ) : (
+                        <span className="badge badge-green" style={{ fontSize: '0.75rem', padding: '4px 10px' }}>
+                          ✓ Official Confirmed Results
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -1318,71 +1379,119 @@ export default function CompetitionDetail({
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredResults.map((r, i) => (
-                            <tr key={i} style={{ background: r.rank <= 3 ? `rgba(200, 168, 75, 0.04)` : undefined }}>
-                              <td style={{ fontWeight: 800 }}>
-                                {r.status !== 'FINISHED' && r.status !== 'OK' ? (
-                                  <span className="badge badge-red" style={{ fontSize: '0.72rem' }}>
-                                    {r.status}
+                          {filteredResults.map((r: any, i: number) => {
+                            const isDQ = r.status === 'DQ' || r.flag === 'DQ';
+                            const isDNF = r.status === 'DNF' || r.flag === 'DNF';
+                            const isDNS = r.status === 'DNS' || r.flag === 'DNS';
+
+                            return (
+                              <tr key={i} style={{ background: r.rank <= 3 ? `rgba(200, 168, 75, 0.04)` : undefined }}>
+                                <td style={{ fontWeight: 800 }}>
+                                  {isDQ ? (
+                                    <span className="badge badge-red" style={{ fontSize: '0.72rem' }}>
+                                      DQ
+                                    </span>
+                                  ) : isDNF ? (
+                                    <span className="badge" style={{ fontSize: '0.72rem', background: '#F1F5F9', color: '#475569' }}>
+                                      DNF
+                                    </span>
+                                  ) : isDNS ? (
+                                    <span className="badge" style={{ fontSize: '0.72rem', background: '#FEF3C7', color: '#B45309' }}>
+                                      DNS
+                                    </span>
+                                  ) : r.rank === 1 ? '🥇 1st' : r.rank === 2 ? '🥈 2nd' : r.rank === 3 ? '🥉 3rd' : `${r.rank}th`}
+                                </td>
+                                <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                  #{r.bib}
+                                </td>
+                                <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                                  L{r.lane} · H{r.heat}
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{r.name}</span>
+                                    {r.verified && (
+                                      <span 
+                                        title={t('competitionDetail.verified')} 
+                                        style={{ 
+                                          display: 'inline-flex', 
+                                          alignItems: 'center', 
+                                          background: '#DCFCE7', 
+                                          color: '#15803D', 
+                                          borderRadius: '50%', 
+                                          padding: '2px'
+                                        }}
+                                      >
+                                        <CheckCircle2 size={12} fill="#15803D" stroke="#DCFCE7" />
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td style={{ fontWeight: 600 }}>{r.club}</td>
+                                <td style={{ fontWeight: 700 }}>
+                                  {r.event}
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
+                                    {r.round} · {r.gender}
                                   </span>
-                                ) : r.rank === 1 ? '🥇 1st' : r.rank === 2 ? '🥈 2nd' : r.rank === 3 ? '🥉 3rd' : `${r.rank}th`}
-                              </td>
-                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-muted)' }}>
-                                #{r.bib}
-                              </td>
-                              <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
-                                L{r.lane} · H{r.heat}
-                              </td>
-                              <td>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{r.name}</span>
-                                  {r.verified && (
-                                    <span 
-                                      title={t('competitionDetail.verified')} 
-                                      style={{ 
-                                        display: 'inline-flex', 
-                                        alignItems: 'center', 
-                                        background: '#DCFCE7', 
-                                        color: '#15803D', 
-                                        borderRadius: '50%', 
-                                        padding: '2px'
-                                      }}
-                                    >
-                                      <CheckCircle2 size={12} fill="#15803D" stroke="#DCFCE7" />
-                                    </span>
+                                </td>
+                                <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', fontSize: '0.98rem' }}>
+                                  {isDQ ? (
+                                    <div style={{ color: '#DC2626', fontSize: '0.8rem', fontWeight: 700 }}>
+                                      <span>DQ</span>
+                                      {r.dqReason && (
+                                        <span style={{ display: 'block', fontSize: '0.72rem', color: '#EF4444' }}>
+                                          {r.dqReason}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : isDNF || isDNS ? (
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>—</span>
+                                  ) : (
+                                    <div>
+                                      <span>{r.time}</span>
+                                      {Array.isArray(r.attempts) && r.attempts.length > 0 && (
+                                        <div style={{ display: 'flex', gap: '3px', marginTop: '4px', fontSize: '0.7rem' }}>
+                                          {r.attempts.map((att: string, aIdx: number) => (
+                                            <span
+                                              key={aIdx}
+                                              style={{
+                                                padding: '1px 4px',
+                                                borderRadius: '3px',
+                                                background: att === 'X' ? '#FEE2E2' : att === '-' ? '#F1F5F9' : att === r.time ? '#DCFCE7' : '#F8FAFC',
+                                                color: att === 'X' ? '#DC2626' : att === r.time ? '#15803D' : '#334155',
+                                                fontWeight: att === r.time ? 800 : 500,
+                                                border: '1px solid #E2E8F0'
+                                              }}
+                                            >
+                                              {att}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
                                   )}
-                                </div>
-                              </td>
-                              <td style={{ fontWeight: 600 }}>{r.club}</td>
-                              <td style={{ fontWeight: 700 }}>
-                                {r.event}
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
-                                  {r.round} · {r.gender}
-                                </span>
-                              </td>
-                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', fontSize: '0.98rem' }}>
-                                {r.time}
-                              </td>
-                              <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                                {r.wind ? `${r.wind} m/s` : '—'}
-                              </td>
-                              <td>
-                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                  {r.nr && <span className="badge badge-red" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>NR</span>}
-                                  {r.pb && <span className="badge badge-amber" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>PB</span>}
-                                  {r.sb && <span className="badge badge-blue" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>SB</span>}
-                                  {r.qualified && (
-                                    <span className="badge badge-green" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
-                                      {r.qualified}
-                                    </span>
-                                  )}
-                                  {!r.nr && !r.pb && !r.sb && !r.qualified && (
-                                    <span style={{ color: 'var(--text-dim, #ccc)', fontSize: '0.78rem' }}>—</span>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                </td>
+                                <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                                  {r.wind ? `${r.wind} m/s` : '—'}
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                    {r.nr && <span className="badge badge-red" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>NR</span>}
+                                    {r.pb && <span className="badge badge-amber" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>PB</span>}
+                                    {r.sb && <span className="badge badge-blue" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>SB</span>}
+                                    {r.qualified && (
+                                      <span className="badge badge-green" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
+                                        {r.qualified}
+                                      </span>
+                                    )}
+                                    {!r.nr && !r.pb && !r.sb && !r.qualified && (
+                                      <span style={{ color: 'var(--text-dim, #ccc)', fontSize: '0.78rem' }}>—</span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
