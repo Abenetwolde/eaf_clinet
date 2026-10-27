@@ -139,6 +139,7 @@ export default function CompetitionDetail({
   onLoginSuccess
 }: CompetitionDetailProps) {
   const [liveEventDetail, setLiveEventDetail] = useState<any>(null);
+  const [publicHubData, setPublicHubData] = useState<any>(null);
   const [isDetailLoading, setIsDetailLoading] = useState<boolean>(false);
 
   const effectiveId = (initialMeet as any)?.id || meetId;
@@ -155,8 +156,9 @@ export default function CompetitionDetail({
         if (token) headers['Authorization'] = "Bearer " + token;
 
         const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-        const endpoints = [`${apiBase}/events/${effectiveId}/detail`];
 
+        // 1. Fetch event detail
+        const endpoints = [`${apiBase}/events/${effectiveId}/detail`];
         for (const url of endpoints) {
           try {
             const res = await fetch(url, { headers });
@@ -168,6 +170,19 @@ export default function CompetitionDetail({
               }
             }
           } catch {}
+        }
+
+        // 2. Fetch public competition hub (start lists, official results, medals, announcements)
+        try {
+          const hubRes = await fetch(`${apiBase}/events/${effectiveId}/public-hub`, { headers });
+          if (hubRes.ok) {
+            const hubJson = await hubRes.json();
+            if (hubJson.success && hubJson.data && isMounted) {
+              setPublicHubData(hubJson.data);
+            }
+          }
+        } catch (hubErr) {
+          console.warn('Public competition hub fetch notice:', hubErr);
         }
       } catch (err) {
         console.warn('Dynamic fetch competition detail notice:', err);
@@ -208,11 +223,16 @@ export default function CompetitionDetail({
   }, [initialMeet, liveEventDetail]);
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<string>('about');
-  // Results Filters
+  // Results & Start List Filters
   const [resultEventFilter, setResultEventFilter] = useState<string>('ALL');
   const [resultClubFilter, setResultClubFilter] = useState<string>('ALL');
   const [resultAgeFilter, setResultAgeFilter] = useState<string>('ALL');
   const [resultGenderFilter, setResultGenderFilter] = useState<string>('ALL');
+  const [resultSearchQuery, setResultSearchQuery] = useState<string>('');
+
+  const [starterEventFilter, setStarterEventFilter] = useState<string>('ALL');
+  const [starterGenderFilter, setStarterGenderFilter] = useState<string>('ALL');
+  const [starterSearchQuery, setStarterSearchQuery] = useState<string>('');
 
   // Individual Meet Registration Modal State
   const [showIndividualModal, setShowIndividualModal] = useState<boolean>(false);
@@ -475,20 +495,108 @@ export default function CompetitionDetail({
     };
   });
 
-  // Starter lists and official results are shown only when supplied by the event service.
-  const starterList: any[] = [];
-  const resultsData: any[] = [];
+  // Official Start Lists and Live Competition Results (Real database records)
+  const starterList = useMemo(() => {
+    if (!publicHubData?.startLists || publicHubData.startLists.length === 0) return [];
+    const items: any[] = [];
+    for (const sl of publicHubData.startLists) {
+      for (const entry of (sl.entries || [])) {
+        items.push({
+          id: entry.id,
+          name: entry.athleteName,
+          amharicName: entry.athlete?.user?.firstNameAm ? `${entry.athlete.user.firstNameAm} ${entry.athlete.user.lastNameAm || ''}` : entry.athleteName,
+          club: entry.clubName || 'Unattached',
+          region: entry.regionName || 'National',
+          event: sl.discipline,
+          gender: sl.gender === 'MEN' ? 'Male' : sl.gender === 'WOMEN' ? 'Female' : 'Mixed',
+          ageGroup: sl.category || 'Senior',
+          round: sl.round || 'Final',
+          heat: entry.heat || 1,
+          lane: entry.lane ?? entry.order ?? '—',
+          bib: entry.bibNumber || '—',
+          seedTime: entry.seedMark || 'NT',
+          verified: !!entry.athlete?.uniqueRegistrationNumber,
+          status: entry.status || 'CONFIRMED',
+          version: sl.version,
+          publishedAt: sl.publishedAt,
+        });
+      }
+    }
+    return items;
+  }, [publicHubData]);
 
-  const filteredResults = resultsData.filter(r => {
-    if (resultEventFilter !== 'ALL' && r.event !== resultEventFilter) return false;
-    if (resultClubFilter !== 'ALL' && r.club !== resultClubFilter) return false;
-    if (resultAgeFilter !== 'ALL' && r.ageGroup !== resultAgeFilter) return false;
-    if (resultGenderFilter !== 'ALL' && r.gender !== resultGenderFilter) return false;
-    return true;
-  });
+  const resultsData = useMemo(() => {
+    if (!publicHubData?.results || publicHubData.results.length === 0) return [];
+    const items: any[] = [];
+    for (const res of publicHubData.results) {
+      for (const entry of (res.entries || [])) {
+        items.push({
+          id: entry.id,
+          rank: entry.position ?? 99,
+          name: entry.athleteName,
+          club: entry.clubName || 'Unattached',
+          bib: entry.bibNo || '—',
+          lane: entry.lane ? String(entry.lane) : '—',
+          heat: entry.heat ? String(entry.heat) : '1',
+          event: res.discipline,
+          round: res.round || 'Final',
+          gender: res.gender === 'MEN' ? 'Male' : res.gender === 'WOMEN' ? 'Female' : 'Mixed',
+          ageGroup: res.category || 'Senior',
+          time: entry.mark || '—',
+          wind: res.windReading || null,
+          verified: true,
+          pb: !!entry.personalBest,
+          sb: !!entry.seasonBest,
+          nr: !!entry.nationalRecord,
+          medal: entry.medal ? entry.medal.toLowerCase() : null,
+          qualified: entry.qualified || null,
+          status: entry.status || 'FINISHED',
+          remarks: entry.remarks || '',
+          resultStatusLabel: res.statusLabel || 'Official Result',
+          version: res.version,
+          publishedAt: res.publishedAt,
+        });
+      }
+    }
+    return items.sort((a, b) => a.rank - b.rank);
+  }, [publicHubData]);
+
+  const medalStandings = publicHubData?.medalStandings || [];
+  const announcements = publicHubData?.announcements || [];
+
+  const filteredStarters = useMemo(() => {
+    return starterList.filter(s => {
+      if (starterEventFilter !== 'ALL' && s.event !== starterEventFilter) return false;
+      if (starterGenderFilter !== 'ALL' && s.gender !== starterGenderFilter) return false;
+      if (starterSearchQuery.trim()) {
+        const q = starterSearchQuery.toLowerCase();
+        if (!s.name.toLowerCase().includes(q) && !s.club.toLowerCase().includes(q) && !String(s.bib).toLowerCase().includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [starterList, starterEventFilter, starterGenderFilter, starterSearchQuery]);
+
+  const filteredResults = useMemo(() => {
+    return resultsData.filter(r => {
+      if (resultEventFilter !== 'ALL' && r.event !== resultEventFilter) return false;
+      if (resultClubFilter !== 'ALL' && r.club !== resultClubFilter) return false;
+      if (resultAgeFilter !== 'ALL' && r.ageGroup !== resultAgeFilter) return false;
+      if (resultGenderFilter !== 'ALL' && r.gender !== resultGenderFilter) return false;
+      if (resultSearchQuery.trim()) {
+        const q = resultSearchQuery.toLowerCase();
+        if (!r.name.toLowerCase().includes(q) && !r.club.toLowerCase().includes(q) && !String(r.bib).toLowerCase().includes(q)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [resultsData, resultEventFilter, resultClubFilter, resultAgeFilter, resultGenderFilter, resultSearchQuery]);
 
   const uniqueEvents = [...new Set(resultsData.map(r => r.event))];
   const uniqueClubs = [...new Set(resultsData.map(r => r.club))];
+  const uniqueStarterEvents = [...new Set(starterList.map(s => s.event))];
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
@@ -829,8 +937,10 @@ export default function CompetitionDetail({
         {[
           { id: 'about', label: t('competitionDetail.tabAbout') },
           { id: 'events', label: t('competitionDetail.tabEvents') },
-          { id: 'starters', label: t('competitionDetail.tabStarters') },
-          { id: 'results', label: t('competitionDetail.tabResults') },
+          { id: 'starters', label: `Start Lists (${starterList.length})` },
+          { id: 'results', label: `Results (${resultsData.length})` },
+          { id: 'medals', label: `Medals (${medalStandings.length})` },
+          { id: 'announcements', label: `Announcements (${announcements.length})` },
         ].map(tab => {
           const isActive = activeTab === tab.id;
           return (
@@ -944,71 +1054,157 @@ export default function CompetitionDetail({
 
         {/* 3. Starter Lists Tab */}
         {activeTab === 'starters' && (
-          starterList.length === 0 ? (
-            <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)', borderRadius: '18px' }}>
-              <Users size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
-              <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px' }}>Starter List Pending</h4>
-              <p style={{ fontSize: '0.85rem' }}>Official athlete starter lists will be published after registration closes.</p>
-            </div>
-          ) : (
-            <div className="gov-card" style={{ background: '#FFFFFF', padding: '0', overflow: 'hidden', borderRadius: '18px' }}>
-              <div className="table-responsive">
-                <table className="gov-table">
-                  <thead>
-                    <tr>
-                      <th>{t('competitionDetail.bib')}</th>
-                      <th>{t('competitionDetail.athleteName')}</th>
-                      <th>{t('competitionDetail.clubDelegation')}</th>
-                      <th>{t('common.event')}</th>
-                      <th>{t('competitionDetail.genderDiv')}</th>
-                      <th>{t('competitionDetail.seedTime')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {starterList.map((st, i) => (
-                      <tr key={i}>
-                        <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)' }}>{st.bib}</td>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{st.name}</span>
-                            {st.verified && (
-                              <span 
-                                title={t('competitionDetail.verified')} 
-                                style={{ 
-                                  display: 'inline-flex', 
-                                  alignItems: 'center', 
-                                  background: '#DCFCE7', 
-                                  color: '#15803D', 
-                                  borderRadius: '50%', 
-                                  padding: '2px'
-                                }}
-                              >
-                                <CheckCircle2 size={12} fill="#15803D" stroke="#DCFCE7" />
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{st.amharicName}</div>
-                        </td>
-                        <td style={{ fontWeight: 600 }}>{st.club}</td>
-                        <td style={{ fontWeight: 700, color: 'var(--primary)' }}>{st.event}</td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <span className={`badge ${st.gender === 'Male' ? 'badge-blue' : 'badge-amber'}`} style={{ padding: '2px 6px', fontSize: '0.65rem' }}>
-                              {st.gender === 'Male' ? 'M' : 'F'}
-                            </span>
-                            <span className="badge" style={{ background: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', padding: '2px 6px', fontSize: '0.65rem' }}>
-                              {st.ageGroup}
-                            </span>
-                          </div>
-                        </td>
-                        <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{st.seedTime}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div>
+            {starterList.length === 0 ? (
+              <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)', borderRadius: '18px' }}>
+                <Users size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
+                <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px' }}>Official Start Lists Awaiting Publication</h4>
+                <p style={{ fontSize: '0.85rem' }}>Official heat and lane assignments will be announced here once reviewed and authorized by competition referees.</p>
               </div>
-            </div>
-          )
+            ) : (
+              <div>
+                {/* Search & Filter Header */}
+                <div
+                  className="gov-card"
+                  style={{
+                    background: '#F8FAFC',
+                    borderRadius: '18px',
+                    marginBottom: '20px',
+                    padding: '20px',
+                    border: '1px solid #E2E8F0'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-heading)' }}>
+                      <Filter size={18} />
+                      <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>Filter Start Lists</span>
+                    </div>
+                    {starterList[0]?.version && (
+                      <span className="badge badge-green" style={{ fontSize: '0.75rem', padding: '4px 8px' }}>
+                        Official Published Start List · v{starterList[0].version}.0
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Search Athlete / Bib</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Type name, bib #, or club..."
+                        value={starterSearchQuery}
+                        onChange={e => setStarterSearchQuery(e.target.value)}
+                        style={{ background: '#FFFFFF' }}
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">{t('competitionDetail.eventType')}</label>
+                      <select 
+                        className="form-select" 
+                        value={starterEventFilter} 
+                        onChange={e => setStarterEventFilter(e.target.value)}
+                        style={{ background: '#FFFFFF' }}
+                      >
+                        <option value="ALL">All Disciplines</option>
+                        {uniqueStarterEvents.map(e => <option key={e} value={e}>{e}</option>)}
+                      </select>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">{t('common.gender')}</label>
+                      <select 
+                        className="form-select" 
+                        value={starterGenderFilter} 
+                        onChange={e => setStarterGenderFilter(e.target.value)}
+                        style={{ background: '#FFFFFF' }}
+                      >
+                        <option value="ALL">All Genders</option>
+                        <option value="Male">Men</option>
+                        <option value="Female">Women</option>
+                        <option value="Mixed">Mixed</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {filteredStarters.length === 0 ? (
+                  <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '36px', color: 'var(--text-muted)', borderRadius: '18px' }}>
+                    <p style={{ fontWeight: 700 }}>No athletes matched the selected filters.</p>
+                  </div>
+                ) : (
+                  <div className="gov-card" style={{ background: '#FFFFFF', padding: '0', overflow: 'hidden', borderRadius: '18px' }}>
+                    <div className="table-responsive">
+                      <table className="gov-table">
+                        <thead>
+                          <tr>
+                            <th>Lane / Pos</th>
+                            <th>{t('competitionDetail.bib')}</th>
+                            <th>{t('competitionDetail.athleteName')}</th>
+                            <th>{t('competitionDetail.clubDelegation')}</th>
+                            <th>Discipline & Round</th>
+                            <th>Heat</th>
+                            <th>{t('competitionDetail.seedTime')}</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredStarters.map((st, i) => (
+                            <tr key={i} style={{ opacity: st.status === 'WITHDRAWN' ? 0.6 : 1 }}>
+                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', textAlign: 'center' }}>
+                                {st.lane}
+                              </td>
+                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                #{st.bib}
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{st.name}</span>
+                                  {st.verified && (
+                                    <span 
+                                      title={t('competitionDetail.verified')} 
+                                      style={{ 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center', 
+                                        background: '#DCFCE7', 
+                                        color: '#15803D', 
+                                        borderRadius: '50%', 
+                                        padding: '2px'
+                                      }}
+                                    >
+                                      <CheckCircle2 size={12} fill="#15803D" stroke="#DCFCE7" />
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{st.region}</div>
+                              </td>
+                              <td style={{ fontWeight: 600 }}>{st.club}</td>
+                              <td style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                                {st.event}
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
+                                  {st.round} · {st.gender}
+                                </span>
+                              </td>
+                              <td style={{ fontWeight: 700, color: 'var(--text-heading)' }}>
+                                Heat {st.heat}
+                              </td>
+                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{st.seedTime}</td>
+                              <td>
+                                <span className={`badge ${st.status === 'WITHDRAWN' ? 'badge-red' : 'badge-green'}`} style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+                                  {st.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* 4. Live Results Tab */}
@@ -1032,12 +1228,32 @@ export default function CompetitionDetail({
                     border: '1px solid #E2E8F0'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--text-heading)' }}>
-                    <Filter size={18} />
-                    <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{t('competitionDetail.filterResults')}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-heading)' }}>
+                      <Filter size={18} />
+                      <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{t('competitionDetail.filterResults')}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="badge badge-green" style={{ fontSize: '0.75rem', padding: '4px 8px' }}>
+                        Official Confirmed Results
+                      </span>
+                    </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Search Finisher / Bib</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Search name, club, or bib..."
+                        value={resultSearchQuery}
+                        onChange={e => setResultSearchQuery(e.target.value)}
+                        style={{ background: '#FFFFFF' }}
+                      />
+                    </div>
+
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">{t('competitionDetail.eventType')}</label>
                       <select 
@@ -1077,21 +1293,6 @@ export default function CompetitionDetail({
                         <option value="Women">Women</option>
                       </select>
                     </div>
-
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">{t('competitionDetail.ageCategory')}</label>
-                      <select 
-                        className="form-select" 
-                        value={resultAgeFilter} 
-                        onChange={e => setResultAgeFilter(e.target.value)}
-                        style={{ background: '#FFFFFF' }}
-                      >
-                        <option value="ALL">{t('competitionDetail.allCategories')}</option>
-                        <option value="Senior">{t('competitionDetail.senior')}</option>
-                        <option value="U20">U20</option>
-                        <option value="U18">U18</option>
-                      </select>
-                    </div>
                   </div>
                 </div>
 
@@ -1106,21 +1307,32 @@ export default function CompetitionDetail({
                         <thead>
                           <tr>
                             <th style={{ width: '80px' }}>{t('competitionDetail.rank')}</th>
-                            <th style={{ width: '100px' }}>{t('competitionDetail.bib')}</th>
+                            <th style={{ width: '80px' }}>{t('competitionDetail.bib')}</th>
+                            <th style={{ width: '100px' }}>Lane / Heat</th>
                             <th>{t('competitionDetail.athleteName')}</th>
                             <th>{t('competitionDetail.clubRegion')}</th>
                             <th>{t('common.event')}</th>
                             <th>{t('competitionDetail.timeDistance')}</th>
-                            <th>{t('competitionDetail.recordStatus')}</th>
+                            <th style={{ width: '80px' }}>Wind</th>
+                            <th>Records / Qual</th>
                           </tr>
                         </thead>
                         <tbody>
                           {filteredResults.map((r, i) => (
-                            <tr key={i} style={{ background: r.rank <= 3 ? `rgba(200, 168, 75, 0.03)` : undefined }}>
+                            <tr key={i} style={{ background: r.rank <= 3 ? `rgba(200, 168, 75, 0.04)` : undefined }}>
                               <td style={{ fontWeight: 800 }}>
-                                {r.rank === 1 ? '🥇 1st' : r.rank === 2 ? '🥈 2nd' : r.rank === 3 ? '🥉 3rd' : `${r.rank}th`}
+                                {r.status !== 'FINISHED' && r.status !== 'OK' ? (
+                                  <span className="badge badge-red" style={{ fontSize: '0.72rem' }}>
+                                    {r.status}
+                                  </span>
+                                ) : r.rank === 1 ? '🥇 1st' : r.rank === 2 ? '🥈 2nd' : r.rank === 3 ? '🥉 3rd' : `${r.rank}th`}
                               </td>
-                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-muted)' }}>{r.bib}</td>
+                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                #{r.bib}
+                              </td>
+                              <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                                L{r.lane} · H{r.heat}
+                              </td>
                               <td>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{r.name}</span>
@@ -1142,14 +1354,31 @@ export default function CompetitionDetail({
                                 </div>
                               </td>
                               <td style={{ fontWeight: 600 }}>{r.club}</td>
-                              <td style={{ fontWeight: 700 }}>{r.event}</td>
-                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', fontSize: '0.95rem' }}>{r.time}</td>
+                              <td style={{ fontWeight: 700 }}>
+                                {r.event}
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
+                                  {r.round} · {r.gender}
+                                </span>
+                              </td>
+                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', fontSize: '0.98rem' }}>
+                                {r.time}
+                              </td>
+                              <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                                {r.wind ? `${r.wind} m/s` : '—'}
+                              </td>
                               <td>
-                                <div style={{ display: 'flex', gap: '4px' }}>
+                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                                   {r.nr && <span className="badge badge-red" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>NR</span>}
                                   {r.pb && <span className="badge badge-amber" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>PB</span>}
                                   {r.sb && <span className="badge badge-blue" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>SB</span>}
-                                  {!r.nr && !r.pb && !r.sb && <span style={{ color: 'var(--text-dim, #ccc)', fontSize: '0.78rem' }}>—</span>}
+                                  {r.qualified && (
+                                    <span className="badge badge-green" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
+                                      {r.qualified}
+                                    </span>
+                                  )}
+                                  {!r.nr && !r.pb && !r.sb && !r.qualified && (
+                                    <span style={{ color: 'var(--text-dim, #ccc)', fontSize: '0.78rem' }}>—</span>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -1159,6 +1388,115 @@ export default function CompetitionDetail({
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 5. Official Medal Standings Tab */}
+        {activeTab === 'medals' && (
+          <div>
+            {medalStandings.length === 0 ? (
+              <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', borderRadius: '18px' }}>
+                <Trophy size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
+                <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px' }}>Medal Table Pending</h4>
+                <p style={{ fontSize: '0.85rem' }}>Club and regional medal standings are computed automatically as results are confirmed.</p>
+              </div>
+            ) : (
+              <div className="gov-card" style={{ background: '#FFFFFF', padding: '0', overflow: 'hidden', borderRadius: '18px' }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC' }}>
+                  <h3 style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-heading)' }}>
+                    Championship Club Medal Standings
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    Official ranking by Gold, Silver, and Bronze medal acquisitions
+                  </p>
+                </div>
+                <div className="table-responsive">
+                  <table className="gov-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '80px', textAlign: 'center' }}>Rank</th>
+                        <th>Club / Delegation</th>
+                        <th style={{ textAlign: 'center' }}>🥇 Gold</th>
+                        <th style={{ textAlign: 'center' }}>🥈 Silver</th>
+                        <th style={{ textAlign: 'center' }}>🥉 Bronze</th>
+                        <th style={{ textAlign: 'center' }}>Total Medals</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {medalStandings.map((m: any, idx: number) => (
+                        <tr key={idx} style={{ background: idx === 0 ? 'rgba(217, 167, 44, 0.08)' : undefined }}>
+                          <td style={{ fontWeight: 800, textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
+                            {m.rank || idx + 1}
+                          </td>
+                          <td style={{ fontWeight: 700, color: 'var(--text-heading)' }}>
+                            {m.clubName}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 800, color: '#D97706' }}>
+                            {m.gold}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 800, color: '#64748B' }}>
+                            {m.silver}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 800, color: '#B45309' }}>
+                            {m.bronze}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 900, color: 'var(--primary)' }}>
+                            {m.total}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 6. Official Announcements Tab */}
+        {activeTab === 'announcements' && (
+          <div>
+            {announcements.length === 0 ? (
+              <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', borderRadius: '18px' }}>
+                <Clock size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
+                <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px' }}>No Bulletins Published Yet</h4>
+                <p style={{ fontSize: '0.85rem' }}>Official competition releases, jury notices, and schedule updates will appear here.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: '16px' }}>
+                {announcements.map((ann: any) => (
+                  <div
+                    key={ann.id}
+                    className="gov-card"
+                    style={{
+                      background: '#FFFFFF',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      border: '1px solid #E2E8F0',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <span className="badge badge-primary" style={{ fontSize: '0.72rem', padding: '3px 8px' }}>
+                        {ann.category || 'Official Bulletin'}
+                      </span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        {new Date(ann.publishedAt || ann.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <h4 style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-heading)', marginBottom: '8px' }}>
+                      {ann.title}
+                    </h4>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-body)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                      {ann.content}
+                    </p>
+                    <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #F1F5F9', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      Announced by: <strong>{ann.authorName || 'Federation Competition Office'}</strong>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
