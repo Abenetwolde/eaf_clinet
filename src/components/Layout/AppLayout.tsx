@@ -134,7 +134,7 @@ export default function AppLayout({
 
         {/* ── Prominent Club Crest / Logo Banner in Sidebar ── */}
         {isClub && (
-          <div className="mx-3.5 mt-3.5 mb-2.5 p-3 rounded-2xl bg-gradient-to-br from-[#1E293B] to-[#0A101D] border border-accent/40 shadow-md">
+          <div className="mx-3.5 mt-3.5 mb-2.5 p-3 rounded-2xl  from-[#1E293B] to-[#0A101D] shadow-md">
             <div className="flex items-center gap-3">
               <div className="relative w-12 h-12 rounded-xl bg-white p-1 shrink-0 overflow-hidden shadow-sm border border-slate-200 flex items-center justify-center">
                 {resolvedClubLogo && !logoFailed ? (
@@ -167,17 +167,10 @@ export default function AppLayout({
         )}
 
         {/* Identity Card */}
-        <div className="px-4 py-3 bg-white/[0.04] border-b border-[#2D3A5A] flex items-center gap-2.5">
+        <div className="px-4 bg-white/[0.04] border-b border-[#2D3A5A] flex items-center gap-2.5">
           {isClub ? (
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-blue-900/60 border border-blue-400/40 text-blue-200 flex items-center justify-center font-black text-xs shrink-0">
-                <Building2 size={16} />
-              </div>
-              <div className="min-w-0">
-                <div className="text-[0.78rem] font-bold text-white truncate">Administrator: {clubAdminName}</div>
-                <div className="text-[0.66rem] text-[#8FA8BC] font-medium truncate">Authorized Club Official</div>
-              </div>
-            </div>
+         <div>
+         </div>
           ) : (
             <>
               <img
