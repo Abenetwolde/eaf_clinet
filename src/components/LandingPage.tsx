@@ -10,6 +10,7 @@ import { getEventRegistrationStatus } from '../utils/eventRegistration';
 import { useGetNewsQuery, type NewsArticle } from '../store/api/newsApi';
 import { useGetPublishedEventsQuery, useGetOverviewStatsQuery, useGetGalleryQuery, useGetSiteContentQuery, useSubmitContactFormMutation } from '../store/api/apiSlice';
 import { useGetAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, Legend as ChartLegend } from 'recharts';
 
 /* ─────────────────────────────────────────────
    STATIC DATA & GALLERY IMAGES
@@ -2102,6 +2103,175 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── 6b. LIVE FEDERATION ANALYTICS & CHAMPIONSHIP PERFORMANCE (RECHARTS) ── */}
+      {publicSubPage === 'HOME' && (
+        <section id="analytics" style={{ padding: '64px 24px', background: t.bg, borderTop: '1px solid ' + t.border, position: 'relative' }}>
+          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: 36 }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'linear-gradient(135deg, #0072CE 0%, #004A8F 100%)',
+                color: '#FFFFFF',
+                padding: '6px 18px',
+                borderRadius: '999px',
+                fontWeight: 800,
+                fontSize: '0.76rem',
+                marginBottom: '14px',
+                letterSpacing: '0.06em',
+                boxShadow: '0 6px 18px rgba(0, 114, 206, 0.25)',
+              }}>
+                <Activity size={14} /> LIVE FEDERATION INTELLIGENCE
+              </div>
+              <h2 style={{ color: t.text, fontSize: '2.1rem', fontWeight: 900, marginBottom: 12 }}>
+                National Athletics Performance & Talent Registry
+              </h2>
+              <p style={{ color: t.textSub, fontSize: '0.96rem', maxWidth: 650, margin: '0 auto', lineHeight: 1.6 }}>
+                Real-time metrics from the Ethiopian Athletics Federation database tracking athlete development, club registrations, and regional representation.
+              </p>
+            </div>
+
+            {/* 3 Analytics Cards Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24 }}>
+              {/* Card 1: Growth Trend */}
+              <div style={{
+                background: t.surface,
+                border: '1px solid ' + t.border,
+                borderRadius: 18,
+                padding: '24px 20px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <div>
+                    <h4 style={{ color: t.text, fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Registration & Licensing Growth</h4>
+                    <span style={{ color: t.textMuted, fontSize: '0.78rem', fontWeight: 600 }}>Rolling 6-month progression</span>
+                  </div>
+                  <span style={{ background: 'rgba(0, 168, 89, 0.12)', color: '#00A859', padding: '4px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800 }}>
+                    Active Trend
+                  </span>
+                </div>
+                <div style={{ height: 230 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={overviewStats?.monthlyGrowth || [
+                        { month: 'May', registered: 1, athletes: 1, applications: 1 },
+                        { month: 'Jun', registered: 1, athletes: 1, applications: 2 },
+                        { month: 'Jul', registered: 2, athletes: 1, applications: 2 },
+                        { month: 'Aug', registered: 2, athletes: 2, applications: 3 },
+                        { month: 'Sep', registered: 3, athletes: 2, applications: 3 },
+                        { month: 'Oct', registered: 3, athletes: 2, applications: 4 },
+                      ]}
+                      margin={{ top: 8, right: 12, left: -22, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="clientGrowthGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#0072CE" stopOpacity={0.4} />
+                          <stop offset="100%" stopColor="#0072CE" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#334155' : '#E2E8F0'} vertical={false} />
+                      <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                      <ChartTooltip contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: '0.8rem' }} />
+                      <Area type="monotone" dataKey="athletes" stroke="#0072CE" fill="url(#clientGrowthGrad)" strokeWidth={2.5} name="Athletes" />
+                      <Line type="monotone" dataKey="registered" stroke="#00A859" strokeWidth={2} name="Clubs" />
+                      <ChartLegend wrapperStyle={{ fontSize: 11 }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Card 2: Discipline Distribution */}
+              <div style={{
+                background: t.surface,
+                border: '1px solid ' + t.border,
+                borderRadius: 18,
+                padding: '24px 20px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <div>
+                    <h4 style={{ color: t.text, fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Athlete Discipline Breakdown</h4>
+                    <span style={{ color: t.textMuted, fontSize: '0.78rem', fontWeight: 600 }}>National talent pool disciplines</span>
+                  </div>
+                  <span style={{ background: 'rgba(0, 114, 206, 0.12)', color: '#0072CE', padding: '4px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800 }}>
+                    Verified Pool
+                  </span>
+                </div>
+                <div style={{ height: 230, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={overviewStats?.disciplineDistribution || [
+                          { name: 'Long Distance (5K/10K)', value: 33 },
+                          { name: 'Marathon & Road', value: 25 },
+                          { name: 'Middle Distance (800/1500m)', value: 21 },
+                          { name: 'Sprints & Relays', value: 13 },
+                          { name: 'Field & Jumps', value: 8 },
+                        ]}
+                        innerRadius={50}
+                        outerRadius={75}
+                        paddingAngle={4}
+                        dataKey="value"
+                      >
+                        {['#0072CE', '#00A859', '#FFB800', '#7C3AED', '#EC4899', '#10B981'].map((color, idx) => (
+                          <Cell key={idx} fill={color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip formatter={(v: number) => `${v}%`} contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: '0.8rem' }} />
+                      <ChartLegend wrapperStyle={{ fontSize: 11 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Card 3: Regional Distribution */}
+              <div style={{
+                background: t.surface,
+                border: '1px solid ' + t.border,
+                borderRadius: 18,
+                padding: '24px 20px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <div>
+                    <h4 style={{ color: t.text, fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Regional Capacity & Clubs</h4>
+                    <span style={{ color: t.textMuted, fontSize: '0.78rem', fontWeight: 600 }}>Member regional state distribution</span>
+                  </div>
+                  <span style={{ background: 'rgba(255, 184, 0, 0.15)', color: '#D97706', padding: '4px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800 }}>
+                    12 Regions
+                  </span>
+                </div>
+                <div style={{ height: 230 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={(overviewStats?.regionalDistribution || [
+                        { region: 'Addis Ababa', athletes: 6, clubs: 3 },
+                        { region: 'Oromia', athletes: 5, clubs: 3 },
+                        { region: 'Amhara', athletes: 4, clubs: 2 },
+                        { region: 'Sidama', athletes: 3, clubs: 2 },
+                        { region: 'Tigray', athletes: 2, clubs: 1 },
+                      ]).slice(0, 5)}
+                      margin={{ top: 8, right: 12, left: -22, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#334155' : '#E2E8F0'} vertical={false} />
+                      <XAxis dataKey="region" stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                      <ChartTooltip contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: '0.8rem' }} />
+                      <Bar dataKey="athletes" fill="#0072CE" name="Athletes" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="clubs" fill="#FFB800" name="Clubs" radius={[3, 3, 0, 0]} />
+                      <ChartLegend wrapperStyle={{ fontSize: 11 }} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
           </div>

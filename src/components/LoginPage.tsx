@@ -78,11 +78,27 @@ export default function LoginPage({
     };
 
     if (isClub) {
-      const club = data.club || {
-        id: data.clubId || '', name: data.clubName || '', shortName: '', region: '',
-        manager: `${userData.firstName} ${userData.lastName}`.trim(), email: userData.email,
-        phone: userData.phoneNumber, licensedAthletes: 0, pendingVerifications: 0,
-        unlicensedAthletes: 0, transfersCount: 0, logo: '', clubRank: 0, totalPoints: 0,
+      const resolvedLogo = data.club?.logoUrl || data.club?.logo || data.user?.adminOf?.logoUrl || '';
+      const club = data.club ? {
+        ...data.club,
+        logo: data.club.logo || resolvedLogo,
+        logoUrl: data.club.logoUrl || resolvedLogo,
+      } : {
+        id: data.clubId || data.user?.adminOf?.id || '',
+        name: data.clubName || data.user?.adminOf?.name || '',
+        shortName: data.user?.adminOf?.name?.slice(0, 4) || '',
+        region: data.user?.adminOf?.region || '',
+        manager: `${userData.firstName} ${userData.lastName}`.trim(),
+        email: userData.email,
+        phone: userData.phoneNumber,
+        licensedAthletes: 0,
+        pendingVerifications: 0,
+        unlicensedAthletes: 0,
+        transfersCount: 0,
+        logo: resolvedLogo,
+        logoUrl: resolvedLogo,
+        clubRank: 0,
+        totalPoints: 0,
       };
       dispatch(login({ role: 'CLUB', club, token: data.token || data.accessToken, refreshToken: data.refreshToken, userId: data.userId || data.user?.id, userData }));
       onLoginSuccess('CLUB', { club });

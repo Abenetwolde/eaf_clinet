@@ -125,14 +125,28 @@ export default function ClientLayout({
             </motion.button>
           )}
 
+          {/* Accessible Header Logout Button */}
+          {onLogout && (
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={onLogout}
+              title="Log Out of Athlete Account"
+              aria-label="Log Out"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 font-extrabold text-xs transition-colors cursor-pointer shadow-xs"
+            >
+              <LogOut size={15} className="text-red-600 dark:text-red-400" />
+              <span className="hidden sm:inline">Log Out</span>
+            </motion.button>
+          )}
 
           {/* Avatar - Clickable to open Profile Management */}
           {currentAthlete && (
             <motion.div
               className={`relative cursor-pointer shrink-0 rounded-full transition-all duration-150 ${
-                activeSubPage === 'PROFILE' ? 'ring-3 ring-primary ring-offset-2' : ''
+                (activeSubPage === 'OVERVIEW' || activeSubPage === 'PROFILE') ? 'ring-3 ring-primary ring-offset-2' : ''
               }`}
-              onClick={() => onChangeSubPage('PROFILE')}
+              onClick={() => onChangeSubPage('OVERVIEW')}
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.94 }}
               title="Manage Athlete Profile & Credentials"

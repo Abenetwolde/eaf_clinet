@@ -7,6 +7,7 @@ import {
   writeString,
   writeJSON,
   removeItem,
+  clearAllSessionData,
 } from '../persistence';
 
 const EMPTY_CLUB: Club = {
@@ -51,7 +52,12 @@ function readInitialRole(): Role {
 }
 
 function readInitialClub(): Club {
-  return EMPTY_CLUB;
+  const savedClub = readJSON<Club | null>('eaf_currentClub', null);
+  const savedClubId = readString(STORAGE_KEYS.currentClubId);
+  if (savedClub && savedClub.id) {
+    return savedClub;
+  }
+  return { ...EMPTY_CLUB, id: savedClubId || '' };
 }
 
 function readInitialAthlete(): Athlete {
@@ -100,7 +106,10 @@ function persistSession(
 ) {
   writeString(STORAGE_KEYS.role, role);
   if (athlete) writeString(STORAGE_KEYS.currentAthleteId, athlete.id);
-  if (club) writeString(STORAGE_KEYS.currentClubId, club.id);
+  if (club) {
+    writeString(STORAGE_KEYS.currentClubId, club.id);
+    writeJSON('eaf_currentClub', club);
+  }
   if (token !== undefined) {
     if (token) writeString(STORAGE_KEYS.accessToken, token);
     else removeItem(STORAGE_KEYS.accessToken);
@@ -131,6 +140,7 @@ const authSlice = createSlice({
     setClub(state, action: PayloadAction<Club>) {
       state.club = action.payload;
       writeString(STORAGE_KEYS.currentClubId, action.payload.id);
+      writeJSON('eaf_currentClub', action.payload);
     },
     setAthlete(state, action: PayloadAction<Athlete>) {
       state.athlete = action.payload;
@@ -192,13 +202,10 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.userId = null;
       state.userData = null;
-      removeItem(STORAGE_KEYS.role);
-      removeItem(STORAGE_KEYS.currentAthleteId);
-      removeItem(STORAGE_KEYS.currentClubId);
-      removeItem(STORAGE_KEYS.accessToken);
-      removeItem(STORAGE_KEYS.refreshToken);
-      removeItem(STORAGE_KEYS.userId);
-      removeItem(STORAGE_KEYS.userData);
+      state.athlete = EMPTY_ATHLETE;
+      state.club = EMPTY_CLUB;
+      state.coach = null;
+      clearAllSessionData();
     },
   },
 });

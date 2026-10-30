@@ -34,7 +34,7 @@ import RegionalFederationsHub from './components/RegionalFederationsHub';
 import AthleteRepresentativesHub from './components/AthleteRepresentativesHub';
 import NotificationToast from './components/NotificationToast';
 
-import { Sun, Moon, Menu, X, ShieldCheck, Sparkles, ArrowRight, UserCheck, Eye, CheckCircle2, User, Building2 } from 'lucide-react';
+import { Sun, Moon, Menu, X, ShieldCheck, Sparkles, ArrowRight, UserCheck, Eye, CheckCircle2, User, Building2, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useI18n, LanguageSelector } from './i18n';
 
@@ -44,6 +44,7 @@ import { addAthlete, updateAthlete, setAthletes } from './store/slices/athleteSl
 import { addClub, addTransfer } from './store/slices/clubSlice';
 import { useLazyGetMeQuery, useLogoutApiMutation } from './store/api/authApi';
 import { Athlete, Club, Transfer } from './types';
+import { clearAllSessionData } from './store/persistence';
 
 type Role = 'LANDING' | 'CLUB' | 'ATHLETE' | 'COACH';
 
@@ -68,9 +69,65 @@ export default function App() {
   const [fetchMe] = useLazyGetMeQuery();
   const [logoutApi] = useLogoutApiMutation();
 
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState<string | null>(null);
+
+  // Listen for session expiration events across RTK Query and global API calls
+  useEffect(() => {
+    const handleExpired = (e: Event) => {
+      const customEvent = e as CustomEvent<{ message?: string }>;
+      const msg = customEvent.detail?.message || "Your session has expired. Please sign in again to continue.";
+      handleLogout(msg, true);
+    };
+    window.addEventListener("eaf:session-expired", handleExpired);
+    return () => window.removeEventListener("eaf:session-expired", handleExpired);
+  }, []);
+
+  // Periodic and visibility token expiration verification
+  useEffect(() => {
+    const checkTokenExpiry = () => {
+      const currentToken = localStorage.getItem('eaf_accessToken') || localStorage.getItem('token') || authToken;
+      if (!currentToken || currentRole === 'LANDING') return;
+      try {
+        const parts = currentToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const refreshToken = localStorage.getItem('eaf_refreshToken') || sessionStorage.getItem('eaf_refreshToken');
+          if (payload.exp && Date.now() >= payload.exp * 1000 && !refreshToken) {
+            handleLogout("Your session has expired. Please sign in again to continue.", true);
+          }
+        }
+      } catch {}
+    };
+
+    const interval = setInterval(checkTokenExpiry, 15000);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkTokenExpiry();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [authToken, currentRole]);
+
   // Auto-login: validate saved token on mount
   useEffect(() => {
     if (authToken && currentRole !== 'LANDING') {
+      const refreshToken = localStorage.getItem('eaf_refreshToken') || sessionStorage.getItem('eaf_refreshToken');
+      try {
+        const parts = authToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          // Only force logout on mount if expired AND there is no refresh token
+          if (payload.exp && Date.now() >= payload.exp * 1000 && !refreshToken) {
+            handleLogout("Your session has expired. Please sign in again to continue.", true);
+            return;
+          }
+        }
+      } catch (e) {}
+
       dispatch(setAuthLoading());
       fetchMe()
         .unwrap()
@@ -94,9 +151,11 @@ export default function App() {
             }
           }
         })
-        .catch(() => {
-          // Token invalid/expired — clear auth
-          dispatch(logout());
+        .catch((err) => {
+          // Token invalid/expired — clear auth if unauthorized (401)
+          if (err?.status === 401) {
+            handleLogout("Your session has expired. Please sign in again to continue.", true);
+          }
         });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -105,8 +164,24 @@ export default function App() {
   const [clubSubPage, setClubSubPage] = useState('OVERVIEW');
   const [athleteSubPage, setAthleteSubPage] = useState('OVERVIEW');
   const [publicSubPage, setPublicSubPage] = useState('HOME');
+  const [activeEnrollmentCompetition, setActiveEnrollmentCompetition] = useState<any | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useI18n();
+
+  // Listen for direct club competition enrollment triggers
+  useEffect(() => {
+    const handleClubEnrollment = (e: any) => {
+      const comp = e.detail?.competition;
+      if (comp) {
+        setActiveEnrollmentCompetition(comp);
+        dispatch(setRole('CLUB'));
+        setClubSubPage('MEETS');
+        setPublicSubPage('DASHBOARD');
+      }
+    };
+    window.addEventListener('eaf-open-club-enrollment', handleClubEnrollment);
+    return () => window.removeEventListener('eaf-open-club-enrollment', handleClubEnrollment);
+  }, [dispatch]);
   const [darkMode, setDarkMode] = useState(() => {
     try {
       return localStorage.getItem('eaf_darkMode') === 'true';
@@ -231,30 +306,12 @@ export default function App() {
     handleNotify('National ID session logged out successfully.', 'info');
   };
 
-  const handleLogout = () => {
+  const handleLogout = (customMsg?: string, isExpired = false) => {
     // Call logout API (fire-and-forget — it's stateless on the server)
     if (authToken) {
       logoutApi().catch(() => {});
     }
-    try {
-      sessionStorage.clear();
-      localStorage.removeItem('eaf_currentRole');
-      localStorage.removeItem('eaf_currentAthleteId');
-      localStorage.removeItem('eaf_currentClubId');
-      localStorage.removeItem('eaf_registered_athlete');
-      localStorage.removeItem('eaf_registered_info');
-      localStorage.removeItem('eaf_user_avatar');
-      localStorage.removeItem('token');
-      localStorage.removeItem('eaf_token');
-      localStorage.removeItem('eaf_accessToken');
-      localStorage.removeItem('eaf_refreshToken');
-      localStorage.removeItem('eaf_userId');
-      localStorage.removeItem('eaf_userData');
-      localStorage.removeItem('fayda_auth_payload');
-      localStorage.removeItem('fayda_photo');
-      localStorage.removeItem('fayda_token');
-      localStorage.removeItem('eaf_fayda_verified');
-    } catch (e) {}
+    clearAllSessionData();
     dispatch(logout());
     setVerifiedCitizen(null);
     setShowCitizenModal(false);
@@ -267,7 +324,13 @@ export default function App() {
       window.history.pushState(null, '', '/');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    handleNotify('Logged out successfully.', 'info');
+    if (isExpired) {
+      const msg = customMsg || 'Your session has expired. Please sign in again to continue.';
+      setSessionExpiredNotice(msg);
+      handleNotify(msg, 'error');
+    } else {
+      handleNotify(customMsg || 'Logged out successfully.', 'info');
+    }
   };
 
   // Check for returning from Fayda verification or callback & load verified identity
@@ -662,6 +725,39 @@ export default function App() {
     dispatch(addTransfer(newTransfer));
     handleNotify(`Transfer for ${newTransfer.athleteName} submitted to EAF Registry.`, 'success');
   };
+
+  const sessionExpiredModal = sessionExpiredNotice && (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 text-center">
+        <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200">
+          <Lock size={28} />
+        </div>
+        <h3 className="text-xl font-black text-slate-900 mb-2">
+          Session Expired
+        </h3>
+        <p className="text-sm text-slate-600 mb-6 leading-relaxed">
+          {sessionExpiredNotice}
+        </p>
+        <div className="flex flex-col gap-2.5">
+          <button
+            onClick={() => {
+              setSessionExpiredNotice(null);
+              handleOpenAuthModal();
+            }}
+            className="w-full py-3 px-4 rounded-xl font-bold text-white bg-slate-900 hover:bg-slate-800 transition-colors shadow-sm cursor-pointer border-0"
+          >
+            Sign In Again
+          </button>
+          <button
+            onClick={() => setSessionExpiredNotice(null)}
+            className="w-full py-2.5 px-4 rounded-xl font-semibold text-slate-600 hover:bg-slate-100 transition-colors text-sm cursor-pointer border-0 bg-transparent"
+          >
+            Continue as Guest
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   // ── LANDING PAGE ──
   if (currentRole === 'LANDING' ||
@@ -1243,6 +1339,8 @@ export default function App() {
             }}
           />
         )}
+
+        {sessionExpiredModal}
       </div>
     );
   }
@@ -1274,6 +1372,7 @@ export default function App() {
       )}
       <RBACSecurityMatrix isOpen={showRbacMatrix} onClose={() => setShowRbacMatrix(false)} />
       <NotificationToast toast={toast} onClose={() => setToast(null)} />
+      {sessionExpiredModal}
     </>
   );
 
@@ -1308,6 +1407,8 @@ export default function App() {
         )}
         {clubSubPage === 'MEETS' && (
           <MeetRegistration
+            initialCompetition={activeEnrollmentCompetition}
+            onCloseWizard={() => setActiveEnrollmentCompetition(null)}
             onNotify={handleNotify}
           />
         )}
@@ -1341,19 +1442,17 @@ export default function App() {
         onGoHome={() => { setPublicSubPage('HOME'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         onBackToLanding={() => setPublicSubPage('HOME')}
       >
-        {athleteSubPage === 'OVERVIEW' && (
+        {(athleteSubPage === 'OVERVIEW' || athleteSubPage === 'PROFILE') && (
           <AthleteOverview
             onChangeSubPage={setAthleteSubPage}
             onPayLicense={handleInitiateLicensePayment}
             onUpdateAthlete={handleUpdateAthlete}
             onNotify={handleNotify}
+            onLogout={handleLogout}
           />
         )}
         {athleteSubPage === 'APPLIED' && (
           <AthleteApplications onNotify={handleNotify} />
-        )}
-        {athleteSubPage === 'PROFILE' && (
-          <AthleteProfile onUpdateAthlete={handleUpdateAthlete} onNotify={handleNotify} onLogout={handleLogout} />
         )}
         {athleteSubPage === 'NOTIFICATIONS' && (
           <AthleteNotifications onNotify={handleNotify} />

@@ -23,9 +23,10 @@ export default function SeedingGenerator({ onNotify }: SeedingGeneratorProps) {
   const [selectedEvent, setSelectedEvent] = useState<string>('');
   const [seedingMethod, setSeedingMethod] = useState<string>('SB_PB_HYBRID'); // 'SB_PB_HYBRID' or 'RANDOM'
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const { data: roster = [] } = useGetAthletesQuery(club?.id ? { clubId: club.id } : undefined);
+  const activeClubId = club?.id || (typeof window !== 'undefined' ? localStorage.getItem('eaf_currentClubId') : '') || '';
+  const { data: roster = [] } = useGetAthletesQuery(activeClubId ? { clubId: activeClubId } : undefined);
   const startList: StartListItem[] = roster
-    .filter((athlete: any) => !selectedEvent || (athlete.primaryEvent || '').toLowerCase() === selectedEvent.toLowerCase())
+    .filter((athlete: any) => (!activeClubId || athlete.clubId === activeClubId) && (!selectedEvent || (athlete.primaryEvent || '').toLowerCase() === selectedEvent.toLowerCase()))
     .map((athlete: any, index: number) => ({
       laneBib: index + 1,
       athlete: athlete.name || `${athlete.user?.firstName || ''} ${athlete.user?.lastName || ''}`.trim(),

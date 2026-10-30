@@ -164,11 +164,16 @@ export default function AuthModal({
 
         onLoginSuccess('COACH', { coach: resolvedCoach });
       } else if (appRole === 'CLUB') {
-        const resolvedClub = data.club || {
+        const resolvedLogo = data.club?.logoUrl || data.club?.logo || data.user?.adminOf?.logoUrl || '';
+        const resolvedClub = data.club ? {
+          ...data.club,
+          logo: data.club.logo || resolvedLogo,
+          logoUrl: data.club.logoUrl || resolvedLogo,
+        } : {
           id: data.clubId || data.user?.adminOf?.id || '',
           name: data.clubName || data.user?.adminOf?.name || '',
-          shortName: data.club?.shortName || '',
-          region: data.club?.region || '',
+          shortName: data.club?.shortName || data.user?.adminOf?.name?.slice(0, 4) || '',
+          region: data.club?.region || data.user?.adminOf?.region || '',
           manager: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim(),
           email: data.club?.email || data.user?.email || '',
           phone: '',
@@ -176,7 +181,8 @@ export default function AuthModal({
           pendingVerifications: 0,
           unlicensedAthletes: 0,
           transfersCount: 0,
-          logo: data.club?.logoUrl || '',
+          logo: resolvedLogo,
+          logoUrl: resolvedLogo,
           clubRank: 0,
           totalPoints: 0,
         };

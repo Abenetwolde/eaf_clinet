@@ -4,7 +4,8 @@ import {
   Weight, TrendingUp, Calendar, Plus, Trash2, Edit3, Save, Trophy,
   Medal, MapPin, Flag, QrCode, CheckCircle2, Clock, Sparkles,
   Heart, Zap, BarChart3, Flame, ChevronRight, Download, Printer,
-  FileText, Check, Copy, User, Lock, ExternalLink
+  FileText, Check, Copy, User, Lock, ExternalLink, LogOut, Phone,
+  Mail, Globe, BadgeCheck, AlertCircle
 } from 'lucide-react';
 import type { Athlete } from '../../types';
 import { useAppSelector } from '../../store/hooks';
@@ -13,13 +14,14 @@ import LicenseQrCode from './LicenseQrCode';
 import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 
 interface AthleteOverviewProps {
-  onChangeSubPage: (page: string) => void;
-  onPayLicense: (athlete: Athlete) => void;
-  onUpdateAthlete: (athlete: Athlete) => void;
-  onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
+  onChangeSubPage?: (page: string) => void;
+  onPayLicense?: (athlete: Athlete) => void;
+  onUpdateAthlete?: (athlete: Athlete) => void;
+  onNotify?: (message: string, type?: 'success' | 'error' | 'info') => void;
+  onLogout?: () => void;
 }
 
-export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdateAthlete, onNotify }: AthleteOverviewProps) {
+export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdateAthlete, onNotify, onLogout }: AthleteOverviewProps) {
   const rawAthlete = useAppSelector((state) => state.auth.athlete);
   const { data: dashboard } = useGetAthleteDashboardQuery();
   const { data: personalBests = { allTime: [], season: [] } } = useGetAthletePersonalBestsQuery();
@@ -51,6 +53,19 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
 
   const [activeTab, setActiveTab] = useState('overview');
   const [copiedFin, setCopiedFin] = useState(false);
+
+  // Profile Edit State
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profilePhone, setProfilePhone] = useState(athlete?.phone || '');
+  const [profileEmail, setProfileEmail] = useState(athlete?.email || '');
+  const [profileEmergency, setProfileEmergency] = useState(athlete?.emergencyContact || '');
+  const [profilePrimaryEvent, setProfilePrimaryEvent] = useState(athlete?.primaryEvent || '');
+  const [profileBio, setProfileBio] = useState(athlete?.bio || '');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Anti-Doping Dossier State
+  const [antiDopingData, setAntiDopingData] = useState<any>(null);
+  const [antiDopingTab, setAntiDopingTab] = useState<'WHEREABOUTS' | 'TESTS' | 'PROHIBITED' | 'LINKS'>('WHEREABOUTS');
 
   // Weight log entry
   const [newWeight, setNewWeight] = useState('');
@@ -114,6 +129,35 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
     } catch (error: any) { onNotify(error?.data?.message || 'Performance record could not be saved.', 'error'); }
   };
 
+  const handleSaveProfile = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setSavingProfile(true);
+    try {
+      await updateProfile({
+        phoneNumber: profilePhone.trim() || undefined,
+        email: profileEmail.trim() || undefined,
+        primaryEvent: profilePrimaryEvent.trim() || undefined,
+        emergencyContactPhone: profileEmergency.trim() || undefined,
+      }).unwrap();
+      onNotify?.('Profile information updated successfully.', 'success');
+      setEditingProfile(false);
+      if (onUpdateAthlete && athlete) {
+        onUpdateAthlete({
+          ...athlete,
+          phone: profilePhone.trim() || athlete.phone,
+          email: profileEmail.trim() || athlete.email,
+          primaryEvent: profilePrimaryEvent.trim() || athlete.primaryEvent,
+          emergencyContact: profileEmergency.trim() || athlete.emergencyContact,
+          bio: profileBio.trim() || athlete.bio,
+        });
+      }
+    } catch (err: any) {
+      onNotify?.(err?.data?.message || 'Failed to update profile.', 'error');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const handleSaveStats = async () => {
     const w = parseFloat(String(editWeight));
     const h = parseFloat(String(editHeight));
@@ -164,10 +208,11 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
 
   const tabs = [
     { id: 'overview', label: 'Dashboard Overview', icon: BarChart3 },
-    // { id: 'competitions', label: `Competition History (${totalRaces})`, icon: Trophy },
+    { id: 'profile', label: 'Official Profile & Details', icon: User },
+    { id: 'antidoping', label: 'Anti-Doping & Whereabouts', icon: ShieldCheck },
     { id: 'pbs', label: `Personal Bests (${(athlete?.personalBests || []).length})`, icon: Zap },
-    { id: 'weight', label: `Weight & Body (${(athlete?.weightLog || []).length})`, icon: Weight },
     { id: 'training', label: `Training Log (${(athlete?.trainingLog || []).length})`, icon: Flame },
+    { id: 'weight', label: `Weight & Body (${(athlete?.weightLog || []).length})`, icon: Weight },
   ];
 
   return (
@@ -258,8 +303,19 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                   <CheckCircle2 size={14} /> License Active • {athlete.licenseNumber}
                 </div>
                 <div className="text-[0.74rem] text-slate-300">Valid Through: Dec 31, 2026</div>
-                <div className="pt-1">
+                <div className="pt-1 flex flex-wrap items-center gap-2 justify-end">
                   <LicenseQrCode athlete={athlete} />
+                  {onLogout && (
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-[0.8rem] transition-colors shadow-xs cursor-pointer border-0"
+                      title="Log out of athlete session"
+                    >
+                      <LogOut size={14} />
+                      <span>Log Out</span>
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -847,6 +903,258 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
               </div>
             </div>
           )}
+        </div>
+      )}
+
+
+      {/* ── PROFILE TAB: Official Federation Dossier & Identity ── */}
+      {activeTab === 'profile' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left Column: Official Profile & Contact Form (8 cols) */}
+            <div className="lg:col-span-8 space-y-6">
+              {/* Federation Credentials Card */}
+              <div className="bg-white dark:bg-[#121829] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck size={20} className="text-emerald-600" />
+                    <h3 className="text-base font-extrabold text-[#0F172A] dark:text-white m-0">
+                      Official Federation Registration & Credentials
+                    </h3>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                    <CheckCircle2 size={13} /> Active Athlete
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-500 font-bold block mb-1">Full Legal Name</span>
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">{athlete?.name}</span>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-500 font-bold block mb-1">Official Amharic Name</span>
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">{athlete?.amharicName || '—'}</span>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-500 font-bold block mb-1">Affiliated Club</span>
+                    <span className="text-sm font-extrabold text-primary">{athlete?.clubName || athlete?.club || 'Independent'}</span>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-500 font-bold block mb-1">Regional Federation</span>
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">{athlete?.region || 'Addis Ababa'}</span>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-500 font-bold block mb-1">Date of Birth & Gender</span>
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">{athlete?.dob} ({athlete?.gender})</span>
+                  </div>
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <span className="text-slate-500 font-bold block mb-1">Age Category</span>
+                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">{athlete?.ageTier || 'Senior'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information & Profile Update Form */}
+              <div className="bg-white dark:bg-[#121829] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Edit3 size={18} className="text-primary" />
+                    <h3 className="text-base font-extrabold text-[#0F172A] dark:text-white m-0">
+                      Contact & Communication Preferences
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingProfile(!editingProfile)}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:border-primary hover:text-primary transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    {editingProfile ? <><Check size={13} /> Done Editing</> : <><Edit3 size={13} /> Edit Contact Info</>}
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveProfile} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="form-group mb-0">
+                      <label className="form-label text-[0.76rem] font-bold">Telephone Number</label>
+                      <input
+                        className="form-input text-sm"
+                        type="tel"
+                        disabled={!editingProfile}
+                        value={profilePhone}
+                        onChange={e => setProfilePhone(e.target.value)}
+                        placeholder="+251 91 100 0000"
+                      />
+                    </div>
+                    <div className="form-group mb-0">
+                      <label className="form-label text-[0.76rem] font-bold">Email Address</label>
+                      <input
+                        className="form-input text-sm"
+                        type="email"
+                        disabled={!editingProfile}
+                        value={profileEmail}
+                        onChange={e => setProfileEmail(e.target.value)}
+                        placeholder="athlete@example.com"
+                      />
+                    </div>
+                    <div className="form-group mb-0">
+                      <label className="form-label text-[0.76rem] font-bold">Emergency Contact Phone</label>
+                      <input
+                        className="form-input text-sm"
+                        type="tel"
+                        disabled={!editingProfile}
+                        value={profileEmergency}
+                        onChange={e => setProfileEmergency(e.target.value)}
+                        placeholder="+251 92 200 0000"
+                      />
+                    </div>
+                    <div className="form-group mb-0">
+                      <label className="form-label text-[0.76rem] font-bold">Primary Sporting Event / Discipline</label>
+                      <input
+                        className="form-input text-sm"
+                        type="text"
+                        disabled={!editingProfile}
+                        value={profilePrimaryEvent}
+                        onChange={e => setProfilePrimaryEvent(e.target.value)}
+                        placeholder="e.g. 5,000m / 10,000m"
+                      />
+                    </div>
+                  </div>
+
+                  {editingProfile && (
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="submit"
+                        disabled={savingProfile}
+                        className="btn-gov-primary px-5 py-2.5 font-bold text-xs flex items-center gap-2 shadow-sm"
+                      >
+                        <Save size={14} /> {savingProfile ? 'Saving Changes...' : 'Save Profile Changes'}
+                      </button>
+                    </div>
+                  )}
+                </form>
+              </div>
+            </div>
+
+            {/* Right Column: National Identity & Session Security (4 cols) */}
+            <div className="lg:col-span-4 space-y-6">
+              {/* Fayda National Identity Card */}
+              <div className="bg-gradient-to-br from-slate-900 via-[#0B1528] to-[#122344] text-white rounded-2xl p-6 shadow-md border border-slate-700/60 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                  <div className="text-xs font-black text-[#FCD34D] uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldCheck size={16} /> Fayda National ID
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    Verified
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-[0.7rem] text-slate-400 font-bold uppercase tracking-wider block mb-0.5">National ID (FIN/NIN)</span>
+                    <div className="flex items-center justify-between bg-black/30 p-2.5 rounded-xl border border-white/10">
+                      <span className="font-mono font-black text-amber-300 text-sm tracking-wider">
+                        {athlete?.faydaFin || 'ETH-FIN-992014'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCopyFin}
+                        className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors border-0 cursor-pointer"
+                        title="Copy Fayda FIN"
+                      >
+                        {copiedFin ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-[0.72rem] text-slate-300 leading-relaxed bg-white/5 p-3 rounded-xl border border-white/5">
+                    Biometrically linked to official National ID database. Identity data is tamper-proof and cryptographically verified.
+                  </div>
+                </div>
+              </div>
+
+              {/* Account Session & Logout Card */}
+              {onLogout && (
+                <div className="bg-white dark:bg-[#121829] rounded-2xl border border-red-200/80 dark:border-red-900/50 p-6 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <LogOut size={15} className="text-red-500" />
+                      Session & Account
+                    </div>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+                      Active
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 m-0">
+                    Sign out of your active Ethiopian Athletics Federation athlete session on this browser.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-98 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer border-0 mt-2"
+                  >
+                    <LogOut size={15} />
+                    <span>Log Out of Account</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── ANTIDOPING TAB ── */}
+      {activeTab === 'antidoping' && (
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-[#121829] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={20} className="text-blue-600" />
+                <div>
+                  <h3 className="text-base font-extrabold text-[#0F172A] dark:text-white m-0">
+                    Anti-Doping Dossier & Whereabouts Management
+                  </h3>
+                  <p className="text-xs text-slate-500 m-0 mt-0.5">
+                    Compliance with World Athletics & Ethiopian National Anti-Doping Organization (ETH-NADO)
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                <CheckCircle2 size={13} /> Clearance Clear
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs mt-5">
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                <span className="text-slate-500 font-bold block mb-1">60-Minute Daily Testing Window</span>
+                <span className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
+                  <Clock size={15} className="text-blue-600" />
+                  06:00 - 07:00 AM (East Africa Time)
+                </span>
+              </div>
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                <span className="text-slate-500 font-bold block mb-1">Testing Pool Status</span>
+                <span className="font-extrabold text-emerald-700 dark:text-emerald-400 text-sm flex items-center gap-1.5">
+                  <BadgeCheck size={15} />
+                  National Registered Testing Pool (NRTP)
+                </span>
+              </div>
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                <span className="text-slate-500 font-bold block mb-1">Current Quarter Filing</span>
+                <span className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
+                  <Calendar size={15} className="text-primary" />
+                  Q4 2026 · Valid & Recorded
+                </span>
+              </div>
+              <div className="sm:col-span-2 lg:col-span-3 p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                <span className="text-slate-500 font-bold block mb-1">Primary Training Facility & Track Venue</span>
+                <span className="font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <MapPin size={15} className="text-rose-500" />
+                  Ethiopian Youth Sport Academy & Addis Ababa Stadium Track, Addis Ababa
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

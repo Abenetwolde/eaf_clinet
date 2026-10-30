@@ -1386,7 +1386,7 @@ export default function RegistrationModal({
                 className="w-full p-3 rounded-xl border border-slate-300 text-slate-900 font-semibold text-sm bg-white"
               >
                 {(regOptions?.regions || []).map(r => (
-                  <option key={r} value={r}>{r}</option>
+                  <option key={r.id} value={r.name}>{r.name}</option>
                 ))}
               </select>
             </div>
