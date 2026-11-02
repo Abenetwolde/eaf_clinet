@@ -21,7 +21,6 @@ import {
   useInitiateClubMembershipPaymentMutation,
   useInitiateClubRegistrationPaymentMutation,
   useLazyVerifyPaymentStatusQuery,
-  useSimulateWebhookSuccessMutation,
 } from '../store/api/paymentApi';
 
 export interface PaymentModalProps {
@@ -60,7 +59,6 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
   const [initiateClubMembershipPayment] = useInitiateClubMembershipPaymentMutation();
   const [initiateClubRegistrationPayment] = useInitiateClubRegistrationPaymentMutation();
   const [triggerVerifyStatus] = useLazyVerifyPaymentStatusQuery();
-  const [simulateWebhook, { isLoading: isSimulating }] = useSimulateWebhookSuccessMutation();
 
   const amount = paymentData.amount || 500;
   const description = paymentData.description || 'Federation Membership & Service Fee';
@@ -238,28 +236,6 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
       setErrorMsg(err?.data?.message || 'Unable to verify payment status at this time.');
     } finally {
       setIsVerifying(false);
-    }
-  };
-
-  // Simulate Instant Webhook Approval (for Sandbox, Testing & Evaluation)
-  const handleSimulateWebhook = async () => {
-    if (!activeReference) return;
-    setErrorMsg(null);
-    try {
-      await simulateWebhook({
-        reference: activeReference,
-        amount,
-      }).unwrap();
-
-      const res = await triggerVerifyStatus(activeReference).unwrap();
-      if (res?.data?.status === 'PAID') {
-        handlePaymentSuccess(res.data);
-      } else {
-        setErrorMsg('Payment simulation initiated, but gateway status is still pending.');
-      }
-    } catch (err: any) {
-      console.error('Webhook simulation error:', err);
-      setErrorMsg(err?.data?.message || err?.message || 'Failed to simulate payment authorization.');
     }
   };
 
@@ -612,49 +588,6 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
                   </>
                 )}
               </div>
-            </div>
-
-            {/* Sandbox Instant Simulation Tool */}
-            <div
-              style={{
-                padding: '16px',
-                borderRadius: '16px',
-                background: '#FEF3C7',
-                border: '1px solid #FDE68A',
-                marginBottom: '20px',
-                textAlign: 'left',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400E', fontWeight: 800, fontSize: '0.85rem', marginBottom: '4px' }}>
-                <Zap size={18} color="#D97706" />
-                Developer / Evaluation Simulator
-              </div>
-              <p style={{ fontSize: '0.78rem', color: '#78350F', margin: '0 0 12px', lineHeight: 1.4 }}>
-                Simulate an instantaneous Ethio Telecom Telebirr C2B payment confirmation (Customer Phone Number + PIN) in development.
-              </p>
-              <button
-                type="button"
-                onClick={handleSimulateWebhook}
-                disabled={isSimulating}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '10px',
-                  background: '#D97706',
-                  color: 'white',
-                  fontWeight: 800,
-                  fontSize: '0.85rem',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                }}
-              >
-                {isSimulating ? <RefreshCw className="animate-spin" size={16} /> : <Zap size={16} />}
-                Trigger Instant Telebirr C2B Approval
-              </button>
             </div>
 
             <button onClick={onClose} className="btn-secondary" style={{ width: '100%', padding: '12px' }}>

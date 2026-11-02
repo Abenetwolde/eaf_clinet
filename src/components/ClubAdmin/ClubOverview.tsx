@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2, Smartphone, Calendar, Clock } from 'lucide-react';
+import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2, Smartphone, Calendar, Clock, CheckCircle2 } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import type { Club, Athlete, Transfer } from '../../types';
-import { useAppSelector } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { setClub } from '../../store/slices/authSlice';
 import { useGetMeQuery } from '../../store/api/authApi';
 import { useGetAthletesQuery } from '../../store/api/athleteApi';
 import { useGetOverviewStatsQuery } from '../../store/api/apiSlice';
 import { useGetPaymentConfigQuery } from '../../store/api/paymentApi';
+import { useGetClubRenewalsQuery } from '../../store/api/clubApi';
 
 interface ClubOverviewProps {
   club?: Club;
@@ -22,9 +24,10 @@ interface ClubOverviewProps {
 export default function ClubOverview({ club: propClub, athletes: propAthletes, transfers: propTransfers, onChangeSubPage, onNotify, onAddClub, onPayClubMembership }: ClubOverviewProps) {
   const storeClub = useAppSelector((state) => state.auth.club);
   const storeTransfers = useAppSelector((state) => state.club.transfers);
-  const { data: accountResponse } = useGetMeQuery(undefined, {
-    skip: Boolean((propClub?.id && propClub.name) || (storeClub?.id && storeClub.name)),
-  });
+  const dispatch = useAppDispatch();
+
+  // Always fetch live profile to keep session in sync with database
+  const { data: accountResponse } = useGetMeQuery(undefined);
   const accountClub = accountResponse?.data?.club;
 
   const fallbackClub: Club = {
@@ -44,32 +47,59 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
     totalPoints: 0,
   };
 
-  const club: Club = (propClub?.id && propClub.name)
+  const activeClubId = propClub?.id || storeClub?.id || accountClub?.id || (typeof window !== 'undefined' ? localStorage.getItem('eaf_currentClubId') : '') || '';
+
+  // Retrieve club renewals dynamically from database strictly for active club
+  const { data: renewalsData } = useGetClubRenewalsQuery(activeClubId, { skip: !activeClubId });
+  const renewalClub = renewalsData?.club;
+  const renewalPeriods = renewalsData?.periods || [];
+
+  const baseClub = (propClub?.id && propClub.name)
     ? propClub
     : (storeClub?.id && storeClub.name)
     ? storeClub
-    : accountClub?.id
-    ? {
-        id: accountClub.id,
-        name: accountClub.name,
-        shortName: accountClub.shortName || '',
-        region: accountClub.region || '',
-        manager: accountClub.manager || '',
-        email: accountClub.email || '',
-        phone: accountClub.phone || '',
-        licensedAthletes: 0,
-        pendingVerifications: 0,
-        unlicensedAthletes: 0,
-        transfersCount: 0,
-        logo: accountClub.logo || '',
-        clubRank: 1,
-        totalPoints: 0,
-      }
-    : (propClub || storeClub || fallbackClub);
+    : fallbackClub;
 
-  const activeClubId = club?.id || accountClub?.id || (typeof window !== 'undefined' ? localStorage.getItem('eaf_currentClubId') : '') || '';
+  const club: Club = {
+    ...baseClub,
+    ...(accountClub || {}),
+    ...(renewalClub ? {
+      affiliationStatus: renewalClub.affiliationStatus,
+      affiliationExpiresAt: renewalClub.affiliationExpiresAt,
+      currentSeasonYear: renewalClub.currentSeasonYear,
+    } : {}),
+    id: accountClub?.id || renewalClub?.id || baseClub.id,
+    name: accountClub?.name || renewalClub?.name || baseClub.name,
+    shortName: accountClub?.shortName || baseClub.shortName || '',
+    region: accountClub?.region || renewalClub?.region || baseClub.region || '',
+    manager: accountClub?.manager || baseClub.manager || '',
+    email: accountClub?.email || baseClub.email || '',
+    phone: accountClub?.phone || baseClub.phone || '',
+    logo: accountClub?.logo || baseClub.logo || '',
+    verificationStatus: accountClub?.verificationStatus || baseClub.verificationStatus,
+    clubRank: baseClub.clubRank || 1,
+    totalPoints: baseClub.totalPoints || 0,
+  };
+
   const activeClubName = club?.name || accountClub?.name || '';
   const transfers = propTransfers || storeTransfers || [];
+
+  // Sync fresh club status to Redux store if updated
+  React.useEffect(() => {
+    if (accountClub?.id) {
+      const isPaid = Boolean((accountClub as any).isAffiliationPaid || storeClub.isAffiliationPaid);
+      if (
+        (accountClub as any).isAffiliationPaid !== storeClub.isAffiliationPaid ||
+        (accountClub as any).affiliationStatus !== storeClub.affiliationStatus
+      ) {
+        dispatch(setClub({
+          ...storeClub,
+          ...(accountClub as any),
+          isAffiliationPaid: isPaid,
+        }));
+      }
+    }
+  }, [accountClub, storeClub, dispatch]);
 
   // Retrieve club members dynamically from database strictly for active club
   const { data: backendAthletes } = useGetAthletesQuery(
@@ -84,6 +114,32 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   const renewalWindowLabel = paymentConfig?.renewalStartDateFormatted || paymentConfig?.renewalEndDateFormatted
     ? `${paymentConfig.renewalStartDateFormatted || 'Anytime'} – ${paymentConfig.renewalEndDateFormatted || 'Open'}`
     : 'Open Year-Round';
+
+  const hasApprovedRenewalPeriod = Boolean(
+    renewalPeriods.some((p: any) =>
+      (Number(p.seasonYear) === Number(renewalClub?.currentSeasonYear || new Date().getFullYear())) &&
+      (p.paymentVerified || p.status === 'APPROVED' || p.reviewDecision === 'APPROVED')
+    )
+  );
+
+  const rawExpiry = (renewalClub as any)?.affiliationExpiresAt || (accountClub as any)?.affiliationExpiresAt || storeClub?.affiliationExpiresAt || club?.affiliationExpiresAt || club?.membershipExpiresAt;
+
+  const isAffiliationPaid = Boolean(
+    (accountClub as any)?.isAffiliationPaid ||
+    club?.isAffiliationPaid ||
+    storeClub?.isAffiliationPaid ||
+    (accountClub as any)?.annualPaymentStatus === 'PAID' ||
+    club?.annualPaymentStatus === 'PAID' ||
+    storeClub?.annualPaymentStatus === 'PAID' ||
+    hasApprovedRenewalPeriod ||
+    (((renewalClub as any)?.affiliationStatus === 'ACTIVE' || (accountClub as any)?.affiliationStatus === 'ACTIVE' || club?.affiliationStatus === 'ACTIVE') &&
+      rawExpiry && new Date(rawExpiry) > new Date()) ||
+    (club?.membershipExpiresAt && new Date(club.membershipExpiresAt) > new Date())
+  );
+
+  const affiliationExpiryDate = rawExpiry
+    ? new Date(rawExpiry).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    : 'Dec 31, 2027';
 
 
   // Retrieve live federation overview & analytics for charts
@@ -379,61 +435,97 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
               </button>
             </div>
 
-            <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '12px', padding: '14px', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                <div style={{ fontWeight: 800, color: '#0369A1' }}>Club Affiliation & Membership (2026/27)</div>
-                <span style={{ fontSize: '0.7rem', background: '#00A3E0', color: 'white', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>TELEBIRR</span>
-              </div>
-              <p style={{ color: 'var(--text-muted)', marginTop: '4px', fontSize: '0.8rem' }}>
-                Annual club affiliation fee with Ethiopian Athletics Federation.
-              </p>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '0.75rem', fontWeight: 700, color: isRenewalOpen ? '#0284C7' : '#D97706' }}>
-                <Calendar size={13} />
-                <span>Renewal Window: {renewalWindowLabel}</span>
-                <span style={{
-                  marginLeft: 'auto',
-                  padding: '1px 6px',
-                  borderRadius: '6px',
-                  fontSize: '0.68rem',
-                  fontWeight: 900,
-                  background: isRenewalOpen ? '#DCFCE7' : '#FEF3C7',
-                  color: isRenewalOpen ? '#166534' : '#92400E'
-                }}>
-                  {isRenewalOpen ? 'ELIGIBLE' : 'LOCKED'}
-                </span>
-              </div>
-
-              {isRenewalOpen ? (
-                <button
-                  type="button"
-                  onClick={() => onPayClubMembership ? onPayClubMembership(club, renewalFee) : onChangeSubPage('AFFILIATION')}
-                  style={{
-                    marginTop: '10px',
-                    padding: '7px 14px',
-                    background: '#00A3E0',
-                    color: 'white',
-                    borderRadius: '8px',
-                    fontWeight: 800,
-                    fontSize: '0.78rem',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    cursor: 'pointer',
-                    border: 'none',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                  }}
-                >
-                  <Smartphone size={13} />
-                  Renew Affiliation via Telebirr ({renewalFee.toLocaleString()} ETB)
-                </button>
-              ) : (
-                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#B45309', fontWeight: 700, background: '#FFFBEB', padding: '6px 10px', borderRadius: '8px', border: '1px solid #FDE68A' }}>
-                  <Clock size={13} />
-                  <span>Renewal Window Closed ({renewalFee.toLocaleString()} ETB). Contact Federation.</span>
+            {isAffiliationPaid ? (
+              <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '12px', padding: '14px', fontSize: '0.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <div style={{ fontWeight: 800, color: '#166534' }}>Club Affiliation & Membership (2026/27)</div>
+                  <span style={{ fontSize: '0.7rem', background: '#16A34A', color: 'white', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>
+                    PAID &amp; VERIFIED
+                  </span>
                 </div>
-              )}
-            </div>
+                <p style={{ color: '#15803D', marginTop: '4px', fontSize: '0.8rem', fontWeight: 600 }}>
+                  Annual club affiliation fee is confirmed and verified with the Ethiopian Athletics Federation.
+                </p>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '0.75rem', fontWeight: 700, color: '#15803D' }}>
+                  <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+                  <span>Status: Official Accredited Club</span>
+                  <span style={{
+                    marginLeft: 'auto',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    background: '#DCFCE7',
+                    color: '#14532D',
+                    border: '1px solid #86EFAC'
+                  }}>
+                    Valid Through {affiliationExpiryDate}
+                  </span>
+                </div>
+
+                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: '#166534', background: 'white', padding: '7px 10px', borderRadius: '8px', border: '1px solid #BBF7D0' }}>
+                  <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                  <span>Annual payment cleared via Telebirr. No further payment required until the next round.</span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '12px', padding: '14px', fontSize: '0.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <div style={{ fontWeight: 800, color: '#0369A1' }}>Club Affiliation & Membership (2026/27)</div>
+                  <span style={{ fontSize: '0.7rem', background: '#00A3E0', color: 'white', padding: '2px 8px', borderRadius: '10px', fontWeight: 800 }}>TELEBIRR</span>
+                </div>
+                <p style={{ color: 'var(--text-muted)', marginTop: '4px', fontSize: '0.8rem' }}>
+                  Annual club affiliation fee with Ethiopian Athletics Federation.
+                </p>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '0.75rem', fontWeight: 700, color: isRenewalOpen ? '#0284C7' : '#D97706' }}>
+                  <Calendar size={13} />
+                  <span>Renewal Window: {renewalWindowLabel}</span>
+                  <span style={{
+                    marginLeft: 'auto',
+                    padding: '1px 6px',
+                    borderRadius: '6px',
+                    fontSize: '0.68rem',
+                    fontWeight: 900,
+                    background: isRenewalOpen ? '#DCFCE7' : '#FEF3C7',
+                    color: isRenewalOpen ? '#166534' : '#92400E'
+                  }}>
+                    {isRenewalOpen ? 'ELIGIBLE' : 'LOCKED'}
+                  </span>
+                </div>
+
+                {isRenewalOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => onPayClubMembership ? onPayClubMembership(club, renewalFee) : onChangeSubPage('AFFILIATION')}
+                    style={{
+                      marginTop: '10px',
+                      padding: '7px 14px',
+                      background: '#00A3E0',
+                      color: 'white',
+                      borderRadius: '8px',
+                      fontWeight: 800,
+                      fontSize: '0.78rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      cursor: 'pointer',
+                      border: 'none',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    <Smartphone size={13} />
+                    Renew Affiliation via Telebirr ({renewalFee.toLocaleString()} ETB)
+                  </button>
+                ) : (
+                  <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#B45309', fontWeight: 700, background: '#FFFBEB', padding: '6px 10px', borderRadius: '8px', border: '1px solid #FDE68A' }}>
+                    <Clock size={13} />
+                    <span>Renewal Window Closed ({renewalFee.toLocaleString()} ETB). Contact Federation.</span>
+                  </div>
+                )}
+              </div>
+            )}
 
 
             <div className="bg-primary-light border border-[rgba(2,132,199,0.2)] rounded-[10px] p-[14px] text-[0.85rem]">

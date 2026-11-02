@@ -1169,7 +1169,15 @@ export default function ClubRegistrationForm({
               </div>
 
               {/* Complete Payment Button if still pending */}
-              {!paymentCompleted && (
+              {paymentCompleted ? (
+                <div className="w-full mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 flex items-center gap-3">
+                  <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
+                  <div>
+                    <div className="text-xs font-black uppercase tracking-wider text-emerald-800">Registration Fee Paid &amp; Certified via Telebirr</div>
+                    <div className="text-xs font-semibold text-emerald-700">Accreditation payment has been verified. No further payment required until the annual cycle.</div>
+                  </div>
+                </div>
+              ) : (
                 <div className="w-full mb-6">
                   <button
                     type="button"

@@ -433,7 +433,7 @@ export default function RosterManagement({
               >
                 <Edit size={14} /> Edit Records
               </button>
-              {viewingMember.memberType === 'ATHLETE' && onRenewLicense && (
+              {viewingMember.memberType === 'ATHLETE' && onRenewLicense && viewingMember.licenseStatus !== 'ACTIVE' && (
                 <button
                   onClick={() => {
                     const ath: Athlete = {
@@ -454,8 +454,14 @@ export default function RosterManagement({
                   }}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-600 text-slate-950 cursor-pointer border-0 shadow-xs transition-colors"
                 >
-                  <Award size={14} /> Renew License
+                  <Award size={14} /> Pay Licensing Fee
                 </button>
+              )}
+              {viewingMember.memberType === 'ATHLETE' && viewingMember.licenseStatus === 'ACTIVE' && (
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  <ShieldCheck size={14} className="text-emerald-600" />
+                  <span>License Active • {viewingMember.licenseNumber || 'Verified'}</span>
+                </span>
               )}
             </div>
           </div>

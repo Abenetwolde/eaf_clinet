@@ -26,8 +26,18 @@ export interface Club {
   unlicensedAthletes: number;
   transfersCount: number;
   logo: string;
+  logoUrl?: string;
   clubRank: number;
   totalPoints: number;
+  verificationStatus?: string;
+  status?: string;
+  affiliationStatus?: 'ACTIVE' | 'RENEWAL_DUE' | 'UNDER_REVIEW' | 'EXPIRED' | 'SUSPENDED' | string;
+  isAffiliationPaid?: boolean;
+  annualPaymentStatus?: 'PAID' | 'PENDING' | 'OVERDUE' | 'RENEWAL_DUE' | string;
+  annualPaymentDate?: string;
+  affiliationExpiresAt?: string;
+  membershipExpiresAt?: string;
+  currentSeasonYear?: number;
 }
 
 export interface PersonalBest {

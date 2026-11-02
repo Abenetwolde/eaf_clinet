@@ -91,6 +91,14 @@ export interface MeResponse {
       email?: string | null;
       phone?: string | null;
       logo?: string | null;
+      verificationStatus?: string | null;
+      affiliationStatus?: string | null;
+      isAffiliationPaid?: boolean | null;
+      annualPaymentStatus?: string | null;
+      annualPaymentDate?: string | null;
+      affiliationExpiresAt?: string | null;
+      membershipExpiresAt?: string | null;
+      currentSeasonYear?: number | null;
     } | null;
   };
 }

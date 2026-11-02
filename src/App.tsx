@@ -42,6 +42,7 @@ import { useAppDispatch, useAppSelector } from './store/hooks';
 import { login, setRole, setClub, setAthlete, setCoach, logout, setAuthLoading, setUserData } from './store/slices/authSlice';
 import { addAthlete, updateAthlete, setAthletes } from './store/slices/athleteSlice';
 import { addClub, addTransfer } from './store/slices/clubSlice';
+import { apiSlice } from './store/api/apiSlice';
 import { useLazyGetMeQuery, useLogoutApiMutation } from './store/api/authApi';
 import { Athlete, Club, Transfer } from './types';
 import { clearAllSessionData } from './store/persistence';
@@ -711,11 +712,19 @@ export default function App() {
       if (currentAthlete && currentAthlete.id === paymentData.athleteId) {
         dispatch(setAthlete(updater(currentAthlete)));
       }
-    } else if (paymentData?.clubId && paymentData.type === 'CLUB_MEMBERSHIP_FEE') {
-      const updater = (c: any) => c.id === paymentData.clubId
-        ? { ...c, verificationStatus: 'VERIFIED', membershipExpiresAt: '2027-12-31' }
-        : c;
-      dispatch(setClubs(clubs.map(updater)));
+    } else if (paymentData?.clubId && (paymentData.type === 'CLUB_MEMBERSHIP_FEE' || paymentData.type === 'CLUB_REGISTRATION_FEE')) {
+      if (currentClub) {
+        dispatch(setClub({
+          ...currentClub,
+          verificationStatus: 'VERIFIED',
+          affiliationStatus: 'ACTIVE',
+          isAffiliationPaid: true,
+          annualPaymentStatus: 'PAID',
+          membershipExpiresAt: '2027-12-31T23:59:59.000Z',
+          affiliationExpiresAt: '2027-12-31T23:59:59.000Z',
+        }));
+      }
+      dispatch(apiSlice.util.invalidateTags(['Users', 'Clubs', 'Athletes']));
     }
     handleNotify(`Payment via ${receipt.gateway} complete! Receipt: ${receipt.receiptNo}`, 'success');
     setPaymentData(null);

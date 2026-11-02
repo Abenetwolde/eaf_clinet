@@ -209,6 +209,18 @@ export const clubApi = apiSlice.injectEndpoints({
       transformResponse: (response: { success: boolean; data: any[] }) => response.data || [],
       providesTags: ['Clubs'],
     }),
+
+    getClubRenewals: builder.query<{ club: any; periods: any[] }, string>({
+      query: (clubId) => `/clubs/${clubId}/renewals`,
+      transformResponse: (response: { success: boolean; data: { club: any; periods: any[] } }) => response.data,
+      providesTags: ['Clubs'],
+    }),
+
+    getClubPublicDetails: builder.query<any, string>({
+      query: (clubId) => `/clubs/public/${clubId}`,
+      transformResponse: (response: { success: boolean; data: any }) => response.data,
+      providesTags: ['Clubs'],
+    }),
   }),
   overrideExisting: false,
 });
@@ -220,4 +232,6 @@ export const {
   useGetClubApplicationsQuery,
   useGetClubCoachesQuery,
   useGetVerifiedClubsQuery,
+  useGetClubRenewalsQuery,
+  useGetClubPublicDetailsQuery,
 } = clubApi;
