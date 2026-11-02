@@ -558,30 +558,34 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
           {/* DETAILED CONTRACT SIGNING SECTION (ATHLETES ONLY)                     */}
           {/* ══════════════════════════════════════════════════════════════════════ */}
           {type === 'ATHLETE' && (
-            <div className="p-6 rounded-2xl bg-slate-900 text-white shadow-xl border border-slate-800 space-y-5">
-              <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">
-                    <FileCheck2 size={18} />
+            <div className="p-6 sm:p-7 rounded-2xl bg-white text-slate-900 shadow-sm border border-slate-200/90 space-y-6 relative overflow-hidden before:absolute before:top-0 before:left-0 before:right-0 before:h-1.5 before:bg-gradient-to-r before:from-emerald-600 before:via-teal-600 before:to-emerald-700">
+              {/* Header */}
+              <div className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-slate-200/80">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-center font-black shadow-xs shrink-0">
+                    <FileCheck2 size={20} />
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-white m-0">Official EAF Club Contract Execution</h3>
-                    <p className="text-xs text-slate-400 m-0">Binding sporting representation contract governed under Ethiopian Athletics Federation Articles.</p>
+                    <h3 className="text-base font-black text-slate-900 m-0 tracking-tight">Official EAF Club Contract Execution</h3>
+                    <p className="text-xs text-slate-500 m-0 mt-0.5">Binding sporting representation contract governed under Ethiopian Athletics Federation Articles.</p>
                   </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-500 text-slate-950">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                   {club?.name || 'Club Roster'}
                 </span>
               </div>
 
-              {/* Contract Type & Duration */}
+              {/* Contract Classification & Start Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="font-bold text-slate-300 block mb-1">Contract Classification *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Contract Classification <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={contractType}
                     onChange={(e) => setContractType(e.target.value as ContractType)}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50/70 border border-slate-300 text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition shadow-xs"
                   >
                     <option value="PROFESSIONAL">Professional Tier (Full Representation & Salary)</option>
                     <option value="SEMI_PROFESSIONAL">Semi-Professional (Competition Stipend)</option>
@@ -591,47 +595,53 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-300 block mb-1">Contract Start Date *</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    Contract Start Date <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="date"
                     required
                     value={contractStartDate}
                     onChange={(e) => setContractStartDate(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50/70 border border-slate-300 text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition shadow-xs"
                   />
                 </div>
 
-                <div className="sm:col-span-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="font-bold text-amber-400">
-                      Contract Expiration Date * (Renewal / Release Benchmark)
+                {/* Expiration Date with Presets */}
+                <div className="sm:col-span-2 p-4 rounded-xl bg-amber-50/60 border border-amber-200/90 space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <label className="text-xs font-extrabold text-amber-950 flex items-center gap-1.5">
+                      <Calendar size={14} className="text-amber-700" />
+                      Contract Expiration Date <span className="text-red-500">*</span>
+                      <span className="font-normal text-amber-800 text-[11px]">(Renewal / Free Agency Benchmark)</span>
                     </label>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] font-bold text-amber-800 mr-1">Term Presets:</span>
                       <button
                         type="button"
                         onClick={() => handleSetTermPreset(1)}
-                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 font-bold border border-slate-700 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100/70 text-[11px] text-slate-700 font-bold border border-slate-200 hover:border-amber-300 shadow-xs transition active:scale-95 cursor-pointer"
                       >
                         +1 Year
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSetTermPreset(2)}
-                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 font-bold border border-slate-700 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100/70 text-[11px] text-slate-700 font-bold border border-slate-200 hover:border-amber-300 shadow-xs transition active:scale-95 cursor-pointer"
                       >
                         +2 Years
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSetTermPreset(3)}
-                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 font-bold border border-slate-700 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100/70 text-[11px] text-slate-700 font-bold border border-slate-200 hover:border-amber-300 shadow-xs transition active:scale-95 cursor-pointer"
                       >
                         +3 Years
                       </button>
                       <button
                         type="button"
                         onClick={() => handleSetTermPreset(4)}
-                        className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[11px] font-bold border border-emerald-500/30 cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-[11px] text-white font-black border border-emerald-700 shadow-xs transition active:scale-95 cursor-pointer"
                       >
                         Olympic Cycle (4Y)
                       </button>
@@ -642,132 +652,170 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
                     required
                     value={contractEndDate}
                     onChange={(e) => setContractEndDate(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-slate-800 border-2 border-amber-400 text-white font-black"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border-2 border-amber-400 text-slate-950 text-xs font-black shadow-xs focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-amber-900/80 m-0 leading-normal">
                     Athletes may renew with this club before expiration, or become eligible free agents to transfer to another club upon reaching this date.
                   </p>
                 </div>
               </div>
 
-              {/* Financial Stipends & Release Clause */}
-              <div className="p-4 rounded-xl bg-slate-800/60 border border-slate-700 space-y-3">
-                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 m-0">Financial Terms & Allowances (ETB)</h4>
+              {/* Financial Terms & Allowances (ETB) */}
+              <div className="p-4 sm:p-5 rounded-xl bg-slate-50/70 border border-slate-200/90 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 m-0 flex items-center gap-1.5">
+                    <DollarSign size={15} className="text-emerald-600" />
+                    Financial Terms & Allowances
+                  </h4>
+                  <span className="text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs">
+                    Currency: Ethiopian Birr (ETB)
+                  </span>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div>
-                    <label className="text-slate-400 font-semibold block mb-1">Monthly Stipend (ETB)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={monthlySalary}
-                      onChange={(e) => setMonthlySalary(e.target.value)}
-                      className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono"
-                      placeholder="20000"
-                    />
+                    <label className="text-slate-600 font-bold block mb-1 text-[11px]">Monthly Stipend</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={monthlySalary}
+                        onChange={(e) => setMonthlySalary(e.target.value)}
+                        className="w-full pl-3 pr-10 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 font-mono text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition shadow-xs"
+                        placeholder="20000"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">ETB</span>
+                    </div>
                   </div>
                   <div>
-                    <label className="text-slate-400 font-semibold block mb-1">Signing Bonus (ETB)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={signingBonus}
-                      onChange={(e) => setSigningBonus(e.target.value)}
-                      className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono"
-                      placeholder="15000"
-                    />
+                    <label className="text-slate-600 font-bold block mb-1 text-[11px]">Signing Bonus</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={signingBonus}
+                        onChange={(e) => setSigningBonus(e.target.value)}
+                        className="w-full pl-3 pr-10 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 font-mono text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition shadow-xs"
+                        placeholder="15000"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">ETB</span>
+                    </div>
                   </div>
                   <div>
-                    <label className="text-slate-400 font-semibold block mb-1">Podium Bonus (ETB)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={podiumBonus}
-                      onChange={(e) => setPodiumBonus(e.target.value)}
-                      className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono"
-                      placeholder="30000"
-                    />
+                    <label className="text-slate-600 font-bold block mb-1 text-[11px]">Podium Bonus</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={podiumBonus}
+                        onChange={(e) => setPodiumBonus(e.target.value)}
+                        className="w-full pl-3 pr-10 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 font-mono text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition shadow-xs"
+                        placeholder="30000"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">ETB</span>
+                    </div>
                   </div>
                   <div>
-                    <label className="text-slate-400 font-semibold block mb-1">Release Clause (ETB)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={releaseClause}
-                      onChange={(e) => setReleaseClause(e.target.value)}
-                      className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono"
-                      placeholder="200000"
-                    />
+                    <label className="text-slate-600 font-bold block mb-1 text-[11px]">Release Clause</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={releaseClause}
+                        onChange={(e) => setReleaseClause(e.target.value)}
+                        className="w-full pl-3 pr-10 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 font-mono text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition shadow-xs"
+                        placeholder="200000"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 pointer-events-none">ETB</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Medical & Welfare Coverage Checkboxes */}
-              <div className="flex flex-wrap items-center gap-6 text-xs text-slate-300">
-                <label className="flex items-center gap-2 cursor-pointer font-bold">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <label className={`flex items-center gap-3 p-3 rounded-xl border transition cursor-pointer shadow-xs ${hasHealthInsurance ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950 font-bold' : 'bg-white border-slate-200 text-slate-700 font-medium hover:border-slate-300'}`}>
                   <input
                     type="checkbox"
                     checked={hasHealthInsurance}
                     onChange={(e) => setHasHealthInsurance(e.target.checked)}
-                    className="w-4 h-4 rounded text-emerald-500 accent-emerald-500"
+                    className="w-4 h-4 rounded text-emerald-600 accent-emerald-600 shrink-0"
                   />
-                  <span>Comprehensive Sports Health & Injury Insurance</span>
+                  <div className="text-xs">
+                    <span className="font-bold block text-slate-900">Sports Health & Injury Insurance</span>
+                    <span className="text-[11px] text-slate-500 font-normal">Full club medical coverage for training & championship injuries</span>
+                  </div>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer font-bold">
+                <label className={`flex items-center gap-3 p-3 rounded-xl border transition cursor-pointer shadow-xs ${hasPhysioCoverage ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950 font-bold' : 'bg-white border-slate-200 text-slate-700 font-medium hover:border-slate-300'}`}>
                   <input
                     type="checkbox"
                     checked={hasPhysioCoverage}
                     onChange={(e) => setHasPhysioCoverage(e.target.checked)}
-                    className="w-4 h-4 rounded text-emerald-500 accent-emerald-500"
+                    className="w-4 h-4 rounded text-emerald-600 accent-emerald-600 shrink-0"
                   />
-                  <span>Physiotherapy & Sports Rehab Coverage</span>
+                  <div className="text-xs">
+                    <span className="font-bold block text-slate-900">Physiotherapy & Sports Rehab</span>
+                    <span className="text-[11px] text-slate-500 font-normal">Club-covered sports therapy, massage & muscle recovery</span>
+                  </div>
                 </label>
               </div>
 
               {/* Binding Terms */}
-              <div>
-                <label className="text-xs font-bold text-slate-400 block mb-1">Contract Governance Clauses</label>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 block">Contract Governance Clauses</label>
+                  <span className="text-[11px] text-slate-400 font-medium">Ethiopian Athletics Federation Sporting Code</span>
+                </div>
                 <textarea
                   rows={3}
                   value={contractTerms}
                   onChange={(e) => setContractTerms(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-mono leading-relaxed resize-none"
+                  className="w-full p-3 rounded-xl bg-slate-50/80 border border-slate-300 text-slate-800 text-xs font-mono leading-relaxed resize-none focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition shadow-xs"
                 />
               </div>
 
               {/* Signatures */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Authorized Club Signatory *</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Authorized Club Signatory <span className="text-red-500">*</span>
+                  </label>
                   <input
                     required
                     value={signedByClub}
                     onChange={(e) => setSignedByClub(e.target.value)}
-                    className="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold"
+                    className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 font-bold text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition shadow-xs"
                   />
+                  <span className="text-[10px] text-slate-400 block font-medium">Authorized administration of {club?.name || 'the club'}</span>
                 </div>
-                <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Athlete Signatory Name *</label>
+                <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200 space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Athlete Signatory Name <span className="text-red-500">*</span>
+                  </label>
                   <input
                     required
                     value={signedByAthlete}
                     onChange={(e) => setSignedByAthlete(e.target.value)}
-                    className="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold"
+                    className="w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-900 font-bold text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition shadow-xs"
                   />
+                  <span className="text-[10px] text-slate-400 block font-medium">Verified Fayda sporting identity ({profile.name})</span>
                 </div>
               </div>
 
               {/* Solemn Affirmation Checkbox */}
-              <label className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 cursor-pointer text-xs text-emerald-200">
+              <label className="flex items-start gap-3 p-4 rounded-xl bg-emerald-50/90 border border-emerald-300/80 cursor-pointer text-xs text-emerald-950 shadow-xs hover:bg-emerald-50 transition">
                 <input
                   type="checkbox"
                   required
                   checked={contractAffirmed}
                   onChange={(e) => setContractAffirmed(e.target.checked)}
-                  className="w-4 h-4 mt-0.5 rounded text-emerald-500 accent-emerald-500"
+                  className="w-4 h-4 mt-0.5 rounded text-emerald-600 accent-emerald-600 shrink-0"
                 />
-                <span className="leading-relaxed">
-                  I solemnly affirm under Ethiopian Athletics Federation Regulations that this contract has been mutually agreed upon. The athlete represents this club exclusively; simultaneous registration with any other club is strictly prohibited until expiration or mutual release.
-                </span>
+                <div className="leading-relaxed">
+                  <span className="font-extrabold text-emerald-900 block mb-0.5">Binding Sporting Representation Affirmation</span>
+                  <span className="text-emerald-800/95 font-medium">
+                    I solemnly affirm under Ethiopian Athletics Federation Regulations that this contract has been mutually agreed upon. The athlete represents this club exclusively; simultaneous registration with any other club is strictly prohibited until expiration or mutual release.
+                  </span>
+                </div>
               </label>
             </div>
           )}
