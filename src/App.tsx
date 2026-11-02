@@ -393,6 +393,7 @@ export default function App() {
             phoneNumber: phone,
             email,
             address,
+            nationality: citizenObj?.nationality || 'Ethiopian',
             verificationToken: token,
           });
           sessionStorage.setItem('eaf_fayda_verified', serialized);

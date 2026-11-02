@@ -65,7 +65,7 @@ function profileFromIdentity(raw: string): { profile: FaydaProfile; fin: string 
       photoUrl: identity.photoUrl || identity.picture || '',
       region: identity.region || address || '',
       address: address || identity.region || '',
-      nationality: identity.nationality || '',
+      nationality: (identity.nationality && String(identity.nationality).trim().length >= 2) ? String(identity.nationality).trim() : 'Ethiopian',
       verificationToken: outer.verificationToken || identity.verificationToken,
       fanNumber: identity.fan || identity.fanNumber || identity.fan_number,
       email: identity.email || '',
@@ -165,6 +165,9 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
       const verified = serialized ? profileFromIdentity(serialized) : null;
       if (!verified?.profile.verificationToken) return;
       if (club?.region) verified.profile.region = club.region;
+      if (!verified.profile.nationality || verified.profile.nationality.trim().length < 2) {
+        verified.profile.nationality = 'Ethiopian';
+      }
       setType(savedType);
       setProfile(verified.profile);
       setFin(verified.fin);
@@ -247,6 +250,10 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
     setSubmitting(true);
     try {
       if (type === 'ATHLETE') {
+        const resolvedNationality = (profile.nationality && profile.nationality.trim().length >= 2)
+          ? profile.nationality.trim()
+          : 'Ethiopian';
+
         const res = await registerAthlete({
           email: email.trim(),
           password,
@@ -266,8 +273,8 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
           clubName: club.name,
           sportIds: [event],
           sportId: event,
-          region: profile.region,
-          nationality: profile.nationality,
+          region: profile.region?.trim() || club.region?.trim() || 'National',
+          nationality: resolvedNationality,
           address: profile.address,
           emergencyContactPhone: emergencyContactPhone.trim(),
 
