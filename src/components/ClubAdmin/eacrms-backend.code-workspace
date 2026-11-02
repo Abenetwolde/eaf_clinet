@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../../../eacrms-backend"
+		},
+		{
+			"path": "../../.."
+		},
+		{
+			"path": "../../../../eaf-federation-hub"
+		}
+	]
+}
