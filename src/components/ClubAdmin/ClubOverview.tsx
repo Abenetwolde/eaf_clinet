@@ -6,6 +6,7 @@ import { useAppSelector } from '../../store/hooks';
 import { useGetMeQuery } from '../../store/api/authApi';
 import { useGetAthletesQuery } from '../../store/api/athleteApi';
 import { useGetOverviewStatsQuery } from '../../store/api/apiSlice';
+import { useGetPaymentConfigQuery } from '../../store/api/paymentApi';
 
 interface ClubOverviewProps {
   club?: Club;
@@ -26,7 +27,24 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   });
   const accountClub = accountResponse?.data?.club;
 
-  const club = (propClub?.id && propClub.name)
+  const fallbackClub: Club = {
+    id: '',
+    name: 'Club Administration',
+    shortName: 'CLB',
+    region: 'Ethiopia',
+    manager: 'Club Admin',
+    email: '',
+    phone: '',
+    licensedAthletes: 0,
+    pendingVerifications: 0,
+    unlicensedAthletes: 0,
+    transfersCount: 0,
+    logo: '',
+    clubRank: 1,
+    totalPoints: 0,
+  };
+
+  const club: Club = (propClub?.id && propClub.name)
     ? propClub
     : (storeClub?.id && storeClub.name)
     ? storeClub
@@ -44,14 +62,14 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
         unlicensedAthletes: 0,
         transfersCount: 0,
         logo: accountClub.logo || '',
-        clubRank: 0,
+        clubRank: 1,
         totalPoints: 0,
       }
-    : propClub || storeClub;
+    : (propClub || storeClub || fallbackClub);
 
   const activeClubId = club?.id || accountClub?.id || (typeof window !== 'undefined' ? localStorage.getItem('eaf_currentClubId') : '') || '';
   const activeClubName = club?.name || accountClub?.name || '';
-  const transfers = propTransfers || storeTransfers;
+  const transfers = propTransfers || storeTransfers || [];
 
   // Retrieve club members dynamically from database strictly for active club
   const { data: backendAthletes } = useGetAthletesQuery(
@@ -148,15 +166,15 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
       <div className="flex items-center justify-between mb-[20px] flex-wrap gap-[16px]">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-            {(club.logoUrl || (club as any).logo) && ((club.logoUrl || (club as any).logo).startsWith("http") || (club.logoUrl || (club as any).logo).startsWith("/") || (club.logoUrl || (club as any).logo).startsWith("data:")) ? (
+            {((club as any)?.logoUrl || club?.logo) && (((club as any)?.logoUrl || club?.logo).startsWith("http") || ((club as any)?.logoUrl || club?.logo).startsWith("/") || ((club as any)?.logoUrl || club?.logo).startsWith("data:")) ? (
               <img
-                src={club.logoUrl || (club as any).logo}
-                alt={club.name}
+                src={(club as any)?.logoUrl || club?.logo}
+                alt={club?.name || 'Club'}
                 className="w-full h-full object-contain p-1.5"
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             ) : (
-              <span className="text-xl font-black text-primary">{(club.shortName || club.name?.slice(0, 3) || "CLB").toUpperCase()}</span>
+              <span className="text-xl font-black text-primary">{(club?.shortName || club?.name?.slice(0, 3) || "CLB").toUpperCase()}</span>
             )}
           </div>
           <div>
@@ -274,9 +292,9 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
             <span className="text-[0.8rem] font-bold text-text-muted">Regional Ranking</span>
             <Trophy size={20} color="#7C3AED" />
           </div>
-          <div className="text-[1.8rem] font-extrabold text-text-heading">Rank #{club.clubRank}</div>
+          <div className="text-[1.8rem] font-extrabold text-text-heading">Rank #{club?.clubRank ?? 1}</div>
           <div className="text-[0.78rem] text-[#7C3AED] font-semibold mt-[4px]">
-            {club.totalPoints} Points Total
+            {club?.totalPoints ?? 0} Points Total
           </div>
         </div>
       </div>

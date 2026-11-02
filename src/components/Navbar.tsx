@@ -143,10 +143,11 @@ export default function Navbar({
               {/* Active Session Indicator */}
               <div className="bg-white border border-slate-200 px-3.5 py-1.5 rounded-2xl flex items-center gap-2.5 shadow-xs">
                 {currentRole === "CLUB" ? (
+                  <>
                     <div className="w-7 h-7 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-slate-50 flex items-center justify-center">
-                      {(currentClub.logoUrl || currentClub.logo) && ((currentClub.logoUrl || currentClub.logo).startsWith("http") || (currentClub.logoUrl || currentClub.logo).startsWith("/") || (currentClub.logoUrl || currentClub.logo).startsWith("data:")) ? (
+                      {((currentClub as any).logoUrl || currentClub.logo) && (((currentClub as any).logoUrl || currentClub.logo).startsWith("http") || ((currentClub as any).logoUrl || currentClub.logo).startsWith("/") || ((currentClub as any).logoUrl || currentClub.logo).startsWith("data:")) ? (
                         <img
-                          src={currentClub.logoUrl || currentClub.logo}
+                          src={(currentClub as any).logoUrl || currentClub.logo}
                           alt={currentClub.name}
                           className="w-full h-full object-contain"
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
