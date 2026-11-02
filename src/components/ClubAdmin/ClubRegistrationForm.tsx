@@ -151,6 +151,7 @@ export default function ClubRegistrationForm({
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [registeredClub, setRegisteredClub] = useState<Club | null>(null);
   const [referenceId, setReferenceId] = useState('');
   const [registeredSession, setRegisteredSession] = useState<{ token: string; refreshToken?: string; userId: string; userData?: any } | undefined>();
@@ -162,72 +163,187 @@ export default function ClubRegistrationForm({
   const paymentConfig = configResp?.data;
   const registrationFee = paymentConfig?.clubRegistrationFee ?? 5000;
 
+  const clearFieldError = (fieldName: string) => {
+    setFieldErrors((prev) => {
+      if (!prev[fieldName]) return prev;
+      const copy = { ...prev };
+      delete copy[fieldName];
+      return copy;
+    });
+    setErrorMessage('');
+  };
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   // Auto-sync admin email with club email if empty
   const handleClubEmailChange = (val: string) => {
     setClubEmail(val);
+    clearFieldError('clubEmail');
     if (!adminEmail || adminEmail === clubEmail) {
       setAdminEmail(val);
+      clearFieldError('adminEmail');
     }
   };
 
   // Step validation
   const validateStep0 = () => {
+    const errors: Record<string, string> = {};
+
     if (!clubName.trim()) {
-      setErrorMessage('Please provide the official legal name of the club.');
-      return false;
+      errors.clubName = 'Official Club Name is required.';
+    } else if (clubName.trim().length < 3) {
+      errors.clubName = 'Club name must be at least 3 characters.';
     }
+
+    if (clubShortName.trim() && clubShortName.trim().length > 10) {
+      errors.clubShortName = 'Short code should not exceed 10 characters.';
+    }
+
+    if (!clubRegion.trim()) {
+      errors.clubRegion = 'Please select the affiliated region / state.';
+    }
+
     if (!clubCity.trim()) {
-      setErrorMessage('Please specify the city / municipality of the club headquarters.');
-      return false;
+      errors.clubCity = 'City / Municipality of headquarters is required.';
     }
-    if (!clubEmail.trim() || !clubEmail.includes('@')) {
-      setErrorMessage('Please provide a valid official email address for the club.');
-      return false;
+
+    if (!clubEmail.trim()) {
+      errors.clubEmail = 'Official Club Email is required.';
+    } else if (!emailRegex.test(clubEmail.trim())) {
+      errors.clubEmail = 'Please provide a valid official email address (e.g. info@club.et).';
     }
+
     if (!clubPhone.trim()) {
-      setErrorMessage('Please provide an official telephone number for the club.');
+      errors.clubPhone = 'Official telephone number is required.';
+    } else {
+      const cleanPhone = clubPhone.replace(/[\s\-()]/g, '');
+      if (cleanPhone.length < 9) {
+        errors.clubPhone = 'Please provide a valid telephone number (at least 9 digits, e.g. 0911223344).';
+      }
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstError = Object.values(errors)[0];
+      setErrorMessage(`Please resolve the ${Object.keys(errors).length} error(s) on this page: ${firstError}`);
+      setTimeout(() => {
+        const el = document.querySelector('.step-error-banner, [aria-invalid="true"]');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
       return false;
     }
+
     setErrorMessage('');
     return true;
   };
 
   const validateStep1 = () => {
+    const errors: Record<string, string> = {};
+
     if (!repName.trim()) {
-      setErrorMessage('Please enter the full name of the authorized club president or representative.');
-      return false;
+      errors.repName = 'Authorized representative full name is required.';
+    } else {
+      const parts = repName.trim().split(/\s+/);
+      if (parts.length < 2) {
+        errors.repName = 'Please enter both first and last name of the representative.';
+      }
     }
+
+    if (!repTitle.trim()) {
+      errors.repTitle = 'Representative mandate / official title is required.';
+    }
+
     if (!repPhone.trim()) {
-      setErrorMessage('Please provide the contact phone number of the representative.');
+      errors.repPhone = 'Representative mobile phone number is required.';
+    } else {
+      const cleanPhone = repPhone.replace(/[\s\-()]/g, '');
+      if (cleanPhone.length < 9) {
+        errors.repPhone = 'Please provide a valid mobile number (at least 9 digits, e.g. 0911223344).';
+      }
+    }
+
+    if (foundingYear.trim()) {
+      const yearNum = Number(foundingYear.trim());
+      const currentYear = new Date().getFullYear();
+      if (isNaN(yearNum) || yearNum < 1900 || yearNum > currentYear) {
+        errors.foundingYear = `Founding year must be a 4-digit year between 1900 and ${currentYear}.`;
+      }
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstError = Object.values(errors)[0];
+      setErrorMessage(`Please resolve the ${Object.keys(errors).length} error(s) on this page: ${firstError}`);
+      setTimeout(() => {
+        const el = document.querySelector('.step-error-banner, [aria-invalid="true"]');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
       return false;
     }
+
     setErrorMessage('');
     return true;
   };
 
   const validateStep2 = () => {
-    if (!adminEmail.trim() || !adminEmail.includes('@')) {
-      setErrorMessage('Please enter a valid administrator email address for logging into the club portal.');
-      return false;
+    const errors: Record<string, string> = {};
+
+    if (!adminEmail.trim()) {
+      errors.adminEmail = 'Administrator sign-in email is required.';
+    } else if (!emailRegex.test(adminEmail.trim())) {
+      errors.adminEmail = 'Please enter a valid administrator email address for logging into the portal.';
     }
-    if (!password || password.length < 8) {
-      setErrorMessage('Password must be at least 8 characters long.');
-      return false;
+
+    if (!password) {
+      errors.password = 'Password is required.';
+    } else if (password.length < 8) {
+      errors.password = 'Password must be at least 8 characters long.';
     }
-    if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match. Please verify your password confirmation.');
-      return false;
+
+    if (!confirmPassword) {
+      errors.confirmPassword = 'Password confirmation is required.';
+    } else if (password !== confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match. Please verify your password confirmation.';
     }
+
     if (!agreeToCharter) {
-      setErrorMessage('You must acknowledge and agree to comply with EAF statutes and the Fayda member verification mandate.');
+      errors.agreeToCharter = 'You must acknowledge and agree to comply with EAF statutes and the member verification mandate.';
+    }
+
+    setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      const firstError = Object.values(errors)[0];
+      setErrorMessage(`Please resolve the ${Object.keys(errors).length} error(s) on this page: ${firstError}`);
+      setTimeout(() => {
+        const el = document.querySelector('.step-error-banner, [aria-invalid="true"]');
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
       return false;
     }
+
     setErrorMessage('');
     return true;
   };
 
   // Submit Registration
   const handleSubmit = async () => {
+    // Validate each step before final submission
+    if (!validateStep0()) {
+      setStep(0);
+      return;
+    }
+    if (!validateStep1()) {
+      setStep(1);
+      return;
+    }
+    if (!validateStep2()) {
+      setStep(2);
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage('');
 
@@ -427,9 +543,16 @@ export default function ClubRegistrationForm({
 
           {/* Error Banner */}
           {errorMessage && (
-            <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm font-bold flex items-center gap-2.5">
-              <AlertCircle size={18} className="text-red-600 shrink-0" />
-              <span>{errorMessage}</span>
+            <div className="mb-6 p-4 rounded-2xl bg-red-50 border-2 border-red-300 text-red-800 text-xs sm:text-sm font-bold flex items-start gap-2.5 shadow-sm animate-in fade-in">
+              <AlertCircle size={18} className="text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <span className="font-extrabold block">{errorMessage}</span>
+                {Object.keys(fieldErrors).length > 1 && (
+                  <span className="text-xs text-red-700 font-semibold block mt-1">
+                    Please correct the {Object.keys(fieldErrors).length} highlighted fields on this page before proceeding.
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
@@ -454,11 +577,25 @@ export default function ClubRegistrationForm({
                     <input
                       type="text"
                       value={clubName}
-                      onChange={(e) => setClubName(e.target.value)}
+                      onChange={(e) => {
+                        setClubName(e.target.value);
+                        clearFieldError('clubName');
+                      }}
                       placeholder="e.g. Ethiopian Electric Athletics Club"
-                      className="w-full p-3.5 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-sky-500 focus:border-sky-500 bg-white"
+                      aria-invalid={Boolean(fieldErrors.clubName)}
+                      className={`w-full p-3.5 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-sky-500 bg-white transition-all ${
+                        fieldErrors.clubName
+                          ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                          : 'border-slate-300 focus:border-sky-500'
+                      }`}
                       required
                     />
+                    {fieldErrors.clubName && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.clubName}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -468,11 +605,25 @@ export default function ClubRegistrationForm({
                     <input
                       type="text"
                       value={clubShortName}
-                      onChange={(e) => setClubShortName(e.target.value.toUpperCase())}
+                      onChange={(e) => {
+                        setClubShortName(e.target.value.toUpperCase());
+                        clearFieldError('clubShortName');
+                      }}
                       placeholder="e.g. EEAC"
-                      maxLength={8}
-                      className="w-full p-3.5 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-sky-500 bg-white uppercase font-mono"
+                      maxLength={10}
+                      aria-invalid={Boolean(fieldErrors.clubShortName)}
+                      className={`w-full p-3.5 border rounded-xl text-sm font-semibold focus:ring-2 focus:ring-sky-500 bg-white uppercase font-mono transition-all ${
+                        fieldErrors.clubShortName
+                          ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                          : 'border-slate-300'
+                      }`}
                     />
+                    {fieldErrors.clubShortName && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.clubShortName}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -483,10 +634,18 @@ export default function ClubRegistrationForm({
                     </label>
                     <select
                       value={clubRegion}
-                      onChange={(e) => setClubRegion(e.target.value)}
+                      onChange={(e) => {
+                        setClubRegion(e.target.value);
+                        clearFieldError('clubRegion');
+                      }}
                       required
                       disabled={loadingRegions || !regions.length}
-                      className="w-full p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
+                      aria-invalid={Boolean(fieldErrors.clubRegion)}
+                      className={`w-full p-3.5 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 transition-all ${
+                        fieldErrors.clubRegion
+                          ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                          : 'border-slate-300'
+                      }`}
                     >
                       {!regions.length && <option value="">{loadingRegions ? 'Loading regions…' : 'No regions available'}</option>}
                       {regions.map((region) => (
@@ -495,6 +654,12 @@ export default function ClubRegistrationForm({
                         </option>
                       ))}
                     </select>
+                    {fieldErrors.clubRegion && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.clubRegion}</span>
+                      </p>
+                    )}
                     {regionsError && <p className="mt-1 text-xs text-red-600">Could not load regions. Please check the server connection and retry.</p>}
                     {regions.find((region) => region.name === clubRegion)?.flagImageUrl && <img className="mt-2 h-8 w-12 rounded border object-cover" src={regions.find((region) => region.name === clubRegion)?.flagImageUrl || ''} alt={`${clubRegion} flag`} />}
                   </div>
@@ -506,11 +671,25 @@ export default function ClubRegistrationForm({
                     <input
                       type="text"
                       value={clubCity}
-                      onChange={(e) => setClubCity(e.target.value)}
+                      onChange={(e) => {
+                        setClubCity(e.target.value);
+                        clearFieldError('clubCity');
+                      }}
                       placeholder="e.g. Addis Ababa"
-                      className="w-full p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
+                      aria-invalid={Boolean(fieldErrors.clubCity)}
+                      className={`w-full p-3.5 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 transition-all ${
+                        fieldErrors.clubCity
+                          ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                          : 'border-slate-300'
+                      }`}
                       required
                     />
+                    {fieldErrors.clubCity && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.clubCity}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -542,10 +721,21 @@ export default function ClubRegistrationForm({
                         value={clubEmail}
                         onChange={(e) => handleClubEmailChange(e.target.value)}
                         placeholder="e.g. contact@eeac-athletics.et"
-                        className="w-full pl-10 p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
+                        aria-invalid={Boolean(fieldErrors.clubEmail)}
+                        className={`w-full pl-10 p-3.5 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 transition-all ${
+                          fieldErrors.clubEmail
+                            ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                            : 'border-slate-300'
+                        }`}
                         required
                       />
                     </div>
+                    {fieldErrors.clubEmail && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.clubEmail}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -557,12 +747,26 @@ export default function ClubRegistrationForm({
                       <input
                         type="tel"
                         value={clubPhone}
-                        onChange={(e) => setClubPhone(e.target.value)}
-                        placeholder="e.g. +251 11 551 2233"
-                        className="w-full pl-10 p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
+                        onChange={(e) => {
+                          setClubPhone(e.target.value);
+                          clearFieldError('clubPhone');
+                        }}
+                        placeholder="e.g. 0911442159"
+                        aria-invalid={Boolean(fieldErrors.clubPhone)}
+                        className={`w-full pl-10 p-3.5 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 transition-all ${
+                          fieldErrors.clubPhone
+                            ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                            : 'border-slate-300'
+                        }`}
                         required
                       />
                     </div>
+                    {fieldErrors.clubPhone && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.clubPhone}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -697,6 +901,21 @@ export default function ClubRegistrationForm({
                 </div>
               </div>
 
+              {/* Step 0 Error Summary Banner */}
+              {Object.keys(fieldErrors).length > 0 && (
+                <div className="step-error-banner p-4 rounded-2xl bg-red-50 border-2 border-red-300 text-red-900 text-xs sm:text-sm shadow-xs animate-in fade-in">
+                  <div className="flex items-center gap-2 font-black text-red-800 mb-1.5">
+                    <AlertCircle size={18} className="text-red-600 shrink-0" />
+                    <span>Please correct the errors on this page before continuing:</span>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 pl-1 text-red-700 font-medium">
+                    {Object.values(fieldErrors).map((msg, idx) => (
+                      <li key={idx}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {/* Navigation */}
               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                 <button
@@ -710,7 +929,11 @@ export default function ClubRegistrationForm({
                 <button
                   type="button"
                   onClick={() => {
-                    if (validateStep0()) setStep(1);
+                    if (validateStep0()) {
+                      setFieldErrors({});
+                      setErrorMessage('');
+                      setStep(1);
+                    }
                   }}
                   className="px-7 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm flex items-center gap-2 shadow-xs cursor-pointer border-0"
                 >
@@ -744,25 +967,53 @@ export default function ClubRegistrationForm({
                       <input
                         type="text"
                         value={repName}
-                        onChange={(e) => setRepName(e.target.value)}
+                        onChange={(e) => {
+                          setRepName(e.target.value);
+                          clearFieldError('repName');
+                        }}
                         placeholder="e.g. Dawit Bekele Negash"
-                        className="w-full pl-10 p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
+                        aria-invalid={Boolean(fieldErrors.repName)}
+                        className={`w-full pl-10 p-3.5 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 transition-all ${
+                          fieldErrors.repName
+                            ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                            : 'border-slate-300'
+                        }`}
                         required
                       />
                     </div>
+                    {fieldErrors.repName && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.repName}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
-                      Mandate / Official Title
+                      Mandate / Official Title <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       value={repTitle}
-                      onChange={(e) => setRepTitle(e.target.value)}
+                      onChange={(e) => {
+                        setRepTitle(e.target.value);
+                        clearFieldError('repTitle');
+                      }}
                       placeholder="e.g. Executive President & Signatory"
-                      className="w-full p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
+                      aria-invalid={Boolean(fieldErrors.repTitle)}
+                      className={`w-full p-3.5 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 transition-all ${
+                        fieldErrors.repTitle
+                          ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                          : 'border-slate-300'
+                      }`}
                     />
+                    {fieldErrors.repTitle && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.repTitle}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -776,12 +1027,26 @@ export default function ClubRegistrationForm({
                       <input
                         type="tel"
                         value={repPhone}
-                        onChange={(e) => setRepPhone(e.target.value)}
+                        onChange={(e) => {
+                          setRepPhone(e.target.value);
+                          clearFieldError('repPhone');
+                        }}
                         placeholder="e.g. 0911442159"
-                        className="w-full pl-10 p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
+                        aria-invalid={Boolean(fieldErrors.repPhone)}
+                        className={`w-full pl-10 p-3.5 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 transition-all ${
+                          fieldErrors.repPhone
+                            ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                            : 'border-slate-300'
+                        }`}
                         required
                       />
                     </div>
+                    {fieldErrors.repPhone && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.repPhone}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -808,20 +1073,53 @@ export default function ClubRegistrationForm({
                   <input
                     type="number"
                     value={foundingYear}
-                    onChange={(e) => setFoundingYear(e.target.value)}
+                    onChange={(e) => {
+                      setFoundingYear(e.target.value);
+                      clearFieldError('foundingYear');
+                    }}
                     placeholder="e.g. 1988"
                     min="1900"
                     max="2026"
-                    className="w-full sm:w-48 p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 font-mono"
+                    aria-invalid={Boolean(fieldErrors.foundingYear)}
+                    className={`w-full sm:w-48 p-3.5 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 font-mono transition-all ${
+                      fieldErrors.foundingYear
+                        ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                        : 'border-slate-300'
+                    }`}
                   />
+                  {fieldErrors.foundingYear && (
+                    <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                      <AlertCircle size={13} className="shrink-0" />
+                      <span>{fieldErrors.foundingYear}</span>
+                    </p>
+                  )}
                 </div>
               </div>
+
+              {/* Step 1 Error Summary Banner */}
+              {Object.keys(fieldErrors).length > 0 && (
+                <div className="step-error-banner p-4 rounded-2xl bg-red-50 border-2 border-red-300 text-red-900 text-xs sm:text-sm shadow-xs animate-in fade-in">
+                  <div className="flex items-center gap-2 font-black text-red-800 mb-1.5">
+                    <AlertCircle size={18} className="text-red-600 shrink-0" />
+                    <span>Please correct the errors on this page before continuing:</span>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 pl-1 text-red-700 font-medium">
+                    {Object.values(fieldErrors).map((msg, idx) => (
+                      <li key={idx}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Navigation */}
               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                 <button
                   type="button"
-                  onClick={() => setStep(0)}
+                  onClick={() => {
+                    setFieldErrors({});
+                    setErrorMessage('');
+                    setStep(0);
+                  }}
                   className="px-5 py-3 rounded-xl border border-slate-300 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer text-sm flex items-center gap-1.5"
                 >
                   <ArrowLeft size={16} />
@@ -831,7 +1129,11 @@ export default function ClubRegistrationForm({
                 <button
                   type="button"
                   onClick={() => {
-                    if (validateStep1()) setStep(2);
+                    if (validateStep1()) {
+                      setFieldErrors({});
+                      setErrorMessage('');
+                      setStep(2);
+                    }
                   }}
                   className="px-7 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm flex items-center gap-2 shadow-xs cursor-pointer border-0"
                 >
@@ -864,12 +1166,26 @@ export default function ClubRegistrationForm({
                     <input
                       type="email"
                       value={adminEmail}
-                      onChange={(e) => setAdminEmail(e.target.value)}
+                      onChange={(e) => {
+                        setAdminEmail(e.target.value);
+                        clearFieldError('adminEmail');
+                      }}
                       placeholder="e.g. president@eeac-athletics.et"
-                      className="w-full pl-10 p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
+                      aria-invalid={Boolean(fieldErrors.adminEmail)}
+                      className={`w-full pl-10 p-3.5 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 transition-all ${
+                        fieldErrors.adminEmail
+                          ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                          : 'border-slate-300'
+                      }`}
                       required
                     />
                   </div>
+                  {fieldErrors.adminEmail && (
+                    <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                      <AlertCircle size={13} className="shrink-0" />
+                      <span>{fieldErrors.adminEmail}</span>
+                    </p>
+                  )}
                   <span className="text-[11px] text-slate-500 mt-1 block">
                     You will use this email to sign into the Club Admin portal.
                   </span>
@@ -884,9 +1200,17 @@ export default function ClubRegistrationForm({
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          clearFieldError('password');
+                        }}
                         placeholder="Minimum 8 characters"
-                        className="w-full p-3.5 pr-10 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
+                        aria-invalid={Boolean(fieldErrors.password)}
+                        className={`w-full p-3.5 pr-10 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 transition-all ${
+                          fieldErrors.password
+                            ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                            : 'border-slate-300'
+                        }`}
                         required
                       />
                       <button
@@ -897,6 +1221,12 @@ export default function ClubRegistrationForm({
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
+                    {fieldErrors.password && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.password}</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -906,38 +1236,84 @@ export default function ClubRegistrationForm({
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        clearFieldError('confirmPassword');
+                      }}
                       placeholder="Re-type password"
-                      className="w-full p-3.5 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500"
+                      aria-invalid={Boolean(fieldErrors.confirmPassword)}
+                      className={`w-full p-3.5 border rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-sky-500 transition-all ${
+                        fieldErrors.confirmPassword
+                          ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+                          : 'border-slate-300'
+                      }`}
                       required
                     />
+                    {fieldErrors.confirmPassword && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{fieldErrors.confirmPassword}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Compliance Box */}
-                <div className="p-4 rounded-2xl bg-sky-50/70 border border-sky-200 mt-4">
+                <div className={`p-4 rounded-2xl transition-all ${
+                  fieldErrors.agreeToCharter
+                    ? 'bg-red-50/80 border-2 border-red-300'
+                    : 'bg-sky-50/70 border border-sky-200'
+                } mt-4`}>
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={agreeToCharter}
-                      onChange={(e) => setAgreeToCharter(e.target.checked)}
+                      onChange={(e) => {
+                        setAgreeToCharter(e.target.checked);
+                        clearFieldError('agreeToCharter');
+                      }}
                       className="w-4 h-4 rounded text-sky-600 mt-1 border-slate-300 focus:ring-sky-500 cursor-pointer"
                     />
                     <div className="text-xs text-slate-700 leading-relaxed">
                       <strong className="text-slate-900 block font-bold mb-0.5">
-                        Ethiopian Athletics Federation Charter & Member Mandate Agreement
+                        Ethiopian Athletics Federation Charter & Member Mandate Agreement <span className="text-red-500">*</span>
                       </strong>
                       By registering, our club officially agrees to abide by World Athletics and EAF technical, ethical, and anti-doping regulations. We understand that <strong>club registration does not require personal Fayda IDs upfront</strong>, but all member athletes and coaches must be registered and verified via <strong>Fayda National ID</strong> in the club roster before entering official competitions.
                     </div>
                   </label>
+                  {fieldErrors.agreeToCharter && (
+                    <p className="text-xs font-bold text-red-600 mt-2 flex items-center gap-1.5 animate-in fade-in">
+                      <AlertCircle size={13} className="shrink-0" />
+                      <span>{fieldErrors.agreeToCharter}</span>
+                    </p>
+                  )}
                 </div>
               </div>
+
+              {/* Step 2 Error Summary Banner */}
+              {Object.keys(fieldErrors).length > 0 && (
+                <div className="step-error-banner p-4 rounded-2xl bg-red-50 border-2 border-red-300 text-red-900 text-xs sm:text-sm shadow-xs animate-in fade-in">
+                  <div className="flex items-center gap-2 font-black text-red-800 mb-1.5">
+                    <AlertCircle size={18} className="text-red-600 shrink-0" />
+                    <span>Please correct the errors on this page before continuing:</span>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 pl-1 text-red-700 font-medium">
+                    {Object.values(fieldErrors).map((msg, idx) => (
+                      <li key={idx}>{msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Navigation */}
               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
+                  onClick={() => {
+                    setFieldErrors({});
+                    setErrorMessage('');
+                    setStep(1);
+                  }}
                   className="px-5 py-3 rounded-xl border border-slate-300 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer text-sm flex items-center gap-1.5"
                 >
                   <ArrowLeft size={16} />
@@ -947,7 +1323,11 @@ export default function ClubRegistrationForm({
                 <button
                   type="button"
                   onClick={() => {
-                    if (validateStep2()) setStep(3);
+                    if (validateStep2()) {
+                      setFieldErrors({});
+                      setErrorMessage('');
+                      setStep(3);
+                    }
                   }}
                   className="px-7 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm flex items-center gap-2 shadow-xs cursor-pointer border-0"
                 >
@@ -1064,11 +1444,28 @@ export default function ClubRegistrationForm({
                 </div>
               </div>
 
+              {/* Step 3 Submission Error Alert */}
+              {errorMessage && (
+                <div className="p-4 rounded-2xl bg-red-50 border-2 border-red-300 text-red-900 text-xs sm:text-sm shadow-xs animate-in fade-in">
+                  <div className="flex items-center gap-2 font-black text-red-800 mb-1">
+                    <AlertCircle size={18} className="text-red-600 shrink-0" />
+                    <span>Registration could not be completed:</span>
+                  </div>
+                  <p className="text-red-700 font-medium pl-6 m-0">
+                    {errorMessage}
+                  </p>
+                </div>
+              )}
+
               {/* Navigation */}
               <div className="flex justify-between items-center pt-4 border-t border-slate-200">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => {
+                    setFieldErrors({});
+                    setErrorMessage('');
+                    setStep(2);
+                  }}
                   className="px-5 py-3 rounded-xl border border-slate-300 font-bold text-slate-600 hover:bg-slate-50 cursor-pointer text-sm flex items-center gap-1.5"
                 >
                   <ArrowLeft size={16} />
