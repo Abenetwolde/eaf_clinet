@@ -98,6 +98,21 @@ export interface AthleteRegistrationRequest {
   gender?: string;
   photoUrl?: string;
   primaryEvent?: string;
+
+  // Contract Details
+  contractType?: 'PROFESSIONAL' | 'SEMI_PROFESSIONAL' | 'DEVELOPMENT_YOUTH' | 'SCHOLARSHIP_AMATEUR';
+  contractStartDate?: string;
+  contractEndDate?: string;
+  contractExpiry?: string;
+  monthlySalary?: number;
+  signingBonus?: number;
+  releaseClause?: number;
+  podiumBonus?: number;
+  hasHealthInsurance?: boolean;
+  hasPhysioCoverage?: boolean;
+  terms?: string;
+  signedByClub?: string;
+  signedByAthlete?: string;
 }
 
 export interface AthleteRegistrationResponse {
@@ -247,6 +262,53 @@ export const athleteApi = apiSlice.injectEndpoints({
       invalidatesTags: [{ type: 'Athletes' as const, id: 'LIST' }, 'Athletes', 'Coaches'],
     }),
 
+    checkAthleteAffiliation: builder.query<{
+      exists: boolean;
+      athleteName?: string;
+      currentClubId?: string;
+      currentClubName?: string;
+      previousClubId?: string;
+      previousClubName?: string;
+      isUnderActiveContract?: boolean;
+      contractExpiry?: string;
+      canRegister: boolean;
+      isForbidden?: boolean;
+      isCurrentClub?: boolean;
+      isTransfer?: boolean;
+      personalBestsCount?: number;
+      message?: string;
+    }, { nin: string; clubId?: string }>({
+      query: ({ nin, clubId }) => ({
+        url: '/athletes/check-affiliation',
+        params: { nin, clubId },
+      }),
+      transformResponse: (response: { success: boolean; data: any }) => response.data,
+    }),
+
+    renewAthleteContract: builder.mutation<any, { athleteId: string; body: any }>({
+      query: ({ athleteId, body }) => ({
+        url: `/athletes/${athleteId}/contract/renew`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'Athletes' as const, id: 'LIST' }, 'Athletes'],
+    }),
+
+    releaseAthleteContract: builder.mutation<any, { athleteId: string; body: any }>({
+      query: ({ athleteId, body }) => ({
+        url: `/athletes/${athleteId}/contract/release`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'Athletes' as const, id: 'LIST' }, 'Athletes'],
+    }),
+
+    getAthleteContracts: builder.query<any[], string>({
+      query: (athleteId) => `/athletes/${athleteId}/contracts`,
+      transformResponse: (response: { success: boolean; data: any[] }) => response.data || [],
+      providesTags: ['Athletes'],
+    }),
+
     getPublishedEvents: builder.query<PublishedEvent[], void>({
       query: () => 'events/published',
       transformResponse: (response: { success: boolean; data: PublishedEvent[] }) => response.data || [],
@@ -353,6 +415,11 @@ export const {
   useRegisterAthleteMutation,
   useRegisterAthleteByClubAdminMutation,
   useRegisterCoachByClubAdminMutation,
+  useCheckAthleteAffiliationQuery,
+  useLazyCheckAthleteAffiliationQuery,
+  useRenewAthleteContractMutation,
+  useReleaseAthleteContractMutation,
+  useGetAthleteContractsQuery,
   useGetPublishedEventsQuery,
   useGetAthleteApplicationsQuery,
   useGetAthleteDashboardQuery,

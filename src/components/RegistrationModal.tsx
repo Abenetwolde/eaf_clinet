@@ -2057,8 +2057,8 @@ export default function RegistrationModal({
       {/* Main Full-Page Content Card */}
       <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-8 my-4 sm:my-6">
         <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
-          {/* Top Registration Role Switcher */}
-          {!isSubmittedPending && !isAlreadyCompleted && (
+          {/* Top Registration Role Switcher (Only visible when explicitly registering a club organization) */}
+          {!isSubmittedPending && !isAlreadyCompleted && initialRole === 'CLUB' && (
             <div className="flex p-1.5 bg-slate-100 rounded-2xl mb-8 border border-slate-200">
               <button
                 type="button"

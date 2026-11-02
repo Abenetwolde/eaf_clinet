@@ -23,12 +23,20 @@ import {
   XCircle,
   HelpCircle,
   ArrowLeft,
-  RefreshCw
+  RefreshCw,
+  ArrowRightLeft,
+  FileText,
+  DollarSign,
+  AlertOctagon
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { useAppSelector } from '../../store/hooks';
 import { useGetMeQuery } from '../../store/api/authApi';
-import { useGetAthletesQuery } from '../../store/api/athleteApi';
+import {
+  useGetAthletesQuery,
+  useRenewAthleteContractMutation,
+  useReleaseAthleteContractMutation,
+} from '../../store/api/athleteApi';
 import { useGetClubCoachesQuery } from '../../store/api/clubApi';
 import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 import type { Athlete } from '../../types';
@@ -72,6 +80,12 @@ export interface UnifiedMember {
   isEligible: boolean;
   ineligibilityReasons: string[];
   completenessScore: number;
+  contractExpiry?: string;
+  contractStatus?: 'ACTIVE' | 'EXPIRED' | 'RELEASED' | 'RENEWED' | string;
+  contractType?: string;
+  previousClubName?: string;
+  monthlySalary?: number;
+  releaseClause?: number;
 }
 
 function formatBloodType(bt?: string): string {
@@ -159,6 +173,98 @@ export default function RosterManagement({
   // Modals State
   const [viewingMember, setViewingMember] = useState<UnifiedMember | null>(null);
   const [editingMember, setEditingMember] = useState<UnifiedMember | null>(null);
+
+  // Contract Management State & Mutations
+  const [renewAthleteContract, { isLoading: isRenewingContract }] = useRenewAthleteContractMutation();
+  const [releaseAthleteContract, { isLoading: isReleasingContract }] = useReleaseAthleteContractMutation();
+
+  const [renewingMember, setRenewingMember] = useState<UnifiedMember | null>(null);
+  const [renewType, setRenewType] = useState<string>('PROFESSIONAL');
+  const [renewStartDate, setRenewStartDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [renewEndDate, setRenewEndDate] = useState<string>(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [renewSalary, setRenewSalary] = useState<string>('25000');
+  const [renewReleaseClause, setRenewReleaseClause] = useState<string>('250000');
+  const [renewPodiumBonus, setRenewPodiumBonus] = useState<string>('50000');
+  const [renewClubSignatory, setRenewClubSignatory] = useState<string>('');
+
+  const [releasingMember, setReleasingMember] = useState<UnifiedMember | null>(null);
+  const [releaseReason, setReleaseReason] = useState<string>('Mutual release agreed between club management and athlete.');
+  const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+  const [actionErrorMsg, setActionErrorMsg] = useState<string | null>(null);
+
+  const handleOpenRenew = (member: UnifiedMember) => {
+    setRenewingMember(member);
+    setRenewType(member.contractType || 'PROFESSIONAL');
+    const today = new Date().toISOString().split('T')[0];
+    setRenewStartDate(today);
+    const end = new Date();
+    end.setFullYear(end.getFullYear() + 1);
+    setRenewEndDate(end.toISOString().split('T')[0]);
+    setRenewSalary(member.monthlySalary ? String(member.monthlySalary) : '25000');
+    setRenewReleaseClause(member.releaseClause ? String(member.releaseClause) : '250000');
+    setRenewPodiumBonus('50000');
+    setRenewClubSignatory(club?.name ? `${club.name} Official Administration` : 'Club Administration');
+    setActionErrorMsg(null);
+  };
+
+  const handleOpenRelease = (member: UnifiedMember) => {
+    setReleasingMember(member);
+    setReleaseReason('Mutual release agreed between club management and athlete.');
+    setActionErrorMsg(null);
+  };
+
+  const handleSaveRenew = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!renewingMember) return;
+    try {
+      const res = await renewAthleteContract({
+        athleteId: renewingMember.id,
+        body: {
+          contractType: renewType,
+          startDate: renewStartDate,
+          endDate: renewEndDate,
+          monthlySalary: renewSalary ? Number(renewSalary) : undefined,
+          releaseClause: renewReleaseClause ? Number(renewReleaseClause) : undefined,
+          podiumBonus: renewPodiumBonus ? Number(renewPodiumBonus) : undefined,
+          signedByClub: renewClubSignatory,
+          signedByAthlete: renewingMember.name,
+          notes: 'Contract renewed via Unified Member Management',
+        },
+      }).unwrap();
+
+      setActionSuccessMsg(res?.message || `Contract renewed for ${renewingMember.name} until ${renewEndDate}.`);
+      setRenewingMember(null);
+      refetchAthletes();
+    } catch (err: any) {
+      setActionErrorMsg(err?.data?.message || err?.message || 'Failed to renew contract.');
+    }
+  };
+
+  const handleConfirmRelease = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!releasingMember) return;
+    try {
+      const res = await releaseAthleteContract({
+        athleteId: releasingMember.id,
+        body: {
+          reason: releaseReason,
+        },
+      }).unwrap();
+
+      setActionSuccessMsg(res?.message || `Athlete ${releasingMember.name} released from club roster.`);
+      setReleasingMember(null);
+      if (viewingMember?.id === releasingMember.id) {
+        setViewingMember(null);
+      }
+      refetchAthletes();
+    } catch (err: any) {
+      setActionErrorMsg(err?.data?.message || err?.message || 'Failed to release athlete.');
+    }
+  };
 
   // Edit form state
   const [editName, setEditName] = useState<string>('');
@@ -274,6 +380,12 @@ export default function RosterManagement({
         isEligible,
         ineligibilityReasons,
         completenessScore: Math.min(score, 100),
+        contractExpiry: b.contractExpiry ? (typeof b.contractExpiry === 'string' ? b.contractExpiry : new Date(b.contractExpiry).toISOString()) : undefined,
+        contractStatus: b.contractStatus || (b.contractExpiry && new Date(b.contractExpiry) < new Date() ? 'EXPIRED' : 'ACTIVE'),
+        contractType: b.contracts?.[0]?.contractType || (b as any).contractType || 'PROFESSIONAL',
+        previousClubName: b.previousClubName || undefined,
+        monthlySalary: b.contracts?.[0]?.monthlySalary || (b as any).monthlySalary,
+        releaseClause: b.contracts?.[0]?.releaseClause || (b as any).releaseClause,
       });
     });
 
@@ -636,6 +748,70 @@ export default function RosterManagement({
             </div>
           </div>
 
+          {/* ── Section Contract Details & Term ── */}
+          {viewingMember.memberType === 'ATHLETE' && (
+            <div className="p-6 rounded-3xl bg-slate-900 text-white border border-slate-800 shadow-md space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-emerald-400">
+                  <FileCheck2 size={18} /> Official Club Contract & Expiration Term
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleOpenRenew(viewingMember)}
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs inline-flex items-center gap-1.5 cursor-pointer border-0 shadow-sm"
+                  >
+                    <RefreshCw size={13} /> Renew Contract
+                  </button>
+                  <button
+                    onClick={() => handleOpenRelease(viewingMember)}
+                    className="px-3.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer border border-rose-500/40"
+                  >
+                    <ArrowRightLeft size={13} /> Release Athlete
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Contract Status</span>
+                  <span className="font-bold text-white text-sm">
+                    {viewingMember.contractExpiry && new Date(viewingMember.contractExpiry) < new Date()
+                      ? 'Expired'
+                      : viewingMember.contractStatus || 'Active Binding'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Contract Expiration Date</span>
+                  <span className="font-bold text-amber-400 text-sm">
+                    {viewingMember.contractExpiry
+                      ? new Date(viewingMember.contractExpiry).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                      : 'Dec 31, 2027'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Monthly Stipend</span>
+                  <span className="font-bold text-emerald-400 text-sm">
+                    {viewingMember.monthlySalary ? `${Number(viewingMember.monthlySalary).toLocaleString()} ETB` : '20,000 ETB'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400 font-semibold block mb-0.5">Release Clause / Buyout</span>
+                  <span className="font-bold text-blue-400 text-sm">
+                    {viewingMember.releaseClause ? `${Number(viewingMember.releaseClause).toLocaleString()} ETB` : '200,000 ETB'}
+                  </span>
+                </div>
+                {viewingMember.previousClubName && (
+                  <div className="col-span-2">
+                    <span className="text-slate-400 font-semibold block mb-0.5">Previous Club Affiliation</span>
+                    <span className="font-bold text-purple-300">
+                      Transferred from {viewingMember.previousClubName} (All historical records preserved)
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── Section 3: Official Personal Bests & Sanctioned Records ── */}
           {viewingMember.memberType === 'ATHLETE' && (
             <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
@@ -971,6 +1147,26 @@ export default function RosterManagement({
         </div>
       </div>
 
+      {/* Success / Error Banners */}
+      {actionSuccessMsg && (
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-400 text-emerald-900 flex items-center justify-between text-xs font-bold">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={16} className="text-emerald-600" />
+            <span>{actionSuccessMsg}</span>
+          </div>
+          <button onClick={() => setActionSuccessMsg(null)} className="p-1 text-emerald-700 hover:text-emerald-900 cursor-pointer border-0 bg-transparent">✕</button>
+        </div>
+      )}
+      {actionErrorMsg && (
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-400 text-rose-900 flex items-center justify-between text-xs font-bold">
+          <div className="flex items-center gap-2">
+            <AlertOctagon size={16} className="text-rose-600" />
+            <span>{actionErrorMsg}</span>
+          </div>
+          <button onClick={() => setActionErrorMsg(null)} className="p-1 text-rose-700 hover:text-rose-900 cursor-pointer border-0 bg-transparent">✕</button>
+        </div>
+      )}
+
       {/* ── Unified Member Table ── */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
@@ -981,7 +1177,7 @@ export default function RosterManagement({
                 <th className="py-3.5 px-4">Fayda National Identity</th>
                 <th className="py-3.5 px-4">Role & Discipline</th>
                 <th className="py-3.5 px-4">Federation License</th>
-                <th className="py-3.5 px-4">Competition Eligibility</th>
+                <th className="py-3.5 px-4">Club Contract & Term</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -1111,27 +1307,42 @@ export default function RosterManagement({
                         )}
                       </td>
 
-                      {/* Competition Eligibility */}
+                      {/* Club Contract & Expiration */}
                       <td className="py-3.5 px-4">
                         {isAthlete ? (
-                          member.isEligible ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-950/30 dark:text-emerald-400">
-                              <CheckCircle2 size={12} />
-                              Eligible
-                            </span>
-                          ) : (
-                            <div className="space-y-0.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                                <AlertTriangle size={10} />
-                                Ineligible
-                              </span>
-                              <div className="text-[10px] text-slate-400 truncate max-w-[150px]">
-                                {member.ineligibilityReasons[0] || 'Restrictions apply'}
+                          member.contractExpiry ? (
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                {new Date(member.contractExpiry) < new Date() ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300">
+                                    <Clock size={11} /> Expired ({new Date(member.contractExpiry).toISOString().split('T')[0]})
+                                  </span>
+                                ) : (new Date(member.contractExpiry).getTime() - Date.now() < 60 * 24 * 60 * 60 * 1000) ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                                    <Clock size={11} /> Expiring Soon ({new Date(member.contractExpiry).toISOString().split('T')[0]})
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    <CheckCircle2 size={11} /> Active ({new Date(member.contractExpiry).toISOString().split('T')[0]})
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
+                                <span className="font-semibold text-slate-700 dark:text-slate-300">{member.contractType || 'Professional'}</span>
+                                {member.previousClubName && (
+                                  <span className="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[9px] font-bold">
+                                    Ex-{member.previousClubName}
+                                  </span>
+                                )}
                               </div>
                             </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-300">
+                              Standard Roster
+                            </span>
                           )
                         ) : (
-                          <span className="text-slate-400 text-[11px]">Coach / Official</span>
+                          <span className="text-slate-400 text-[11px]">Staff Appointment</span>
                         )}
                       </td>
 
@@ -1152,6 +1363,26 @@ export default function RosterManagement({
                           >
                             <Edit size={14} />
                           </button>
+                          {isAthlete && (
+                            <>
+                              <button
+                                onClick={() => handleOpenRenew(member)}
+                                className="px-2 py-1 rounded-lg border border-emerald-500/40 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all"
+                                title="Renew Club Contract"
+                              >
+                                <RefreshCw size={11} />
+                                <span>Renew</span>
+                              </button>
+                              <button
+                                onClick={() => handleOpenRelease(member)}
+                                className="px-2 py-1 rounded-lg border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-all"
+                                title="Release Athlete / Allow Transfer"
+                              >
+                                <ArrowRightLeft size={11} />
+                                <span>Release</span>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1270,6 +1501,231 @@ export default function RosterManagement({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Contract Renewal Modal ── */}
+      {renewingMember && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs"
+          onClick={() => setRenewingMember(null)}
+        >
+          <div
+            className="w-full max-w-lg rounded-3xl bg-slate-900 text-white border border-slate-800 shadow-2xl p-6 md:p-8 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-lg font-black text-white m-0 flex items-center gap-2">
+                  <RefreshCw size={18} className="text-emerald-400" />
+                  Renew Official Club Contract
+                </h3>
+                <p className="text-xs text-slate-400 mt-1 m-0">
+                  Athlete: <span className="text-white font-extrabold">{renewingMember.name}</span> · Club: {club?.name || 'Club'}
+                </p>
+              </div>
+              <button
+                onClick={() => setRenewingMember(null)}
+                className="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center border-0 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRenew} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-300 block mb-1">Contract Classification</label>
+                  <select
+                    value={renewType}
+                    onChange={(e) => setRenewType(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white font-bold"
+                  >
+                    <option value="PROFESSIONAL">Professional Tier</option>
+                    <option value="SEMI_PROFESSIONAL">Semi-Professional</option>
+                    <option value="DEVELOPMENT_YOUTH">Youth Academy & Development</option>
+                    <option value="SCHOLARSHIP_AMATEUR">Scholarship / Track Agreement</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-300 block mb-1">New Start Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={renewStartDate}
+                    onChange={(e) => setRenewStartDate(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-bold text-amber-400">New Contract Expiration Date *</label>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const s = new Date(renewStartDate);
+                          s.setFullYear(s.getFullYear() + 1);
+                          setRenewEndDate(s.toISOString().split('T')[0]);
+                        }}
+                        className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-bold border border-slate-700 cursor-pointer"
+                      >
+                        +1 Year
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const s = new Date(renewStartDate);
+                          s.setFullYear(s.getFullYear() + 2);
+                          setRenewEndDate(s.toISOString().split('T')[0]);
+                        }}
+                        className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-bold border border-slate-700 cursor-pointer"
+                      >
+                        +2 Years
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const s = new Date(renewStartDate);
+                          s.setFullYear(s.getFullYear() + 3);
+                          setRenewEndDate(s.toISOString().split('T')[0]);
+                        }}
+                        className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-bold border border-slate-700 cursor-pointer"
+                      >
+                        +3 Years
+                      </button>
+                    </div>
+                  </div>
+                  <input
+                    type="date"
+                    required
+                    value={renewEndDate}
+                    onChange={(e) => setRenewEndDate(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-slate-800 border-2 border-amber-400 text-white font-black"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-800/60 border border-slate-700">
+                <div>
+                  <label className="text-slate-400 font-semibold block mb-1">Monthly Stipend (ETB)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={renewSalary}
+                    onChange={(e) => setRenewSalary(e.target.value)}
+                    className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 font-semibold block mb-1">Release Clause (ETB)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={renewReleaseClause}
+                    onChange={(e) => setRenewReleaseClause(e.target.value)}
+                    className="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-400 font-semibold block mb-1">Authorized Club Signatory</label>
+                <input
+                  required
+                  value={renewClubSignatory}
+                  onChange={(e) => setRenewClubSignatory(e.target.value)}
+                  className="w-full p-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-bold"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setRenewingMember(null)}
+                  className="px-4 py-2 rounded-xl font-bold bg-slate-800 text-slate-300 cursor-pointer border border-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isRenewingContract}
+                  className="px-5 py-2 rounded-xl font-black bg-emerald-500 hover:bg-emerald-600 text-slate-950 cursor-pointer border-0 shadow-md"
+                >
+                  {isRenewingContract ? 'Executing Renewal…' : 'Execute Contract Renewal'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Release Athlete Modal ── */}
+      {releasingMember && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs"
+          onClick={() => setReleasingMember(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 md:p-8 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-lg font-black text-rose-600 m-0 flex items-center gap-2">
+                <ArrowRightLeft size={20} />
+                Release Athlete from Club
+              </h3>
+              <button
+                onClick={() => setReleasingMember(null)}
+                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 flex items-center justify-center border-0 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-300 m-0">
+                Are you sure you want to officially release <span className="font-extrabold text-slate-900 dark:text-white">{releasingMember.name}</span> from <span className="font-extrabold text-slate-900 dark:text-white">{club?.name || 'this club'}</span>?
+              </p>
+              <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-300">
+                <div className="font-bold flex items-center gap-1.5 mb-1">
+                  <CheckCircle2 size={14} className="text-blue-600" /> Lifetime Data Preservation
+                </div>
+                All personal bests ({releasingMember.personalBests?.length || 0} marks), competition results, and biometric records will remain permanently on their national athlete passport and transfer automatically to their next club.
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                  Official Reason / Termination Notes
+                </label>
+                <textarea
+                  rows={2}
+                  value={releaseReason}
+                  onChange={(e) => setReleaseReason(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setReleasingMember(null)}
+                className="px-4 py-2 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer border-0"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isReleasingContract}
+                onClick={handleConfirmRelease}
+                className="px-5 py-2 rounded-xl font-black bg-rose-600 hover:bg-rose-700 text-white cursor-pointer border-0 shadow-md"
+              >
+                {isReleasingContract ? 'Releasing Athlete…' : 'Confirm Official Release'}
+              </button>
+            </div>
           </div>
         </div>
       )}

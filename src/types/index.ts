@@ -97,6 +97,12 @@ export interface Athlete {
   licenseNumber?: string;
   licenseExpiry?: string;
   primaryEvent?: string;
+  contractExpiry?: string;
+  contractStatus?: 'ACTIVE' | 'EXPIRED' | 'RELEASED' | 'RENEWED';
+  currentContractId?: string;
+  previousClubId?: string;
+  previousClubName?: string;
+  contracts?: any[];
   pb?: string;
   coach?: string;
   specialties?: string[];
