@@ -70,6 +70,7 @@ const TAG_COLORS: Record<string, { bg: string; color: string }> = {
 const QUICK_LINKS: [string, string, string][] = [
   ['Home', 'መነሻ', '#home'],
   ['Competitions', 'ውድድሮች', '#competitions'],
+  ['Results', 'ውጤቶች', '#results'],
   ['Athletes', 'አትሌቶች', '#athletes'],
   ['News', 'ዜና', '#news'],
   ['Media', 'ሚዲያ', '#media'],
@@ -2809,6 +2810,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       } else if (href === '#competitions') {
                         onChangePublicSubPage('COMPETITIONS');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else if (href === '#results') {
+                        onChangePublicSubPage('RESULTS');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       } else if (href === '#athletes') {
                         onChangePublicSubPage('ATHLETES');

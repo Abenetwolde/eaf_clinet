@@ -555,7 +555,7 @@ export default function RegistrationModal({
     setNewPbVenue('');
   };
 
-  const steps = ['1. Fayda Verification', '2. Athlete Details', '3. Review & Submit'];
+  const steps = ['1. Fayda Verification', '2. Role Selection', '3. Profile Details', '4. Review & Submit'];
 
   // Submission handler
   const handleSubmit = async () => {
@@ -748,6 +748,55 @@ export default function RegistrationModal({
         return;
       } catch (err: any) {
         setSubmissionError(err?.message || 'Club registration failed.');
+        return;
+      }
+    }
+
+    if (selectedRole === 'OFFICIAL' || selectedRole === 'MEDICAL_HEAD' || selectedRole === 'COACH') {
+      try {
+        const roleBackend = selectedRole === 'OFFICIAL' ? 'REFEREE' : selectedRole === 'MEDICAL_HEAD' ? 'MEDICAL_STAFF' : 'COACH';
+        const professionalPayload = {
+          email: email.trim(),
+          password,
+          firstName: (faydaResult?.name || 'Federation Professional').split(' ')[0],
+          lastName: (faydaResult?.name || 'Federation Professional').split(' ').slice(1).join(' ') || 'Official',
+          phoneNumber: phone.trim(),
+          role: roleBackend,
+          faydaFin: faydaResult?.fin || '',
+          fanNumber: faydaResult?.fan || '',
+          licenseNumber: selectedRole === 'OFFICIAL' ? waOfficialId : medicalLicenseNumber,
+          specialization: selectedRole === 'OFFICIAL' ? officiatingRole : medicalSpecialization,
+        };
+
+        const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+        const res = await fetch(`${apiBase.replace(/\/$/, '')}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(professionalPayload),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.message || `${selectedRole} registration failed. Please check your details and try again.`);
+
+        const serverId = json?.data?.id || `prof-${Date.now()}`;
+        setServerRegistrationId(serverId);
+        setPendingRegistrationData({
+          type: 'ATHLETE',
+          payload: {
+            athlete: {
+              id: serverId,
+              name: faydaResult?.name || 'Federation Professional',
+              faydaFin: faydaResult?.fin || '',
+              faydaFan: faydaResult?.fan || '',
+              phone: phone.trim(),
+              email: email.trim(),
+              role: selectedRole,
+            } as any
+          }
+        });
+        setIsSubmittedPending(true);
+        return;
+      } catch (err: any) {
+        setSubmissionError(err?.message || 'Registration failed.');
         return;
       }
     }
@@ -1030,10 +1079,10 @@ export default function RegistrationModal({
 
             <button
               type="button"
-              onClick={() => setStep(1)} // Advance to Step 1: Athlete Profile Details
+              onClick={() => setStep(1)} // Advance to Step 1: Role Selection
               className="px-8 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 cursor-pointer border-0 transition-all ml-auto"
             >
-              <span>Continue to Athlete Details</span>
+              <span>Continue to Role Selection</span>
               <ArrowRight size={18} />
             </button>
           </div>
@@ -1206,7 +1255,7 @@ export default function RegistrationModal({
       setSubmissionError('Passwords do not match. Please re-enter your password.');
       return;
     }
-    setStep(2);
+    setStep(3);
   };
 
   const renderAccountCredentialsCard = () => (
@@ -1903,7 +1952,7 @@ export default function RegistrationModal({
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={() => setStep(1)}
+            onClick={() => setStep(2)}
             className="px-6 py-3 rounded-xl border border-slate-300 font-bold text-slate-700 hover:bg-slate-50 cursor-pointer bg-white"
           >
             Back
@@ -2088,8 +2137,9 @@ export default function RegistrationModal({
           ) : (
             <div>
               {step === 0 && renderStep0FaydaAuth()}
-              {step === 1 && renderStep2ProfileDetails()}
-              {step === 2 && renderStep3ReviewAndConfirm()}
+              {step === 1 && renderStep1RoleSelection()}
+              {step === 2 && renderStep2ProfileDetails()}
+              {step === 3 && renderStep3ReviewAndConfirm()}
             </div>
           )}
         </div>
