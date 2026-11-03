@@ -32,6 +32,7 @@ import PaymentModal from './components/PaymentModal';
 import AntiDopingHub from './components/AntiDopingHub';
 import RegionalFederationsHub from './components/RegionalFederationsHub';
 import AthleteRepresentativesHub from './components/AthleteRepresentativesHub';
+import FederationResultsHub from './components/Results/FederationResultsHub';
 import NotificationToast from './components/NotificationToast';
 
 import { Sun, Moon, Menu, X, ShieldCheck, Sparkles, ArrowRight, UserCheck, Eye, CheckCircle2, User, Building2, Lock } from 'lucide-react';
@@ -178,6 +179,7 @@ export default function App() {
         dispatch(setRole('CLUB'));
         setClubSubPage('MEETS');
         setPublicSubPage('DASHBOARD');
+        if (typeof window !== 'undefined') window.history.pushState(null, '', '/club/competitions');
       }
     };
     window.addEventListener('eaf-open-club-enrollment', handleClubEnrollment);
@@ -485,21 +487,51 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.pathname === '/login') {
-      if (!isLoggedIn) {
-        setPublicSubPage('LOGIN');
-      } else {
-        window.history.replaceState({}, '', '/');
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path === '/login') {
+        if (!isLoggedIn) setPublicSubPage('LOGIN');
+        else window.history.replaceState({}, '', '/');
+      }
+      // Restore club sub-page from URL on direct load / refresh
+      const clubPathMap: Record<string, string> = {
+        '/club/dashboard':        'OVERVIEW',
+        '/club/roster':           'ROSTER',
+        '/club/register-member':  'REGISTER_MEMBER',
+        '/club/competitions':     'MEETS',
+        '/club/seeding':          'SEEDING',
+        '/club/transfers':        'TRANSFERS',
+        '/club/security':         'RBAC',
+      };
+      if (clubPathMap[path]) {
+        setClubSubPage(clubPathMap[path]);
+        setPublicSubPage('DASHBOARD');
       }
     }
     const handlePopState = () => {
-      if (window.location.pathname === '/login') {
+      const path = window.location.pathname;
+      if (path === '/login') {
         setPublicSubPage('LOGIN');
-      } else if (window.location.pathname === '/register') {
+      } else if (path === '/register') {
         const isClub = window.location.search.includes('role=club');
         setRegModalRole(isClub ? 'CLUB' : 'ATHLETE');
-      } else if (window.location.pathname === '/') {
+      } else if (path === '/') {
         setPublicSubPage('HOME');
+      } else if (path.startsWith('/club/')) {
+        const clubPathMap: Record<string, string> = {
+          '/club/dashboard':        'OVERVIEW',
+          '/club/roster':           'ROSTER',
+          '/club/register-member':  'REGISTER_MEMBER',
+          '/club/competitions':     'MEETS',
+          '/club/seeding':          'SEEDING',
+          '/club/transfers':        'TRANSFERS',
+          '/club/security':         'RBAC',
+        };
+        const subPage = clubPathMap[path];
+        if (subPage) {
+          setClubSubPage(subPage);
+          setPublicSubPage('DASHBOARD');
+        }
       }
     };
     window.addEventListener('popstate', handlePopState);
@@ -519,6 +551,7 @@ export default function App() {
           sessionStorage.setItem('eaf_fayda_verified', verified);
           window.dispatchEvent(new CustomEvent('eaf-fayda-verified', { detail: verified }));
           setClubSubPage('REGISTER_MEMBER');
+          if (typeof window !== 'undefined') window.history.pushState(null, '', '/club/register-member');
           return;
         }
         if (isUserRegistered) {
@@ -554,8 +587,9 @@ export default function App() {
     if (role === 'CLUB') {
       if (data.club) dispatch(setClub(data.club));
       dispatch(setRole('CLUB'));
-      setClubSubPage('REGISTER_MEMBER');
-      setPublicSubPage('DASHBOARD'); // Reset to dashboard so club admin sees their dashboard first
+      setClubSubPage('OVERVIEW');
+      setPublicSubPage('DASHBOARD');
+      if (typeof window !== 'undefined') window.history.pushState(null, '', '/club/dashboard');
       handleNotify(`Welcome back, ${data.club?.shortName || 'Club Admin'}!`, 'success');
     } else if (role === 'COACH') {
       if (data.coach) dispatch(setCoach(data.coach));
@@ -589,9 +623,15 @@ export default function App() {
         userId: session.userId,
         userData: session.userData,
       }));
+      const clubPageToUrl2: Record<string, string> = {
+        'OVERVIEW': '/club/dashboard', 'ROSTER': '/club/roster',
+        'REGISTER_MEMBER': '/club/register-member', 'MEETS': '/club/competitions',
+        'SEEDING': '/club/seeding', 'TRANSFERS': '/club/transfers', 'RBAC': '/club/security',
+      };
       const targetSubPage = registrationData.payload.targetSubPage || 'OVERVIEW';
       setClubSubPage(targetSubPage);
       setPublicSubPage('DASHBOARD');
+      if (typeof window !== 'undefined') window.history.pushState(null, '', clubPageToUrl2[targetSubPage] || '/club/dashboard');
       setNavNonce(prev => prev + 1);
       window.scrollTo(0, 0);
       setTimeout(() => window.scrollTo(0, 0), 50);
@@ -776,6 +816,7 @@ export default function App() {
     const navLinks = [
       { label: t('nav.home'), page: 'HOME' },
       { label: t('nav.competitions'), page: 'COMPETITIONS' },
+      { label: t('nav.results'), page: 'RESULTS' },
       { label: t('nav.athletes'), page: 'ATHLETES' },
       { label: "Professionals", page: "PROFESSIONALS" },
       { label: t('nav.media'), page: 'MEDIA' },
@@ -936,8 +977,9 @@ export default function App() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => {
-                    setClubSubPage('REGISTER_MEMBER');
+                    setClubSubPage('OVERVIEW');
                     setPublicSubPage('DASHBOARD');
+                    if (typeof window !== 'undefined') window.history.pushState(null, '', '/club/dashboard');
                   }}
                   className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-emerald-500/50 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 transition-all cursor-pointer shadow-sm group"
                   title="Access Club Admin Portal"
@@ -1137,7 +1179,7 @@ export default function App() {
                 ) : isLoggedIn && currentRole === 'CLUB' ? (
                   <div className="flex flex-col gap-2">
                     <button
-                      onClick={() => { setClubSubPage('REGISTER_MEMBER'); setPublicSubPage('DASHBOARD'); setMobileMenuOpen(false); }}
+                      onClick={() => { setClubSubPage('OVERVIEW'); setPublicSubPage('DASHBOARD'); if (typeof window !== 'undefined') window.history.pushState(null, '', '/club/dashboard'); setMobileMenuOpen(false); }}
                       className="w-full p-2.5 rounded-xl flex items-center justify-between border border-emerald-500/40 bg-emerald-950/30 text-emerald-300 font-bold"
                     >
                       <div className="flex items-center gap-2.5">
@@ -1264,6 +1306,12 @@ export default function App() {
             }}
             onRegisterSuccess={handleRegisterSuccess}
           />
+        ) : publicSubPage === 'RESULTS' ? (
+          <FederationResultsHub
+            darkMode={darkMode}
+            onNotify={handleNotify}
+            onBack={() => setPublicSubPage('HOME')}
+          />
         ) : publicSubPage === 'ANTI_DOPING' ? (
           <AntiDopingHub darkMode={darkMode} />
         ) : publicSubPage === 'PROFESSIONALS' ? (
@@ -1387,16 +1435,33 @@ export default function App() {
   );
 
   if (currentRole === 'CLUB') {
+    const clubPageToUrl: Record<string, string> = {
+      'OVERVIEW':         '/club/dashboard',
+      'ROSTER':           '/club/roster',
+      'REGISTER_MEMBER':  '/club/register-member',
+      'MEETS':            '/club/competitions',
+      'SEEDING':          '/club/seeding',
+      'TRANSFERS':        '/club/transfers',
+      'RBAC':             '/club/security',
+    };
+    const navigateClub = (page: string) => {
+      setClubSubPage(page);
+      const url = clubPageToUrl[page];
+      if (url && typeof window !== 'undefined') {
+        window.history.pushState(null, '', url);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
     return (
       <AppLayout
         activeSubPage={clubSubPage}
-        onChangeSubPage={setClubSubPage}
+        onChangeSubPage={navigateClub}
         onSwitchRole={handleSwitchRoleDirectly}
         onLogout={handleLogout}
       >
         {clubSubPage === 'OVERVIEW' && (
           <ClubOverview
-            onChangeSubPage={setClubSubPage}
+            onChangeSubPage={navigateClub}
             onNotify={handleNotify}
             onAddClub={handleAddClub}
             onPayClubMembership={handleInitiateClubMembershipPayment}
@@ -1404,14 +1469,14 @@ export default function App() {
         )}
         {clubSubPage === 'REGISTER_MEMBER' && (
           <RegisterMember
-            onBack={() => setClubSubPage('ROSTER')}
+            onBack={() => navigateClub('ROSTER')}
             onNotify={handleNotify}
           />
         )}
         {clubSubPage === 'ROSTER' && (
           <RosterManagement
             onRenewLicense={handleInitiateLicensePayment}
-            onRegisterMember={() => setClubSubPage('REGISTER_MEMBER')}
+            onRegisterMember={() => navigateClub('REGISTER_MEMBER')}
             onUpdateAthlete={handleUpdateAthlete}
           />
         )}
@@ -1434,7 +1499,7 @@ export default function App() {
           <RBACSecurityMatrix
             isOpen={true}
             isInline={true}
-            onClose={() => setClubSubPage('OVERVIEW')}
+            onClose={() => navigateClub('OVERVIEW')}
           />
         )}
         {sharedModals}

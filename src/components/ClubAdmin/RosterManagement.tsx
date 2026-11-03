@@ -278,8 +278,10 @@ export default function RosterManagement({
     data: backendAthletes = [],
     isLoading: isLoadingAthletes,
     refetch: refetchAthletes,
+    error: athletesError,
   } = useGetAthletesQuery(
-    activeClubId ? { clubId: activeClubId } : undefined
+    activeClubId ? { clubId: activeClubId, limit: 200 } : { limit: 200 },
+    { refetchOnMountOrArgChange: true }
   );
   const {
     data: backendCoaches = [],
@@ -287,7 +289,7 @@ export default function RosterManagement({
     refetch: refetchCoaches,
   } = useGetClubCoachesQuery(
     activeClubId || '',
-    { skip: !activeClubId }
+    { skip: !activeClubId, refetchOnMountOrArgChange: true }
   );
 
   // Build unified member list merging real backend athletes and coaches strictly for this club
@@ -298,12 +300,14 @@ export default function RosterManagement({
     (backendAthletes || []).forEach((b: any) => {
       if (activeClubId) {
         const matchesId = b.clubId === activeClubId || b.club?.id === activeClubId;
-        const matchesName = activeClubName && b.clubName && (
-          b.clubName.trim().toLowerCase().includes(activeClubName.trim().toLowerCase()) ||
-          activeClubName.trim().toLowerCase().includes(b.clubName.trim().toLowerCase())
+        const matchesName = activeClubName && (b.clubName || b.club?.name) && (
+          String(b.clubName || b.club?.name).trim().toLowerCase().includes(activeClubName.trim().toLowerCase()) ||
+          activeClubName.trim().toLowerCase().includes(String(b.clubName || b.club?.name).trim().toLowerCase())
         );
-        if (!matchesId && !matchesName && b.clubId && b.clubId !== activeClubId) {
-          return; // Exclude athlete belonging to another club
+        // Only exclude if athlete explicitly belongs to a DIFFERENT club
+        const belongsToOtherClub = b.clubId && b.clubId !== activeClubId && b.club?.id && b.club.id !== activeClubId;
+        if (!matchesId && !matchesName && belongsToOtherClub) {
+          return;
         }
       }
 
@@ -1182,12 +1186,27 @@ export default function RosterManagement({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filteredMembers.length === 0 ? (
+              {(isLoadingAthletes || isLoadingCoaches) ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <RefreshCw size={28} className="mx-auto mb-2 opacity-40 animate-spin" />
+                    <p className="font-bold text-sm">Loading club members from federation registry…</p>
+                  </td>
+                </tr>
+              ) : filteredMembers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400">
                     <Users size={36} className="mx-auto mb-2 opacity-30" />
-                    <p className="font-bold text-sm">No members found matching your search or filters.</p>
-                    <p className="text-xs text-slate-500 mt-1">Try resetting filters or registering a new member via Fayda.</p>
+                    <p className="font-bold text-sm">
+                      {unifiedMembers.length === 0
+                        ? 'No members registered for this club yet.'
+                        : 'No members found matching your search or filters.'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {unifiedMembers.length === 0
+                        ? 'Register your first member via Fayda to get started.'
+                        : 'Try resetting filters or registering a new member via Fayda.'}
+                    </p>
                   </td>
                 </tr>
               ) : (
