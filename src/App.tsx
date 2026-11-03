@@ -165,6 +165,7 @@ export default function App() {
   const [clubSubPage, setClubSubPage] = useState('OVERVIEW');
   const [athleteSubPage, setAthleteSubPage] = useState('OVERVIEW');
   const [publicSubPage, setPublicSubPage] = useState('HOME');
+  const [rosterRefreshKey, setRosterRefreshKey] = useState(0);
   const [activeEnrollmentCompetition, setActiveEnrollmentCompetition] = useState<any | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useI18n();
@@ -1243,7 +1244,6 @@ export default function App() {
               }
             }}
             onOpenRegistration={(role?: 'CLUB' | 'ATHLETE') => {
-              setPublicSubPage('HOME');
               const chosenRole = role || 'ATHLETE';
               setRegModalRole(chosenRole);
               if (typeof window !== 'undefined') {
@@ -1430,10 +1430,12 @@ export default function App() {
           <RegisterMember
             onBack={() => navigateClub('ROSTER')}
             onNotify={handleNotify}
+            onMemberAdded={() => setRosterRefreshKey(prev => prev + 1)}
           />
         )}
         {clubSubPage === 'ROSTER' && (
           <RosterManagement
+            key={rosterRefreshKey}
             onRenewLicense={handleInitiateLicensePayment}
             onRegisterMember={() => navigateClub('REGISTER_MEMBER')}
             onUpdateAthlete={handleUpdateAthlete}

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 import {
-  Building2, UserCheck, Users, ArrowRightLeft, Trophy, ShieldCheck,
+  UserCheck, Users, ArrowRightLeft, Trophy, ShieldCheck,
   Navigation, Activity, LogOut, Home,
-  Bell, ChevronRight, Award, Globe, BookOpen, Sun, Moon, Menu, X
+  Bell, ChevronRight, Award, BookOpen, Sun, Moon, Menu, X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSelector } from '../../store/hooks';
@@ -240,54 +240,6 @@ export default function AppLayout({
 
         {/* Footer */}
         <div className="p-3.5 border-t border-[#2D3A5A] flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => { onSwitchRole('LANDING'); setMobileOpen(false); }}
-            style={{
-              background: 'rgba(255, 255, 255, 0.12)',
-              color: '#FFFFFF',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              borderRadius: '10px',
-              padding: '10px 14px',
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.22)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-          >
-            <Globe size={15} color="#FFFFFF" /> Go to Home Page
-          </button>
-
-          <button
-            type="button"
-            onClick={() => { onSwitchRole(isClub ? 'ATHLETE' : 'CLUB'); setMobileOpen(false); }}
-            style={{
-              background: 'rgba(255, 255, 255, 0.12)',
-              color: '#FFFFFF',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              borderRadius: '10px',
-              padding: '10px 14px',
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.22)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
-          >
-            {isClub ? <><UserCheck size={15} color="#FFFFFF" /> Athlete View</> : <><Building2 size={15} color="#FFFFFF" /> Club View</>}
-          </button>
-
           <button
             type="button"
             onClick={() => { onLogout(); setMobileOpen(false); }}

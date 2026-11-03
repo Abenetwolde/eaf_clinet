@@ -9,6 +9,7 @@ import { FAYDA_CONFIG, launchFaydaPortal } from '../../constants/fayda';
 interface RegisterMemberProps {
   onBack: () => void;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
+  onMemberAdded?: () => void;
 }
 
 type MemberType = 'ATHLETE' | 'COACH';
@@ -48,7 +49,7 @@ function profileFromIdentity(raw: string): { profile: FaydaProfile; fin: string 
   }
 }
 
-export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps) {
+export default function RegisterMember({ onBack, onNotify, onMemberAdded }: RegisterMemberProps) {
   const dispatch = useAppDispatch();
   const storedClub = useAppSelector((state) => state.auth.club);
   // Club details are intentionally not persisted in browser storage. Reload
@@ -181,6 +182,7 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
       sessionStorage.removeItem('eaf_club_member_registration');
       sessionStorage.removeItem('eaf_club_member_type');
       onNotify(`${type === 'ATHLETE' ? 'Athlete' : 'Coach'} ${profile.name} was added to ${club.name}.`, 'success');
+      onMemberAdded?.();
       onBack();
     } catch (e: any) {
       onNotify(e?.data?.message || e?.message || 'Member registration failed.', 'error');

@@ -172,10 +172,9 @@ export default function RosterManagement({
     data: backendAthletes = [],
     isLoading: isLoadingAthletes,
     refetch: refetchAthletes,
-    error: athletesError,
   } = useGetAthletesQuery(
-    activeClubId ? { clubId: activeClubId, limit: 200 } : { limit: 200 },
-    { refetchOnMountOrArgChange: true }
+    activeClubId ? { clubId: activeClubId, limit: 200 } : { limit: 1 },
+    { refetchOnMountOrArgChange: true, skip: !activeClubId }
   );
   const {
     data: backendCoaches = [],
