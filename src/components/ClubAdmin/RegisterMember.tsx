@@ -8,17 +8,14 @@ import {
   FileCheck2,
   AlertOctagon,
   ArrowRightLeft,
-  CheckCircle2,
-  ShieldAlert,
   ShieldCheck,
-  FileText,
-  BadgeAlert
+  BadgeAlert,
+  RefreshCw,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setClub } from '../../store/slices/authSlice';
 import { useGetMeQuery } from '../../store/api/authApi';
 import {
-  useGetRegistrationOptionsQuery,
   useRegisterAthleteByClubAdminMutation,
   useRegisterCoachByClubAdminMutation,
   useLazyCheckAthleteAffiliationQuery,
@@ -28,6 +25,7 @@ import { FAYDA_CONFIG, launchFaydaPortal } from '../../constants/fayda';
 interface RegisterMemberProps {
   onBack: () => void;
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
+  onMemberAdded?: () => void;
 }
 
 type MemberType = 'ATHLETE' | 'COACH';
@@ -78,7 +76,7 @@ function profileFromIdentity(raw: string): { profile: FaydaProfile; fin: string 
   }
 }
 
-export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps) {
+export default function RegisterMember({ onBack, onNotify, onMemberAdded }: RegisterMemberProps) {
   const dispatch = useAppDispatch();
   const storedClub = useAppSelector((state) => state.auth.club);
   const { data: accountResponse, isLoading: isLoadingAccount } = useGetMeQuery(undefined, {
@@ -101,12 +99,6 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
     clubRank: 0,
     totalPoints: 0,
   } : storedClub;
-
-  const { data: registrationOptions } = useGetRegistrationOptionsQuery();
-  const regions = registrationOptions?.regions || [];
-  const regionOptions = club?.region && !regions.some((region) => region.name === club.region)
-    ? [...regions, { id: `club-${club.id}`, name: club.region, flag: '🏃', flagImageUrl: null }]
-    : regions;
 
   const [registerAthlete] = useRegisterAthleteByClubAdminMutation();
   const [registerCoach] = useRegisterCoachByClubAdminMutation();
@@ -149,13 +141,19 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Sync the club into the store and pre-fill the club signatory field once.
   useEffect(() => {
     if (!storedClub?.id && club?.id) dispatch(setClub(club));
+  }, [club, dispatch, storedClub?.id]);
+
+  useEffect(() => {
     if (club?.name && !signedByClub) {
       setSignedByClub(`${club.name} Official Administration`);
     }
-  }, [club, dispatch, storedClub?.id, signedByClub]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [club?.name]);
 
+  // Accept a verified Fayda identity (either passed via CustomEvent or rehydrated from sessionStorage).
   useEffect(() => {
     const acceptFaydaIdentity = (raw?: string) => {
       if (sessionStorage.getItem('eaf_club_member_registration') !== '1') return;
@@ -175,6 +173,7 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
       setPhone(verified.profile.phoneNumber || '');
       setSignedByAthlete(verified.profile.name);
       setError('');
+      setLoading(false);
       sessionStorage.removeItem('eaf_club_member_registration');
       sessionStorage.removeItem('eaf_club_member_type');
     };
@@ -187,7 +186,7 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
     return () => window.removeEventListener('eaf-fayda-verified', handleVerified);
   }, [club?.region]);
 
-  // Check affiliation as soon as fin is available
+  // Check affiliation as soon as fin is available.
   useEffect(() => {
     if (fin && type === 'ATHLETE') {
       checkAffiliation({ nin: fin, clubId: club?.id });
@@ -207,8 +206,19 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
       sessionStorage.removeItem('eaf_club_member_registration');
       sessionStorage.removeItem('eaf_club_member_type');
       setError(e?.message || 'Could not open the official Fayda verification service.');
+    } finally {
       setLoading(false);
     }
+  };
+
+  const restartVerification = () => {
+    setProfile(null);
+    setFin('');
+    setEmail('');
+    setPhone('');
+    setSignedByAthlete('');
+    setError('');
+    setLoading(false);
   };
 
   const handleSetTermPreset = (years: number) => {
@@ -249,6 +259,8 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
 
     setSubmitting(true);
     try {
+      let successMessage = `${type === 'ATHLETE' ? 'Athlete' : 'Coach'} ${profile.name} was added to ${club.name}.`;
+
       if (type === 'ATHLETE') {
         const resolvedNationality = (profile.nationality && profile.nationality.trim().length >= 2)
           ? profile.nationality.trim()
@@ -294,8 +306,7 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
           signedByAthlete: signedByAthlete || profile.name,
         }).unwrap();
 
-        const successMsg = res.message || `Athlete ${profile.name} was registered under signed contract with ${club.name}.`;
-        onNotify(successMsg, 'success');
+        successMessage = res.message || `Athlete ${profile.name} was registered under signed contract with ${club.name}.`;
       } else {
         await registerCoach({
           email: email.trim(),
@@ -314,13 +325,15 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
           specialization: specialization.trim() || 'Athletics',
           yearsOfExperience: Number(yearsOfExperience) || 0,
         }).unwrap();
-        onNotify(`Coach ${profile.name} was added to ${club.name}.`, 'success');
       }
 
       sessionStorage.removeItem('eaf_fayda_verified');
       sessionStorage.removeItem('fayda_auth_payload');
       sessionStorage.removeItem('eaf_club_member_registration');
       sessionStorage.removeItem('eaf_club_member_type');
+
+      onNotify(successMessage, 'success');
+      onMemberAdded?.();
       onBack();
     } catch (e: any) {
       onNotify(e?.data?.message || e?.message || 'Member registration failed.', 'error');
@@ -443,6 +456,14 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
               {profile.amharic && <div style={{ color: '#64748B', fontSize: '0.9rem', fontWeight: 700 }}>{profile.amharic}</div>}
             </div>
           </div>
+
+          {/* Affiliation check spinner */}
+          {type === 'ATHLETE' && isCheckingAffiliation && (
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs flex items-center gap-2">
+              <RefreshCw size={14} className="animate-spin shrink-0" />
+              <span>Checking athlete affiliation with other clubs…</span>
+            </div>
+          )}
 
           {/* Dual Registration Strict Check Banner */}
           {type === 'ATHLETE' && affiliationStatus?.isForbidden && (
@@ -823,7 +844,7 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
           {error && <p style={{ color: '#B91C1C', margin: 0, fontWeight: 700 }}>{error}</p>}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingTop: 10 }}>
-            <button type="button" className="btn-gov-secondary" onClick={() => setProfile(null)}>
+            <button type="button" className="btn-gov-secondary" onClick={restartVerification}>
               Restart Fayda Verification
             </button>
             <button
@@ -831,14 +852,14 @@ export default function RegisterMember({ onBack, onNotify }: RegisterMemberProps
               className="btn-accent"
               disabled={
                 submitting ||
-                (type === 'ATHLETE' && Boolean(affiliationStatus?.isForbidden || !contractAffirmed))
+                (type === 'ATHLETE' && Boolean(affiliationStatus?.isForbidden || !contractAffirmed || isCheckingAffiliation))
               }
             >
               {submitting
                 ? 'Executing Contract…'
                 : affiliationStatus?.isTransfer
-                ? `Execute Transfer & Sign Contract`
-                : `Sign Contract & Register ${type === 'ATHLETE' ? 'Athlete' : 'Coach'}`}
+                  ? `Execute Transfer & Sign Contract`
+                  : `Sign Contract & Register ${type === 'ATHLETE' ? 'Athlete' : 'Coach'}`}
             </button>
           </div>
         </form>
