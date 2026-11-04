@@ -104,37 +104,37 @@ export default function AppLayout({
         initial={false}
       >
         {/* Mobile Close Button */}
-        <div className="md:hidden flex justify-end p-3 border-b border-[#2D3A5A]">
+        <div className="md:hidden flex justify-end p-3 border-b border-slate-200">
           <button
             onClick={() => setMobileOpen(false)}
-            className="text-white p-1 rounded-lg hover:bg-white/10 border-0 bg-transparent cursor-pointer"
+            className="text-slate-600 p-1 rounded-lg hover:bg-slate-100 border-0 bg-transparent cursor-pointer"
             aria-label="Close menu"
           >
             <X size={22} />
           </button>
         </div>
 
-        {/* EAF Brand Header - Clickable redirect to Home */}
+        {/* EAF Brand Header */}
         <div
-          className="px-4.5 py-4 border-b border-[#2D3A5A] flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-90"
+          className="px-4.5 py-4 border-b border-slate-200 flex items-center gap-3 cursor-pointer transition-opacity hover:opacity-90"
           style={{ padding: '16px 18px' }}
           onClick={() => onSwitchRole('LANDING')}
           role="button"
           tabIndex={0}
           title="Return to Home Page"
         >
-          <div className="w-[42px] h-[42px] rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.3)] shrink-0">
+          <div className="w-[42px] h-[42px] rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-sm border border-slate-200 shrink-0">
             <EAFLogo size={36} />
           </div>
           <div>
-            <div className="text-[0.95rem] font-black text-white tracking-tight leading-tight">EAF Portal</div>
-            <div className="text-[0.68rem] text-accent font-bold mt-px">Ethiopian Athletics Federation</div>
+            <div className="text-[0.95rem] font-black text-slate-900 tracking-tight leading-tight">EAF Portal</div>
+            <div className="text-[0.68rem] text-blue-600 font-bold mt-px">Ethiopian Athletics Federation</div>
           </div>
         </div>
 
-        {/* ── Prominent Club Crest / Logo Banner in Sidebar ── */}
+        {/* ── Club Crest Banner ── */}
         {isClub && (
-          <div className="mx-3.5 mt-3.5 mb-2.5 p-3 rounded-2xl  from-[#1E293B] to-[#0A101D] shadow-md">
+          <div className="mx-3.5 mt-3.5 mb-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="relative w-12 h-12 rounded-xl bg-white p-1 shrink-0 overflow-hidden shadow-sm border border-slate-200 flex items-center justify-center">
                 {resolvedClubLogo && !logoFailed ? (
@@ -145,20 +145,20 @@ export default function AppLayout({
                     onError={() => setLogoFailed(true)}
                   />
                 ) : (
-                  <div className="w-full h-full rounded-lg bg-gradient-to-br from-blue-700 to-indigo-900 flex items-center justify-center text-white font-black text-xs tracking-wider shadow-inner">
+                  <div className="w-full h-full rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs tracking-wider">
                     {(currentClub.shortName || currentClub.name?.slice(0, 3) || 'CLUB').toUpperCase()}
                   </div>
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-accent leading-none mb-1">
-                  <ShieldCheck size={11} className="text-accent shrink-0" />
+                <div className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-blue-600 leading-none mb-1">
+                  <ShieldCheck size={11} className="text-blue-600 shrink-0" />
                   Official Club Crest
                 </div>
-                <div className="text-sm font-black text-white truncate leading-tight" title={clubDisplayName}>
+                <div className="text-sm font-black text-slate-900 truncate leading-tight" title={clubDisplayName}>
                   {clubDisplayName}
                 </div>
-                <div className="text-[11px] text-slate-300 font-semibold truncate mt-0.5">
+                <div className="text-[11px] text-slate-500 font-semibold truncate mt-0.5">
                   {currentClub.region || matchedClub?.region || "Affiliated Club"}
                 </div>
               </div>
@@ -167,21 +167,20 @@ export default function AppLayout({
         )}
 
         {/* Identity Card */}
-        <div className="px-4 bg-white/[0.04] border-b border-[#2D3A5A] flex items-center gap-2.5">
+        <div className="px-4 border-b border-slate-200 flex items-center gap-2.5 py-3">
           {isClub ? (
-         <div>
-         </div>
+            <div />
           ) : (
             <>
               <img
                 src={getProfilePhotoUrl({ photoUrl: currentAthlete.photoUrl, picture: userData?.picture, faydaFin: currentAthlete.faydaFin || userData?.faydaNin }) || '/images/fayda_resident_photo.jpg'}
                 alt={currentAthlete.name}
                 onError={(e) => { e.currentTarget.src = '/images/fayda_resident_photo.jpg'; }}
-                className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-accent shadow-xs"
+                className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-blue-200 shadow-xs"
               />
               <div>
-                <div className="text-[0.84rem] font-bold text-white leading-tight">{currentAthlete.name}</div>
-                <div className="text-[0.68rem] text-[#8FA8BC] font-bold">{currentAthlete.ageTier || 'Athlete'} · ID Verified</div>
+                <div className="text-[0.84rem] font-bold text-slate-900 leading-tight">{currentAthlete.name}</div>
+                <div className="text-[0.68rem] text-slate-500 font-bold">{currentAthlete.ageTier || 'Athlete'} · ID Verified</div>
               </div>
             </>
           )}
@@ -189,26 +188,26 @@ export default function AppLayout({
 
         {/* Athlete Affiliated Club Badge */}
         {!isClub && athleteClubName && (
-          <div className="mx-3.5 mt-2.5 mb-1 p-2 rounded-xl bg-white/[0.04] border border-[#2D3A5A] flex items-center gap-2.5">
+          <div className="mx-3.5 mt-2.5 mb-1 p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2.5">
             <div className="relative w-8 h-8 rounded-lg bg-white p-0.5 shrink-0 overflow-hidden shadow-xs flex items-center justify-center border border-slate-200">
               {athleteClubLogo ? (
                 <img src={athleteClubLogo} alt={athleteClubName} className="w-full h-full object-contain" />
               ) : (
-                <div className="w-full h-full rounded bg-slate-800 text-accent font-black text-[10px] flex items-center justify-center">
+                <div className="w-full h-full rounded bg-blue-100 text-blue-700 font-black text-[10px] flex items-center justify-center">
                   {athleteClubName.slice(0, 3).toUpperCase()}
                 </div>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[9px] uppercase font-black text-accent tracking-wider leading-none">Affiliated Club</div>
-              <div className="text-xs font-bold text-white truncate mt-0.5" title={athleteClubName}>{athleteClubName}</div>
+              <div className="text-[9px] uppercase font-black text-blue-600 tracking-wider leading-none">Affiliated Club</div>
+              <div className="text-xs font-bold text-slate-800 truncate mt-0.5" title={athleteClubName}>{athleteClubName}</div>
             </div>
           </div>
         )}
 
         {/* Nav Items */}
         <div className="p-3 flex-1 overflow-y-auto" style={{ padding: '16px 12px' }}>
-          <div className="text-[0.65rem] font-black text-[#5A7A94] uppercase tracking-[0.09em] mb-2.5 pl-1.5">
+          <div className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.09em] mb-2.5 pl-1.5">
             {isClub ? 'Club' : 'Athlete'}
           </div>
           {navItems.map((item) => {
@@ -239,7 +238,7 @@ export default function AppLayout({
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 border-t border-[#2D3A5A] flex flex-col gap-2">
+        <div className="p-3.5 border-t border-slate-200 flex flex-col gap-2">
           <button
             type="button"
             onClick={() => { onLogout(); setMobileOpen(false); }}
