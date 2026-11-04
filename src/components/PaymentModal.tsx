@@ -19,11 +19,12 @@ import {
   useInitiateClubMembershipPaymentMutation,
   useInitiateClubRegistrationPaymentMutation,
   useLazyVerifyPaymentStatusQuery,
+  useGetPaymentConfigQuery,
 } from '../store/api/paymentApi';
 
 export interface PaymentModalProps {
-  paymentData: {
-    type?: 'EVENT_REGISTRATION' | 'ATHLETE_LICENSE' | 'COACH_LICENSE' | 'CLUB_MEMBERSHIP_FEE' | 'CLUB_REGISTRATION_FEE';
+  paymentData?: {
+    type?: 'EVENT_REGISTRATION' | 'ATHLETE_LICENSE' | 'COACH_LICENSE' | 'CLUB_MEMBERSHIP_FEE' | 'CLUB_REGISTRATION_FEE' | string;
     eventId?: string;
     athleteId?: string;
     coachId?: string;
@@ -35,11 +36,24 @@ export interface PaymentModalProps {
     disciplines?: string[];
     [key: string]: any;
   };
-  onClose: () => void;
-  onPaymentComplete: (receipt: any) => void;
+  onClose?: () => void;
+  onPaymentComplete?: (receipt: any) => void;
+  onPaymentSuccess?: (receipt?: any) => void;
+  // Direct spread prop compatibility
+  type?: 'EVENT_REGISTRATION' | 'ATHLETE_LICENSE' | 'COACH_LICENSE' | 'CLUB_MEMBERSHIP_FEE' | 'CLUB_REGISTRATION_FEE' | string;
+  eventId?: string;
+  athleteId?: string;
+  coachId?: string;
+  clubId?: string;
+  athleteName?: string;
+  clubName?: string;
+  description?: string;
+  amount?: number;
+  disciplines?: string[];
+  [key: string]: any;
 }
 
-export default function PaymentModal({ paymentData, onClose, onPaymentComplete }: PaymentModalProps) {
+export default function PaymentModal(props: PaymentModalProps) {
   const [step, setStep] = useState<'INIT' | 'AWAITING_PAYMENT' | 'COMPLETED'>('INIT');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -50,6 +64,10 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
   const [receipt, setReceipt] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Dynamic Payment Config from Backend
+  const { data: configResp } = useGetPaymentConfigQuery();
+  const config = (configResp as any)?.data ?? configResp;
+
   // Mutations
   const [initiateEventPayment] = useInitiateEventPaymentMutation();
   const [initiateLicensePayment] = useInitiateLicensePaymentMutation();
@@ -57,8 +75,41 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
   const [initiateClubRegistrationPayment] = useInitiateClubRegistrationPaymentMutation();
   const [triggerVerifyStatus] = useLazyVerifyPaymentStatusQuery();
 
-  const amount = paymentData.amount || 500;
-  const description = paymentData.description || 'Federation Membership & Service Fee';
+  // Support both wrapped `paymentData` and spread properties
+  const raw = props.paymentData || props;
+  const paymentData = {
+    ...raw,
+    type: raw.type || props.type,
+    eventId: raw.eventId || props.eventId,
+    athleteId: raw.athleteId || props.athleteId,
+    coachId: raw.coachId || props.coachId,
+    clubId: raw.clubId || props.clubId,
+    athleteName: raw.athleteName || props.athleteName,
+    clubName: raw.clubName || props.clubName,
+    description: raw.description || props.description,
+    amount: raw.amount ?? props.amount,
+    disciplines: raw.disciplines || props.disciplines,
+  };
+
+  const onClose = props.onClose || (() => {});
+  const onPaymentComplete = props.onPaymentComplete || props.onPaymentSuccess || (() => {});
+
+  // Dynamic fee from backend configuration when applicable
+  const defaultAmountForType =
+    paymentData.type === 'CLUB_REGISTRATION_FEE'
+      ? config?.clubRegistrationFee ?? 5000
+      : paymentData.type === 'CLUB_MEMBERSHIP_FEE'
+      ? config?.clubAnnualRenewalFee ?? 5000
+      : 500;
+
+  const amount = paymentData.amount ?? defaultAmountForType;
+  const description = paymentData.description || (
+    paymentData.type === 'CLUB_REGISTRATION_FEE'
+      ? 'EAF Official Club Organization Registration & Accreditation Fee'
+      : paymentData.type === 'CLUB_MEMBERSHIP_FEE'
+      ? 'Annual Club Affiliation & Accreditation Renewal Fee'
+      : 'Federation Membership & Service Fee'
+  );
   const payerName = paymentData.athleteName || paymentData.clubName || 'Federation Member';
 
   // Determine service type icon
@@ -212,7 +263,12 @@ export default function PaymentModal({ paymentData, onClose, onPaymentComplete }
 
     setReceipt(generatedReceipt);
     setStep('COMPLETED');
-    onPaymentComplete(generatedReceipt);
+    if (typeof onPaymentComplete === 'function') {
+      onPaymentComplete(generatedReceipt);
+    }
+    if (typeof props.onPaymentSuccess === 'function' && props.onPaymentSuccess !== onPaymentComplete) {
+      props.onPaymentSuccess(generatedReceipt);
+    }
   };
 
   // Manual Gateway Status Check

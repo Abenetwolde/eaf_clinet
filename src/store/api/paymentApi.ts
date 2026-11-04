@@ -26,8 +26,16 @@ export interface InitiatePaymentResult {
 
 export const paymentApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getPaymentConfig: builder.query<{ success: boolean; data: PaymentConfig }, void>({
+    getPaymentConfig: builder.query<{ success: boolean; data: PaymentConfig } & PaymentConfig, void>({
       query: () => "payments/config",
+      transformResponse: (res: { success: boolean; data: PaymentConfig } | PaymentConfig) => {
+        const payload = (res as any)?.data ?? res;
+        return {
+          ...res,
+          ...payload,
+          data: payload,
+        };
+      },
       providesTags: ["Clubs"],
     }),
 

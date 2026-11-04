@@ -108,7 +108,7 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
 
   // Retrieve federation dynamic pricing configuration
   const { data: configResp } = useGetPaymentConfigQuery();
-  const paymentConfig = configResp?.data;
+  const paymentConfig = (configResp as any)?.data ?? configResp;
   const renewalFee = paymentConfig?.clubAnnualRenewalFee ?? 5000;
   const isRenewalOpen = paymentConfig?.isRenewalOpen ?? true;
   const renewalWindowLabel = paymentConfig?.renewalStartDateFormatted || paymentConfig?.renewalEndDateFormatted

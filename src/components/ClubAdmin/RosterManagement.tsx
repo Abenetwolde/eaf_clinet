@@ -730,7 +730,7 @@ export default function RosterManagement({ onRenewLicense, onRegisterMember, onU
         height: typeof updated.height === 'number' ? updated.height : undefined,
         weight: typeof updated.weight === 'number' ? updated.weight : undefined,
         bio: updated.bio,
-      } as Athlete);
+      } as unknown as Athlete);
     }
   };
 

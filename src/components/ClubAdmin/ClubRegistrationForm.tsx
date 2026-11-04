@@ -38,7 +38,8 @@ export default function ClubRegistrationForm({
 
   // Payment config – used for the club registration fee shown on review + success
   const { data: paymentConfig } = useGetPaymentConfigQuery();
-  const registrationFee = (paymentConfig as any)?.clubRegistrationFee ?? 5000;
+  const configObj = (paymentConfig as any)?.data ?? paymentConfig;
+  const registrationFee = configObj?.clubRegistrationFee ?? 5000;
 
   // Wizard steps
   const [step, setStep] = useState(0);
@@ -1152,8 +1153,12 @@ export default function ClubRegistrationForm({
       {/* Payment modal – opened from the success screen */}
       {paymentModalData && (
         <PaymentModal
-          {...(paymentModalData as any)}
+          paymentData={paymentModalData}
           onClose={() => setPaymentModalData(null)}
+          onPaymentComplete={() => {
+            setPaymentCompleted(true);
+            setPaymentModalData(null);
+          }}
           onPaymentSuccess={() => {
             setPaymentCompleted(true);
             setPaymentModalData(null);
