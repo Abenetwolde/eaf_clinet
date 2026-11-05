@@ -1095,3 +1095,10 @@ html.dark,
 .dark .bg-\[\#F8FAF8\] {
   background-color: var(--bg-surface-variant) !important;
 }
+
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 1px rgb(220 38 38 / 22%);
+}

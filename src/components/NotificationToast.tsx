@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info, TriangleAlert, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Toast } from '../types';
 
@@ -18,6 +18,11 @@ const toastStyles: Record<string, { bg: string; border: string; icon: React.Reac
     bg: 'bg-[#2A0E12]',
     border: 'border-[#FF3B30]',
     icon: <AlertCircle color="#FF3B30" size={20} />,
+  },
+  warning: {
+    bg: 'bg-[#2A2110]',
+    border: 'border-[#FBBF24]',
+    icon: <TriangleAlert color="#FBBF24" size={20} />,
   },
   info: {
     bg: 'bg-[#0F1C2E]',

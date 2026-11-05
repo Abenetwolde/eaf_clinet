@@ -36,11 +36,14 @@ export default function AppLayout({
 }: AppLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
+  const [adminAvatarFailed, setAdminAvatarFailed] = useState(false);
   const currentRole = useAppSelector((state) => state.auth.role);
   const currentClub = useAppSelector((state) => state.auth.club);
   const currentAthlete = useAppSelector((state) => state.auth.athlete);
   const userData = useAppSelector((state) => state.auth.userData);
   const clubAdminName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || currentClub.manager || 'Club Admin';
+  const clubAdminPhotoCandidate = (userData as any)?.photoUrl || (userData as any)?.picture || (userData as any)?.avatarUrl || '';
+  const clubAdminPhoto = /runner_female\.png|avatar-placeholder|profile-placeholder/i.test(clubAdminPhotoCandidate) ? '' : clubAdminPhotoCandidate;
   const isClub = currentRole === 'CLUB';
 
   // Live lookup from clubs list to get up-to-date club crest
@@ -169,7 +172,24 @@ export default function AppLayout({
         {/* Identity Card */}
         <div className="px-4 border-b border-slate-200 flex items-center gap-2.5 py-3">
           {isClub ? (
-            <div />
+            <>
+              <div className="w-9 h-9 rounded-full shrink-0 border-2 border-blue-200 shadow-xs overflow-hidden bg-blue-600 text-white flex items-center justify-center font-black">
+                {clubAdminPhoto && !adminAvatarFailed ? (
+                  <img
+                    src={clubAdminPhoto}
+                    alt={clubAdminName}
+                    className="w-full h-full object-cover"
+                    onError={() => setAdminAvatarFailed(true)}
+                  />
+                ) : (
+                  <span>{clubAdminName.trim().charAt(0).toUpperCase() || 'C'}</span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="text-[0.84rem] font-bold text-slate-900 leading-tight truncate">{clubAdminName}</div>
+                <div className="text-[0.68rem] text-slate-500 font-bold">Club Administrator</div>
+              </div>
+            </>
           ) : (
             <>
               <img

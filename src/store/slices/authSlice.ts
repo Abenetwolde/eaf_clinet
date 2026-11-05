@@ -47,7 +47,7 @@ export interface AuthState {
 
 function readInitialRole(): Role {
   const saved = readString(STORAGE_KEYS.role);
-  if (saved === 'CLUB' || saved === 'ATHLETE' || saved === 'COACH' || saved === 'LANDING') return saved;
+  if (saved === 'CLUB' || saved === 'ATHLETE' || saved === 'COACH' || saved === 'PROFESSIONAL' || saved === 'LANDING') return saved;
   return 'LANDING';
 }
 

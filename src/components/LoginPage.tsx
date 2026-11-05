@@ -65,6 +65,7 @@ export default function LoginPage({
     const roles: string[] = data.user?.roles || data.roles || [];
     const isCoach = userRole.includes('coach') || roles.some((r: string) => r.toUpperCase() === 'COACH');
     const isClub = userRole.includes('club') || roles.some((r: string) => r.toUpperCase().includes('CLUB'));
+    const isProfessional = /referee|medical|official|competition officer|disciplinary officer|analyst|registrar/.test(userRole) || roles.some((r: string) => /^(REFEREE|MEDICAL_STAFF|COMPETITION_OFFICER|DISCIPLINARY_OFFICER|ANALYST|CLUB_REGISTRAR|ATHLETE_REGISTRAR)$/.test(r.toUpperCase()));
     const userData = {
       id: data.user?.id || data.userId || data.id,
       email: data.user?.email || data.email || '',
@@ -74,7 +75,7 @@ export default function LoginPage({
       faydaNin: data.faydaNin || data.user?.faydaIdentity?.nin || '',
       picture: data.user?.picture || data.user?.photoUrl || data.picture || data.photoUrl || '',
       status: data.status || data.user?.status || 'ACTIVE',
-      roles,
+      roles: roles.length ? roles : [String(data.userRole || '').toUpperCase().replace(/[ -]+/g, '_')],
     };
 
     if (isClub) {
@@ -109,6 +110,12 @@ export default function LoginPage({
       const coach = data.coach || { id: '', name: `${userData.firstName} ${userData.lastName}`.trim(), email: userData.email, phoneNumber: userData.phoneNumber, user: data.user, faydaFin: data.faydaNin || '' };
       dispatch(login({ role: 'COACH', coach, token: data.token || data.accessToken, refreshToken: data.refreshToken, userId: data.userId || data.user?.id, userData }));
       onLoginSuccess('COACH', { coach });
+      return;
+    }
+
+    if (isProfessional) {
+      dispatch(login({ role: 'PROFESSIONAL', token: data.token || data.accessToken, refreshToken: data.refreshToken, userId: data.userId || data.user?.id, userData }));
+      onLoginSuccess('PROFESSIONAL', { professionalRole: roles[0] || data.userRole });
       return;
     }
 
@@ -257,8 +264,9 @@ export default function LoginPage({
       const roles: string[] = data.user?.roles || data.roles || [];
       const isCoach = userRole.includes('coach') || roles.some((r: string) => r.toUpperCase() === 'COACH');
       const isClub = userRole.includes('club') || roles.some((r: string) => r.toUpperCase().includes('CLUB'));
+      const isProfessional = /referee|medical|official|competition officer|disciplinary officer|analyst|registrar/.test(userRole) || roles.some((r: string) => /^(REFEREE|MEDICAL_STAFF|COMPETITION_OFFICER|DISCIPLINARY_OFFICER|ANALYST|CLUB_REGISTRAR|ATHLETE_REGISTRAR)$/.test(r.toUpperCase()));
 
-      const appRole = isCoach ? 'COACH' : isClub ? 'CLUB' : 'ATHLETE';
+      const appRole = isCoach ? 'COACH' : isClub ? 'CLUB' : isProfessional ? 'PROFESSIONAL' : 'ATHLETE';
 
       const userData = {
         id: data.user?.id || data.userId || data.id,
@@ -269,7 +277,7 @@ export default function LoginPage({
         faydaNin: data.faydaNin || data.user?.faydaIdentity?.nin || '',
         picture: data.user?.picture || data.user?.photoUrl || data.picture || data.photoUrl || '',
         status: data.status || data.user?.status || 'ACTIVE',
-        roles,
+        roles: roles.length ? roles : [String(data.userRole || '').toUpperCase().replace(/[ -]+/g, '_')],
       };
 
       if (appRole === 'COACH') {
@@ -309,6 +317,9 @@ export default function LoginPage({
         }));
 
         onLoginSuccess('CLUB', { club: resolvedClub });
+      } else if (appRole === 'PROFESSIONAL') {
+        dispatch(login({ role: 'PROFESSIONAL', token: data.token || data.accessToken, refreshToken: data.refreshToken, userId: data.userId || data.user?.id, userData }));
+        onLoginSuccess('PROFESSIONAL', { professionalRole: roles[0] || data.userRole });
       } else {
         const resolvedAthlete = data.athlete || {
           id: '', name: `${data.user?.firstName || ''} ${data.user?.lastName || ''}`.trim(),

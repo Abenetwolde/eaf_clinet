@@ -16,6 +16,7 @@ import {
 } from '../store/api/athleteApi';
 import FaydaVerifiedProfileModal, { FaydaResidentIdentity, formatFin } from './FaydaVerifiedProfileModal';
 import ClubRegistrationForm from './ClubAdmin/ClubRegistrationForm';
+import { getApiErrorMessage, getApiSuccessMessage } from '../utils/apiMessages';
 
 // Types for internal use
 export interface FaydaResult {
@@ -39,6 +40,7 @@ export interface FaydaResult {
 
 export interface AthletePayload {
   id: string;
+  submissionMessage?: string;
   name: string;
   amharicName: string;
   dob: string;
@@ -80,6 +82,7 @@ export interface AthletePayload {
 
 export interface ClubPayload {
   id: string;
+  submissionMessage?: string;
   name: string;
   shortName: string;
   region: string;
@@ -99,7 +102,8 @@ export interface ClubPayload {
 
 export interface OfficialPayload {
   id: string;
-  role: 'COACH' | 'MEDICAL_HEAD' | 'OFFICIAL' | 'CLUB_PRESIDENT';
+  submissionMessage?: string;
+  role: 'COACH' | 'MEDICAL_HEAD' | 'OFFICIAL' | 'REFEREE' | 'COMPETITION_OFFICER' | 'CLUB_PRESIDENT';
   name: string;
   amharicName?: string;
   faydaFin: string;
@@ -124,7 +128,7 @@ export type PendingRegistrationData =
   | { type: 'CLUB'; payload: { club: ClubPayload; targetSubPage?: string; session?: { token: string; refreshToken?: string; userId: string; userData?: any } } }
   | { type: 'OFFICIAL'; payload: { official: OfficialPayload } };
 
-export type RegistrationRoleType = 'ATHLETE' | 'CLUB_PRESIDENT' | 'COACH' | 'MEDICAL_HEAD' | 'OFFICIAL';
+export type RegistrationRoleType = 'ATHLETE' | 'CLUB_PRESIDENT' | 'COACH' | 'MEDICAL_HEAD' | 'OFFICIAL' | 'REFEREE';
 
 // Step indicator bar with clean executive light styling (no tricolor)
 function StepBar({ steps, current }: { steps: string[]; current: number }) {
@@ -404,18 +408,18 @@ export default function RegistrationModal({
 
   // Coach specific
   const [coachSpecialization, setCoachSpecialization] = useState('');
-  const [waCoachLevel, setWaCoachLevel] = useState('');
+  const [waCoachLevel, setWaCoachLevel] = useState('World Athletics Level 3 (High Performance)');
   const [coachLicenseNumber, setCoachLicenseNumber] = useState('');
   const [assignedTrainingCenter, setAssignedTrainingCenter] = useState('');
 
   // Medical Head specific
-  const [medicalDesignation, setMedicalDesignation] = useState('');
+  const [medicalDesignation, setMedicalDesignation] = useState('Team Physician (MD) & Sports Medicine Head');
   const [mohLicenseNumber, setMohLicenseNumber] = useState('');
   const [hospitalAffiliation, setHospitalAffiliation] = useState('');
   const [isTueCoordinator, setIsTueCoordinator] = useState(false);
 
   // Technical Official specific
-  const [officiatingRole, setOfficiatingRole] = useState('');
+  const [officiatingRole, setOfficiatingRole] = useState('Technical Delegate & Track Referee');
   const [waOfficialLevel, setWaOfficialLevel] = useState('');
   const [waOfficialId, setWaOfficialId] = useState('');
 
@@ -656,6 +660,7 @@ export default function RegistrationModal({
         setServerRegistrationId(serverId);
         newAthlete.id = serverId;
         newAthlete.licenseStatus = serverStatus;
+        newAthlete.submissionMessage = getApiSuccessMessage(apiResponse, 'Athlete registration submitted for federation review.');
 
         // Persist registration status marker
         try {
@@ -680,7 +685,7 @@ export default function RegistrationModal({
         return;
       } catch (apiErr: any) {
         console.error('Registration API Error:', apiErr);
-        const errMsg = apiErr?.data?.message || apiErr?.error || 'Registration failed. Please check your data or try again.';
+        const errMsg = getApiErrorMessage(apiErr, 'Registration failed. Please check your data or try again.');
         setSubmissionError(errMsg);
         return;
       }
@@ -712,7 +717,7 @@ export default function RegistrationModal({
           body: JSON.stringify(clubAdminPayload),
         });
         const json = await res.json();
-        if (!res.ok) throw new Error(json?.message || 'Club registration failed. Please check your details and try again.');
+        if (!res.ok) throw new Error(getApiErrorMessage(json, 'Club registration failed. Please check your details and try again.'));
         const persistedClub = json?.data?.club;
         if (!persistedClub?.id || !json?.data?.user?.id) {
           throw new Error('The server did not confirm the club account. Please try again.');
@@ -721,6 +726,7 @@ export default function RegistrationModal({
 
         const newClub: ClubPayload = {
           id: serverId,
+          submissionMessage: getApiSuccessMessage(json, 'Club registration submitted successfully.'),
           name: persistedClub.name || clubName,
           shortName: persistedClub.shortName || clubShortName || clubName.split(' ')[0] || 'Club',
           region: persistedClub.region || region,
@@ -747,56 +753,76 @@ export default function RegistrationModal({
         setIsSubmittedPending(true);
         return;
       } catch (err: any) {
-        setSubmissionError(err?.message || 'Club registration failed.');
+        setSubmissionError(getApiErrorMessage(err, 'Club registration failed.'));
         return;
       }
     }
 
-    if (selectedRole === 'OFFICIAL' || selectedRole === 'MEDICAL_HEAD' || selectedRole === 'COACH') {
+    if (selectedRole === 'OFFICIAL' || selectedRole === 'REFEREE' || selectedRole === 'MEDICAL_HEAD' || selectedRole === 'COACH') {
       try {
-        const roleBackend = selectedRole === 'OFFICIAL' ? 'REFEREE' : selectedRole === 'MEDICAL_HEAD' ? 'MEDICAL_STAFF' : 'COACH';
+        const roleBackend = selectedRole === 'OFFICIAL' ? 'COMPETITION_OFFICER' : selectedRole === 'REFEREE' ? 'REFEREE' : selectedRole === 'MEDICAL_HEAD' ? 'MEDICAL_STAFF' : 'COACH';
+        const roleFields = selectedRole === 'COACH'
+          ? { licenseNumber: coachLicenseNumber.trim(), specialization: coachSpecialization.trim(), institution: assignedTrainingCenter.trim() }
+          : selectedRole === 'MEDICAL_HEAD'
+            ? { licenseNumber: mohLicenseNumber.trim(), specialization: `${medicalDesignation}${isTueCoordinator ? ' (TUE Coordinator)' : ''}`, institution: hospitalAffiliation.trim() }
+            : { licenseNumber: waOfficialId.trim(), specialization: officiatingRole, institution: waOfficialLevel.trim() };
+        const missingRoleField = selectedRole === 'COACH'
+          ? !roleFields.licenseNumber || !roleFields.specialization
+          : selectedRole === 'MEDICAL_HEAD'
+            ? !roleFields.licenseNumber || !roleFields.institution
+            : !roleFields.licenseNumber || !roleFields.institution;
+        if (missingRoleField) {
+          setSubmissionError(selectedRole === 'COACH'
+            ? 'Enter your coaching specialization and license number.'
+            : selectedRole === 'MEDICAL_HEAD'
+              ? 'Enter your Ministry of Health license number and hospital or clinic affiliation.'
+              : 'Enter your official ID and World Athletics certification level.');
+          return;
+        }
         const professionalPayload = {
           email: email.trim(),
           password,
-          firstName: (faydaResult?.name || 'Federation Professional').split(' ')[0],
-          lastName: (faydaResult?.name || 'Federation Professional').split(' ').slice(1).join(' ') || 'Official',
           phoneNumber: phone.trim(),
           role: roleBackend,
-          faydaFin: faydaResult?.fin || '',
-          fanNumber: faydaResult?.fan || '',
-          licenseNumber: selectedRole === 'OFFICIAL' ? waOfficialId : medicalLicenseNumber,
-          specialization: selectedRole === 'OFFICIAL' ? officiatingRole : medicalSpecialization,
+          faydaVerificationToken: faydaResult?.verificationToken,
+          ...roleFields,
         };
 
         const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
-        const res = await fetch(`${apiBase.replace(/\/$/, '')}/auth/register`, {
+        const res = await fetch(`${apiBase.replace(/\/$/, '')}/professionals/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(professionalPayload),
         });
         const json = await res.json();
-        if (!res.ok) throw new Error(json?.message || `${selectedRole} registration failed. Please check your details and try again.`);
+        if (!res.ok) throw new Error(getApiErrorMessage(json, selectedRole + ' registration failed. Please check your details and try again.'));
 
         const serverId = json?.data?.id || `prof-${Date.now()}`;
         setServerRegistrationId(serverId);
         setPendingRegistrationData({
-          type: 'ATHLETE',
+          type: 'OFFICIAL',
           payload: {
-            athlete: {
+            official: {
               id: serverId,
+              submissionMessage: getApiSuccessMessage(json, 'Your professional registration is pending EAF administrator review.'),
               name: faydaResult?.name || 'Federation Professional',
+              role: selectedRole as OfficialPayload['role'],
               faydaFin: faydaResult?.fin || '',
               faydaFan: faydaResult?.fan || '',
+              photoUrl: faydaResult?.photoUrl || '',
               phone: phone.trim(),
               email: email.trim(),
-              role: selectedRole,
-            } as any
+              licenseNumber: professionalPayload.licenseNumber,
+              specialization: professionalPayload.specialization,
+              hospitalAffiliation: selectedRole === 'MEDICAL_HEAD' ? hospitalAffiliation.trim() : undefined,
+              certificationLevel: selectedRole === 'COACH' ? waCoachLevel : selectedRole === 'MEDICAL_HEAD' ? medicalDesignation : waOfficialLevel.trim(),
+            }
           }
         });
         setIsSubmittedPending(true);
         return;
       } catch (err: any) {
-        setSubmissionError(err?.message || 'Registration failed.');
+        setSubmissionError(getApiErrorMessage(err, 'Registration failed.'));
         return;
       }
     }
@@ -1147,10 +1173,19 @@ export default function RegistrationModal({
       {
         id: 'OFFICIAL',
         title: 'Technical Official',
-        subtitle: 'Track Referees & Judges',
-        desc: 'Photo-finish FAT timing judges, track referees & race marshals.',
+        subtitle: 'Technical operations',
+        desc: 'Photo-finish timing, track operations, and technical officials.',
         icon: <Award size={24} className="text-blue-600" />,
         badge: 'WA Certified',
+        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+      },
+      {
+        id: 'REFEREE',
+        title: 'Referee',
+        subtitle: 'Competition officiating',
+        desc: 'Track and field referees, judges, and race marshals.',
+        icon: <ShieldCheck size={24} className="text-blue-600" />,
+        badge: 'Official review',
         badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
       },
     ];
@@ -1564,7 +1599,7 @@ export default function RegistrationModal({
             {selectedRole === 'CLUB_PRESIDENT' && 'Club Governance & Signing Authority'}
             {selectedRole === 'COACH' && 'Coaching Accreditation & Licensing'}
             {selectedRole === 'MEDICAL_HEAD' && 'Medical Licensing & Hospital Credentials'}
-            {selectedRole === 'OFFICIAL' && 'Technical Officiating Accreditation'}
+            {(selectedRole === 'OFFICIAL' || selectedRole === 'REFEREE') && 'Technical Officiating Accreditation'}
           </h4>
           <p className="text-slate-600 text-sm m-0 mt-1">
             Enter your official accreditation credentials for federation licensing.
@@ -1710,6 +1745,13 @@ export default function RegistrationModal({
                   className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
                 />
               </div>
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Training Center / Institution</label>
+                <input
+                  type="text" value={assignedTrainingCenter} onChange={e => setAssignedTrainingCenter(e.target.value)}
+                  className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
+                />
+              </div>
             </div>
           </div>
         )}
@@ -1742,11 +1784,15 @@ export default function RegistrationModal({
                   className="w-full p-3 border border-slate-300 rounded-xl text-sm font-semibold"
                 />
               </div>
+              <label className="sm:col-span-2 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-700">
+                <input type="checkbox" checked={isTueCoordinator} onChange={e => setIsTueCoordinator(e.target.checked)} />
+                I coordinate Therapeutic Use Exemption (TUE) requests
+              </label>
             </div>
           </div>
         )}
 
-        {selectedRole === 'OFFICIAL' && (
+        {(selectedRole === 'OFFICIAL' || selectedRole === 'REFEREE') && (
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Officiating Role</label>
@@ -1927,7 +1973,7 @@ export default function RegistrationModal({
               </>
             )}
 
-            {selectedRole === 'OFFICIAL' && (
+            {(selectedRole === 'OFFICIAL' || selectedRole === 'REFEREE') && (
               <>
                 <div className="p-3 flex justify-between">
                   <span className="font-bold text-slate-500">Officiating Role</span>
@@ -2034,7 +2080,9 @@ export default function RegistrationModal({
         </h3>
 
         <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-6 max-w-md">
-          Your profile has been recorded with verified National ID credentials and forwarded to the Ethiopian Athletics Federation.
+          {selectedRole === 'ATHLETE' || selectedRole === 'CLUB_PRESIDENT'
+            ? 'Your profile has been recorded with verified National ID credentials and forwarded to the Ethiopian Athletics Federation.'
+            : 'Your role-specific credentials have been submitted to the EAF Admin for review. Sign in after your application is approved.'}
         </p>
 
         {/* Clean Light-Theme Tracking Card */}
@@ -2067,7 +2115,7 @@ export default function RegistrationModal({
           onClick={() => onRegisterSuccess(pendingRegistrationData)}
           className="w-full py-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-base shadow-sm cursor-pointer border-0"
         >
-          Acknowledge &amp; Access Federation Portal
+          {selectedRole === 'ATHLETE' || selectedRole === 'CLUB_PRESIDENT' ? 'Acknowledge & Access Federation Portal' : 'Return to Sign In'}
         </button>
       </div>
     );
