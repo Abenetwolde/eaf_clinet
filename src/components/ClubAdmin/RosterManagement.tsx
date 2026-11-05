@@ -491,11 +491,10 @@ function EditMemberPage({
 // ── Main component ────────────────────────────────────────────────────────
 export default function RosterManagement({ onRenewLicense, onRegisterMember, onUpdateAthlete }: RosterManagementProps) {
   const storedClub = useAppSelector((state) => state.auth.club);
-  const { data: accountResponse } = useGetMeQuery(undefined, { skip: Boolean(storedClub?.id && storedClub.name) });
+  const { data: accountResponse } = useGetMeQuery(undefined, { refetchOnMountOrArgChange: true });
   const accountClub = accountResponse?.data?.club;
 
   const club = useMemo(() => {
-    if (storedClub?.id && storedClub.name) return storedClub;
     if (accountClub?.id) return {
       id: accountClub.id, name: accountClub.name, shortName: accountClub.shortName || '',
       region: accountClub.region || '', manager: accountClub.manager || '',
@@ -503,11 +502,12 @@ export default function RosterManagement({ onRenewLicense, onRegisterMember, onU
       licensedAthletes: 0, pendingVerifications: 0, unlicensedAthletes: 0,
       transfersCount: 0, logo: accountClub.logo || '', clubRank: 0, totalPoints: 0,
     };
+    if (storedClub?.id && storedClub.name) return storedClub;
     return storedClub;
   }, [storedClub, accountClub]);
 
-  const activeClubId = club?.id || accountClub?.id || (typeof window !== 'undefined' ? localStorage.getItem('eaf_currentClubId') : '') || '';
-  const activeClubName = club?.name || accountClub?.name || '';
+  const activeClubId = accountClub?.id || club?.id || (typeof window !== 'undefined' ? localStorage.getItem('eaf_currentClubId') : '') || '';
+  const activeClubName = accountClub?.name || club?.name || '';
 
   // UI state
   const [viewingMember, setViewingMember] = useState<UnifiedMember | null>(null);
@@ -534,14 +534,19 @@ export default function RosterManagement({ onRenewLicense, onRegisterMember, onU
   const [editPb, setEditPb] = useState<string>('');
   const [editPhoto, setEditPhoto] = useState<string>('/images/runner_marathon.png');
 
-  // Live queries scoped strictly to activeClubId
+  // Live queries scoped strictly to activeClubId with real-time polling
   const {
     data: backendAthletes = [],
     isLoading: isLoadingAthletes,
     refetch: refetchAthletes,
   } = useGetAthletesQuery(
     activeClubId ? { clubId: activeClubId, limit: 200 } : { limit: 200 },
-    { refetchOnMountOrArgChange: true }
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      pollingInterval: 4000,
+    }
   );
   const {
     data: backendCoaches = [],
@@ -549,8 +554,50 @@ export default function RosterManagement({ onRenewLicense, onRegisterMember, onU
     refetch: refetchCoaches,
   } = useGetClubCoachesQuery(
     activeClubId || '',
-    { skip: !activeClubId, refetchOnMountOrArgChange: true }
+    {
+      skip: !activeClubId,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      pollingInterval: 4000,
+    }
   );
+
+  // Instant refetch on component mount
+  useEffect(() => {
+    refetchAthletes();
+    if (activeClubId) refetchCoaches();
+  }, [activeClubId, refetchAthletes, refetchCoaches]);
+
+  // Cross-tab and window-focus live synchronization
+  useEffect(() => {
+    const handleSync = () => {
+      refetchAthletes();
+      refetchCoaches();
+    };
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'eaf_data_sync' || e.key === 'eaf_roster_updated') {
+        handleSync();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        handleSync();
+      }
+    };
+
+    window.addEventListener('focus', handleSync);
+    window.addEventListener('storage', handleStorage);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      window.removeEventListener('focus', handleSync);
+      window.removeEventListener('storage', handleStorage);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [refetchAthletes, refetchCoaches]);
 
   // Build unified list
   const unifiedMembers: UnifiedMember[] = useMemo(() => {
@@ -558,12 +605,12 @@ export default function RosterManagement({ onRenewLicense, onRegisterMember, onU
 
     (backendAthletes || []).forEach((b: any) => {
       if (activeClubId) {
-        const matchId = b.clubId === activeClubId || b.club?.id === activeClubId;
-        const matchName = activeClubName && (b.clubName || b.club?.name) &&
+        const matchId = !b.clubId || b.clubId === activeClubId || b.club?.id === activeClubId;
+        const matchName = !b.clubName || (activeClubName && (b.clubName || b.club?.name) &&
           (String(b.clubName || b.club?.name).toLowerCase().includes(activeClubName.toLowerCase()) ||
-            activeClubName.toLowerCase().includes(String(b.clubName || b.club?.name).toLowerCase()));
-        const otherClub = b.clubId && b.clubId !== activeClubId && b.club?.id && b.club.id !== activeClubId;
-        if (!matchId && !matchName && otherClub) return;
+            activeClubName.toLowerCase().includes(String(b.clubName || b.club?.name).toLowerCase())));
+        const explicitlyOtherClub = b.clubId && b.clubId !== activeClubId && b.club?.id && b.club.id !== activeClubId && !matchName;
+        if (explicitlyOtherClub) return;
       }
 
       const bName = b.name || `${b.user?.firstName || ''} ${b.user?.lastName || ''}`.trim() || 'Unnamed';
@@ -759,7 +806,7 @@ export default function RosterManagement({ onRenewLicense, onRegisterMember, onU
       {viewingMember ? (
         <div className="space-y-6">
           {/* ── Detail Page Top Navigation & Action Bar ── */}
-          <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-blue-200 border-l-4 border-l-[#0038A5] shadow-xs">
             <button
               onClick={() => setViewingMember(null)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-700 cursor-pointer transition-all shadow-xs"
@@ -897,9 +944,9 @@ export default function RosterManagement({ onRenewLicense, onRegisterMember, onU
 
           {/* ── Official Personal Bests & Sanctioned Records ── */}
           {viewingMember.memberType === 'ATHLETE' && (
-            <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+            <div className="p-6 rounded-3xl bg-white border border-amber-200 border-l-4 border-l-[#D97706] shadow-sm space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-800">
                   <Award size={18} className="text-amber-500" /> Official Personal Bests & Sanctioned Records
                 </div>
                 <span className="text-[10px] text-slate-400 font-semibold">Federation Verified Marks</span>
@@ -937,9 +984,9 @@ export default function RosterManagement({ onRenewLicense, onRegisterMember, onU
           )}
 
           {/* ── Athletic Performance & Eligibility Checklist ── */}
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
+          <div className="p-6 rounded-3xl bg-white border border-emerald-200 border-l-4 border-l-[#009A44] shadow-sm space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-slate-800">
                 <Activity size={18} className="text-emerald-600" /> Federation Clearance & Eligibility Checklist
               </div>
               {viewingMember.memberType === 'ATHLETE' && (
@@ -1018,7 +1065,7 @@ export default function RosterManagement({ onRenewLicense, onRegisterMember, onU
       ) : (
         <>
           {/* ── Top Header Bar ── */}
-          <div className="flex items-center justify-between flex-wrap gap-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-lg border border-slate-700">
+          <div className="flex items-center justify-between flex-wrap gap-4    p-6 rounded-2xl shadow-lg border border-slate-200">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-800 border border-blue-200">Official Club Portal</span>
@@ -1316,11 +1363,11 @@ export default function RosterManagement({ onRenewLicense, onRegisterMember, onU
       {editingMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs" onClick={() => setEditingMember(null)}>
           <div
-            className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 md:p-8 space-y-5"
+            className="w-full max-w-lg rounded-3xl bg-white border border-blue-200 border-t-4 border-t-[#0038A5] shadow-2xl p-6 md:p-8 space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-lg font-black text-slate-900 dark:text-white m-0 flex items-center gap-2">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-lg font-black text-slate-900 m-0 flex items-center gap-2">
                 <Edit size={18} className="text-emerald-600" />
                 Edit Member Record
               </h3>

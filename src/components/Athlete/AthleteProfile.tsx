@@ -583,9 +583,9 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {(antiDopingSummary?.substancesCategories || []).map((cat: any) => (
-                    <div key={cat.code} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+                    <div key={cat.code} className="p-3.5 rounded-xl border border-rose-200 border-l-4 border-l-[#DC2626] bg-white shadow-xs">
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="font-black text-slate-900 dark:text-white">{cat.code} · {cat.name}</span>
+                        <span className="font-black text-slate-900">{cat.code} · {cat.name}</span>
                         <span className="text-[10px] font-black px-2 py-0.5 rounded bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">
                           {cat.status === "PROHIBITED_IN_COMPETITION" ? "In-Competition" : "Prohibited At All Times"}
                         </span>
@@ -623,11 +623,11 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
                   { code: "AIU", name: "Athletics Integrity Unit", role: "World Athletics Testing & Integrity Oversight", website: "https://www.athleticsintegrity.org", portalUrl: "https://www.athleticsintegrity.org/know-the-rules" },
                   { code: "ETH-NADO", name: "Ethiopian National Anti-Doping Authority", role: "National Education, Testing, & TUE Committee", website: "https://www.nado.gov.et", phone: "+251 11 558 3920" }
                 ]).map((auth: any) => (
-                  <div key={auth.code} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col justify-between gap-3">
+                  <div key={auth.code} className="p-4 rounded-xl border border-blue-200 border-l-4 border-l-[#0038A5] bg-white shadow-xs flex flex-col justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 rounded font-black text-[10px] bg-slate-900 text-white dark:bg-slate-800">{auth.code}</span>
-                        <span className="font-black text-slate-900 dark:text-white text-sm">{auth.name}</span>
+                        <span className="px-2 py-0.5 rounded font-black text-[10px] bg-blue-50 text-[#0038A5] border border-blue-200">{auth.code}</span>
+                        <span className="font-black text-slate-900 text-sm">{auth.name}</span>
                       </div>
                       <p className="text-[11px] text-slate-500 m-0">{auth.role}</p>
                     </div>
@@ -777,7 +777,7 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
                     </div>
 
                     {/* Verified 2D QR Code Matrix */}
-                    <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-3 bg-white p-2.5 rounded-xl border border-emerald-200 border-l-4 border-l-[#009A44]">
                       {app.qrCodeValue ? <div className="bg-white p-1 rounded-lg shrink-0 shadow-sm border border-slate-100"><QRCodeSVG value={app.qrCodeValue} size={76} /></div> : null}
                       <div className="min-w-0 flex-1 text-[11px]">
                         <div className="font-mono font-bold text-slate-800 dark:text-slate-200 truncate">

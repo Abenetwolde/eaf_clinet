@@ -355,30 +355,28 @@ export default function LoginPage({
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className={`w-full max-w-lg rounded-3xl border shadow-2xl p-6 sm:p-8 md:p-10 ${
-            darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-          }`}
+          className="w-full max-w-lg rounded-3xl border border-blue-200 border-t-4 border-t-[#0038A5] shadow-2xl p-6 sm:p-8 md:p-10 bg-white text-slate-800"
         >
           {/* Header Title */}
           <div className="text-center mb-6">
           
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Sign In to Your Account
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-sm mx-auto">
               Access athlete licenses, club rosters, official competition entries, and federation services.
             </p>
           </div>
 
           {/* Login Method Tabs (Fayda vs Phone) */}
-          <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl mb-6">
+          <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-2xl mb-6 border border-slate-200">
             <button
               type="button"
               onClick={() => handleMethodSelect('FAYDA')}
               className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
                 method === 'FAYDA'
-                  ? 'bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-700'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               {/* <span>🇪🇹</span> */}
@@ -389,8 +387,8 @@ export default function LoginPage({
               onClick={() => handleMethodSelect('PHONE')}
               className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
                 method === 'PHONE'
-                  ? 'bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-700'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Phone className="w-4 h-4 text-blue-600" />
@@ -401,8 +399,8 @@ export default function LoginPage({
               onClick={() => handleMethodSelect('EMAIL')}
               className={`py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer ${
                 method === 'EMAIL'
-                  ? 'bg-white dark:bg-slate-900 text-blue-700 dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-700'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                  ? 'bg-white text-blue-700 shadow-sm border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Mail className="w-4 h-4 text-blue-600" />

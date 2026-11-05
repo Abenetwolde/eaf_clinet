@@ -89,11 +89,6 @@ export const apiSlice = createApi({
   baseQuery: baseQueryWithReauth,
   tagTypes: ["Athletes", "Clubs", "Competitions", "Events", "News", "Registrations", "Results", "Users", "Gallery", "Content", "Inquiries"],
   endpoints: (builder) => ({
-    getAthletes: builder.query<any[], void>({
-      query: () => "athletes/public",
-      transformResponse: (response: any) => response?.data || response || [],
-      providesTags: ["Athletes"],
-    }),
     getClubs: builder.query<any[], void>({
       query: () => "clubs/verified",
       transformResponse: (response: any) => response?.data || response || [],
@@ -140,7 +135,6 @@ export const apiSlice = createApi({
 });
 
 export const {
-  useGetAthletesQuery,
   useGetClubsQuery,
   useGetCompetitionsQuery,
   useGetPublishedEventsQuery,

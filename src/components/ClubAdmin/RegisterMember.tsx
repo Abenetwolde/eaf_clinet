@@ -15,6 +15,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setClub } from '../../store/slices/authSlice';
 import { useGetMeQuery } from '../../store/api/authApi';
+import { apiSlice } from '../../store/api/apiSlice';
 import {
   useRegisterAthleteByClubAdminMutation,
   useRegisterCoachByClubAdminMutation,
@@ -80,10 +81,10 @@ export default function RegisterMember({ onBack, onNotify, onMemberAdded }: Regi
   const dispatch = useAppDispatch();
   const storedClub = useAppSelector((state) => state.auth.club);
   const { data: accountResponse, isLoading: isLoadingAccount } = useGetMeQuery(undefined, {
-    skip: Boolean(storedClub?.id),
+    refetchOnMountOrArgChange: true,
   });
   const accountClub = accountResponse?.data?.club;
-  const club = storedClub?.id ? storedClub : accountClub?.id ? {
+  const club = accountClub?.id ? {
     id: accountClub.id,
     name: accountClub.name,
     shortName: accountClub.shortName || '',
@@ -99,6 +100,12 @@ export default function RegisterMember({ onBack, onNotify, onMemberAdded }: Regi
     clubRank: 0,
     totalPoints: 0,
   } : storedClub;
+
+  useEffect(() => {
+    if (accountClub?.id && storedClub?.id !== accountClub.id) {
+      dispatch(setClub(club));
+    }
+  }, [accountClub, storedClub, club, dispatch]);
 
   const [registerAthlete] = useRegisterAthleteByClubAdminMutation();
   const [registerCoach] = useRegisterCoachByClubAdminMutation();
@@ -331,6 +338,14 @@ export default function RegisterMember({ onBack, onNotify, onMemberAdded }: Regi
       sessionStorage.removeItem('fayda_auth_payload');
       sessionStorage.removeItem('eaf_club_member_registration');
       sessionStorage.removeItem('eaf_club_member_type');
+
+      // Immediately invalidate Athletes & Clubs RTK Query cache so RosterManagement fetches fresh members
+      dispatch(apiSlice.util.invalidateTags(['Athletes', 'Users', 'Clubs']));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('eaf_roster_updated', String(Date.now()));
+        localStorage.setItem('eaf_data_sync', String(Date.now()));
+        window.dispatchEvent(new Event('storage'));
+      }
 
       onNotify(successMessage, 'success');
       onMemberAdded?.();

@@ -917,11 +917,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               style={{
                 maxWidth: '840px',
                 margin: '0 auto 24px',
-                background: darkMode ? '#1E293B' : '#FFFFFF',
-                border: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
+                background: '#FFFFFF',
+                border: '1px solid #BFDBFE',
+                borderLeft: '4px solid #0038A5',
                 borderRadius: '20px',
                 padding: '14px 20px',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
+                boxShadow: '0 4px 16px rgba(0, 56, 165, 0.06)',
                 backdropFilter: 'blur(28px) saturate(200%)',
                 WebkitBackdropFilter: 'blur(28px) saturate(200%)',
                 cursor: 'pointer',
@@ -1688,16 +1689,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.35) 55%, transparent 100%)' }} />
 
-                    {/* Fayda Badge */}
-                    <div style={{
-                      position: 'absolute', top: 16, right: 16, zIndex: 3,
-                      background: 'rgba(16, 185, 129, 0.95)', color: '#FFFFFF',
-                      fontSize: '0.72rem', fontWeight: 800,
-                      padding: '4px 10px', borderRadius: 8,
-                      display: 'inline-flex', alignItems: 'center', gap: 4
-                    }}>
-                      <ShieldCheck size={14} /> Fayda Verified
-                    </div>
+               
 
                     <div style={{ position: 'relative', zIndex: 2, padding: '24px' }}>
                       <h3 style={{ color: '#FFFFFF', fontSize: '1.4rem', fontWeight: 900, marginBottom: 4, lineHeight: 1.2 }}>
@@ -2144,16 +2136,17 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24 }}>
               {/* Card 1: Growth Trend */}
               <div style={{
-                background: t.surface,
-                border: '1px solid ' + t.border,
+                background: '#FFFFFF',
+                border: '1px solid #BBF7D0',
+                borderLeft: '4px solid #00A859',
                 borderRadius: 18,
                 padding: '24px 20px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                boxShadow: '0 4px 16px rgba(0, 168, 89, 0.05)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
-                    <h4 style={{ color: t.text, fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Registration & Licensing Growth</h4>
-                    <span style={{ color: t.textMuted, fontSize: '0.78rem', fontWeight: 600 }}>Rolling 6-month progression</span>
+                    <h4 style={{ color: '#0F172A', fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Registration & Licensing Growth</h4>
+                    <span style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 600 }}>Rolling 6-month progression</span>
                   </div>
                   <span style={{ background: 'rgba(0, 168, 89, 0.12)', color: '#00A859', padding: '4px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800 }}>
                     Active Trend
@@ -2178,7 +2171,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                           <stop offset="100%" stopColor="#0072CE" stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#334155' : '#E2E8F0'} vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                       <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
                       <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
                       <ChartTooltip contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: '0.8rem' }} />
@@ -2192,16 +2185,17 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
               {/* Card 2: Discipline Distribution */}
               <div style={{
-                background: t.surface,
-                border: '1px solid ' + t.border,
+                background: '#FFFFFF',
+                border: '1px solid #BFDBFE',
+                borderLeft: '4px solid #0072CE',
                 borderRadius: 18,
                 padding: '24px 20px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                boxShadow: '0 4px 16px rgba(0, 114, 206, 0.05)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
-                    <h4 style={{ color: t.text, fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Athlete Discipline Breakdown</h4>
-                    <span style={{ color: t.textMuted, fontSize: '0.78rem', fontWeight: 600 }}>National talent pool disciplines</span>
+                    <h4 style={{ color: '#0F172A', fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Athlete Discipline Breakdown</h4>
+                    <span style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 600 }}>National talent pool disciplines</span>
                   </div>
                   <span style={{ background: 'rgba(0, 114, 206, 0.12)', color: '#0072CE', padding: '4px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800 }}>
                     Verified Pool
@@ -2236,11 +2230,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
               {/* Card 3: Regional Distribution */}
               <div style={{
-                background: t.surface,
-                border: '1px solid ' + t.border,
+                background: '#FFFFFF',
+                border: '1px solid #FED7AA',
+                borderLeft: '4px solid #D97706',
                 borderRadius: 18,
                 padding: '24px 20px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                boxShadow: '0 4px 16px rgba(217, 119, 6, 0.05)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>

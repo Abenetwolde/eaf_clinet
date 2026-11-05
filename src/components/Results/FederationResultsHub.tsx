@@ -1050,27 +1050,27 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
   };
 
   return (
-    <div className={`w-full min-h-screen py-6 px-4 sm:px-6 lg:px-8 transition-colors duration-200 ${darkMode ? 'bg-[#0f172a] text-slate-100' : 'bg-[#FAFAFA] text-slate-800'}`}>
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full min-h-screen py-4 px-4 sm:px-6 lg:px-8 bg-slate-50 text-slate-800">
+      <div className="max-w-7xl mx-auto space-y-3.5">
 
         {/* ── TOP HEADER: Results Title + Search Input ── */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2 pb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1 pb-1">
           <div>
             <div className="flex items-center gap-3">
               {onBack && (
                 <button
                   type="button"
                   onClick={onBack}
-                  className="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 transition cursor-pointer"
                 >
                   ← Back
                 </button>
               )}
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white font-sans">
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 font-sans">
                 Results
               </h1>
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-sm text-slate-500 mt-1">
               Official Ethiopian Athletics Federation & Sanctioned Club Championship Results
             </p>
           </div>
@@ -1082,11 +1082,7 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search results by name"
-              className={`w-full pl-9 pr-8 py-2.5 rounded-md border text-sm font-medium transition-all shadow-xs outline-none focus:ring-2 focus:ring-[#7D8C19] focus:border-[#7D8C19] ${
-                darkMode
-                  ? 'bg-slate-900 border-slate-700 text-white placeholder-slate-500'
-                  : 'bg-white border-slate-300 text-slate-800 placeholder-slate-400'
-              }`}
+              className="w-full pl-9 pr-8 py-2.5 rounded-xl border text-sm font-medium transition-all shadow-xs outline-none bg-white border-slate-300 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <Search size={16} className="absolute left-3 top-3 text-slate-400 pointer-events-none" />
             {searchQuery && (
@@ -1101,345 +1097,301 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
           </div>
         </div>
 
-        {/* ── THREE COLUMN CARD FILTER SECTION (Exact Match to User Image) ── */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-
-          {/* ═══════════ COLUMN 1: LEADERBOARD ═══════════ */}
-          <div className="flex flex-col space-y-3">
-            {/* Column Header */}
-            <div>
-              <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200 font-sans">
-                Leaderboard
-              </h2>
-              {/* Olive Green Line Accent */}
-              <div className="h-[3px] bg-[#7D8C19] w-full mt-1 rounded-full" />
-            </div>
-
-            {/* Gender Sub-Headers */}
-            <div className="grid grid-cols-2 gap-2 text-sm font-bold text-center">
-              <button
-                type="button"
-                onClick={() => setSelectedGender('MEN')}
-                className={`py-1.5 px-3 rounded-md transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  selectedGender === 'MEN'
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span className="text-blue-500 font-black">♂</span> Men
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedGender('WOMEN')}
-                className={`py-1.5 px-3 rounded-md transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                  selectedGender === 'WOMEN'
-                    ? 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-900'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <span className="text-pink-500 font-black">♀</span> Women
-              </button>
-            </div>
-
-            {/* 2x2 Age Categories Matrix (U16 & U14 shown in image) */}
-            <div className="grid grid-cols-2 gap-2">
-              {/* U16 Row */}
-              <button
-                type="button"
-                onClick={() => { setSelectedCategory('U16'); setSelectedGender('MEN'); }}
-                className={`h-11 rounded-lg text-sm font-bold transition-all shadow-xs flex items-center justify-center cursor-pointer border ${
-                  selectedCategory === 'U16' && selectedGender === 'MEN'
-                    ? 'bg-[#7D8C19] text-white border-[#6D7B15] shadow-sm'
-                    : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
-                }`}
-              >
-                U16
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setSelectedCategory('U16'); setSelectedGender('WOMEN'); }}
-                className={`h-11 rounded-lg text-sm font-bold transition-all shadow-xs flex items-center justify-center cursor-pointer border ${
-                  selectedCategory === 'U16' && selectedGender === 'WOMEN'
-                    ? 'bg-[#7D8C19] text-white border-[#6D7B15] shadow-sm'
-                    : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
-                }`}
-              >
-                U16
-              </button>
-
-              {/* U14 Row */}
-              <button
-                type="button"
-                onClick={() => { setSelectedCategory('U14'); setSelectedGender('MEN'); }}
-                className={`h-11 rounded-lg text-sm font-bold transition-all shadow-xs flex items-center justify-center cursor-pointer border ${
-                  selectedCategory === 'U14' && selectedGender === 'MEN'
-                    ? 'bg-[#7D8C19] text-white border-[#6D7B15] shadow-sm'
-                    : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
-                }`}
-              >
-                U14
-              </button>
-
-              <button
-                type="button"
-                onClick={() => { setSelectedCategory('U14'); setSelectedGender('WOMEN'); }}
-                className={`h-11 rounded-lg text-sm font-bold transition-all shadow-xs flex items-center justify-center cursor-pointer border ${
-                  selectedCategory === 'U14' && selectedGender === 'WOMEN'
-                    ? 'bg-[#7D8C19] text-white border-[#6D7B15] shadow-sm'
-                    : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
-                }`}
-              >
-                U14
-              </button>
-            </div>
-
-            {/* View Mode Action Cards (Full-Width Stack as in image) */}
-            <div className="flex flex-col space-y-2 pt-1">
-              {/* Everything */}
-              <button
-                type="button"
-                onClick={() => setViewScope('everything')}
-                className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all shadow-xs flex items-center justify-center cursor-pointer border ${
-                  viewScope === 'everything'
-                    ? 'bg-[#7D8C19] text-white border-[#6D7B15]'
-                    : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
-                }`}
-              >
-                Everything
-              </button>
-
-              {/* Per heat */}
-              <button
-                type="button"
-                onClick={() => setViewScope('per_heat')}
-                className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all shadow-xs flex items-center justify-center cursor-pointer border ${
-                  viewScope === 'per_heat'
-                    ? 'bg-[#7D8C19] text-white border-[#6D7B15]'
-                    : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
-                }`}
-              >
-                Per heat
-              </button>
-
-              {/* Team leaderboard */}
-              <button
-                type="button"
-                onClick={() => setViewScope('team_leaderboard')}
-                className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all shadow-xs flex items-center justify-center cursor-pointer border ${
-                  viewScope === 'team_leaderboard'
-                    ? 'bg-[#7D8C19] text-white border-[#6D7B15]'
-                    : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
-                }`}
-              >
-                Team leaderboard
-              </button>
-
-              {/* League standings with icon */}
-              <button
-                type="button"
-                onClick={() => setViewScope('league_standings')}
-                className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer border ${
-                  viewScope === 'league_standings'
-                    ? 'bg-[#7D8C19] text-white border-[#6D7B15]'
-                    : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
-                }`}
-              >
-                <ExternalLink size={15} /> League standings
-              </button>
-            </div>
-          </div>
-
-          {/* ═══════════ COLUMN 2: EVENT (Track & Field Dual Column) ═══════════ */}
-          <div className="flex flex-col space-y-3">
-            {/* Column Header */}
-            <div>
-              <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200 font-sans">
-                Event
-              </h2>
-              {/* Olive Green Line Accent */}
-              <div className="h-[3px] bg-[#7D8C19] w-full mt-1 rounded-full" />
-            </div>
-
-            {/* Subheaders: Track vs Field */}
-            <div className="grid grid-cols-2 gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
-              <span className="text-left px-2">Track</span>
-              <span className="text-left px-2">Field</span>
-            </div>
-
-            {/* Dual Grid of Event Cards */}
-            <div className="grid grid-cols-2 gap-2">
-              {/* Track Sub-column */}
-              <div className="flex flex-col space-y-2">
-                {TRACK_DISCIPLINES.map((item) => {
-                  const isActive = selectedDiscipline.toLowerCase() === item.toLowerCase();
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setSelectedDiscipline(item)}
-                      className={`h-11 px-3 rounded-lg text-sm font-semibold text-left transition-all shadow-xs flex items-center cursor-pointer border ${
-                        isActive
-                          ? 'bg-[#7D8C19] text-white border-[#6D7B15] shadow-sm'
-                          : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  );
-                })}
+        {/* ── COMPACT HORIZONTAL FILTER BAR ── */}
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-3.5 sm:p-4 space-y-3">
+          
+          {/* Row 1: Primary Dimensions (Gender, Category, Event/Discipline, Club) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
+            
+            {/* 1. Gender Segmented Control */}
+            <div className="lg:col-span-3">
+              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">
+                Gender
+              </label>
+              <div className="inline-flex w-full p-1 bg-slate-100/90 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setSelectedGender('MEN')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    selectedGender === 'MEN'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span className={selectedGender === 'MEN' ? 'text-white font-black' : 'text-blue-600 font-black'}>♂</span> Men
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedGender('WOMEN')}
+                  className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    selectedGender === 'WOMEN'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span className={selectedGender === 'WOMEN' ? 'text-white font-black' : 'text-pink-600 font-black'}>♀</span> Women
+                </button>
               </div>
+            </div>
 
-              {/* Field Sub-column */}
-              <div className="flex flex-col space-y-2">
-                {FIELD_DISCIPLINES.map((item) => {
-                  const isActive = selectedDiscipline.toLowerCase() === item.toLowerCase();
+            {/* 2. Age Category Pills */}
+            <div className="lg:col-span-3">
+              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">
+                Category
+              </label>
+              <div className="inline-flex w-full p-1 bg-slate-100/90 rounded-xl border border-slate-200">
+                {(['U14', 'U16', 'U18', 'U20', 'Senior'] as const).map((cat) => {
+                  const isActive = selectedCategory === cat;
                   return (
                     <button
-                      key={item}
+                      key={cat}
                       type="button"
-                      onClick={() => setSelectedDiscipline(item)}
-                      className={`h-11 px-3 rounded-lg text-sm font-semibold text-left transition-all shadow-xs flex items-center cursor-pointer border ${
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`flex-1 py-1.5 px-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer text-center ${
                         isActive
-                          ? 'bg-[#7D8C19] text-white border-[#6D7B15] shadow-sm'
-                          : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
                       }`}
                     >
-                      {item}
+                      {cat}
                     </button>
                   );
                 })}
               </div>
             </div>
-          </div>
 
-          {/* ═══════════ COLUMN 3: CLUB ═══════════ */}
-          <div className="flex flex-col space-y-3">
-            {/* Column Header */}
-            <div>
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200 font-sans">
+            {/* 3. Event / Discipline Dropdown */}
+            <div className="lg:col-span-3">
+              <label className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">
+                Event / Discipline
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedDiscipline}
+                  onChange={(e) => setSelectedDiscipline(e.target.value)}
+                  className="w-full h-[38px] pl-3 pr-8 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-xs outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer"
+                >
+                  <optgroup label="🏃 Track Disciplines">
+                    {TRACK_DISCIPLINES.map((d) => (
+                      <option key={d} value={d}>
+                        {d} (Track)
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="🎯 Field Disciplines">
+                    {FIELD_DISCIPLINES.map((d) => (
+                      <option key={d} value={d}>
+                        {d} (Field)
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* 4. Club Dropdown */}
+            <div className="lg:col-span-3">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
                   Club
-                </h2>
+                </label>
                 {selectedClub && (
                   <button
                     type="button"
                     onClick={() => setSelectedClub(null)}
-                    className="text-xs text-[#7D8C19] font-bold hover:underline cursor-pointer"
+                    className="text-[11px] text-blue-600 hover:underline font-bold cursor-pointer"
                   >
-                    Clear Club Filter
+                    Clear Club
                   </button>
                 )}
               </div>
-              {/* Olive Green Line Accent */}
-              <div className="h-[3px] bg-[#7D8C19] w-full mt-1 rounded-full" />
+              <div className="relative">
+                <select
+                  value={selectedClub || ''}
+                  onChange={(e) => setSelectedClub(e.target.value ? e.target.value : null)}
+                  className="w-full h-[38px] pl-3 pr-8 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-800 shadow-xs outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer truncate"
+                >
+                  <option value="">All Clubs ({CLUBS_LIST.length})</option>
+                  {CLUBS_LIST.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+              </div>
             </div>
 
-            {/* Club Cards Vertical Stack */}
-            <div className="flex flex-col space-y-2 max-h-[460px] overflow-y-auto pr-1">
-              {/* All Clubs Option */}
-              <button
-                type="button"
-                onClick={() => setSelectedClub(null)}
-                className={`w-full py-2.5 px-3 rounded-lg text-sm font-semibold text-center transition-all shadow-xs cursor-pointer border ${
-                  selectedClub === null
-                    ? 'bg-[#7D8C19] text-white border-[#6D7B15] shadow-sm'
-                    : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
-                }`}
-              >
-                All Clubs ({CLUBS_LIST.length})
-              </button>
+          </div>
 
-              {CLUBS_LIST.map((club) => {
-                const isActive = selectedClub === club;
+          {/* Row 2: View Scope Tabs + Quick Event Chips + Action Tools */}
+          <div className="pt-2.5 border-t border-slate-100 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            
+            {/* View Scope Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1 hidden sm:inline">
+                Scope:
+              </span>
+              {[
+                { id: 'everything', label: 'Everything' },
+                { id: 'per_heat', label: 'Per heat' },
+                { id: 'team_leaderboard', label: 'Team leaderboard' },
+                { id: 'league_standings', label: 'League standings', icon: ExternalLink },
+              ].map((mode) => {
+                const isActive = viewScope === mode.id;
+                const Icon = mode.icon;
                 return (
                   <button
-                    key={club}
+                    key={mode.id}
                     type="button"
-                    onClick={() => setSelectedClub(isActive ? null : club)}
-                    className={`w-full py-2.5 px-3 rounded-lg text-sm font-semibold text-center transition-all shadow-xs cursor-pointer truncate border ${
+                    onClick={() => setViewScope(mode.id as any)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer border ${
                       isActive
-                        ? 'bg-[#7D8C19] text-white border-[#6D7B15] shadow-sm'
-                        : 'bg-gradient-to-b from-white to-[#F4F6F8] dark:from-slate-800 dark:to-slate-900 text-[#1E6B24] dark:text-emerald-400 border-slate-300 dark:border-slate-700 hover:border-[#7D8C19]'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                     }`}
-                    title={club}
                   >
-                    {club}
+                    {Icon && <Icon size={12} />}
+                    {mode.label}
                   </button>
                 );
               })}
             </div>
+
+            {/* Quick Event Pills */}
+            <div className="hidden xl:flex items-center gap-1 overflow-x-auto text-xs">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+                Quick:
+              </span>
+              {['60m', '100m', '800m', '60mH', 'LJ', 'SP'].map((d) => {
+                const isSelected = selectedDiscipline.toLowerCase() === d.toLowerCase();
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setSelectedDiscipline(d)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-100 text-blue-800 border border-blue-300 shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                    }`}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Action Tools: Export CSV, Print, Reset */}
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 shadow-xs cursor-pointer transition"
+              >
+                <Download size={13} /> Export CSV
+              </button>
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 shadow-xs cursor-pointer transition"
+              >
+                <Printer size={13} /> Print
+              </button>
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 border border-transparent transition cursor-pointer"
+                title="Reset all filters to defaults"
+              >
+                <X size={13} /> Reset
+              </button>
+            </div>
+
           </div>
 
         </div>
 
-        {/* ── ACTIVE FILTER BAR & STATS ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
+        {/* ── ACTIVE FILTER BAR & LIVE STATS ── */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-slate-200 bg-white shadow-xs">
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="font-bold text-slate-500 uppercase tracking-wider">Active Filters:</span>
-            <span className="px-2.5 py-1 rounded-full bg-[#7D8C19]/15 text-[#55630F] dark:text-[#A9BC2E] font-bold">
+            <span className="font-extrabold text-slate-500 uppercase tracking-wider text-[11px]">Active:</span>
+            
+            {/* Gender Badge */}
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold">
               {selectedGender === 'MEN' ? '♂ Men' : '♀ Women'}
             </span>
-            <span className="px-2.5 py-1 rounded-full bg-[#7D8C19]/15 text-[#55630F] dark:text-[#A9BC2E] font-bold">
-              Category: {selectedCategory}
+            
+            {/* Category Badge */}
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold">
+              Cat: {selectedCategory}
             </span>
-            <span className="px-2.5 py-1 rounded-full bg-[#7D8C19]/15 text-[#55630F] dark:text-[#A9BC2E] font-bold">
+            
+            {/* Discipline Badge */}
+            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold">
               Event: {selectedDiscipline}
             </span>
+
+            {/* Club Badge (if selected) */}
             {selectedClub && (
-              <span className="px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-1">
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold flex items-center gap-1">
                 Club: {selectedClub}
-                <button type="button" onClick={() => setSelectedClub(null)} className="hover:text-red-500">
+                <button
+                  type="button"
+                  onClick={() => setSelectedClub(null)}
+                  className="hover:text-red-500 cursor-pointer"
+                  title="Remove club filter"
+                >
                   <X size={12} />
                 </button>
               </span>
             )}
+
+            {/* Search Query Badge (if entered) */}
             {searchQuery && (
-              <span className="px-2.5 py-1 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300 font-bold flex items-center gap-1">
+              <span className="px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200 font-bold flex items-center gap-1">
                 Search: "{searchQuery}"
-                <button type="button" onClick={() => setSearchQuery('')} className="hover:text-red-500">
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="hover:text-red-500 cursor-pointer"
+                  title="Clear search"
+                >
                   <X size={12} />
                 </button>
               </span>
             )}
+
             <button
               type="button"
               onClick={clearAllFilters}
-              className="text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline font-medium ml-1"
+              className="text-slate-400 hover:text-blue-600 underline font-semibold text-[11px] ml-1 cursor-pointer"
             >
-              Reset All
+              Reset all
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleExportCsv}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition"
-            >
-              <Download size={13} /> Export CSV
-            </button>
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition"
-            >
-              <Printer size={13} /> Print
-            </button>
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <ShieldCheck size={12} /> Official Verified
+            </span>
+            <span>
+              {filteredResults.length} {filteredResults.length === 1 ? 'finisher' : 'finishers'}
+            </span>
           </div>
         </div>
 
         {/* ════════════════════════════════════════════════════════════════════
              RESULT DETAIL INFO VIA TABLE (Triggered & Updated by Card Clicks)
            ════════════════════════════════════════════════════════════════════ */}
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
 
           {/* Table Header Bar */}
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/60 dark:bg-slate-800/40">
+          <div className="px-6 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/80">
             <div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <Trophy size={20} className="text-[#7D8C19]" />
+              <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <Trophy size={20} className="text-blue-600" />
                 {viewScope === 'team_leaderboard'
                   ? `Team Leaderboard — ${selectedCategory} ${selectedGender === 'MEN' ? 'Men' : 'Women'}`
                   : viewScope === 'league_standings'
@@ -1448,7 +1400,7 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
                   ? `Heat Breakdown: ${selectedDiscipline} · ${selectedCategory} ${selectedGender === 'MEN' ? 'Men' : 'Women'}`
                   : `Official Result: ${selectedDiscipline} · ${selectedCategory} ${selectedGender === 'MEN' ? 'Men' : 'Women'}`}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 {viewScope === 'team_leaderboard'
                   ? 'Club team points compiled from official World Athletics placing scores (10-8-6-5-4-3-2-1)'
                   : viewScope === 'league_standings'
@@ -1458,10 +1410,10 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
                 <ShieldCheck size={14} /> Official Verified
               </span>
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-bold text-slate-500">
                 {filteredResults.length} {filteredResults.length === 1 ? 'finisher' : 'finishers'}
               </span>
             </div>
@@ -1472,17 +1424,17 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
             <div className="overflow-x-auto">
               {filteredResults.length === 0 ? (
                 <div className="text-center py-12 px-4">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3 text-slate-400">
                     <Filter size={20} />
                   </div>
-                  <h4 className="font-bold text-slate-700 dark:text-slate-300">No results matching this filter</h4>
+                  <h4 className="font-bold text-slate-800">No results matching this filter</h4>
                   <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
                     Try selecting a different discipline, gender, or clear the club and search query.
                   </p>
                   <button
                     type="button"
                     onClick={clearAllFilters}
-                    className="mt-4 px-4 py-2 rounded-lg bg-[#7D8C19] text-white text-xs font-bold hover:bg-[#6D7B15] transition cursor-pointer"
+                    className="mt-4 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition cursor-pointer"
                   >
                     Reset Filters
                   </button>
@@ -1490,7 +1442,7 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
               ) : (
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-800 text-xs font-extrabold text-slate-500 dark:text-slate-400 bg-slate-50/40 dark:bg-slate-900/40 uppercase tracking-wider">
+                    <tr className="border-b border-slate-200 text-xs font-extrabold text-slate-600 bg-slate-50 uppercase tracking-wider">
                       <th className="py-3 px-4 w-16">Pos</th>
                       <th className="py-3 px-3 w-16">Bib</th>
                       <th className="py-3 px-4">Athlete</th>
@@ -1504,7 +1456,7 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
                       <th className="py-3 px-4 text-right">Details</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
+                  <tbody className="divide-y divide-slate-100 font-sans">
                     {filteredResults.map((record) => {
                       const numRank = Number(record.rank);
                       const isTop3 = numRank >= 1 && numRank <= 3;
@@ -1779,16 +1731,16 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[90vh] flex flex-col"
+              className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col"
             >
               {/* Modal Header */}
-              <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#7D8C19] text-white flex items-center justify-center font-black text-lg">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-lg shadow-xs">
                     {activeAthleteDetail.athleteName.charAt(0)}
                   </div>
                   <div>
-                    <h3 className="font-black text-lg text-slate-900 dark:text-white">
+                    <h3 className="font-black text-lg text-slate-900">
                       {activeAthleteDetail.athleteName}
                     </h3>
                     <p className="text-xs text-slate-500">
@@ -1800,7 +1752,7 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
                 <button
                   type="button"
                   onClick={() => setActiveAthleteDetail(null)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer"
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-500 transition cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -1810,23 +1762,23 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
               <div className="p-6 overflow-y-auto space-y-5">
                 {/* Highlight Stats Row */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-center">
-                    <span className="text-[11px] text-slate-400 font-bold block">FINISH PLACE</span>
-                    <span className="text-2xl font-black text-slate-900 dark:text-white">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <span className="text-[11px] text-slate-500 font-bold block">FINISH PLACE</span>
+                    <span className="text-2xl font-black text-slate-900">
                       {activeAthleteDetail.rank}
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-center">
-                    <span className="text-[11px] text-slate-400 font-bold block">MARK</span>
-                    <span className="text-2xl font-black font-mono text-[#7D8C19]">
+                  <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200 text-center">
+                    <span className="text-[11px] text-blue-700 font-bold block">MARK</span>
+                    <span className="text-2xl font-black font-mono text-blue-700">
                       {activeAthleteDetail.performance}
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-center">
-                    <span className="text-[11px] text-slate-400 font-bold block">WIND SPEED</span>
-                    <span className="text-lg font-bold font-mono text-slate-700 dark:text-slate-300">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <span className="text-[11px] text-slate-500 font-bold block">WIND SPEED</span>
+                    <span className="text-lg font-bold font-mono text-slate-800">
                       {activeAthleteDetail.wind || 'NWI'}
                     </span>
                   </div>

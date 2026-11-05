@@ -625,7 +625,7 @@ export function LiveEventCard({
       aria-label="Live Athletics Events"
     >
       {/* Elevated Card with subtle glow/ring effect */}
-      <div className="relative group rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl ring-1 ring-slate-200 dark:ring-slate-800 shadow-xl hover:shadow-2xl hover:ring-blue-500/30 dark:hover:ring-blue-500/30 transition-all duration-300 overflow-hidden p-4 sm:p-5">
+      <div className="relative group rounded-2xl bg-white backdrop-blur-xl ring-1 ring-blue-200 border-l-4 border-l-[#0038A5] shadow-xl hover:shadow-2xl hover:ring-blue-500/40 transition-all duration-300 overflow-hidden p-4 sm:p-5">
         {/* Subtle Ambient Accent Sheen */}
         <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
 
