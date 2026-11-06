@@ -228,6 +228,7 @@ export default function CompetitionDetail({
   const [resultClubFilter, setResultClubFilter] = useState<string>('ALL');
   const [resultAgeFilter, setResultAgeFilter] = useState<string>('ALL');
   const [resultGenderFilter, setResultGenderFilter] = useState<string>('ALL');
+  const [resultRoundFilter, setResultRoundFilter] = useState<string>('ALL');
   const [resultSearchQuery, setResultSearchQuery] = useState<string>('');
 
   const [starterEventFilter, setStarterEventFilter] = useState<string>('ALL');
@@ -588,6 +589,7 @@ export default function CompetitionDetail({
       if (resultClubFilter !== 'ALL' && r.club !== resultClubFilter) return false;
       if (resultAgeFilter !== 'ALL' && r.ageGroup !== resultAgeFilter) return false;
       if (resultGenderFilter !== 'ALL' && r.gender !== resultGenderFilter) return false;
+      if (resultRoundFilter !== 'ALL' && r.round?.toLowerCase() !== resultRoundFilter.toLowerCase()) return false;
       if (resultSearchQuery.trim()) {
         const q = resultSearchQuery.toLowerCase();
         if (!r.name.toLowerCase().includes(q) && !r.club.toLowerCase().includes(q) && !String(r.bib).toLowerCase().includes(q)) {
@@ -596,10 +598,11 @@ export default function CompetitionDetail({
       }
       return true;
     });
-  }, [resultsData, resultEventFilter, resultClubFilter, resultAgeFilter, resultGenderFilter, resultSearchQuery]);
+  }, [resultsData, resultEventFilter, resultClubFilter, resultAgeFilter, resultGenderFilter, resultRoundFilter, resultSearchQuery]);
 
   const uniqueEvents = [...new Set(resultsData.map(r => r.event))];
   const uniqueClubs = [...new Set(resultsData.map(r => r.club))];
+  const uniqueRounds = [...new Set(resultsData.map(r => r.round))].filter(Boolean);
   const uniqueStarterEvents = [...new Set(starterList.map(s => s.event))];
 
   return (
@@ -1354,6 +1357,19 @@ export default function CompetitionDetail({
                         <option value="Women">Women</option>
                       </select>
                     </div>
+
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Stage / Round</label>
+                      <select 
+                        className="form-select" 
+                        value={resultRoundFilter} 
+                        onChange={e => setResultRoundFilter(e.target.value)}
+                        style={{ background: '#FFFFFF' }}
+                      >
+                        <option value="ALL">All Stages (Heats, Semis, Final)</option>
+                        {uniqueRounds.map((rnd: any) => <option key={rnd} value={rnd}>{rnd}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -1479,6 +1495,11 @@ export default function CompetitionDetail({
                                     {r.nr && <span className="badge badge-red" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>NR</span>}
                                     {r.pb && <span className="badge badge-amber" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>PB</span>}
                                     {r.sb && <span className="badge badge-blue" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>SB</span>}
+                                    {r.time && String(r.time).includes('[A]') && (
+                                      <span className="badge" style={{ fontSize: '0.65rem', padding: '2px 6px', background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D' }}>
+                                        ALT [A]
+                                      </span>
+                                    )}
                                     {r.qualified && (
                                       <span className="badge badge-green" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
                                         {r.qualified}
