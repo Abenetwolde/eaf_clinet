@@ -169,43 +169,6 @@ export default function AppLayout({
           </div>
         )}
 
-        {/* Identity Card */}
-        <div className="px-4 border-b border-slate-200 flex items-center gap-2.5 py-3">
-          {isClub ? (
-            <>
-              <div className="w-9 h-9 rounded-full shrink-0 border-2 border-blue-200 shadow-xs overflow-hidden bg-blue-600 text-white flex items-center justify-center font-black">
-                {clubAdminPhoto && !adminAvatarFailed ? (
-                  <img
-                    src={clubAdminPhoto}
-                    alt={clubAdminName}
-                    className="w-full h-full object-cover"
-                    onError={() => setAdminAvatarFailed(true)}
-                  />
-                ) : (
-                  <span>{clubAdminName.trim().charAt(0).toUpperCase() || 'C'}</span>
-                )}
-              </div>
-              <div className="min-w-0">
-                <div className="text-[0.84rem] font-bold text-slate-900 leading-tight truncate">{clubAdminName}</div>
-                <div className="text-[0.68rem] text-slate-500 font-bold">Club Administrator</div>
-              </div>
-            </>
-          ) : (
-            <>
-              <img
-                src={getProfilePhotoUrl({ photoUrl: currentAthlete.photoUrl, picture: userData?.picture, faydaFin: currentAthlete.faydaFin || userData?.faydaNin }) || '/images/fayda_resident_photo.jpg'}
-                alt={currentAthlete.name}
-                onError={(e) => { e.currentTarget.src = '/images/fayda_resident_photo.jpg'; }}
-                className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-blue-200 shadow-xs"
-              />
-              <div>
-                <div className="text-[0.84rem] font-bold text-slate-900 leading-tight">{currentAthlete.name}</div>
-                <div className="text-[0.68rem] text-slate-500 font-bold">{currentAthlete.ageTier || 'Athlete'} · ID Verified</div>
-              </div>
-            </>
-          )}
-        </div>
-
         {/* Athlete Affiliated Club Badge */}
         {!isClub && athleteClubName && (
           <div className="mx-3.5 mt-2.5 mb-1 p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2.5">
