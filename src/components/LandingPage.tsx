@@ -1486,8 +1486,8 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 }}
               >
                 {(publicSubPage === 'HOME' ? sortedMeets.slice(0, 3) : sortedMeets).map((meet) => {
-                  const badgeColor = meet.status === 'REGISTRATION_OPEN' ? 'var(--primary)' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
-                  const statusName = meet.status === 'REGISTRATION_OPEN' ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
+                  const badgeColor = (meet.status === 'REGISTRATION_OPEN' || String(meet.status).toUpperCase() === 'PUBLISHED') ? 'var(--primary)' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
+                  const statusName = (meet.status === 'REGISTRATION_OPEN' || String(meet.status).toUpperCase() === 'PUBLISHED') ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
 
                   return (
                     <motion.div

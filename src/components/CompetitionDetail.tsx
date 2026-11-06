@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { getProfilePhotoUrl } from '../utils/profilePhoto';
-import { getEventRegistrationStatus } from '../utils/eventRegistration';
+import { getEventRegistrationStatus, isEventRegistrationClosed } from '../utils/eventRegistration';
 import { STORAGE_KEYS } from '../store/persistence';
 
 // Helper to determine banner image based on meet ID
@@ -324,7 +324,7 @@ export default function CompetitionDetail({
       onLoginSuccess('ATHLETE', { athlete: loggedInAthlete });
     }
 
-    if (meet.status === 'REGISTRATION_OPEN' || meet.status === 'UPCOMING') {
+    if (meet.status === 'REGISTRATION_OPEN' || meet.status === 'UPCOMING' || String(meet.status).toUpperCase() === 'PUBLISHED') {
       setShowIndividualModal(true);
     }
   };
@@ -473,6 +473,12 @@ export default function CompetitionDetail({
   };
 
   // Generate sub-events for Events Tab
+  const isMeetRegOpen = !isEventRegistrationClosed(meet) && (
+    meet.status === 'REGISTRATION_OPEN' ||
+    meet.status === 'UPCOMING' ||
+    String(meet.status).toUpperCase() === 'PUBLISHED'
+  );
+
   const subEvents = meet.disciplines.map(d => {
     let gender = 'Mixed';
     if (d.toLowerCase().includes('men')) gender = 'Men';
@@ -492,7 +498,7 @@ export default function CompetitionDetail({
       name: d,
       gender,
       ageGroup,
-      status: meet.status === 'REGISTRATION_OPEN' ? 'Open' : 'Closed'
+      status: isMeetRegOpen ? 'Open' : 'Closed'
     };
   });
 
@@ -674,7 +680,11 @@ export default function CompetitionDetail({
             <span
               className="badge"
               style={{
-                background: meet.status === 'REGISTRATION_OPEN' ? '#0E7490' : meet.status === 'LIVE' ? '#DC2626' : '#B45309',
+                background: (meet.status === 'REGISTRATION_OPEN' || String(meet.status).toUpperCase() === 'PUBLISHED')
+                  ? '#0E7490'
+                  : meet.status === 'LIVE'
+                  ? '#DC2626'
+                  : '#B45309',
                 color: '#FFFFFF',
                 borderRadius: '8px',
                 fontSize: '0.75rem',
@@ -683,7 +693,11 @@ export default function CompetitionDetail({
                 padding: '6px 14px'
               }}
             >
-              {meet.status === 'REGISTRATION_OPEN' ? t('competitionDetail.regOpen') : meet.status === 'LIVE' ? t('competitionDetail.live') : t('competitionDetail.upcoming')}
+              {(meet.status === 'REGISTRATION_OPEN' || String(meet.status).toUpperCase() === 'PUBLISHED')
+                ? t('competitionDetail.regOpen')
+                : meet.status === 'LIVE'
+                ? t('competitionDetail.live')
+                : t('competitionDetail.upcoming')}
             </span>
             <span
               className="badge badge-gold"
@@ -767,7 +781,7 @@ export default function CompetitionDetail({
         <div
           className="gov-card"
           style={{
-            background: meet.status === 'REGISTRATION_CLOSED'
+            background: isEventRegistrationClosed(meet)
               ? 'linear-gradient(135deg, #334155 0%, #0F172A 100%)'
               : meet.status === 'LIVE'
                 ? 'linear-gradient(135deg, #991B1B 0%, #450A0A 100%)'
@@ -781,20 +795,20 @@ export default function CompetitionDetail({
             padding: '32px',
             boxShadow: meet.status === 'LIVE'
               ? '0 16px 36px rgba(220, 38, 38, 0.28)'
-              : meet.status === 'REGISTRATION_CLOSED'
+              : isEventRegistrationClosed(meet)
                 ? '0 16px 36px rgba(51, 65, 85, 0.25)'
                 : '0 16px 36px rgba(2, 132, 199, 0.28)'
           }}
         >
           <div>
-            <span style={{ background: '#FFFFFF', color: meet.status === 'LIVE' ? '#991B1B' : meet.status === 'REGISTRATION_CLOSED' ? '#334155' : 'var(--primary-dark)', fontWeight: 900, fontSize: '0.72rem', padding: '4px 12px', borderRadius: '20px', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>
-              {meet.status === 'REGISTRATION_CLOSED' ? '🔒 REGISTRATION CLOSED' : meet.status === 'LIVE' ? '🔴 EVENT IS LIVE IN STADIUM' : `✦ ${t('competitionDetail.officialReg')}`}
+            <span style={{ background: '#FFFFFF', color: meet.status === 'LIVE' ? '#991B1B' : isEventRegistrationClosed(meet) ? '#334155' : 'var(--primary-dark)', fontWeight: 900, fontSize: '0.72rem', padding: '4px 12px', borderRadius: '20px', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>
+              {isEventRegistrationClosed(meet) ? '🔒 REGISTRATION CLOSED' : meet.status === 'LIVE' ? '🔴 EVENT IS LIVE IN STADIUM' : `✦ ${t('competitionDetail.officialReg')}`}
             </span>
             <h3 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '8px', letterSpacing: '-0.01em' }}>
-              {meet.status === 'REGISTRATION_CLOSED' ? 'Registration Period Concluded' : meet.status === 'LIVE' ? 'Live Competition Underway' : t('competitionDetail.actionTitle')}
+              {isEventRegistrationClosed(meet) ? 'Registration Period Concluded' : meet.status === 'LIVE' ? 'Live Competition Underway' : t('competitionDetail.actionTitle')}
             </h3>
             <p style={{ color: '#E0F2FE', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '24px' }}>
-              {meet.status === 'REGISTRATION_CLOSED'
+              {isEventRegistrationClosed(meet)
                 ? 'Registration for this competition has been officially closed by the EAF Technical Committee. No new athlete entries are currently accepted.'
                 : meet.status === 'LIVE'
                   ? 'This competition is currently underway live in stadium. Registration is closed. Track real-time live race results & rankings below.'
@@ -805,7 +819,7 @@ export default function CompetitionDetail({
           </div>
 
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            {meet.status === 'REGISTRATION_CLOSED' ? (
+            {isEventRegistrationClosed(meet) ? (
               <button
                 disabled
                 style={{

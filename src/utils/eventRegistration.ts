@@ -12,21 +12,68 @@ function getDeadlineTime(value?: string | null): number | null {
   return parsed.getTime();
 }
 
+function getEventStartTime(startsAt?: string | null): number | null {
+  if (!startsAt) return null;
+  const parsed = new Date(startsAt);
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  // If start was saved as date-only midnight UTC, keep registration open through that date in EAT
+  if (parsed.getUTCHours() === 0 && parsed.getUTCMinutes() === 0 && parsed.getUTCSeconds() === 0 && parsed.getUTCMilliseconds() === 0) {
+    const date = parsed.toISOString().slice(0, 10);
+    return new Date(`${date}T23:59:59.999+03:00`).getTime();
+  }
+  return parsed.getTime();
+}
+
 export function isEventRegistrationClosed(event: any, now = Date.now()): boolean {
-  if (event?.status === 'CANCELLED' || event?.lifecycleStatus === 'CANCELLED' || event?.lifecycleStatus === 'COMPLETED' || event?.lifecycleStatus === 'REGISTRATION_CLOSED') return true;
+  const statusUpper = String(event?.status || '').toUpperCase();
+  const lifecycleUpper = String(event?.lifecycleStatus || '').toUpperCase();
+
+  if (
+    statusUpper === 'CANCELLED' ||
+    lifecycleUpper === 'CANCELLED' ||
+    statusUpper === 'COMPLETED' ||
+    lifecycleUpper === 'COMPLETED' ||
+    statusUpper === 'REGISTRATION_CLOSED' ||
+    lifecycleUpper === 'REGISTRATION_CLOSED'
+  ) {
+    return true;
+  }
+
+  // If explicit registration deadline is configured, it is the authoritative rule
   const deadlineTime = getDeadlineTime(event?.registrationDeadline);
-  if (deadlineTime !== null && deadlineTime < now) return true;
-  const startsAt = event?.schedule?.[0]?.startsAt;
-  return Boolean(startsAt && new Date(startsAt).getTime() <= now);
+  if (deadlineTime !== null) {
+    return deadlineTime < now;
+  }
+
+  // If no registration deadline was specified, check if event start day has passed
+  const startsAt = event?.schedule?.[0]?.startsAt || event?.startDate;
+  const startTime = getEventStartTime(startsAt);
+  if (startTime !== null) {
+    return startTime < now;
+  }
+
+  return false;
 }
 
 export function getEventRegistrationStatus(event: any, now = Date.now()): string {
-  if (event?.status === 'CANCELLED' || event?.lifecycleStatus === 'CANCELLED') return 'CANCELLED';
+  const statusUpper = String(event?.status || '').toUpperCase();
+  const lifecycleUpper = String(event?.lifecycleStatus || '').toUpperCase();
+
+  if (statusUpper === 'CANCELLED' || lifecycleUpper === 'CANCELLED') return 'CANCELLED';
+
   if (isEventRegistrationClosed(event, now)) {
-    if (event?.lifecycleStatus === 'LIVE') return 'LIVE';
+    if (lifecycleUpper === 'LIVE') return 'LIVE';
     return 'REGISTRATION_CLOSED';
   }
-  return event?.status === 'PUBLISHED' || event?.lifecycleStatus === 'REGISTRATION_OPEN'
-    ? 'REGISTRATION_OPEN'
-    : (event?.lifecycleStatus || event?.status || 'UPCOMING');
+
+  if (
+    statusUpper === 'PUBLISHED' ||
+    statusUpper === 'REGISTRATION_OPEN' ||
+    lifecycleUpper === 'REGISTRATION_OPEN'
+  ) {
+    return 'REGISTRATION_OPEN';
+  }
+
+  return lifecycleUpper || statusUpper || 'UPCOMING';
 }
