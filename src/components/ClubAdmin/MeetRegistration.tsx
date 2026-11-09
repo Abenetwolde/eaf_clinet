@@ -20,7 +20,10 @@ import {
   RefreshCw,
   Building2,
   CheckSquare,
-  Square
+  Square,
+  ChevronRight,
+  Filter,
+  Award,
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import { useGetMeQuery } from '../../store/api/authApi';
@@ -129,6 +132,67 @@ export default function MeetRegistration({
   const backendResults = Array.isArray(rawBackendResults)
     ? rawBackendResults
     : (rawBackendResults as any)?.data || [];
+
+  // Results Tab Filtering & Detail View State
+  const [resultsSearch, setResultsSearch] = useState<string>('');
+  const [resultsDisciplineFilter, setResultsDisciplineFilter] = useState<string>('ALL');
+  const [resultsRoundFilter, setResultsRoundFilter] = useState<string>('ALL');
+  const [selectedResultDetail, setSelectedResultDetail] = useState<any | null>(null);
+
+  const formatRoundLabel = (r?: string) => {
+    if (!r) return 'Championship Final';
+    const upper = String(r).toUpperCase().trim();
+    if (upper === 'FINAL' || upper === 'FN') return 'Final';
+    if (upper === 'SEMIFINALS' || upper === 'SF') return 'Semi-Finals';
+    if (upper.startsWith('SEMI_') || upper.startsWith('SEMIFINAL_')) {
+      const num = upper.replace(/[^0-9]/g, '');
+      return `Semi-Final ${num || '1'}`;
+    }
+    if (upper === 'HEATS' || upper === 'HT' || upper === 'ROUND_1' || upper === 'R1') return 'Heats (Round 1)';
+    if (upper.startsWith('HEAT_')) {
+      const num = upper.replace(/[^0-9]/g, '');
+      return `Heat ${num || '1'}`;
+    }
+    if (upper === 'PRELIMINARY' || upper === 'PRELIM') return 'Preliminary Round';
+    if (upper === 'QUALIFYING' || upper === 'QUAL') return 'Qualification Flights';
+    if (upper.startsWith('QUAL_') || upper.startsWith('FLIGHT_')) {
+      const letter = upper.replace(/^(QUAL_|FLIGHT_)/, '');
+      return `Flight ${letter}`;
+    }
+    return r;
+  };
+
+  const availableResultsDisciplines = useMemo(() => {
+    const set = new Set<string>();
+    backendResults.forEach((r: any) => {
+      if (r.discipline) set.add(r.discipline);
+    });
+    return Array.from(set);
+  }, [backendResults]);
+
+  const filteredBackendResults = useMemo(() => {
+    return backendResults.filter((r: any) => {
+      if (resultsDisciplineFilter !== 'ALL' && r.discipline !== resultsDisciplineFilter) return false;
+      if (resultsRoundFilter !== 'ALL') {
+        const norm = (r.round || '').toUpperCase();
+        if (resultsRoundFilter === 'FINAL' && !norm.includes('FINAL') && norm !== 'FN') return false;
+        if (resultsRoundFilter === 'HEATS' && !norm.includes('HEAT') && !norm.includes('R1') && norm !== 'HT') return false;
+        if (resultsRoundFilter === 'SEMIS' && !norm.includes('SEMI') && norm !== 'SF') return false;
+      }
+      if (resultsSearch.trim()) {
+        const q = resultsSearch.toLowerCase();
+        const matchDisc = (r.discipline || '').toLowerCase().includes(q);
+        const matchEvent = (r.eventTitle || '').toLowerCase().includes(q);
+        const entries = r.entries || r.top3Preview || [];
+        const matchEntries = entries.some((e: any) =>
+          (e.athleteName || e.name || '').toLowerCase().includes(q) ||
+          (e.club || e.clubName || '').toLowerCase().includes(q)
+        );
+        if (!matchDisc && !matchEvent && !matchEntries) return false;
+      }
+      return true;
+    });
+  }, [backendResults, resultsDisciplineFilter, resultsRoundFilter, resultsSearch]);
 
   // Submit Mutation
   const [submitApplication, { isLoading: isSubmitting }] = useSubmitClubCompetitionApplicationMutation();
@@ -1458,59 +1522,327 @@ export default function MeetRegistration({
 
       {/* ── TAB 3: PUBLISHED RESULTS ── */}
       {activeTab === 'results' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-slate-900 m-0">
-              Official Federation Competition Results
-            </h3>
-            <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
-              <ShieldCheck size={14} /> Certified Results
-            </span>
+        <div className="space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 m-0">
+                Official Federation Competition Results
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Verified race and field results ratified by the Ethiopian Athletics Federation
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                <ShieldCheck size={14} /> Certified Results ({backendResults.length})
+              </span>
+            </div>
           </div>
 
-          {backendResults.length === 0 ? (
-            <div className="p-12 text-center rounded-xl border border-slate-200 bg-white text-slate-400">
-              <Medal size={36} className="mx-auto mb-2 opacity-30 text-slate-500" />
-              <p className="font-bold text-sm text-slate-700">No championship results have been published yet.</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Official times and standings will be published upon conclusion of scheduled meets.
+          {/* Filter Toolbar */}
+          <div className="p-3.5 rounded-xl border border-slate-200 bg-white flex flex-wrap items-center gap-3 text-xs shadow-2xs">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <input
+                type="text"
+                placeholder="Search athlete, club, or discipline..."
+                value={resultsSearch}
+                onChange={(e) => setResultsSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] font-bold text-slate-500 shrink-0">Discipline:</label>
+              <select
+                value={resultsDisciplineFilter}
+                onChange={(e) => setResultsDisciplineFilter(e.target.value)}
+                className="px-2.5 py-2 rounded-lg border border-slate-200 text-xs bg-white font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="ALL">All Disciplines ({availableResultsDisciplines.length})</option>
+                {availableResultsDisciplines.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] font-bold text-slate-500 shrink-0">Round:</label>
+              <select
+                value={resultsRoundFilter}
+                onChange={(e) => setResultsRoundFilter(e.target.value)}
+                className="px-2.5 py-2 rounded-lg border border-slate-200 text-xs bg-white font-medium focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="ALL">All Rounds</option>
+                <option value="FINAL">Championship Finals</option>
+                <option value="SEMIS">Semi-Finals</option>
+                <option value="HEATS">Preliminary Heats</option>
+              </select>
+            </div>
+
+            {(resultsSearch || resultsDisciplineFilter !== 'ALL' || resultsRoundFilter !== 'ALL') && (
+              <button
+                onClick={() => {
+                  setResultsSearch('');
+                  setResultsDisciplineFilter('ALL');
+                  setResultsRoundFilter('ALL');
+                }}
+                className="text-xs text-blue-600 font-bold hover:underline ml-auto"
+              >
+                Reset Filters
+              </button>
+            )}
+          </div>
+
+          {filteredBackendResults.length === 0 ? (
+            <div className="p-12 text-center rounded-xl border border-slate-200 bg-white text-slate-400 space-y-2">
+              <Medal size={40} className="mx-auto opacity-30 text-slate-500" />
+              <p className="font-bold text-sm text-slate-700">No competition results match the current filters.</p>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Official times, heats, and certified standings are published directly by the EAF secretariat upon referee ratification.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {backendResults.map((result: any, idx: number) => (
-                <div
-                  key={idx}
-                  className="p-5 rounded-xl border border-slate-200 bg-white space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm text-slate-900">
-                      {result.eventTitle || result.discipline}
-                    </span>
-                    <span className="text-xs text-slate-500">{result.date || 'Recent'}</span>
-                  </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {filteredBackendResults.map((result: any, idx: number) => {
+                const entriesToShow = Array.isArray(result.entries) && result.entries.length > 0
+                  ? result.entries
+                  : Array.isArray(result.top3Preview)
+                  ? result.top3Preview
+                  : [];
 
-                  {Array.isArray(result.entries) && (
-                    <div className="space-y-1.5 pt-2">
-                      {result.entries.slice(0, 5).map((e: any, posIdx: number) => (
-                        <div
-                          key={posIdx}
-                          className="flex items-center justify-between p-2 rounded-lg bg-slate-50 text-xs"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-500 w-4">#{posIdx + 1}</span>
-                            <span className="font-semibold text-slate-800">
-                              {e.athleteName}
+                return (
+                  <div
+                    key={result.id || idx}
+                    className="p-5 rounded-xl border border-slate-200 bg-white space-y-3.5 shadow-2xs hover:border-slate-300 transition-all"
+                  >
+                    {/* Discipline & Round Card Header */}
+                    <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-black text-base text-slate-900">{result.discipline}</span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-mono">
+                            {formatRoundLabel(result.round)}
+                          </span>
+                          {result.gender && (
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                              {result.gender}
                             </span>
-                            <span className="text-[10px] text-slate-500">({e.club || 'Club'})</span>
-                          </div>
-                          <span className="font-mono font-bold text-slate-900">{e.time || e.mark}</span>
+                          )}
+                          {result.category && (
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                              {result.category}
+                            </span>
+                          )}
                         </div>
-                      ))}
+                        <p className="text-xs text-slate-500 font-medium m-0 flex flex-wrap items-center gap-1.5">
+                          <span className="text-slate-800 font-bold">{result.eventTitle || result.eventName || 'Competition'}</span>
+                          <span>•</span>
+                          <span>{result.venue || 'Addis Ababa Stadium'}</span>
+                          {result.windReading && (
+                            <>
+                              <span>•</span>
+                              <span className="font-mono text-slate-700 font-semibold">Wind: {result.windReading}</span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span className="text-xs font-bold text-slate-500 block">{result.date || 'Recent'}</span>
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 mt-0.5">
+                          <ShieldCheck size={13} /> {result.statusLabel || 'Official Result'}
+                        </span>
+                      </div>
                     </div>
-                  )}
+
+                    {/* Finishers Preview */}
+                    {entriesToShow.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {entriesToShow.slice(0, 5).map((e: any, posIdx: number) => {
+                          const athleteName = e.athleteName || e.name || 'Athlete';
+                          const clubName = e.clubName || e.club || 'Independent';
+                          const mark = e.time || e.mark || e.performance || '-';
+                          const pos = e.position != null ? e.position : e.rank != null ? e.rank : posIdx + 1;
+                          const isOurClub = club?.name && (
+                            clubName.toLowerCase() === club.name.toLowerCase() ||
+                            (e.clubId && e.clubId === clubId)
+                          );
+
+                          return (
+                            <div
+                              key={e.id || posIdx}
+                              className={`flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
+                                isOurClub
+                                  ? 'bg-blue-50/70 border border-blue-200'
+                                  : 'bg-slate-50 hover:bg-slate-100/70'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="font-bold text-slate-500 font-mono w-5 text-center shrink-0">
+                                  {pos === 1 || e.medal === 'GOLD' ? '🥇' : pos === 2 || e.medal === 'SILVER' ? '🥈' : pos === 3 || e.medal === 'BRONZE' ? '🥉' : `#${pos}`}
+                                </span>
+                                {e.bibNo && (
+                                  <span className="font-mono text-[10px] text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                                    #{e.bibNo}
+                                  </span>
+                                )}
+                                <span className={`font-bold truncate ${isOurClub ? 'text-blue-900' : 'text-slate-800'}`}>
+                                  {athleteName}
+                                </span>
+                                <span className="text-[11px] text-slate-500 truncate">
+                                  ({clubName})
+                                </span>
+                                {isOurClub && (
+                                  <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wider bg-blue-600 text-white shrink-0">
+                                    Your Club
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                {e.lane && (
+                                  <span className="text-[10px] font-mono text-slate-400">
+                                    L{e.lane}
+                                  </span>
+                                )}
+                                <span className="font-mono font-bold text-slate-900 text-xs">
+                                  {mark}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-xs text-slate-400 italic">
+                        Results officially verified. Awaiting complete athlete breakdown publication.
+                      </div>
+                    )}
+
+                    {/* View Full Results Button */}
+                    <div className="pt-2 flex items-center justify-between text-xs">
+                      <span className="text-[11px] text-slate-500 font-medium">
+                        Total Finishers: <strong>{result.totalFinishers || entriesToShow.length}</strong>
+                      </span>
+                      <button
+                        onClick={() => setSelectedResultDetail(result)}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>View Full Result Sheet</span>
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Full Result Sheet Modal */}
+          {selectedResultDetail && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
+              <div className="w-full max-w-3xl max-h-[85vh] flex flex-col rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden">
+                <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-black text-slate-900 m-0">
+                        {selectedResultDetail.discipline} · {formatRoundLabel(selectedResultDetail.round)}
+                      </h3>
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                        <ShieldCheck size={12} /> {selectedResultDetail.statusLabel || 'Official Result'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 m-0">
+                      {selectedResultDetail.eventTitle} • {selectedResultDetail.venue || 'Addis Ababa Stadium'} • {selectedResultDetail.date}
+                      {selectedResultDetail.windReading ? ` • Wind: ${selectedResultDetail.windReading}` : ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedResultDetail(null)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 cursor-pointer"
+                  >
+                    <X size={18} />
+                  </button>
                 </div>
-              ))}
+
+                <div className="flex-1 overflow-y-auto p-5">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px]">
+                        <th className="py-2.5 px-3">Pos</th>
+                        <th className="py-2.5 px-2">Bib</th>
+                        <th className="py-2.5 px-3">Athlete</th>
+                        <th className="py-2.5 px-3">Club / Delegation</th>
+                        <th className="py-2.5 px-2 text-center">Heat/Lane</th>
+                        <th className="py-2.5 px-3 text-right">Official Mark</th>
+                        <th className="py-2.5 px-2 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {(selectedResultDetail.entries || selectedResultDetail.top3Preview || []).map((entry: any, i: number) => {
+                        const athName = entry.athleteName || entry.name || 'Athlete';
+                        const clName = entry.clubName || entry.club || 'Independent';
+                        const markVal = entry.time || entry.mark || entry.performance || '-';
+                        const positionVal = entry.position != null ? entry.position : entry.rank != null ? entry.rank : i + 1;
+                        const isOurs = club?.name && clName.toLowerCase() === club.name.toLowerCase();
+
+                        return (
+                          <tr key={entry.id || i} className={isOurs ? 'bg-blue-50/70' : 'hover:bg-slate-50'}>
+                            <td className="py-2.5 px-3 font-mono font-bold text-slate-700">
+                              {positionVal === 1 ? '🥇 1' : positionVal === 2 ? '🥈 2' : positionVal === 3 ? '🥉 3' : positionVal}
+                            </td>
+                            <td className="py-2.5 px-2 font-mono text-slate-500">
+                              {entry.bibNo || entry.bib || '-'}
+                            </td>
+                            <td className="py-2.5 px-3 font-bold text-slate-900">
+                              <div className="flex items-center gap-1.5">
+                                <span>{athName}</span>
+                                {isOurs && (
+                                  <span className="px-1 py-0.2 rounded text-[9px] font-black bg-blue-600 text-white uppercase">
+                                    Your Club
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-600">
+                              {clName}
+                            </td>
+                            <td className="py-2.5 px-2 text-center font-mono text-slate-500">
+                              {entry.heat ? `H${entry.heat}` : ''} {entry.lane ? `L${entry.lane}` : ''}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 text-sm">
+                              {markVal}
+                            </td>
+                            <td className="py-2.5 px-2 text-center">
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                entry.status === 'DQ' ? 'bg-red-100 text-red-700' :
+                                entry.status === 'DNF' ? 'bg-amber-100 text-amber-700' :
+                                entry.status === 'DNS' ? 'bg-slate-100 text-slate-600' :
+                                'bg-emerald-100 text-emerald-800'
+                              }`}>
+                                {entry.status || 'OK'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">
+                    Officially Ratified by EAF Competition Secretariat
+                  </span>
+                  <button
+                    onClick={() => setSelectedResultDetail(null)}
+                    className="px-4 py-2 rounded-lg bg-slate-900 text-white font-bold hover:bg-slate-800 cursor-pointer"
+                  >
+                    Close Result Sheet
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
