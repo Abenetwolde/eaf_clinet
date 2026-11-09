@@ -3,12 +3,14 @@ import {
   Trophy, Calendar, MapPin, Phone, Mail, Award, Users, Filter,
   CheckCircle2, User, UserCheck, UserPlus, Building, Clock, ChevronRight, ShieldCheck, X, Download, Printer, Check,
   Lock, QrCode, Camera,
-  AlertTriangle
+  AlertTriangle,
+  Flame, Wind, Sparkles, Medal, Activity, Layers, Search, RefreshCw
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { getProfilePhotoUrl } from '../utils/profilePhoto';
 import { getEventRegistrationStatus, isEventRegistrationClosed } from '../utils/eventRegistration';
 import { STORAGE_KEYS } from '../store/persistence';
+import { useGetPublishedResultsQuery } from '../store/api/athleteApi';
 
 // Helper to determine banner image based on meet ID
 const getBannerUrl = (meet: any) => {
@@ -230,6 +232,8 @@ export default function CompetitionDetail({
   const [resultGenderFilter, setResultGenderFilter] = useState<string>('ALL');
   const [resultRoundFilter, setResultRoundFilter] = useState<string>('ALL');
   const [resultSearchQuery, setResultSearchQuery] = useState<string>('');
+  const [selectedDisciplineKey, setSelectedDisciplineKey] = useState<string>('ALL');
+  const [selectedRoundStage, setSelectedRoundStage] = useState<string>('ALL');
 
   const [starterEventFilter, setStarterEventFilter] = useState<string>('ALL');
   const [starterGenderFilter, setStarterGenderFilter] = useState<string>('ALL');
@@ -532,48 +536,263 @@ export default function CompetitionDetail({
     return items;
   }, [publicHubData]);
 
+  const { data: publishedResultsList } = useGetPublishedResultsQuery();
+
   const resultsData = useMemo(() => {
-    if (!publicHubData?.results || publicHubData.results.length === 0) return [];
     const items: any[] = [];
-    for (const res of publicHubData.results) {
-      for (const entry of (res.entries || [])) {
-        items.push({
-          id: entry.id,
-          rank: entry.position ?? 99,
-          name: entry.athleteName,
-          club: entry.clubName || 'Unattached',
-          bib: entry.bibNo || '—',
-          lane: entry.lane ? String(entry.lane) : '—',
-          heat: entry.heat ? String(entry.heat) : '1',
-          event: res.discipline,
-          round: res.round || 'Final',
-          gender: res.gender === 'MEN' ? 'Male' : res.gender === 'WOMEN' ? 'Female' : 'Mixed',
-          ageGroup: res.category || 'Senior',
-          time: entry.mark || entry.bestValidMark || '—',
-          attempts: Array.isArray(entry.attempts) ? entry.attempts : [],
-          bestValidMark: entry.bestValidMark || null,
-          wind: res.windReading || null,
-          verified: true,
-          pb: !!entry.personalBest,
-          sb: !!entry.seasonBest,
-          nr: !!entry.nationalRecord,
-          medal: entry.medal ? entry.medal.toLowerCase() : null,
-          qualified: entry.qualified || null,
-          status: entry.status || 'FINISHED',
-          flag: entry.flag || entry.status || 'OK',
-          remarks: entry.remarks || '',
-          dqReason: entry.remarks || '',
-          resultStatusLabel: res.statusLabel || 'Official Result',
-          version: res.version,
-          publishedAt: res.publishedAt,
-        });
+    const seenAthleteRoundKeys = new Set<string>();
+
+    // 1. From publicHubData.results (database event-specific hub)
+    if (publicHubData?.results && Array.isArray(publicHubData.results)) {
+      for (const res of publicHubData.results) {
+        const roundStr = (res.round || 'FINAL').toUpperCase().trim();
+        const discStr = (res.discipline || '').toLowerCase().trim();
+        const genderStr = (res.gender || 'MIXED').toUpperCase().trim();
+
+        for (const entry of (res.entries || [])) {
+          const athleteKey = entry.athleteId || (entry.athleteName || '').toLowerCase().trim() || entry.bibNo;
+          const uniqueKey = `${discStr}__${roundStr}__${genderStr}__${athleteKey}`;
+          if (athleteKey && seenAthleteRoundKeys.has(uniqueKey)) continue;
+          if (athleteKey) seenAthleteRoundKeys.add(uniqueKey);
+
+          const pos = entry.position ?? 99;
+          items.push({
+            id: entry.id || uniqueKey,
+            rank: pos,
+            name: entry.athleteName,
+            club: entry.clubName || 'Unattached',
+            bib: entry.bibNo || '—',
+            lane: entry.lane ? String(entry.lane) : '—',
+            heat: entry.heat ? String(entry.heat) : '1',
+            event: res.discipline,
+            round: res.round || 'FINAL',
+            gender: res.gender === 'MEN' ? 'Men' : res.gender === 'WOMEN' ? 'Women' : 'Mixed',
+            ageGroup: res.category || 'Senior',
+            time: entry.mark || entry.bestValidMark || '—',
+            attempts: Array.isArray(entry.attempts) ? entry.attempts : [],
+            bestValidMark: entry.bestValidMark || null,
+            wind: res.windReading || null,
+            verified: true,
+            pb: !!entry.personalBest,
+            sb: !!entry.seasonBest,
+            nr: !!entry.nationalRecord,
+            cr: !!entry.meetRecord,
+            medal: entry.medal ? entry.medal.toLowerCase() : (pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : null),
+            qualified: entry.qualified || null,
+            reactionTime: entry.reactionTime || null,
+            status: entry.status || 'FINISHED',
+            flag: entry.flag || entry.status || 'OK',
+            remarks: entry.remarks || '',
+            dqReason: entry.remarks || '',
+            resultStatusLabel: res.statusLabel || 'Official Result',
+            version: res.version,
+            publishedAt: res.publishedAt,
+          });
+        }
       }
     }
+
+    // 2. From publishedResultsList (general published endpoint)
+    if (publishedResultsList && Array.isArray(publishedResultsList)) {
+      const currentTitle = meet?.title?.toLowerCase().trim();
+      const matched = publishedResultsList.filter((pr: any) => 
+        (effectiveId && pr.eventId === effectiveId) || 
+        (meet?.id && pr.eventId === meet.id) || 
+        (currentTitle && pr.eventTitle && pr.eventTitle.toLowerCase().trim() === currentTitle)
+      );
+
+      for (const res of matched) {
+        const roundStr = (res.round || 'FINAL').toUpperCase().trim();
+        const discStr = (res.discipline || '').toLowerCase().trim();
+        const genderStr = (res.gender || 'MIXED').toUpperCase().trim();
+
+        for (const entry of (res.entries || [])) {
+          const athleteKey = entry.athleteId || (entry.athleteName || entry.name || '').toLowerCase().trim() || entry.bib || entry.bibNo;
+          const uniqueKey = `${discStr}__${roundStr}__${genderStr}__${athleteKey}`;
+          if (athleteKey && seenAthleteRoundKeys.has(uniqueKey)) continue;
+          if (athleteKey) seenAthleteRoundKeys.add(uniqueKey);
+
+          const pos = entry.rank ?? entry.position ?? 99;
+          items.push({
+            id: entry.id || uniqueKey,
+            rank: pos,
+            name: entry.athleteName || entry.name,
+            club: entry.club || entry.clubName || 'Unattached',
+            bib: entry.bib || entry.bibNo || '—',
+            lane: entry.lane ? String(entry.lane) : '—',
+            heat: entry.heat ? String(entry.heat) : '1',
+            event: res.discipline,
+            round: res.round || 'FINAL',
+            gender: res.gender === 'MEN' ? 'Men' : res.gender === 'WOMEN' ? 'Women' : 'Mixed',
+            ageGroup: res.category || 'Senior',
+            time: entry.mark || entry.bestValidMark || entry.time || '—',
+            attempts: Array.isArray(entry.attempts) ? entry.attempts : [],
+            bestValidMark: entry.bestValidMark || null,
+            wind: res.wind || res.windReading || null,
+            verified: true,
+            pb: !!entry.pb || entry.recordBadge === 'PB',
+            sb: !!entry.sb || entry.recordBadge === 'SB',
+            nr: !!entry.nr || entry.recordBadge === 'NR',
+            cr: !!entry.cr || entry.recordBadge === 'CR',
+            medal: entry.medal ? entry.medal.toLowerCase() : (pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : null),
+            qualified: entry.qualified || null,
+            reactionTime: entry.reactionTime || null,
+            status: entry.status || 'FINISHED',
+            flag: entry.flag || entry.status || 'OK',
+            remarks: entry.remarks || '',
+            dqReason: entry.remarks || '',
+            resultStatusLabel: res.statusLabel || 'Official Result',
+            version: res.version,
+            publishedAt: res.publishedAt,
+          });
+        }
+      }
+    }
+
     return items.sort((a, b) => a.rank - b.rank);
-  }, [publicHubData]);
+  }, [publicHubData, publishedResultsList, effectiveId, meet?.id, meet?.title]);
 
   const medalStandings = publicHubData?.medalStandings || [];
   const announcements = publicHubData?.announcements || [];
+
+  // Grouped disciplines and rounds for structured view
+  const groupedDisciplines = useMemo(() => {
+    const map = new Map<string, {
+      key: string;
+      discipline: string;
+      gender: string;
+      category: string;
+      roundsMap: Map<string, {
+        roundKey: string;
+        roundLabel: string;
+        stageType: 'FINAL' | 'SEMIFINAL' | 'HEAT' | 'ROUND';
+        heatNumber?: number;
+        wind?: string;
+        statusLabel?: string;
+        publishedAt?: string;
+        entries: any[];
+      }>;
+    }>();
+
+    for (const item of resultsData) {
+      const discKey = `${item.event}__${item.gender}`;
+      if (!map.has(discKey)) {
+        map.set(discKey, {
+          key: discKey,
+          discipline: item.event,
+          gender: item.gender,
+          category: item.ageGroup,
+          roundsMap: new Map()
+        });
+      }
+      const discGroup = map.get(discKey)!;
+
+      const rawRound = String(item.round || 'FINAL').trim();
+      const rLower = rawRound.toLowerCase();
+      let roundKey = rawRound;
+      let roundLabel = rawRound;
+      let stageType: 'FINAL' | 'SEMIFINAL' | 'HEAT' | 'ROUND' = 'ROUND';
+
+      if (rLower.includes('final') && !rLower.includes('semi')) {
+        stageType = 'FINAL';
+        roundKey = 'FINAL';
+        roundLabel = 'Championship Final 🏆';
+      } else if (rLower.includes('semi')) {
+        stageType = 'SEMIFINAL';
+        const sMatch = rawRound.match(/\d+/);
+        roundKey = rawRound;
+        roundLabel = sMatch ? `Semi-Final ${sMatch[0]} ⚡` : 'Semi-Final ⚡';
+      } else if (rLower.includes('heat') || rLower.includes('round 1') || rLower.includes('prelim')) {
+        stageType = 'HEAT';
+        const heatNum = item.heat && item.heat !== '—' ? item.heat : '1';
+        roundKey = `HEAT_${heatNum}`;
+        roundLabel = `Preliminary Heat ${heatNum} 🔥`;
+      }
+
+      if (!discGroup.roundsMap.has(roundKey)) {
+        discGroup.roundsMap.set(roundKey, {
+          roundKey,
+          roundLabel,
+          stageType,
+          heatNumber: Number(item.heat) || undefined,
+          wind: item.wind,
+          statusLabel: item.resultStatusLabel,
+          publishedAt: item.publishedAt,
+          entries: []
+        });
+      }
+
+      const roundObj = discGroup.roundsMap.get(roundKey)!;
+      if (item.wind && !roundObj.wind) roundObj.wind = item.wind;
+
+      // Ensure an athlete only appears once in this round's results
+      const existingEntryIdx = roundObj.entries.findIndex(
+        (e: any) =>
+          (e.athleteId && item.athleteId && e.athleteId === item.athleteId) ||
+          (e.name && item.name && e.name.toLowerCase().trim() === item.name.toLowerCase().trim()) ||
+          (e.bib && item.bib && e.bib !== '—' && e.bib === item.bib)
+      );
+
+      if (existingEntryIdx >= 0) {
+        // If already present, keep the record with valid time or lower rank number
+        if (!roundObj.entries[existingEntryIdx].time || roundObj.entries[existingEntryIdx].time === '—') {
+          roundObj.entries[existingEntryIdx] = item;
+        }
+      } else {
+        roundObj.entries.push(item);
+      }
+    }
+
+    return Array.from(map.values()).map(d => ({
+      key: d.key,
+      discipline: d.discipline,
+      gender: d.gender,
+      category: d.category,
+      totalEntries: Array.from(d.roundsMap.values()).reduce((sum, r) => sum + r.entries.length, 0),
+      rounds: Array.from(d.roundsMap.values()).map(r => ({
+        ...r,
+        entries: r.entries.sort((a, b) => a.rank - b.rank)
+      })).sort((a, b) => {
+        const stageWeight = (s: string) => s === 'FINAL' ? 1 : s === 'SEMIFINAL' ? 2 : 3;
+        return stageWeight(a.stageType) - stageWeight(b.stageType);
+      })
+    }));
+  }, [resultsData]);
+
+  const activeDiscipline = useMemo(() => {
+    if (selectedDisciplineKey === 'ALL') return null;
+    return groupedDisciplines.find(d => d.key === selectedDisciplineKey) || null;
+  }, [groupedDisciplines, selectedDisciplineKey]);
+
+  const handleDownloadCsv = (targetEntries?: any[], customName?: string) => {
+    const data = targetEntries || resultsData;
+    if (!data || data.length === 0) return;
+    const headers = ['Rank', 'Bib', 'Athlete', 'Club', 'Event', 'Gender', 'Round', 'Heat', 'Lane', 'Result', 'Wind', 'Status', 'Qual'];
+    const rows = data.map((r: any) => [
+      r.rank,
+      r.bib,
+      `"${r.name}"`,
+      `"${r.club}"`,
+      `"${r.event}"`,
+      r.gender,
+      `"${r.round}"`,
+      r.heat,
+      r.lane,
+      `"${r.time}"`,
+      r.wind || '',
+      r.status || 'OK',
+      r.qualified || ''
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    const fileName = customName ? `EAF_Results_${customName}.csv` : `EAF_Results_${meet?.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'Competition'}.csv`;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const filteredStarters = useMemo(() => {
     return starterList.filter(s => {
@@ -1232,10 +1451,32 @@ export default function CompetitionDetail({
         {activeTab === 'results' && (
           <div>
             {resultsData.length === 0 ? (
-              <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', borderRadius: '18px' }}>
-                <Trophy size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
-                <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px' }}>{t('competitionDetail.resultsPending')}</h4>
-                <p style={{ fontSize: '0.85rem' }}>{t('competitionDetail.resultsPendingSub')}</p>
+              <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '56px 24px', color: 'var(--text-muted)', borderRadius: '18px', border: '1px solid #E2E8F0' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <Trophy size={32} />
+                </div>
+                <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-heading)', marginBottom: '8px' }}>
+                  {t('competitionDetail.resultsPending')}
+                </h4>
+                <p style={{ fontSize: '0.88rem', maxWidth: '500px', margin: '0 auto 20px', lineHeight: '1.5' }}>
+                  {t('competitionDetail.resultsPendingSub')} Results are officially verified by Technical Referees under World Athletics Technical Rules TR 8 & TR 20 before publication.
+                </p>
+                <div style={{ display: 'inline-flex', gap: '10px' }}>
+                  <button
+                    onClick={() => setActiveTab('starters')}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.82rem', padding: '8px 16px' }}
+                  >
+                    View Official Start Lists →
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('schedule')}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.82rem', padding: '8px 16px' }}
+                  >
+                    View Timetable
+                  </button>
+                </div>
               </div>
             ) : (
               <div>
@@ -1286,252 +1527,608 @@ export default function CompetitionDetail({
                   </div>
                 )}
 
+                {/* ── B. RESULTS FILTER & TOOLBAR ── */}
                 <div
                   className="gov-card"
                   style={{
-                    background: '#F8FAFC',
+                    background: '#FFFFFF',
                     borderRadius: '18px',
                     marginBottom: '20px',
                     padding: '20px',
-                    border: '1px solid #E2E8F0'
+                    border: '1px solid #E2E8F0',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-heading)' }}>
-                      <Filter size={18} />
-                      <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>{t('competitionDetail.filterResults')}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(21, 128, 61, 0.1)', color: '#15803D', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Trophy size={20} />
+                      </div>
+                      <div>
+                        <h4 style={{ fontWeight: 800, fontSize: '1.05rem', margin: 0, color: 'var(--text-heading)' }}>
+                          Official Championship Results & Progression
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                          World Athletics TR 8 & TR 20 Certified Finish Times, Rounds & Wind Readings
+                        </p>
+                      </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {resultsData.some((r: any) => r.resultStatusLabel?.toLowerCase().includes('appeal')) ? (
-                        <span className="badge" style={{ fontSize: '0.75rem', padding: '4px 10px', background: '#F3E8FF', color: '#7E22CE', fontWeight: 800 }}>
-                          ⚖️ Under Official Appeal
-                        </span>
-                      ) : resultsData.some((r: any) => r.resultStatusLabel?.toLowerCase().includes('provisional')) ? (
-                        <span className="badge" style={{ fontSize: '0.75rem', padding: '4px 10px', background: '#FEF3C7', color: '#B45309', fontWeight: 800 }}>
-                          ⏱️ Provisional (30-min window)
-                        </span>
-                      ) : (
-                        <span className="badge badge-green" style={{ fontSize: '0.75rem', padding: '4px 10px' }}>
-                          ✓ Official Confirmed Results
-                        </span>
-                      )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => handleDownloadCsv()}
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.78rem', padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Download size={14} /> Export CSV
+                      </button>
+                      <button
+                        onClick={() => window.print()}
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.78rem', padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <Printer size={14} /> Print
+                      </button>
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  {/* Filter Inputs Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Search Finisher / Bib</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Search name, club, or bib..."
-                        value={resultSearchQuery}
-                        onChange={e => setResultSearchQuery(e.target.value)}
-                        style={{ background: '#FFFFFF' }}
-                      />
+                      <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>Search Finisher or Bib</label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="Search athlete, club, or bib #..."
+                          value={resultSearchQuery}
+                          onChange={e => setResultSearchQuery(e.target.value)}
+                          style={{ background: '#F8FAFC', paddingLeft: '34px', fontSize: '0.85rem' }}
+                        />
+                        <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                      </div>
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">{t('competitionDetail.eventType')}</label>
-                      <select 
-                        className="form-select" 
-                        value={resultEventFilter} 
-                        onChange={e => setResultEventFilter(e.target.value)}
-                        style={{ background: '#FFFFFF' }}
-                      >
-                        <option value="ALL">{t('competitionDetail.allEvents')}</option>
-                        {uniqueEvents.map(e => <option key={e} value={e}>{e}</option>)}
-                      </select>
-                    </div>
-
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">{t('competitionDetail.clubDelegation')}</label>
-                      <select 
-                        className="form-select" 
-                        value={resultClubFilter} 
-                        onChange={e => setResultClubFilter(e.target.value)}
-                        style={{ background: '#FFFFFF' }}
-                      >
-                        <option value="ALL">{t('competitionDetail.allClubs')}</option>
-                        {uniqueClubs.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">{t('common.gender')}</label>
+                      <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>Gender Category</label>
                       <select 
                         className="form-select" 
                         value={resultGenderFilter} 
                         onChange={e => setResultGenderFilter(e.target.value)}
-                        style={{ background: '#FFFFFF' }}
+                        style={{ background: '#F8FAFC', fontSize: '0.85rem' }}
                       >
-                        <option value="ALL">{t('competitionDetail.allGenders')}</option>
-                        <option value="Men">Men</option>
-                        <option value="Women">Women</option>
+                        <option value="ALL">All Genders (Men & Women)</option>
+                        <option value="Men">Men Only ♂</option>
+                        <option value="Women">Women Only ♀</option>
                       </select>
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Stage / Round</label>
+                      <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 700 }}>Club / Regional Delegation</label>
                       <select 
                         className="form-select" 
-                        value={resultRoundFilter} 
-                        onChange={e => setResultRoundFilter(e.target.value)}
-                        style={{ background: '#FFFFFF' }}
+                        value={resultClubFilter} 
+                        onChange={e => setResultClubFilter(e.target.value)}
+                        style={{ background: '#F8FAFC', fontSize: '0.85rem' }}
                       >
-                        <option value="ALL">All Stages (Heats, Semis, Final)</option>
-                        {uniqueRounds.map((rnd: any) => <option key={rnd} value={rnd}>{rnd}</option>)}
+                        <option value="ALL">All Delegations ({uniqueClubs.length})</option>
+                        {uniqueClubs.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
+                    </div>
+                  </div>
+
+                  {/* ── C. DISCIPLINE SELECTOR PILLS ── */}
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>
+                      Select Event Discipline
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                      <button
+                        onClick={() => {
+                          setSelectedDisciplineKey('ALL');
+                          setSelectedRoundStage('ALL');
+                        }}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: '12px',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          transition: 'all 0.15s ease',
+                          border: selectedDisciplineKey === 'ALL' ? '2px solid var(--primary)' : '1px solid #E2E8F0',
+                          background: selectedDisciplineKey === 'ALL' ? 'var(--primary)' : '#F8FAFC',
+                          color: selectedDisciplineKey === 'ALL' ? '#FFFFFF' : 'var(--text-main)',
+                        }}
+                      >
+                        All Disciplines ({resultsData.length})
+                      </button>
+
+                      {groupedDisciplines
+                        .filter(d => resultGenderFilter === 'ALL' || d.gender === resultGenderFilter)
+                        .map(disc => {
+                          const isSelected = selectedDisciplineKey === disc.key;
+                          return (
+                            <button
+                              key={disc.key}
+                              onClick={() => {
+                                setSelectedDisciplineKey(disc.key);
+                                setSelectedRoundStage('ALL');
+                              }}
+                              style={{
+                                padding: '7px 14px',
+                                borderRadius: '12px',
+                                fontSize: '0.82rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                transition: 'all 0.15s ease',
+                                border: isSelected ? '2px solid var(--primary)' : '1px solid #E2E8F0',
+                                background: isSelected ? 'rgba(21, 128, 61, 0.08)' : '#F8FAFC',
+                                color: isSelected ? 'var(--primary)' : 'var(--text-main)',
+                              }}
+                            >
+                              <span>{disc.discipline}</span>
+                              <span style={{
+                                fontSize: '0.7rem',
+                                padding: '1px 6px',
+                                borderRadius: '6px',
+                                background: isSelected ? 'var(--primary)' : '#E2E8F0',
+                                color: isSelected ? '#FFFFFF' : '#475569',
+                                fontWeight: 800
+                              }}>
+                                {disc.gender === 'Men' ? '♂ Men' : disc.gender === 'Women' ? '♀ Women' : 'Mixed'} · {disc.rounds.length} {disc.rounds.length === 1 ? 'Round' : 'Rounds'}
+                              </span>
+                            </button>
+                          );
+                        })}
                     </div>
                   </div>
                 </div>
 
-                {filteredResults.length === 0 ? (
-                  <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '36px', color: 'var(--text-muted)', borderRadius: '18px' }}>
-                    <p style={{ fontWeight: 700 }}>{t('competitionDetail.noFilterResults')}</p>
-                  </div>
-                ) : (
-                  <div className="gov-card" style={{ background: '#FFFFFF', padding: '0', overflow: 'hidden', borderRadius: '18px' }}>
-                    <div className="table-responsive">
-                      <table className="gov-table">
-                        <thead>
-                          <tr>
-                            <th style={{ width: '80px' }}>{t('competitionDetail.rank')}</th>
-                            <th style={{ width: '80px' }}>{t('competitionDetail.bib')}</th>
-                            <th style={{ width: '100px' }}>Lane / Heat</th>
-                            <th>{t('competitionDetail.athleteName')}</th>
-                            <th>{t('competitionDetail.clubRegion')}</th>
-                            <th>{t('common.event')}</th>
-                            <th>{t('competitionDetail.timeDistance')}</th>
-                            <th style={{ width: '80px' }}>Wind</th>
-                            <th>Records / Qual</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredResults.map((r: any, i: number) => {
-                            const isDQ = r.status === 'DQ' || r.flag === 'DQ';
-                            const isDNF = r.status === 'DNF' || r.flag === 'DNF';
-                            const isDNS = r.status === 'DNS' || r.flag === 'DNS';
+                {/* ── D. ORGANIZED ROUND DISPLAY ── */}
+                {(() => {
+                  // Determine disciplines to render: either activeDiscipline or all matching groupedDisciplines
+                  const disciplinesToRender = activeDiscipline
+                    ? [activeDiscipline]
+                    : groupedDisciplines.filter(d => resultGenderFilter === 'ALL' || d.gender === resultGenderFilter);
 
-                            return (
-                              <tr key={i} style={{ background: r.rank <= 3 ? `rgba(200, 168, 75, 0.04)` : undefined }}>
-                                <td style={{ fontWeight: 800 }}>
-                                  {isDQ ? (
-                                    <span className="badge badge-red" style={{ fontSize: '0.72rem' }}>
-                                      DQ
-                                    </span>
-                                  ) : isDNF ? (
-                                    <span className="badge" style={{ fontSize: '0.72rem', background: '#F1F5F9', color: '#475569' }}>
-                                      DNF
-                                    </span>
-                                  ) : isDNS ? (
-                                    <span className="badge" style={{ fontSize: '0.72rem', background: '#FEF3C7', color: '#B45309' }}>
-                                      DNS
-                                    </span>
-                                  ) : r.rank === 1 ? '🥇 1st' : r.rank === 2 ? '🥈 2nd' : r.rank === 3 ? '🥉 3rd' : `${r.rank}th`}
-                                </td>
-                                <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-muted)' }}>
-                                  #{r.bib}
-                                </td>
-                                <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
-                                  L{r.lane} · H{r.heat}
-                                </td>
-                                <td>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{r.name}</span>
-                                    {r.verified && (
-                                      <span 
-                                        title={t('competitionDetail.verified')} 
-                                        style={{ 
-                                          display: 'inline-flex', 
-                                          alignItems: 'center', 
-                                          background: '#DCFCE7', 
-                                          color: '#15803D', 
-                                          borderRadius: '50%', 
-                                          padding: '2px'
-                                        }}
-                                      >
-                                        <CheckCircle2 size={12} fill="#15803D" stroke="#DCFCE7" />
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td style={{ fontWeight: 600 }}>{r.club}</td>
-                                <td style={{ fontWeight: 700 }}>
-                                  {r.event}
-                                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
-                                    {r.round} · {r.gender}
-                                  </span>
-                                </td>
-                                <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', fontSize: '0.98rem' }}>
-                                  {isDQ ? (
-                                    <div style={{ color: '#DC2626', fontSize: '0.8rem', fontWeight: 700 }}>
-                                      <span>DQ</span>
-                                      {r.dqReason && (
-                                        <span style={{ display: 'block', fontSize: '0.72rem', color: '#EF4444' }}>
-                                          {r.dqReason}
+                  if (disciplinesToRender.length === 0) {
+                    return (
+                      <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '36px', color: 'var(--text-muted)', borderRadius: '18px' }}>
+                        <p style={{ fontWeight: 700 }}>No results match the selected filter criteria.</p>
+                      </div>
+                    );
+                  }
+
+                  return disciplinesToRender.map(disc => {
+                    // Check if discipline has any entries matching search/club
+                    const filteredRounds = disc.rounds.map(round => {
+                      const filteredEntries = round.entries.filter(r => {
+                        if (resultClubFilter !== 'ALL' && r.club !== resultClubFilter) return false;
+                        if (resultSearchQuery.trim()) {
+                          const q = resultSearchQuery.toLowerCase();
+                          if (!r.name.toLowerCase().includes(q) && !r.club.toLowerCase().includes(q) && !String(r.bib).toLowerCase().includes(q)) {
+                            return false;
+                          }
+                        }
+                        return true;
+                      });
+                      return { ...round, entries: filteredEntries };
+                    }).filter(round => round.entries.length > 0);
+
+                    if (filteredRounds.length === 0) return null;
+
+                    return (
+                      <div
+                        key={disc.key}
+                        style={{
+                          marginBottom: '28px',
+                          background: '#FFFFFF',
+                          borderRadius: '20px',
+                          border: '1px solid #E2E8F0',
+                          overflow: 'hidden',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
+                        }}
+                      >
+                        {/* Discipline Title Banner */}
+                        <div style={{
+                          padding: '16px 22px',
+                          background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+                          color: '#FFFFFF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: '10px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '1.25rem' }}>
+                              {disc.gender === 'Women' ? '♀' : '♂'}
+                            </span>
+                            <div>
+                              <h3 style={{ margin: 0, fontWeight: 800, fontSize: '1.15rem', color: '#F8FAFC' }}>
+                                {disc.discipline} — {disc.gender === 'Men' ? "Men's" : disc.gender === 'Women' ? "Women's" : "Mixed"}
+                              </h3>
+                              <span style={{ fontSize: '0.78rem', color: '#94A3B8' }}>
+                                Category: {disc.category} · {disc.rounds.length} {disc.rounds.length === 1 ? 'Contested Stage' : 'Progression Rounds'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 700,
+                              background: 'rgba(255, 255, 255, 0.1)',
+                              padding: '4px 10px',
+                              borderRadius: '20px',
+                              border: '1px solid rgba(255, 255, 255, 0.15)'
+                            }}>
+                              WA Technical Rule TR 20 Progression
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Round Switcher Tabs (If multiple rounds exist for this discipline) */}
+                        {disc.rounds.length > 1 && (
+                          <div style={{
+                            padding: '10px 18px',
+                            background: '#F8FAFC',
+                            borderBottom: '1px solid #E2E8F0',
+                            display: 'flex',
+                            gap: '8px',
+                            overflowX: 'auto'
+                          }}>
+                            <button
+                              onClick={() => setSelectedRoundStage('ALL')}
+                              style={{
+                                padding: '6px 14px',
+                                borderRadius: '10px',
+                                fontSize: '0.78rem',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                border: selectedRoundStage === 'ALL' ? '2px solid var(--primary)' : '1px solid #CBD5E1',
+                                background: selectedRoundStage === 'ALL' ? 'var(--primary)' : '#FFFFFF',
+                                color: selectedRoundStage === 'ALL' ? '#FFFFFF' : '#334155',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px'
+                              }}
+                            >
+                              <Layers size={13} />
+                              All Stages ({filteredRounds.reduce((acc, r) => acc + r.entries.length, 0)})
+                            </button>
+
+                            {disc.rounds.map(r => {
+                              const isStageActive = selectedRoundStage === r.roundKey;
+                              return (
+                                <button
+                                  key={r.roundKey}
+                                  onClick={() => setSelectedRoundStage(r.roundKey)}
+                                  style={{
+                                    padding: '6px 14px',
+                                    borderRadius: '10px',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    border: isStageActive ? '2px solid var(--primary)' : '1px solid #CBD5E1',
+                                    background: isStageActive ? 'var(--primary)' : '#FFFFFF',
+                                    color: isStageActive ? '#FFFFFF' : '#334155',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px'
+                                  }}
+                                >
+                                  {r.stageType === 'FINAL' ? <Trophy size={13} /> : <Flame size={13} />}
+                                  {r.roundLabel} ({r.entries.length})
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Render Rounds */}
+                        <div style={{ padding: '16px' }}>
+                          {filteredRounds
+                            .filter(r => selectedRoundStage === 'ALL' || r.roundKey === selectedRoundStage)
+                            .map((round, rIdx) => {
+                              const isFinal = round.stageType === 'FINAL';
+
+                              return (
+                                <div
+                                  key={round.roundKey}
+                                  style={{
+                                    marginBottom: rIdx < filteredRounds.length - 1 ? '24px' : '0',
+                                    border: isFinal ? '1.5px solid #FDE047' : '1px solid #E2E8F0',
+                                    borderRadius: '16px',
+                                    overflow: 'hidden',
+                                    background: isFinal ? 'rgba(254, 240, 138, 0.03)' : '#FFFFFF'
+                                  }}
+                                >
+                                  {/* Stage Header Info Strip */}
+                                  <div style={{
+                                    padding: '12px 18px',
+                                    background: isFinal ? 'linear-gradient(90deg, #FEF9C3 0%, #FFFFFF 100%)' : '#F8FAFC',
+                                    borderBottom: '1px solid #E2E8F0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    flexWrap: 'wrap',
+                                    gap: '8px'
+                                  }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      {isFinal ? (
+                                        <div style={{ background: '#FDE047', color: '#854D0E', padding: '4px 8px', borderRadius: '8px', fontWeight: 900, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          <Trophy size={14} /> CHAMPIONSHIP FINAL
+                                        </div>
+                                      ) : (
+                                        <div style={{ background: '#E2E8F0', color: '#334155', padding: '4px 8px', borderRadius: '8px', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          <Flame size={14} /> {round.roundLabel.toUpperCase()}
+                                        </div>
+                                      )}
+
+                                      {round.wind && (
+                                        <span style={{
+                                          fontSize: '0.78rem',
+                                          fontFamily: 'var(--font-mono)',
+                                          padding: '2px 8px',
+                                          borderRadius: '6px',
+                                          background: '#FFFFFF',
+                                          border: '1px solid #CBD5E1',
+                                          color: '#475569',
+                                          fontWeight: 700,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}>
+                                          <Wind size={12} /> Wind: {round.wind} m/s
                                         </span>
                                       )}
                                     </div>
-                                  ) : isDNF || isDNS ? (
-                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>—</span>
-                                  ) : (
-                                    <div>
-                                      <span>{r.time}</span>
-                                      {Array.isArray(r.attempts) && r.attempts.length > 0 && (
-                                        <div style={{ display: 'flex', gap: '3px', marginTop: '4px', fontSize: '0.7rem' }}>
-                                          {r.attempts.map((att: string, aIdx: number) => (
-                                            <span
-                                              key={aIdx}
-                                              style={{
-                                                padding: '1px 4px',
-                                                borderRadius: '3px',
-                                                background: att === 'X' ? '#FEE2E2' : att === '-' ? '#F1F5F9' : att === r.time ? '#DCFCE7' : '#F8FAFC',
-                                                color: att === 'X' ? '#DC2626' : att === r.time ? '#15803D' : '#334155',
-                                                fontWeight: att === r.time ? 800 : 500,
-                                                border: '1px solid #E2E8F0'
-                                              }}
-                                            >
-                                              {att}
-                                            </span>
-                                          ))}
-                                        </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{
+                                        fontSize: '0.72rem',
+                                        color: '#15803D',
+                                        background: '#DCFCE7',
+                                        padding: '3px 8px',
+                                        borderRadius: '6px',
+                                        fontWeight: 800
+                                      }}>
+                                        ✓ Official Result
+                                      </span>
+
+                                      {!isFinal && (
+                                        <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600 }}>
+                                          TR 20: 3 First (Q) + next 2 fastest (q) advance
+                                        </span>
                                       )}
                                     </div>
-                                  )}
-                                </td>
-                                <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                                  {r.wind ? `${r.wind} m/s` : '—'}
-                                </td>
-                                <td>
-                                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                    {r.nr && <span className="badge badge-red" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>NR</span>}
-                                    {r.pb && <span className="badge badge-amber" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>PB</span>}
-                                    {r.sb && <span className="badge badge-blue" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>SB</span>}
-                                    {r.time && String(r.time).includes('[A]') && (
-                                      <span className="badge" style={{ fontSize: '0.65rem', padding: '2px 6px', background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D' }}>
-                                        ALT [A]
-                                      </span>
-                                    )}
-                                    {r.qualified && (
-                                      <span className="badge badge-green" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>
-                                        {r.qualified}
-                                      </span>
-                                    )}
-                                    {!r.nr && !r.pb && !r.sb && !r.qualified && (
-                                      <span style={{ color: 'var(--text-dim, #ccc)', fontSize: '0.78rem' }}>—</span>
-                                    )}
                                   </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
+
+                                  {/* Finisher Table */}
+                                  <div className="table-responsive">
+                                    <table className="gov-table" style={{ margin: 0 }}>
+                                      <thead>
+                                        <tr style={{ background: '#F8FAFC' }}>
+                                          <th style={{ width: '80px', textAlign: 'center' }}>Rank</th>
+                                          <th style={{ width: '70px', textAlign: 'center' }}>Bib</th>
+                                          <th style={{ width: '90px' }}>Lane / Heat</th>
+                                          <th>Finisher / Athlete</th>
+                                          <th>Club / Regional Delegation</th>
+                                          <th style={{ width: '130px' }}>Result / Time</th>
+                                          <th style={{ width: '80px' }}>Wind</th>
+                                          <th style={{ width: '130px' }}>Progression / Records</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {round.entries.map((r: any, eIdx: number) => {
+                                          const isDQ = r.status === 'DQ' || r.flag === 'DQ';
+                                          const isDNF = r.status === 'DNF' || r.flag === 'DNF';
+                                          const isDNS = r.status === 'DNS' || r.flag === 'DNS';
+
+                                          // Medal Styling
+                                          const isGold = r.rank === 1 && isFinal;
+                                          const isSilver = r.rank === 2 && isFinal;
+                                          const isBronze = r.rank === 3 && isFinal;
+
+                                          let rowBg = undefined;
+                                          if (isGold) rowBg = 'rgba(254, 240, 138, 0.25)';
+                                          else if (isSilver) rowBg = 'rgba(241, 245, 249, 0.8)';
+                                          else if (isBronze) rowBg = 'rgba(255, 237, 213, 0.4)';
+
+                                          return (
+                                            <tr key={r.id || eIdx} style={{ background: rowBg }}>
+                                              {/* Rank Column */}
+                                              <td style={{ textAlign: 'center', fontWeight: 800 }}>
+                                                {isDQ ? (
+                                                  <span className="badge badge-red" style={{ fontSize: '0.72rem' }}>DQ</span>
+                                                ) : isDNF ? (
+                                                  <span className="badge" style={{ fontSize: '0.72rem', background: '#F1F5F9', color: '#475569' }}>DNF</span>
+                                                ) : isDNS ? (
+                                                  <span className="badge" style={{ fontSize: '0.72rem', background: '#FEF3C7', color: '#B45309' }}>DNS</span>
+                                                ) : isGold ? (
+                                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#FEF08A', color: '#854D0E', padding: '3px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 900, border: '1px solid #FDE047' }}>
+                                                    🥇 1st
+                                                  </div>
+                                                ) : isSilver ? (
+                                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#E2E8F0', color: '#334155', padding: '3px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 900, border: '1px solid #CBD5E1' }}>
+                                                    🥈 2nd
+                                                  </div>
+                                                ) : isBronze ? (
+                                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#FFEDD5', color: '#9A3412', padding: '3px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 900, border: '1px solid #FDBA74' }}>
+                                                    🥉 3rd
+                                                  </div>
+                                                ) : (
+                                                  <span style={{ color: '#475569' }}>{r.rank}</span>
+                                                )}
+                                              </td>
+
+                                              {/* Bib Column */}
+                                              <td style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#64748B', fontSize: '0.88rem' }}>
+                                                #{r.bib}
+                                              </td>
+
+                                              {/* Lane / Heat Column */}
+                                              <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#475569' }}>
+                                                L{r.lane} · H{r.heat}
+                                              </td>
+
+                                              {/* Athlete Column */}
+                                              <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                  <span style={{ fontWeight: 800, color: 'var(--text-heading)', fontSize: '0.92rem' }}>
+                                                    {r.name}
+                                                  </span>
+                                                  {r.verified && (
+                                                    <span
+                                                      title="Verified Ethiopian National Athlete"
+                                                      style={{
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        background: '#DCFCE7',
+                                                        color: '#15803D',
+                                                        borderRadius: '50%',
+                                                        padding: '2px'
+                                                      }}
+                                                    >
+                                                      <CheckCircle2 size={12} fill="#15803D" stroke="#DCFCE7" />
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              </td>
+
+                                              {/* Club Column */}
+                                              <td>
+                                                <span style={{
+                                                  fontWeight: 700,
+                                                  fontSize: '0.85rem',
+                                                  color: '#1E293B',
+                                                  background: '#F1F5F9',
+                                                  padding: '3px 8px',
+                                                  borderRadius: '6px',
+                                                  display: 'inline-block'
+                                                }}>
+                                                  {r.club}
+                                                </span>
+                                              </td>
+
+                                              {/* Result / Mark Column */}
+                                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', fontSize: '1rem' }}>
+                                                {isDQ ? (
+                                                  <div style={{ color: '#DC2626', fontSize: '0.8rem', fontWeight: 700 }}>
+                                                    <span>DQ</span>
+                                                    {r.dqReason && (
+                                                      <span style={{ display: 'block', fontSize: '0.72rem', color: '#EF4444' }}>
+                                                        {r.dqReason}
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                ) : isDNF || isDNS ? (
+                                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>—</span>
+                                                ) : (
+                                                  <div>
+                                                    <span>{r.time}</span>
+                                                    {r.reactionTime && (
+                                                      <span style={{ display: 'block', fontSize: '0.68rem', color: '#64748B', fontWeight: 500 }}>
+                                                        RT: {r.reactionTime}
+                                                      </span>
+                                                    )}
+                                                    {Array.isArray(r.attempts) && r.attempts.length > 0 && (
+                                                      <div style={{ display: 'flex', gap: '3px', marginTop: '4px', fontSize: '0.7rem' }}>
+                                                        {r.attempts.map((att: any, aIdx: number) => {
+                                                          const markVal = typeof att === 'object' ? att.mark : String(att);
+                                                          return (
+                                                            <span
+                                                              key={aIdx}
+                                                              style={{
+                                                                padding: '1px 4px',
+                                                                borderRadius: '3px',
+                                                                background: markVal === 'X' ? '#FEE2E2' : markVal === '-' ? '#F1F5F9' : markVal === r.time ? '#DCFCE7' : '#F8FAFC',
+                                                                color: markVal === 'X' ? '#DC2626' : markVal === r.time ? '#15803D' : '#334155',
+                                                                fontWeight: markVal === r.time ? 800 : 500,
+                                                                border: '1px solid #E2E8F0'
+                                                              }}
+                                                            >
+                                                              {markVal}
+                                                            </span>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </td>
+
+                                              {/* Wind Column */}
+                                              <td style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                                                {r.wind ? `${r.wind} m/s` : (round.wind ? `${round.wind} m/s` : '—')}
+                                              </td>
+
+                                              {/* Progression & Records Column */}
+                                              <td>
+                                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                                  {/* World Athletics Qualification Indicators */}
+                                                  {r.qualified === 'Q' && (
+                                                    <span style={{
+                                                      fontSize: '0.75rem',
+                                                      fontWeight: 900,
+                                                      padding: '2px 8px',
+                                                      borderRadius: '6px',
+                                                      background: '#15803D',
+                                                      color: '#FFFFFF',
+                                                      boxShadow: '0 2px 4px rgba(21, 128, 61, 0.2)'
+                                                    }} title="Automatic Qualifier">
+                                                      Q
+                                                    </span>
+                                                  )}
+                                                  {r.qualified === 'q' && (
+                                                    <span style={{
+                                                      fontSize: '0.75rem',
+                                                      fontWeight: 900,
+                                                      padding: '2px 8px',
+                                                      borderRadius: '6px',
+                                                      background: '#0284C7',
+                                                      color: '#FFFFFF',
+                                                      boxShadow: '0 2px 4px rgba(2, 132, 199, 0.2)'
+                                                    }} title="Time Qualifier">
+                                                      q
+                                                    </span>
+                                                  )}
+
+                                                  {r.nr && <span className="badge badge-red" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>NR</span>}
+                                                  {r.cr && <span className="badge" style={{ fontSize: '0.65rem', padding: '2px 6px', background: '#F3E8FF', color: '#7E22CE', border: '1px solid #D8B4FE' }}>CR</span>}
+                                                  {r.pb && <span className="badge badge-amber" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>PB</span>}
+                                                  {r.sb && <span className="badge badge-blue" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>SB</span>}
+                                                  {r.time && String(r.time).includes('[A]') && (
+                                                    <span className="badge" style={{ fontSize: '0.65rem', padding: '2px 6px', background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D' }}>
+                                                      ALT [A]
+                                                    </span>
+                                                  )}
+
+                                                  {!r.qualified && !r.nr && !r.cr && !r.pb && !r.sb && (
+                                                    <span style={{ color: '#94A3B8', fontSize: '0.78rem' }}>—</span>
+                                                  )}
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             )}
           </div>
