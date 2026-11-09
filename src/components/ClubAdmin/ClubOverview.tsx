@@ -103,7 +103,8 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
 
   // Retrieve club members dynamically from database strictly for active club
   const { data: backendAthletes } = useGetAthletesQuery(
-    activeClubId ? { clubId: activeClubId } : undefined
+    activeClubId ? { clubId: activeClubId } : undefined,
+    { refetchOnMountOrArgChange: true, refetchOnFocus: true, pollingInterval: 4000 }
   );
 
   // Retrieve federation dynamic pricing configuration
@@ -307,49 +308,49 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
       {/* Metrics Row */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-[16px] mb-[28px]">
         <div
-          className="gov-card cursor-pointer hover:shadow-md transition-shadow"
+          className="gov-card card-blue cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => onChangeSubPage('ROSTER')}
           title="Click to open Athlete & Member Management"
         >
           <div className="flex justify-between items-center mb-[10px]">
-            <span className="text-[0.8rem] font-bold text-text-muted">Registered Roster</span>
-            <Users size={20} color="var(--eth-blue)" />
+            <span className="text-[0.8rem] font-bold text-blue-700">Registered Roster</span>
+            <Users size={20} className="text-blue-600" />
           </div>
-          <div className="text-[1.8rem] font-extrabold text-text-heading">{athletes.length} Athletes</div>
-          <div className="text-[0.78rem] text-primary font-semibold mt-[4px]">
+          <div className="text-[1.8rem] font-extrabold text-slate-900">{athletes.length} Athletes</div>
+          <div className="text-[0.78rem] text-emerald-700 font-semibold mt-[4px]">
             ✓ {verifiedCount} Fayda Verified
           </div>
         </div>
 
-        <div className="gov-card">
+        <div className="gov-card card-green">
           <div className="flex justify-between items-center mb-[10px]">
-            <span className="text-[0.8rem] font-bold text-text-muted">Active EAF Licenses</span>
-            <ShieldCheck size={20} color="var(--primary)" />
+            <span className="text-[0.8rem] font-bold text-emerald-800">Active EAF Licenses</span>
+            <ShieldCheck size={20} className="text-emerald-600" />
           </div>
-          <div className="text-[1.8rem] font-extrabold text-primary">{activeLicenseCount} Active</div>
-          <div className="text-[0.78rem] text-accent font-semibold mt-[4px]">
+          <div className="text-[1.8rem] font-extrabold text-emerald-700">{activeLicenseCount} Active</div>
+          <div className="text-[0.78rem] text-amber-700 font-semibold mt-[4px]">
             ⚠ {expiredCount} Licenses Pending Renewal
           </div>
         </div>
 
-        <div className="gov-card">
+        <div className="gov-card card-amber">
           <div className="flex justify-between items-center mb-[10px]">
-            <span className="text-[0.8rem] font-bold text-text-muted">Active Transfers</span>
-            <ArrowRightLeft size={20} color="var(--accent)" />
+            <span className="text-[0.8rem] font-bold text-amber-800">Active Transfers</span>
+            <ArrowRightLeft size={20} className="text-amber-600" />
           </div>
-          <div className="text-[1.8rem] font-extrabold text-accent">{transfers.length} Transfers</div>
-          <div className="text-[0.78rem] text-text-muted font-semibold mt-[4px]">
+          <div className="text-[1.8rem] font-extrabold text-amber-600">{transfers.length} Transfers</div>
+          <div className="text-[0.78rem] text-slate-500 font-semibold mt-[4px]">
             Deadline: Aug 15, 2026
           </div>
         </div>
 
-        <div className="gov-card">
+        <div className="gov-card card-blue">
           <div className="flex justify-between items-center mb-[10px]">
-            <span className="text-[0.8rem] font-bold text-text-muted">Regional Ranking</span>
-            <Trophy size={20} color="#7C3AED" />
+            <span className="text-[0.8rem] font-bold text-blue-800">Regional Ranking</span>
+            <Trophy size={20} className="text-blue-600" />
           </div>
-          <div className="text-[1.8rem] font-extrabold text-text-heading">Rank #{club?.clubRank ?? 1}</div>
-          <div className="text-[0.78rem] text-[#7C3AED] font-semibold mt-[4px]">
+          <div className="text-[1.8rem] font-extrabold text-slate-900">Rank #{club?.clubRank ?? 1}</div>
+          <div className="text-[0.78rem] text-blue-600 font-semibold mt-[4px]">
             {club?.totalPoints ?? 0} Points Total
           </div>
         </div>
@@ -415,9 +416,9 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
       {/* Action Alerts & Overview Grid */}
       <div className="grid grid-cols-[repeat(auto-fit,minmax(340px,1fr))] gap-[24px]">
         {/* Card 1: Regulatory Action Items */}
-        <div className="gov-card">
-          <h3 className="text-[1.1rem] font-bold mb-[16px] flex items-center gap-[8px]">
-            <AlertTriangle size={18} color="var(--accent)" />
+        <div className="gov-card card-red">
+          <h3 className="text-[1.1rem] font-bold mb-[16px] flex items-center gap-[8px] text-rose-800">
+            <AlertTriangle size={18} className="text-rose-600" />
             Regulatory Audit Alerts (FR-1.2)
           </h3>
 

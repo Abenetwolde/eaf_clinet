@@ -479,11 +479,17 @@ export default function AntiDopingHub({ darkMode = false }: AntiDopingHubProps) 
                 {filteredSubstances.map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
+                    className={`p-4 rounded-2xl border bg-white shadow-xs transition-colors ${
+                      item.status === 'PERMITTED'
+                        ? 'border-emerald-200 border-l-4 border-l-[#009A44]'
+                        : item.status === 'RESTRICTED'
+                        ? 'border-amber-200 border-l-4 border-l-[#D97706]'
+                        : 'border-rose-200 border-l-4 border-l-[#DC2626]'
+                    }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-3">
-                        <span className="font-mono text-xs font-black px-2.5 py-1 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                        <span className="font-mono text-xs font-black px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200">
                           {item.code}
                         </span>
                         <div>

@@ -19,6 +19,9 @@ export default function Navbar({
   const authState = useAppSelector(state => state.auth);
   const isAuthenticated = Boolean(authState.token && authState.role !== 'LANDING');
   const userRole = authState.role || "ATHLETE";
+  const clubAdminName = `${(authState.userData as any)?.firstName || ''} ${(authState.userData as any)?.lastName || ''}`.trim() || currentClub?.manager || 'Club Admin';
+  const savedAvatar = (authState.userData as any)?.picture || (authState.userData as any)?.photoUrl || (typeof window !== "undefined" ? (localStorage.getItem("fayda_photo") || localStorage.getItem("eaf_user_avatar")) : null) || '';
+  const usableAvatar = /runner_female\.png|avatar-placeholder|profile-placeholder/i.test(savedAvatar) ? '' : savedAvatar;
 
   // Check if user has a completed registration
   const isRegistered = Boolean(
@@ -36,7 +39,8 @@ export default function Navbar({
     Boolean(authState.userData && (authState.userData as any).status === "ACTIVE" && (authState.userData as any).isRegistered))
   );
 
-  const userAvatar = isAuthenticated ? (currentAthlete?.photoUrl || (authState.userData as any)?.picture || (typeof window !== "undefined" ? (localStorage.getItem("fayda_photo") || localStorage.getItem("eaf_user_avatar")) : null) || "/images/runner_female.png") : null;
+  const userAvatar = isAuthenticated ? (currentRole === 'CLUB' ? usableAvatar : currentAthlete?.photoUrl || usableAvatar) : null;
+  const displayName = currentRole === 'CLUB' ? clubAdminName : currentAthlete?.name || 'Member';
 
   return (
     <motion.header
@@ -97,7 +101,7 @@ export default function Navbar({
                   </div>
                   <div className="flex flex-col text-left">
                     <span className="text-[0.78rem] font-black text-slate-900 leading-tight truncate max-w-[120px]">
-                      {(currentAthlete?.name || "Member").split(" ")[0]}
+                      {displayName.split(" ")[0]}
                     </span>
                     <span className="text-[0.62rem] font-bold text-slate-500 flex items-center gap-0.5">
                       {isRegistered ? "✓ Active Member" : "Registration Pending"}
@@ -170,6 +174,8 @@ export default function Navbar({
                           alt={currentAthlete.name}
                           className="w-full h-full object-cover"
                         />
+                      ) : currentRole === 'CLUB' ? (
+                        <span className="text-xs font-black text-slate-700">{displayName.trim().charAt(0).toUpperCase() || 'C'}</span>
                       ) : (
                         <User size={14} className="text-slate-600" />
                       )}

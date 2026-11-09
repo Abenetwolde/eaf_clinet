@@ -2,8 +2,8 @@
 // Shared TypeScript types for EAF Client
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type Role = 'LANDING' | 'CLUB' | 'ATHLETE' | 'COACH';
-export type ToastType = 'success' | 'error' | 'info';
+export type Role = 'LANDING' | 'CLUB' | 'ATHLETE' | 'COACH' | 'PROFESSIONAL';
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
 export type LicenseStatus = 'ACTIVE' | 'PENDING' | 'EXPIRED' | 'NONE' | 'UNLICENSED';
 export type TransferStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type MeetStatus = 'REGISTRATION_OPEN' | 'UPCOMING' | 'LIVE' | 'REGISTRATION_CLOSED' | 'COMPLETED';

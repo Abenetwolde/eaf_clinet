@@ -10,6 +10,7 @@ import Callback from './components/Callback';
 import AppLayout from './components/Layout/AppLayout';
 import ClientLayout from './components/Layout/ClientLayout';
 import CoachPortal from './components/Coach/CoachPortal';
+import ProfessionalPortal from './components/ProfessionalPortal';
 
 import ClubOverview from './components/ClubAdmin/ClubOverview';
 import RosterManagement from './components/ClubAdmin/RosterManagement';
@@ -48,7 +49,7 @@ import { useLazyGetMeQuery, useLogoutApiMutation } from './store/api/authApi';
 import { Athlete, Club, Transfer } from './types';
 import { clearAllSessionData } from './store/persistence';
 
-type Role = 'LANDING' | 'CLUB' | 'ATHLETE' | 'COACH';
+type Role = 'LANDING' | 'CLUB' | 'ATHLETE' | 'COACH' | 'PROFESSIONAL';
 
 export default function App() {
   // Dedicated VeriFayda 2.0 (eSignet) OIDC callback route adapted from oidc-test-app
@@ -215,7 +216,7 @@ export default function App() {
   })();
 
   const isLoggedIn = Boolean(
-    (currentRole === 'ATHLETE' || currentRole === 'CLUB') &&
+    (currentRole === 'ATHLETE' || currentRole === 'CLUB' || currentRole === 'COACH' || currentRole === 'PROFESSIONAL') &&
     (Boolean(authToken) || authStatus === 'authenticated' || Boolean(userData))
   );
 
@@ -425,7 +426,7 @@ export default function App() {
       ) {
         setClubSubPage('REGISTER_MEMBER');
         setPublicSubPage('DASHBOARD');
-        window.history.replaceState({}, '', '/');
+        window.history.replaceState({}, '', '/club/register-member');
         return;
       }
 
@@ -490,6 +491,8 @@ export default function App() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
+      const publicPathMap: Record<string, string> = { '/': 'HOME', '/competitions': 'COMPETITIONS', '/results': 'RESULTS', '/athletes': 'ATHLETES', '/professionals': 'PROFESSIONALS', '/media': 'MEDIA' };
+      if (publicPathMap[path]) setPublicSubPage(publicPathMap[path]);
       if (path === '/login') {
         if (!isLoggedIn) setPublicSubPage('LOGIN');
         else window.history.replaceState({}, '', '/');
@@ -515,9 +518,13 @@ export default function App() {
         setPublicSubPage('LOGIN');
       } else if (path === '/register') {
         const isClub = window.location.search.includes('role=club');
+        setPublicSubPage('HOME');
         setRegModalRole(isClub ? 'CLUB' : 'ATHLETE');
       } else if (path === '/') {
         setPublicSubPage('HOME');
+      } else if (['/competitions', '/results', '/athletes', '/professionals', '/media'].includes(path)) {
+        const publicPathMap: Record<string, string> = { '/competitions': 'COMPETITIONS', '/results': 'RESULTS', '/athletes': 'ATHLETES', '/professionals': 'PROFESSIONALS', '/media': 'MEDIA' };
+        setPublicSubPage(publicPathMap[path]);
       } else if (path.startsWith('/club/')) {
         const clubPathMap: Record<string, string> = {
           '/club/dashboard':        'OVERVIEW',
@@ -596,6 +603,10 @@ export default function App() {
       if (data.coach) dispatch(setCoach(data.coach));
       dispatch(setRole('COACH'));
       handleNotify(`Welcome back, Coach ${data.coach?.name || 'Coach'}!`, 'success');
+    } else if (role === 'PROFESSIONAL') {
+      dispatch(setRole('PROFESSIONAL'));
+      if (typeof window !== 'undefined') window.history.pushState(null, '', '/professional/dashboard');
+      handleNotify(`Welcome to your ${String(data.professionalRole || 'professional').replace(/_/g, ' ')} dashboard.`, 'success');
     } else {
       if (data.athlete) dispatch(setAthlete(data.athlete));
       dispatch(setRole('ATHLETE'));
@@ -636,14 +647,14 @@ export default function App() {
       setNavNonce(prev => prev + 1);
       window.scrollTo(0, 0);
       setTimeout(() => window.scrollTo(0, 0), 50);
-      handleNotify(`Club "${newClub.shortName}" registered successfully! Welcome to EAF.`, 'success');
+      handleNotify((newClub as any).submissionMessage || `Club "${newClub.shortName}" registered successfully! Welcome to EAF.`, 'success');
     } else if (registrationData.type === 'ATHLETE') {
       const newAthlete = registrationData.payload.athlete as Athlete;
       dispatch(addAthlete(newAthlete));
       // Redirect to login page instead of home page
       sessionStorage.setItem(
         'eaf_registration_success_msg',
-        `Registration completed successfully for ${newAthlete.name}! Please sign in with your Fayda National ID or phone number.`
+        (newAthlete as any).submissionMessage || `Registration completed for ${newAthlete.name}. Please sign in with your Fayda National ID or phone number.`
       );
       sessionStorage.setItem('eaf_registered_fin', newAthlete.faydaFin || '');
       setRegModalRole(null);
@@ -654,13 +665,16 @@ export default function App() {
       setNavNonce(prev => prev + 1);
       window.scrollTo(0, 0);
       setTimeout(() => window.scrollTo(0, 0), 50);
-      handleNotify(`Athlete "${newAthlete.name}" registered successfully! Please sign in.`, 'success');
+      handleNotify((newAthlete as any).submissionMessage || `Athlete "${newAthlete.name}" registration submitted. Please sign in after federation review.`, 'success');
     } else {
-      setPublicSubPage('PROFESSIONALS');
+      const applicationMessage = (registrationData.payload.official as any)?.submissionMessage || 'Your professional registration is awaiting EAF Admin approval.';
+      sessionStorage.setItem('eaf_registration_success_msg', applicationMessage + ' You can sign in after your application is approved.');
+      setPublicSubPage('LOGIN');
+      if (typeof window !== 'undefined') window.history.pushState(null, '', '/login');
       setNavNonce(prev => prev + 1);
       window.scrollTo(0, 0);
       setTimeout(() => window.scrollTo(0, 0), 50);
-      handleNotify('Accreditation registered successfully in the official EAF National Registry.', 'success');
+      handleNotify(applicationMessage, 'success');
     }
   };
 
@@ -825,6 +839,8 @@ export default function App() {
 
     const handleNavClick = (page: string) => {
       setPublicSubPage(page);
+      const pagePath: Record<string, string> = { HOME: '/', COMPETITIONS: '/competitions', RESULTS: '/results', ATHLETES: '/athletes', PROFESSIONALS: '/professionals', MEDIA: '/media' };
+      window.history.pushState(null, '', pagePath[page] || '/');
       setMobileMenuOpen(false);
       setNavNonce(prev => prev + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1283,6 +1299,7 @@ export default function App() {
             }}
             onOpenRegistration={(role?: 'CLUB' | 'ATHLETE') => {
               const chosenRole = role || 'ATHLETE';
+              setPublicSubPage('HOME');
               setRegModalRole(chosenRole);
               if (typeof window !== 'undefined') {
                 window.history.pushState(null, '', chosenRole === 'CLUB' ? '/register?role=club' : '/register');
@@ -1566,6 +1583,12 @@ export default function App() {
         }}
       />
     );
+  }
+
+  if (currentRole === 'PROFESSIONAL') {
+    const professionalRole = userData?.roles?.[0] || 'OFFICIAL';
+    const professionalName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || 'Federation Professional';
+    return <ProfessionalPortal professionalRole={professionalRole} name={professionalName} onLogout={handleLogout} />;
   }
 
   return null;

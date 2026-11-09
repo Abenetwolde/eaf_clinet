@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery, type BaseQueryFn, type FetchArgs, type Fetch
 import type { RootState } from "../store";
 import { STORAGE_KEYS, removeItem, clearAllSessionData } from "../persistence";
 import { logout, setToken } from "../slices/authSlice";
+import { getApiErrorMessage } from "../../utils/apiMessages";
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
@@ -81,6 +82,13 @@ const baseQueryWithReauth: BaseQueryFn<
     }
   }
 
+  if ("error" in result && result.error) {
+    const failure = result.error;
+    const normalizedData = failure.data && typeof failure.data === "object"
+      ? { ...(failure.data as Record<string, unknown>), message: getApiErrorMessage(failure) }
+      : { message: getApiErrorMessage(failure) };
+    return { error: { ...failure, data: normalizedData } };
+  }
   return result;
 };
 
@@ -89,11 +97,6 @@ export const apiSlice = createApi({
   baseQuery: baseQueryWithReauth,
   tagTypes: ["Athletes", "Clubs", "Competitions", "Events", "News", "Registrations", "Results", "Users", "Gallery", "Content", "Inquiries"],
   endpoints: (builder) => ({
-    getAthletes: builder.query<any[], void>({
-      query: () => "athletes/public",
-      transformResponse: (response: any) => response?.data || response || [],
-      providesTags: ["Athletes"],
-    }),
     getClubs: builder.query<any[], void>({
       query: () => "clubs/verified",
       transformResponse: (response: any) => response?.data || response || [],
@@ -140,7 +143,6 @@ export const apiSlice = createApi({
 });
 
 export const {
-  useGetAthletesQuery,
   useGetClubsQuery,
   useGetCompetitionsQuery,
   useGetPublishedEventsQuery,

@@ -928,35 +928,35 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs">
                     <span className="text-slate-500 font-bold block mb-1">Full Legal Name</span>
-                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">{athlete?.name}</span>
+                    <span className="text-sm font-extrabold text-slate-900">{athlete?.name}</span>
                   </div>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs">
                     <span className="text-slate-500 font-bold block mb-1">Official Amharic Name</span>
-                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">{athlete?.amharicName || '—'}</span>
+                    <span className="text-sm font-extrabold text-slate-900">{athlete?.amharicName || '—'}</span>
                   </div>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500 font-bold block mb-1">Affiliated Club</span>
-                    <span className="text-sm font-extrabold text-primary">{athlete?.clubName || athlete?.club || 'Independent'}</span>
+                  <div className="p-3 bg-white rounded-xl border border-blue-200 shadow-xs border-l-4 border-l-blue-600">
+                    <span className="text-blue-700 font-bold block mb-1">Affiliated Club</span>
+                    <span className="text-sm font-extrabold text-blue-700">{athlete?.clubName || athlete?.club || 'Independent'}</span>
                   </div>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs">
                     <span className="text-slate-500 font-bold block mb-1">Regional Federation</span>
-                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">{athlete?.region || 'Addis Ababa'}</span>
+                    <span className="text-sm font-extrabold text-slate-900">{athlete?.region || 'Addis Ababa'}</span>
                   </div>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs">
                     <span className="text-slate-500 font-bold block mb-1">Date of Birth & Gender</span>
-                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">{athlete?.dob} ({athlete?.gender})</span>
+                    <span className="text-sm font-extrabold text-slate-900">{athlete?.dob} ({athlete?.gender})</span>
                   </div>
-                  <div className="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-500 font-bold block mb-1">Age Category</span>
-                    <span className="text-sm font-extrabold text-slate-900 dark:text-white">{athlete?.ageTier || 'Senior'}</span>
+                  <div className="p-3 bg-white rounded-xl border border-emerald-200 shadow-xs border-l-4 border-l-emerald-600">
+                    <span className="text-emerald-700 font-bold block mb-1">Age Category</span>
+                    <span className="text-sm font-extrabold text-slate-900">{athlete?.ageTier || 'Senior'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Contact Information & Profile Update Form */}
-              <div className="bg-white dark:bg-[#121829] rounded-2xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <Edit3 size={18} className="text-primary" />
@@ -1125,30 +1125,30 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs mt-5">
-              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/70 dark:border-slate-800">
+              <div className="p-4 bg-white rounded-xl border border-blue-200 border-l-4 border-l-blue-600 shadow-xs">
                 <span className="text-slate-500 font-bold block mb-1">60-Minute Daily Testing Window</span>
-                <span className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
+                <span className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
                   <Clock size={15} className="text-blue-600" />
                   06:00 - 07:00 AM (East Africa Time)
                 </span>
               </div>
-              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/70 dark:border-slate-800">
+              <div className="p-4 bg-white rounded-xl border border-emerald-200 border-l-4 border-l-emerald-600 shadow-xs">
                 <span className="text-slate-500 font-bold block mb-1">Testing Pool Status</span>
-                <span className="font-extrabold text-emerald-700 dark:text-emerald-400 text-sm flex items-center gap-1.5">
+                <span className="font-extrabold text-emerald-700 text-sm flex items-center gap-1.5">
                   <BadgeCheck size={15} />
                   National Registered Testing Pool (NRTP)
                 </span>
               </div>
-              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/70 dark:border-slate-800">
+              <div className="p-4 bg-white rounded-xl border border-amber-200 border-l-4 border-l-amber-600 shadow-xs">
                 <span className="text-slate-500 font-bold block mb-1">Current Quarter Filing</span>
-                <span className="font-extrabold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
-                  <Calendar size={15} className="text-primary" />
+                <span className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                  <Calendar size={15} className="text-amber-600" />
                   Q4 2026 · Valid & Recorded
                 </span>
               </div>
-              <div className="sm:col-span-2 lg:col-span-3 p-4 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200/70 dark:border-slate-800">
+              <div className="sm:col-span-2 lg:col-span-3 p-4 bg-white rounded-xl border border-slate-200 shadow-xs">
                 <span className="text-slate-500 font-bold block mb-1">Primary Training Facility & Track Venue</span>
-                <span className="font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
                   <MapPin size={15} className="text-rose-500" />
                   Ethiopian Youth Sport Academy & Addis Ababa Stadium Track, Addis Ababa
                 </span>

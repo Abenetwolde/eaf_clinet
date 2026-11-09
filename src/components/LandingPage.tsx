@@ -130,6 +130,31 @@ function mapArticleToNewsItem(article: NewsArticle, index: number): NewsItem {
   };
 }
 
+function getCompetitionThumbnailUrl(event: any): string {
+  const candidate = [
+    event?.bannerUrl,
+    event?.thumbnailUrl,
+    event?.imageUrl,
+    event?.image,
+    event?.img,
+    event?.banner?.url,
+  ].find((value) => typeof value === 'string' && value.trim());
+  if (!candidate) return '';
+
+  const source = candidate.trim();
+  if (/^(https?:|data:|blob:)/i.test(source)) return source;
+
+  const path = source.startsWith('/') ? source : `/${source}`;
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+  try {
+    const apiUrl = new URL(apiBase, typeof window === 'undefined' ? 'http://localhost' : window.location.origin);
+    if (/^https?:/i.test(apiBase) && /^\/(uploads|images|public)\//i.test(path)) {
+      return new URL(path, apiUrl.origin).toString();
+    }
+  } catch {}
+  return path;
+}
+
 interface LandingPageProps {
   onSelectRole: (role: string) => void;
   onRegister: (role: 'CLUB' | 'ATHLETE') => void;
@@ -151,7 +176,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   // ── Fetch real News, Events & Overview from Backend API ──
   const { data: apiNews, isLoading: isNewsLoading } = useGetNewsQuery();
-  const { data: apiEvents } = useGetPublishedEventsQuery();
+  const { data: apiEvents, isLoading: eventsLoading, isError: eventsError } = useGetPublishedEventsQuery();
   const { data: overviewStats } = useGetOverviewStatsQuery();
   const { data: apiGallery } = useGetGalleryQuery();
   const { data: siteContent } = useGetSiteContentQuery();
@@ -191,7 +216,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
       return [];
     }
     return apiEvents.map((evt: any, idx: number) => {
-      const scheduleDate = evt.schedule?.[0]?.date || evt.registrationDeadline?.slice(0, 10) || '';
+      const scheduleDate = evt.schedule?.[0]?.startsAt || evt.schedule?.[0]?.date || evt.startDate || evt.registrationDeadline?.slice(0, 10) || '';
       const parsedDate = new Date(scheduleDate);
       const dateStr = !isNaN(parsedDate.getTime())
         ? parsedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -207,12 +232,14 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         status: getEventRegistrationStatus(evt),
         registrationDeadline: evt.registrationDeadline || '',
         disciplines: Array.isArray(evt.disciplines) ? evt.disciplines : [],
-        region: evt.region || '',
-        img: evt.bannerUrl || '',
+        region: typeof evt.region === 'object' ? evt.region?.name || '' : evt.region || evt.regionName || '',
+        eventType: evt.eventType || evt.format || '',
+        img: getCompetitionThumbnailUrl(evt),
         description: evt.description,
         rules: evt.rules,
         schedule: evt.schedule,
         category: evt.category,
+        registered: evt.totalAthletesEnrolled ?? evt.registeredCount ?? null,
       };
     });
   }, [apiEvents]);
@@ -263,6 +290,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   })), [apiAthletes]);
 
   const [selectedMeetId, setSelectedMeetId] = useState<string | null>(null);
+  const [failedMeetThumbnails, setFailedMeetThumbnails] = useState<Record<string, boolean>>({});
   const [selectedAthleteModal, setSelectedAthleteModal] = useState<any>(null);
   const [selectedGalleryTab, setSelectedGalleryTab] = useState<string>('All');
   const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
@@ -475,8 +503,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
   // Search/Filter states
   const [searchText, setSearchText] = useState<string>('');
+  const [appliedSearchText, setAppliedSearchText] = useState<string>('');
   const [regionFilter, setRegionFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+  const [disciplineFilter, setDisciplineFilter] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [sortByDate, setSortByDate] = useState<string>('UPCOMING_FIRST');
@@ -732,16 +764,29 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     partnersTitle: tr('home.partnersTitle'),
   };
 
+  const competitionRegions = [...new Set(allMeets.map(meet => meet.region).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const competitionCategories = [...new Set(allMeets.map(meet => meet.category).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const competitionDisciplines = [...new Set(allMeets.flatMap(meet => meet.disciplines).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const competitionStatuses = [...new Set(allMeets.map(meet => meet.status).filter(Boolean))];
+
   const filteredMeets = allMeets.filter(meet => {
-    if (searchText) {
-      const q = searchText.toLowerCase();
+    if (appliedSearchText) {
+      const q = appliedSearchText.toLowerCase();
       const matchTitle = meet.title.toLowerCase().includes(q) || (meet.amharic && meet.amharic.toLowerCase().includes(q));
       const matchVenue = meet.venue.toLowerCase().includes(q);
       const matchEvent = meet.disciplines.some(d => d.toLowerCase().includes(q));
-      if (!matchTitle && !matchVenue && !matchEvent) return false;
+      const matchRegion = meet.region.toLowerCase().includes(q);
+      const matchCategory = meet.category.toLowerCase().includes(q);
+      if (!matchTitle && !matchVenue && !matchEvent && !matchRegion && !matchCategory) return false;
     }
     if (regionFilter !== 'ALL' && meet.region !== regionFilter) return false;
     if (statusFilter !== 'ALL' && meet.status !== statusFilter) return false;
+    if (categoryFilter !== 'ALL' && meet.category !== categoryFilter) return false;
+    if (disciplineFilter !== 'ALL' && !meet.disciplines.includes(disciplineFilter)) return false;
+    if (typeFilter !== 'ALL') {
+      const backendType = `${meet.eventType} ${meet.category} ${meet.title}`.toLowerCase();
+      if (!backendType.includes(typeFilter.toLowerCase())) return false;
+    }
     if (startDate && new Date(meet.date) < new Date(startDate)) return false;
     if (endDate && new Date(meet.date) > new Date(endDate)) return false;
     return true;
@@ -752,6 +797,14 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     const dB = new Date(b.date);
     return sortByDate === 'UPCOMING_FIRST' ? dA.getTime() - dB.getTime() : dB.getTime() - dA.getTime();
   });
+  const visibleCompetitionRows = publicSubPage === 'HOME' ? sortedMeets.slice(0, 3) : sortedMeets;
+  const navigateCompetitionTab = (page: 'RESULTS' | 'COMPETITIONS') => {
+    onChangePublicSubPage(page);
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', page === 'RESULTS' ? '/results' : '/competitions');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // Responsive gallery: category filtering and responsive display count
   const filteredGalleryImages = selectedGalleryTab === 'All'
@@ -917,11 +970,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               style={{
                 maxWidth: '840px',
                 margin: '0 auto 24px',
-                background: darkMode ? '#1E293B' : '#FFFFFF',
-                border: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
-                borderRadius: '20px',
+                background: '#FFFFFF',
+                border: '1px solid #BFDBFE',
+                borderLeft: '4px solid #0038A5',
+                borderRadius: '16px',
                 padding: '14px 20px',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
+                boxShadow: '0 4px 16px rgba(0, 56, 165, 0.06)',
                 backdropFilter: 'blur(28px) saturate(200%)',
                 WebkitBackdropFilter: 'blur(28px) saturate(200%)',
                 cursor: 'pointer',
@@ -1297,7 +1351,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
       {/* ── 3. COMPETITIONS HUB WITH EMBEDDED SEARCH & FILTERS + 3-IN-A-ROW GRID ON VIEW ALL ── */}
       {(publicSubPage === "HOME" || publicSubPage === "COMPETITIONS") && (
-        <section id="competitions" style={{ background: t.bgAlt, padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
+        <section id="competitions" style={{ background: t.bgAlt, padding: '40px 24px', borderTop: '1px solid ' + t.border }}>
           <div style={{ maxWidth: 1280, margin: '0 auto' }}>
             {/* Top Bar with Back Button if in COMPETITIONS subpage */}
             {publicSubPage === 'COMPETITIONS' && (
@@ -1358,241 +1412,155 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
               )}
             </div>
 
-            {/* EMBEDDED SEARCH & FILTER WIDGET INSIDE COMPETITIONS HUB */}
-            <div
-              style={{
-                background: t.surface,
-                border: '1px solid ' + t.border,
-                borderRadius: '20px',
-                boxShadow: '0 12px 32px rgba(15, 23, 42, 0.06)',
-                padding: '24px',
-                marginBottom: '28px',
-                color: t.text,
-              }}
-            >
-              {/* Free-text Search */}
-              <div style={{ position: 'relative', marginBottom: '16px' }}>
-                <Search
-                  size={20}
-                  style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }}
-                />
-                <input
-                  type="text"
-                  value={searchText}
-                  onChange={e => setSearchText(e.target.value)}
-                  placeholder={loc.searchPlaceholder}
-                  style={{
-                    width: '100%',
-                    background: t.inputBg,
-                    border: '1px solid ' + t.borderSubtle,
-                    borderRadius: '14px',
-                    padding: '14px 14px 14px 48px',
-                    color: t.text,
-                    fontSize: '0.98rem',
-                    fontWeight: 600,
-                    outline: 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onFocus={e => e.target.style.borderColor = 'var(--primary)'}
-                  onBlur={e => e.target.style.borderColor = '#CBD5E1'}
-                />
+            {/* Reference-inspired calendar tabs and compact, data-driven filters */}
+            <div style={{ background: t.surface, border: '1px solid ' + t.border, borderRadius: '16px', boxShadow: '0 8px 24px rgba(15, 23, 42, 0.045)', padding: viewportWidth <= 640 ? '12px' : '16px', marginBottom: '18px', color: t.text }}>
+              <div role="tablist" aria-label="Competition sections" style={{ display: 'flex', justifyContent: 'center', margin: '-2px auto 14px', width: 'fit-content', maxWidth: '100%', border: '1px solid ' + t.borderSubtle, borderRadius: '9px', overflow: 'hidden' }}>
+                <button type="button" role="tab" aria-selected={false} onClick={() => navigateCompetitionTab('RESULTS')} style={{ border: 0, borderRight: '1px solid ' + t.borderSubtle, background: t.surface, color: t.textSub, padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>
+                  <Trophy size={14} /> Results
+                </button>
+                <button type="button" role="tab" aria-selected={true} onClick={() => navigateCompetitionTab('COMPETITIONS')} style={{ border: 0, borderRight: '1px solid ' + t.borderSubtle, background: 'var(--primary)', color: '#fff', padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}>
+                  <Calendar size={14} /> Calendar
+                </button>
+                <button type="button" role="tab" aria-selected={false} onClick={() => onRegister('ATHLETE')} style={{ border: 0, background: t.surface, color: t.textSub, padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>
+                  <UserCheck size={14} /> Register
+                </button>
               </div>
 
-              {/* Filter Widgets Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '14px', alignItems: 'flex-end' }}>
+              <form onSubmit={event => { event.preventDefault(); setAppliedSearchText(searchText.trim()); }} style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: viewportWidth <= 560 ? 'minmax(0,1fr) auto' : 'minmax(0,1fr) 145px 44px', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ position: 'relative', minWidth: 0 }}>
+                    <Search size={17} aria-hidden="true" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} />
+                    <input
+                      type="search"
+                      value={searchText}
+                      onChange={event => setSearchText(event.target.value)}
+                      onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); setAppliedSearchText(searchText.trim()); } }}
+                      placeholder={loc.searchPlaceholder}
+                      aria-label="Search competitions by name, venue or discipline"
+                      style={{ width: '100%', minWidth: 0, height: '40px', boxSizing: 'border-box', background: t.inputBg, border: '1px solid ' + t.borderSubtle, borderRadius: '8px', padding: '8px 12px 8px 38px', color: t.text, fontSize: '0.88rem', outline: 'none' }}
+                    />
+                  </div>
+                  <select aria-label="Filter by registration status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)} style={{ height: '40px', minWidth: 0, background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '8px', padding: '0 9px', fontSize: '0.8rem' }}>
+                    <option value="ALL">All statuses</option>
+                    {competitionStatuses.map(status => <option key={status} value={status}>{status === 'REGISTRATION_OPEN' ? loc.regOpen : status === 'REGISTRATION_CLOSED' ? loc.regClosed : status === 'LIVE' ? loc.live : status === 'UPCOMING' ? loc.upcoming : status.replace(/_/g, ' ')}</option>)}
+                  </select>
+                  <button type="submit" aria-label="Search competitions" title="Search competitions" style={{ height: '40px', width: viewportWidth <= 560 ? '44px' : '44px', border: 0, borderRadius: '8px', background: 'var(--primary)', color: '#fff', display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
+                    <Search size={17} />
+                  </button>
+                </div>
 
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>{loc.regionLabel}</label>
-                  <select
-                    className="form-select"
-                    value={regionFilter}
-                    onChange={e => setRegionFilter(e.target.value)}
-                    style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
-                  >
-                    <option value="ALL">{tr('home.allRegions')}</option>
-                    <option value="Addis Ababa">Addis Ababa</option>
-                    <option value="Oromia">Oromia</option>
-                    <option value="Amhara">Amhara</option>
-                    <option value="Sidama">Sidama</option>
-                    <option value="Tigray">Tigray</option>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '8px', marginTop: '9px' }}>
+                  <select aria-label="Filter by indoor or outdoor event type" value={typeFilter} onChange={event => setTypeFilter(event.target.value)} style={{ height: '34px', minWidth: 0, background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.textSub, borderRadius: '7px', padding: '0 8px', fontSize: '0.76rem' }}>
+                    <option value="ALL">Indoor &amp; outdoor</option>
+                    <option value="indoor">Indoor</option>
+                    <option value="outdoor">Outdoor</option>
+                  </select>
+                  <select aria-label="Filter by region" value={regionFilter} onChange={event => setRegionFilter(event.target.value)} style={{ height: '34px', minWidth: 0, background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.textSub, borderRadius: '7px', padding: '0 8px', fontSize: '0.76rem' }}>
+                    <option value="ALL">All regions</option>
+                    {competitionRegions.map(region => <option key={region} value={region}>{region}</option>)}
+                  </select>
+                  <select aria-label="Filter by category" value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} style={{ height: '34px', minWidth: 0, background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.textSub, borderRadius: '7px', padding: '0 8px', fontSize: '0.76rem' }}>
+                    <option value="ALL">All categories</option>
+                    {competitionCategories.map(category => <option key={category} value={category}>{category.replace(/_/g, ' ')}</option>)}
+                  </select>
+                  <select aria-label="Filter by discipline" value={disciplineFilter} onChange={event => setDisciplineFilter(event.target.value)} style={{ height: '34px', minWidth: 0, background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.textSub, borderRadius: '7px', padding: '0 8px', fontSize: '0.76rem' }}>
+                    <option value="ALL">All events</option>
+                    {competitionDisciplines.map(discipline => <option key={discipline} value={discipline}>{discipline}</option>)}
                   </select>
                 </div>
 
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>{loc.statusLabel}</label>
-                  <select
-                    className="form-select"
-                    value={statusFilter}
-                    onChange={e => setStatusFilter(e.target.value)}
-                    style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
-                  >
-                    <option value="ALL">{loc.all}</option>
-                    <option value="REGISTRATION_OPEN">{loc.regOpen}</option>
-                    <option value="REGISTRATION_CLOSED">{loc.regClosed}</option>
-                    <option value="LIVE">{loc.live}</option>
-                    <option value="UPCOMING">{loc.upcoming}</option>
-                  </select>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>{loc.startDateLabel}</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={e => setStartDate(e.target.value)}
-                    style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', width: '100%', padding: '10px 12px' }}
-                  />
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>{loc.endDateLabel}</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={e => setEndDate(e.target.value)}
-                    style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', width: '100%', padding: '10px 12px' }}
-                  />
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ color: t.textSub, fontSize: '0.8rem', fontWeight: 700 }}>{loc.sortLabel}</label>
-                  <select
-                    className="form-select"
-                    value={sortByDate}
-                    onChange={e => setSortByDate(e.target.value)}
-                    style={{ background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '12px', padding: '10px 12px' }}
-                  >
-                    <option value="UPCOMING_FIRST">{loc.sortUpcoming}</option>
-                    <option value="OLDEST_FIRST">{loc.sortOldest}</option>
-                  </select>
-                </div>
-
-              </div>
+                <details style={{ marginTop: '8px', color: t.textMuted, fontSize: '0.75rem' }}>
+                  <summary style={{ width: 'fit-content', cursor: 'pointer', padding: '3px 0' }}>More filters: dates and sorting</summary>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: '8px', paddingTop: '8px' }}>
+                    <label style={{ display: 'grid', gap: 4 }}>{loc.startDateLabel}<input aria-label={loc.startDateLabel} type="date" value={startDate} onChange={event => setStartDate(event.target.value)} style={{ height: '34px', background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '7px', padding: '0 8px' }} /></label>
+                    <label style={{ display: 'grid', gap: 4 }}>{loc.endDateLabel}<input aria-label={loc.endDateLabel} type="date" value={endDate} onChange={event => setEndDate(event.target.value)} style={{ height: '34px', background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '7px', padding: '0 8px' }} /></label>
+                    <label style={{ display: 'grid', gap: 4 }}>{loc.sortLabel}<select aria-label={loc.sortLabel} value={sortByDate} onChange={event => setSortByDate(event.target.value)} style={{ height: '34px', background: t.inputBg, border: '1px solid ' + t.borderSubtle, color: t.text, borderRadius: '7px', padding: '0 8px' }}><option value="UPCOMING_FIRST">{loc.sortUpcoming}</option><option value="OLDEST_FIRST">{loc.sortOldest}</option></select></label>
+                  </div>
+                </details>
+              </form>
             </div>
 
-            {/* Competitions Grid (3 Cards in one row on desktop) */}
-            {sortedMeets.length === 0 ? (
-              <div style={{ background: t.surface, border: '1px solid ' + t.border, borderRadius: '20px', padding: '48px', textAlign: 'center', color: t.textMuted }}>
-                <Trophy size={48} style={{ opacity: 0.2, marginBottom: '12px' }} />
+            {/* Compact competition list backed exclusively by published events from the API */}
+            {eventsLoading ? (
+              <div role="status" style={{ padding: '28px 16px', textAlign: 'center', color: t.textMuted, background: t.surface, border: '1px solid ' + t.border, borderRadius: '16px' }}>
+                Loading competitions…
+              </div>
+            ) : eventsError ? (
+              <div role="alert" style={{ padding: '28px 16px', textAlign: 'center', color: t.textMuted, background: t.surface, border: '1px solid ' + t.border, borderRadius: '16px' }}>
+                The competition calendar could not be loaded. Please try again later.
+              </div>
+            ) : sortedMeets.length === 0 ? (
+              <div style={{ background: t.surface, border: '1px solid ' + t.border, borderRadius: '16px', padding: '36px 20px', textAlign: 'center', color: t.textMuted }}>
+                <Trophy size={34} style={{ opacity: 0.35, marginBottom: '10px' }} />
                 <h4 style={{ fontWeight: 800 }}>{tr('home.noCompetitions')}</h4>
               </div>
             ) : (
-              /* ── 3 IN A ROW GRID (INITIALLY 3 ON HOME, ALL ON VIEW ALL) ── */
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: viewportWidth > 1024 ? 'repeat(3, minmax(0, 1fr))' : viewportWidth > 640 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
-                  gap: '24px',
-                }}
-              >
-                {(publicSubPage === 'HOME' ? sortedMeets.slice(0, 3) : sortedMeets).map((meet) => {
-                  const badgeColor = (meet.status === 'REGISTRATION_OPEN' || String(meet.status).toUpperCase() === 'PUBLISHED') ? 'var(--primary)' : meet.status === 'LIVE' ? '#EF4444' : meet.status === 'UPCOMING' ? '#F59E0B' : '#64748B';
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                {visibleCompetitionRows.map((meet) => {
+                  const badgeColor = meet.status === 'REGISTRATION_OPEN' ? 'var(--primary)' : meet.status === 'LIVE' ? '#DC2626' : meet.status === 'UPCOMING' ? '#B7791F' : '#64748B';
+                  const badgeBackground = (meet.status === 'REGISTRATION_OPEN' || String(meet.status).toUpperCase() === 'PUBLISHED') ? 'rgba(2,132,199,0.12)' : meet.status === 'LIVE' ? 'rgba(220,38,38,0.12)' : meet.status === 'UPCOMING' ? 'rgba(183,121,31,0.12)' : 'rgba(100,116,139,0.12)';
                   const statusName = (meet.status === 'REGISTRATION_OPEN' || String(meet.status).toUpperCase() === 'PUBLISHED') ? loc.regOpen : meet.status === 'LIVE' ? loc.live : meet.status === 'UPCOMING' ? loc.upcoming : loc.regClosed;
-
+                  const imageWidth = viewportWidth <= 480 ? 78 : 112;
+                  const imageHeight = viewportWidth <= 480 ? 70 : 84;
                   return (
-                    <motion.div
+                    <motion.button
+                      type="button"
                       key={meet.id}
-                      whileHover={{ y: -6 }}
+                      whileHover={{ y: -1 }}
+                      whileTap={{ scale: 0.995 }}
                       onClick={() => setSelectedMeetId(meet.id)}
+                      aria-label={`${meet.title}, ${statusName}, ${meet.dateString || 'date to be announced'}`}
                       style={{
-                        position: 'relative',
-                        borderRadius: '24px',
-                        overflow: 'hidden',
-                        minHeight: '380px',
+                        width: '100%',
+                        minWidth: 0,
                         display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'flex-end',
+                        alignItems: 'center',
+                        gap: viewportWidth <= 480 ? '11px' : '16px',
+                        padding: viewportWidth <= 480 ? '9px' : '10px 14px',
+                        textAlign: 'left',
+                        fontFamily: 'inherit',
+                        color: t.text,
+                        background: t.surface,
+                        border: '1px solid ' + t.border,
+                        borderRadius: '14px',
+                        boxShadow: '0 2px 8px rgba(15, 23, 42, 0.035)',
                         cursor: 'pointer',
-                        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
-                        border: '1px solid ' + (darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(226, 232, 240, 0.9)'),
-                        background: '#0F172A',
+                        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
                       }}
                     >
-                      {/* Fully visible background image */}
-                      <img
-                        src={meet.img}
-                        alt={meet.title}
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.onerror = null;
-                          target.src = '/images/banner_grand_prix.png';
-                        }}
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          transition: 'transform 0.4s ease',
-                        }}
-                      />
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          background: 'linear-gradient(to top, rgba(15,23,42,0.96) 0%, rgba(15,23,42,0.48) 50%, rgba(15,23,42,0.12) 100%)',
-                          pointerEvents: 'none',
-                        }}
-                      />
+                      <div style={{ width: imageWidth, height: imageHeight, flexShrink: 0, overflow: 'hidden', borderRadius: '10px', position: 'relative', background: 'linear-gradient(135deg, rgba(2,132,199,0.14), rgba(16,185,129,0.10))', display: 'grid', placeItems: 'center', color: 'var(--primary)' }}>
+                        {meet.img && !failedMeetThumbnails[`${meet.id}:${meet.img}`] ? (
+                          <img src={meet.img} alt="" loading="lazy" onError={() => setFailedMeetThumbnails(current => ({ ...current, [`${meet.id}:${meet.img}`]: true }))} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : <Trophy size={22} aria-hidden="true" />}
+                      </div>
 
-                      <div style={{ position: 'relative', zIndex: 1, padding: '24px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                          <span style={{
-                            background: badgeColor,
-                            color: '#FFFFFF',
-                            borderRadius: '8px',
-                            padding: '4px 12px',
-                            fontSize: '0.75rem',
-                            fontWeight: 800,
-                            letterSpacing: '0.04em',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            boxShadow: meet.status === 'LIVE' ? '0 0 12px rgba(239, 68, 68, 0.5)' : 'none',
-                          }}>
-                            {meet.status === 'LIVE' && <span className="status-pulse-dot" />}
-                            {statusName}
-                          </span>
-
-                          <span style={{
-                            background: 'rgba(255, 255, 255, 0.2)',
-                            backdropFilter: 'blur(8px)',
-                            WebkitBackdropFilter: 'blur(8px)',
-                            color: '#FFFFFF',
-                            fontSize: '0.74rem',
-                            fontWeight: 800,
-                            padding: '4px 10px',
-                            borderRadius: '8px',
-                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                          }}>
-                            📍 {meet.region}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                          <h3 style={{ margin: 0, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: viewportWidth <= 480 ? '0.93rem' : '1rem', fontWeight: 850, lineHeight: 1.35, color: t.text }}>
+                            {language === 'am' ? meet.amharic || meet.title : meet.title}
+                          </h3>
+                          <span style={{ flexShrink: 0, borderRadius: '999px', padding: '4px 9px', background: badgeBackground, color: badgeColor, fontSize: '0.66rem', fontWeight: 850, letterSpacing: '0.025em', whiteSpace: 'nowrap' }}>
+                            {meet.status === 'LIVE' && <span className="status-pulse-dot" />}{statusName}
                           </span>
                         </div>
 
-                        <h3 style={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 900, marginBottom: '10px', lineHeight: 1.35, letterSpacing: '-0.01em' }}>
-                          {language === 'am' ? meet.amharic || meet.title : meet.title}
-                        </h3>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#FDE047', fontWeight: 700 }}>
-                            <MapPin size={14} style={{ flexShrink: 0 }} />
-                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{meet.venue}</span>
-                          </span>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600 }}>
-                            <Calendar size={14} style={{ flexShrink: 0 }} />
-                            <span>{meet.dateString}</span>
-                          </span>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '5px 15px', marginTop: '5px', color: t.textSub, fontSize: '0.76rem', fontWeight: 600 }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Calendar size={13} />{meet.dateString || 'Date to be announced'}</span>
+                          {meet.venue && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, minWidth: 0 }}><MapPin size={13} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: viewportWidth <= 480 ? 150 : 260 }}>{meet.venue}</span></span>}
+                          {meet.region && <span>{meet.region}</span>}
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255, 255, 255, 0.18)', paddingTop: '12px' }}>
-                          <span style={{ color: '#E2E8F0', fontSize: '0.74rem', fontWeight: 700 }}>
-                            {meet.disciplines ? `${meet.disciplines.length} Disciplines` : 'Track & Field'}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '5px 12px', marginTop: '5px', color: t.textMuted, fontSize: '0.7rem' }}>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '75%' }}>
+                            {meet.disciplines.length ? `${meet.disciplines.slice(0, 3).join(' · ')}${meet.disciplines.length > 3 ? ` · +${meet.disciplines.length - 3}` : ''}` : 'Disciplines to be announced'}
                           </span>
-                          <span style={{ color: '#38BDF8', fontSize: '0.88rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                            {tr('home.viewDetails')} <ChevronRight size={16} />
+                          <span style={{ flexShrink: 0, fontWeight: 700 }}>
+                            {meet.registered != null ? `${Number(meet.registered).toLocaleString()} entries` : meet.category || ''}
                           </span>
                         </div>
                       </div>
-                    </motion.div>
+                      <ChevronRight size={18} style={{ flexShrink: 0, color: t.textMuted }} aria-hidden="true" />
+                    </motion.button>
                   );
                 })}
               </div>
@@ -1688,16 +1656,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                     }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.35) 55%, transparent 100%)' }} />
 
-                    {/* Fayda Badge */}
-                    <div style={{
-                      position: 'absolute', top: 16, right: 16, zIndex: 3,
-                      background: 'rgba(16, 185, 129, 0.95)', color: '#FFFFFF',
-                      fontSize: '0.72rem', fontWeight: 800,
-                      padding: '4px 10px', borderRadius: 8,
-                      display: 'inline-flex', alignItems: 'center', gap: 4
-                    }}>
-                      <ShieldCheck size={14} /> Fayda Verified
-                    </div>
+               
 
                     <div style={{ position: 'relative', zIndex: 2, padding: '24px' }}>
                       <h3 style={{ color: '#FFFFFF', fontSize: '1.4rem', fontWeight: 900, marginBottom: 4, lineHeight: 1.2 }}>
@@ -2144,16 +2103,17 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24 }}>
               {/* Card 1: Growth Trend */}
               <div style={{
-                background: t.surface,
-                border: '1px solid ' + t.border,
+                background: '#FFFFFF',
+                border: '1px solid #BBF7D0',
+                borderLeft: '4px solid #00A859',
                 borderRadius: 18,
                 padding: '24px 20px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                boxShadow: '0 4px 16px rgba(0, 168, 89, 0.05)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
-                    <h4 style={{ color: t.text, fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Registration & Licensing Growth</h4>
-                    <span style={{ color: t.textMuted, fontSize: '0.78rem', fontWeight: 600 }}>Rolling 6-month progression</span>
+                    <h4 style={{ color: '#0F172A', fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Registration & Licensing Growth</h4>
+                    <span style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 600 }}>Rolling 6-month progression</span>
                   </div>
                   <span style={{ background: 'rgba(0, 168, 89, 0.12)', color: '#00A859', padding: '4px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800 }}>
                     Active Trend
@@ -2178,7 +2138,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                           <stop offset="100%" stopColor="#0072CE" stopOpacity={0.02} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#334155' : '#E2E8F0'} vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                       <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
                       <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
                       <ChartTooltip contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: '0.8rem' }} />
@@ -2192,16 +2152,17 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
               {/* Card 2: Discipline Distribution */}
               <div style={{
-                background: t.surface,
-                border: '1px solid ' + t.border,
+                background: '#FFFFFF',
+                border: '1px solid #BFDBFE',
+                borderLeft: '4px solid #0072CE',
                 borderRadius: 18,
                 padding: '24px 20px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                boxShadow: '0 4px 16px rgba(0, 114, 206, 0.05)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
-                    <h4 style={{ color: t.text, fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Athlete Discipline Breakdown</h4>
-                    <span style={{ color: t.textMuted, fontSize: '0.78rem', fontWeight: 600 }}>National talent pool disciplines</span>
+                    <h4 style={{ color: '#0F172A', fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Athlete Discipline Breakdown</h4>
+                    <span style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 600 }}>National talent pool disciplines</span>
                   </div>
                   <span style={{ background: 'rgba(0, 114, 206, 0.12)', color: '#0072CE', padding: '4px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800 }}>
                     Verified Pool
@@ -2236,11 +2197,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
 
               {/* Card 3: Regional Distribution */}
               <div style={{
-                background: t.surface,
-                border: '1px solid ' + t.border,
+                background: '#FFFFFF',
+                border: '1px solid #FED7AA',
+                borderLeft: '4px solid #D97706',
                 borderRadius: 18,
                 padding: '24px 20px',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+                boxShadow: '0 4px 16px rgba(217, 119, 6, 0.05)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>

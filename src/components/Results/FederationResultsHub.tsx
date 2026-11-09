@@ -724,7 +724,7 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
                 <button
                   type="button"
                   onClick={onBack}
-                  className="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 transition cursor-pointer"
                 >
                   ← Back
                 </button>

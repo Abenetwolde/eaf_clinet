@@ -36,11 +36,14 @@ export default function AppLayout({
 }: AppLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
+  const [adminAvatarFailed, setAdminAvatarFailed] = useState(false);
   const currentRole = useAppSelector((state) => state.auth.role);
   const currentClub = useAppSelector((state) => state.auth.club);
   const currentAthlete = useAppSelector((state) => state.auth.athlete);
   const userData = useAppSelector((state) => state.auth.userData);
   const clubAdminName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || currentClub.manager || 'Club Admin';
+  const clubAdminPhotoCandidate = (userData as any)?.photoUrl || (userData as any)?.picture || (userData as any)?.avatarUrl || '';
+  const clubAdminPhoto = /runner_female\.png|avatar-placeholder|profile-placeholder/i.test(clubAdminPhotoCandidate) ? '' : clubAdminPhotoCandidate;
   const isClub = currentRole === 'CLUB';
 
   // Live lookup from clubs list to get up-to-date club crest
@@ -165,26 +168,6 @@ export default function AppLayout({
             </div>
           </div>
         )}
-
-        {/* Identity Card */}
-        <div className="px-4 border-b border-slate-200 flex items-center gap-2.5 py-3">
-          {isClub ? (
-            <div />
-          ) : (
-            <>
-              <img
-                src={getProfilePhotoUrl({ photoUrl: currentAthlete.photoUrl, picture: userData?.picture, faydaFin: currentAthlete.faydaFin || userData?.faydaNin }) || '/images/fayda_resident_photo.jpg'}
-                alt={currentAthlete.name}
-                onError={(e) => { e.currentTarget.src = '/images/fayda_resident_photo.jpg'; }}
-                className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-blue-200 shadow-xs"
-              />
-              <div>
-                <div className="text-[0.84rem] font-bold text-slate-900 leading-tight">{currentAthlete.name}</div>
-                <div className="text-[0.68rem] text-slate-500 font-bold">{currentAthlete.ageTier || 'Athlete'} · ID Verified</div>
-              </div>
-            </>
-          )}
-        </div>
 
         {/* Athlete Affiliated Club Badge */}
         {!isClub && athleteClubName && (

@@ -10,6 +10,7 @@ import type { Club } from '../../types';
 import { useGetPaymentConfigQuery } from '../../store/api/paymentApi';
 import PaymentModal from '../PaymentModal';
 import { useGetRegistrationOptionsQuery } from '../../store/api/athleteApi';
+import { getApiErrorMessage } from '../../utils/apiMessages';
 
 interface ClubRegistrationFormProps {
   onClose: () => void;
@@ -273,7 +274,7 @@ export default function ClubRegistrationForm({
       });
       const json = await res.json();
 
-      if (!res.ok) throw new Error(json?.message || 'Club registration failed. Please check your details and try again.');
+      if (!res.ok) throw new Error(getApiErrorMessage(json, 'Club registration failed. Please check your details and try again.'));
       const persisted = json?.data?.club;
       if (!persisted?.id || !json?.data?.user?.id) throw new Error('The server did not confirm the club account. Please try again.');
 
@@ -284,16 +285,17 @@ export default function ClubRegistrationForm({
         body: JSON.stringify({ identifier: adminEmail.trim(), password }),
       });
       const loginJson = await loginRes.json().catch(() => ({}));
-      const sessionToken = loginJson?.token || loginJson?.accessToken;
-      if (!loginRes.ok || !sessionToken || !loginJson?.userId) {
+      const loginData = loginJson?.data || loginJson;
+      const sessionToken = loginData?.token || loginData?.accessToken;
+      if (!loginRes.ok || !sessionToken || !loginData?.userId) {
         throw new Error('Club registered but automatic sign-in failed. Please sign in manually with your email and password.');
       }
 
       setRegisteredSession({
         token: sessionToken,
-        refreshToken: loginJson.refreshToken,
-        userId: loginJson.userId,
-        userData: loginJson.user,
+        refreshToken: loginData.refreshToken,
+        userId: loginData.userId,
+        userData: loginData.user,
       });
 
       const newClub: Club = {
@@ -325,7 +327,7 @@ export default function ClubRegistrationForm({
       setReferenceId(persisted.licenseNumber || persisted.id);
       setStep(5); // Show success screen
     } catch (err: any) {
-      setErrorMessage(err?.message || 'Unable to connect to the registration service. Please try again.');
+      setErrorMessage(getApiErrorMessage(err, 'Unable to connect to the registration service. Please try again.'));
     } finally {
       setIsSubmitting(false);
     }

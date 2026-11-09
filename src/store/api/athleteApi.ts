@@ -202,15 +202,20 @@ export interface EventApplicationResponse {
 }
 
 export const athleteApi = apiSlice.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getAthletes: builder.query<BackendAthleteItem[], GetAthletesParams | void>({
       query: (params) => ({
         url: '/athletes',
         params: params || undefined,
       }),
-      transformResponse: (response: AthleteListResponse) => response.data || [],
+      transformResponse: (response: any) => {
+        if (Array.isArray(response)) return response;
+        if (Array.isArray(response?.data)) return response.data;
+        return [];
+      },
       providesTags: [{ type: 'Athletes' as const, id: 'LIST' }, 'Athletes'],
-      keepUnusedDataFor: 60,
+      keepUnusedDataFor: 5,
     }),
 
     getRegistrationOptions: builder.query<RegistrationOptionsData, void>({
@@ -404,7 +409,6 @@ export const athleteApi = apiSlice.injectEndpoints({
     }),
 
   }),
-  overrideExisting: false,
 });
 
 export const {
