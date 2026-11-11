@@ -122,88 +122,164 @@ const RealisticQRCode = ({ size = 150 }) => (
   </svg>
 );
 
-function getStartListRoundDetails(rawRound: string | undefined, heatNum?: number | string) {
-  const r = (rawRound || 'FINAL').toUpperCase().trim();
+function getStartListRoundDetails(rawRound: string | undefined, heatNum?: number | string, rawStage?: string) {
+  const r = (rawRound || '').toUpperCase().trim();
+  const st = (rawStage || '').toUpperCase().trim();
   const h = Number(heatNum) || 1;
 
-  if (r.startsWith('HEAT_') || r.startsWith('HEAT ')) {
-    const num = parseInt(r.replace(/HEAT[_\s]/, ''), 10) || h;
+  // 1. CHAMPIONSHIP FINAL (Culmination / most recent round)
+  if (
+    r === 'FINAL' ||
+    r === 'FN' ||
+    r === 'FINALS' ||
+    st === 'FINAL' ||
+    (r.includes('FINAL') && !r.includes('SEMI') && !r.includes('QUARTER')) ||
+    (st.includes('FINAL') && !st.includes('SEMI') && !st.includes('QUARTER'))
+  ) {
+    return {
+      roundKey: 'FINAL',
+      roundLabel: 'Championship Final',
+      stageType: 'FINAL' as const,
+      stageOrder: 4,
+      badgeText: 'Final 🏆',
+      badgeColor: '#D97706',
+      sortWeight: 40,
+      heatNum: 1,
+    };
+  }
+
+  // 2. SEMI-FINALS (SF_1, SF_2, SEMI-FINAL 1, SEMIFINALS, etc.)
+  if (r.startsWith('SF') || r.includes('SEMI') || st.startsWith('SF') || st.includes('SEMI')) {
+    const heatMatch = r.match(/(?:SEMI|SF|HEAT|ROUND)[_\s-]*(\d+)/i) || r.match(/\d+/) || st.match(/\d+/);
+    const num = heatMatch ? parseInt(heatMatch[1] || heatMatch[0], 10) : h;
+    return {
+      roundKey: `SF_${num}`,
+      roundLabel: `Semi-Final ${num}`,
+      stageType: 'SEMIFINAL' as const,
+      stageOrder: 3,
+      badgeText: `Semi-Final ${num}`,
+      badgeColor: '#2563EB',
+      sortWeight: 30 + num,
+      heatNum: num,
+    };
+  }
+
+  // 3. QUARTER-FINALS / ROUND 2 (QF_1, QF_2, ROUND 2, etc.)
+  if (
+    r.startsWith('QF') ||
+    r.includes('QUARTER') ||
+    r.includes('ROUND_2') ||
+    r.includes('ROUND 2') ||
+    r === 'R2' ||
+    st.startsWith('QF') ||
+    st.includes('QUARTER') ||
+    st.includes('ROUND 2')
+  ) {
+    const qfMatch = r.match(/(?:QUARTER|QF|HEAT|ROUND)[_\s-]*(\d+)/i) || r.match(/\d+/) || st.match(/\d+/);
+    const num = qfMatch ? parseInt(qfMatch[1] || qfMatch[0], 10) : h;
+    return {
+      roundKey: `QF_${num}`,
+      roundLabel: `Quarter-Final ${num}`,
+      stageType: 'QUARTERFINAL' as const,
+      stageOrder: 2.5,
+      badgeText: `Quarter-Final ${num}`,
+      badgeColor: '#7C3AED',
+      sortWeight: 20 + num,
+      heatNum: num,
+    };
+  }
+
+  // 4. PRELIMINARY HEATS (HEAT_1, HEAT 2, HEATS, ROUND 1, etc.)
+  if (
+    r.startsWith('HEAT') ||
+    r === 'HEATS' ||
+    r.includes('ROUND_1') ||
+    r.includes('ROUND 1') ||
+    r === 'R1' ||
+    st.startsWith('HEAT') ||
+    st === 'HEATS' ||
+    st.includes('ROUND 1')
+  ) {
+    const heatMatch = r.match(/HEAT[_\s-]*(\d+)/i) || (!r.includes('ROUND') ? r.match(/\d+/) : null);
+    const num = heatMatch ? parseInt(heatMatch[1] || heatMatch[0], 10) : h;
     return {
       roundKey: `HEAT_${num}`,
       roundLabel: `Round 1 - Heat ${num}`,
       stageType: 'HEAT' as const,
+      stageOrder: 2,
       badgeText: `Heat ${num}`,
       badgeColor: '#EA580C',
       sortWeight: 10 + num,
       heatNum: num,
     };
   }
-  if (r === 'HEATS' || r === 'PRELIMINARY') {
+
+  // 5. PRELIMINARY ROUND
+  if (r.includes('PRELIM') || st.includes('PRELIM')) {
+    const pMatch = r.match(/\d+/);
+    const num = pMatch ? parseInt(pMatch[0], 10) : h;
     return {
-      roundKey: `HEAT_${h}`,
-      roundLabel: `Round 1 - Heat ${h}`,
-      stageType: 'HEAT' as const,
-      badgeText: `Heat ${h}`,
-      badgeColor: '#EA580C',
-      sortWeight: 10 + h,
-      heatNum: h,
-    };
-  }
-  if (r.startsWith('SF_') || r.startsWith('SF ') || r.startsWith('SEMI_') || r.startsWith('SEMI ')) {
-    const num = parseInt(r.replace(/(SF|SEMI)[_\s]/, ''), 10) || h;
-    return {
-      roundKey: `SF_${num}`,
-      roundLabel: `Semi-Final ${num}`,
-      stageType: 'SEMIFINAL' as const,
-      badgeText: `Semi-Final ${num}`,
-      badgeColor: '#2563EB',
-      sortWeight: 20 + num,
+      roundKey: `PRELIM_${num}`,
+      roundLabel: `Preliminary Round - Heat ${num}`,
+      stageType: 'ROUND' as const,
+      stageOrder: 1.8,
+      badgeText: `Prelim ${num}`,
+      badgeColor: '#0284C7',
+      sortWeight: 8 + num,
       heatNum: num,
     };
   }
-  if (r === 'SEMIFINALS' || r === 'SEMI-FINALS' || r === 'SF') {
-    return {
-      roundKey: `SF_${h}`,
-      roundLabel: `Semi-Final ${h}`,
-      stageType: 'SEMIFINAL' as const,
-      badgeText: `Semi-Final ${h}`,
-      badgeColor: '#2563EB',
-      sortWeight: 20 + h,
-      heatNum: h,
-    };
-  }
-  if (r.startsWith('FLIGHT_') || r.startsWith('FLIGHT ')) {
-    const grp = r.replace(/FLIGHT[_\s]/, '');
+
+  // 6. QUALIFICATION FLIGHTS / GROUPS
+  if (r.startsWith('FLIGHT') || r.includes('QUAL') || st.includes('QUAL')) {
+    const grp = r.replace(/FLIGHT[_\s]/, '').replace(/QUAL[_\s]/, '').trim() || String(h);
     return {
       roundKey: `FLIGHT_${grp}`,
       roundLabel: `Qualification Group ${grp}`,
       stageType: 'ROUND' as const,
+      stageOrder: 1.5,
       badgeText: `Group ${grp}`,
       badgeColor: '#0D9488',
       sortWeight: 5,
       heatNum: h,
     };
   }
-  if (r === 'FINAL' || r === 'FN') {
-    return {
-      roundKey: 'FINAL',
-      roundLabel: 'Championship Final',
-      stageType: 'FINAL' as const,
-      badgeText: 'Final 🏆',
-      badgeColor: '#D97706',
-      sortWeight: 30,
-      heatNum: 1,
-    };
-  }
+
+  // 7. DEFAULT OTHER ROUNDS
+  const safeStr = r || st || 'FINAL';
   return {
-    roundKey: r,
-    roundLabel: r.replace(/_/g, ' '),
+    roundKey: safeStr,
+    roundLabel: safeStr.replace(/_/g, ' '),
     stageType: 'ROUND' as const,
-    badgeText: r.replace(/_/g, ' '),
+    stageOrder: 1.0,
+    badgeText: safeStr.replace(/_/g, ' '),
     badgeColor: '#475569',
     sortWeight: 15,
     heatNum: h,
   };
+}
+
+/**
+ * Organizes rounds with the most recent / highest tournament stage at the top (Final -> Semi-Finals -> Heats)
+ */
+function compareRoundsRecentFirst(a: any, b: any) {
+  // 1. Stage hierarchy: culminating / highest tournament stage first (Final [4] -> Semi-Final [3] -> Quarter-Final [2.5] -> Heat [2] -> Prelim [1.8] -> Group [1.5])
+  const orderA = Number(a.stageOrder ?? (a.stageType === 'FINAL' ? 4 : a.stageType === 'SEMIFINAL' ? 3 : a.stageType === 'HEAT' ? 2 : 1));
+  const orderB = Number(b.stageOrder ?? (b.stageType === 'FINAL' ? 4 : b.stageType === 'SEMIFINAL' ? 3 : b.stageType === 'HEAT' ? 2 : 1));
+
+  if (orderA !== orderB) {
+    return orderB - orderA; // Highest stage (Final) at the top!
+  }
+
+  // 2. If scheduledTime or publishedAt exist and differ, latest scheduled/published appears first
+  const timeA = a.scheduledTime ? new Date(a.scheduledTime).getTime() : (a.publishedAt ? new Date(a.publishedAt).getTime() : 0);
+  const timeB = b.scheduledTime ? new Date(b.scheduledTime).getTime() : (b.publishedAt ? new Date(b.publishedAt).getTime() : 0);
+  if (timeA > 0 && timeB > 0 && timeA !== timeB) {
+    return timeB - timeA;
+  }
+
+  // 3. Within the same stage and session, order by heat/group number ascending (Heat 1, Heat 2, Heat 3...)
+  return (a.heatNum || 1) - (b.heatNum || 1);
 }
 
 interface CompetitionDetailProps {
@@ -641,9 +717,10 @@ export default function CompetitionDetail({
           club: resolvedClub,
           region: resolvedRegion,
           event: sl.discipline,
-          gender: sl.gender === 'MEN' ? 'Male' : sl.gender === 'WOMEN' ? 'Female' : 'Mixed',
+          gender: sl.gender === 'MEN' ? 'Men' : sl.gender === 'WOMEN' ? 'Women' : 'Mixed',
           ageGroup: sl.category || 'Senior',
           round: sl.round || 'Final',
+          stage: sl.stage,
           heat: entry.heat || 1,
           lane: entry.lane ?? entry.order ?? '—',
           order: entry.order,
@@ -653,6 +730,7 @@ export default function CompetitionDetail({
           status: entry.status || 'CONFIRMED',
           version: sl.version,
           publishedAt: sl.publishedAt,
+          scheduledTime: sl.scheduledTime,
         });
       }
     }
@@ -986,13 +1064,27 @@ export default function CompetitionDetail({
         const discGroup = map.get(discKey)!;
 
         const entries = sl.entries || [];
+        // Register round even if empty
+        const defaultRoundDetails = getStartListRoundDetails(sl.round, 1, sl.stage);
+        if (entries.length === 0 && !discGroup.roundsMap.has(defaultRoundDetails.roundKey)) {
+          discGroup.roundsMap.set(defaultRoundDetails.roundKey, {
+            ...defaultRoundDetails,
+            heatNum: defaultRoundDetails.heatNum,
+            scheduledTime: sl.scheduledTime,
+            publishedAt: sl.publishedAt,
+            venue: sl.venue,
+            entries: [],
+          });
+        }
+
         for (const entry of entries) {
-          const roundDetails = getStartListRoundDetails(sl.round, entry.heat);
+          const roundDetails = getStartListRoundDetails(sl.round, entry.heat, sl.stage);
           if (!discGroup.roundsMap.has(roundDetails.roundKey)) {
             discGroup.roundsMap.set(roundDetails.roundKey, {
               ...roundDetails,
               heatNum: roundDetails.heatNum,
               scheduledTime: sl.scheduledTime,
+              publishedAt: sl.publishedAt,
               venue: sl.venue,
               entries: [],
             });
@@ -1034,32 +1126,41 @@ export default function CompetitionDetail({
             (entry.athlete?.user?.firstNameAm ? `${entry.athlete.user.firstNameAm} ${entry.athlete.user.lastNameAm || ''}`.trim() : null) ||
             resolvedName;
 
-          roundObj.entries.push({
-            id: entry.id,
-            name: resolvedName,
-            amharicName: resolvedAmharic,
-            club: resolvedClub,
-            region: resolvedRegion,
-            event: sl.discipline,
-            gender: genderStr,
-            ageGroup: sl.category || 'Senior',
-            round: roundDetails.roundLabel,
-            roundKey: roundDetails.roundKey,
-            heat: entry.heat || roundDetails.heatNum,
-            lane: entry.lane ?? entry.order ?? '—',
-            order: entry.order,
-            bib: entry.bibNumber || entry.bib || '—',
-            seedTime: entry.seedMark || entry.seedTime || 'NT',
-            verified: !!entry.athlete?.uniqueRegistrationNumber || !!entry.verified,
-            status: entry.status || 'CONFIRMED',
-            version: sl.version,
-            publishedAt: sl.publishedAt,
-          });
+          const alreadyExists = roundObj.entries.some((existing: any) =>
+            (existing.id && entry.id && existing.id === entry.id) ||
+            (existing.bib !== '—' && entry.bibNumber && existing.bib === entry.bibNumber) ||
+            (existing.name.toLowerCase().trim() === resolvedName.toLowerCase().trim() && existing.lane === (entry.lane ?? entry.order ?? '—'))
+          );
+
+          if (!alreadyExists) {
+            roundObj.entries.push({
+              id: entry.id,
+              name: resolvedName,
+              amharicName: resolvedAmharic,
+              club: resolvedClub,
+              region: resolvedRegion,
+              event: sl.discipline,
+              gender: genderStr,
+              ageGroup: sl.category || 'Senior',
+              round: roundDetails.roundLabel,
+              roundKey: roundDetails.roundKey,
+              heat: entry.heat || roundDetails.heatNum,
+              lane: entry.lane ?? entry.order ?? '—',
+              order: entry.order,
+              bib: entry.bibNumber || entry.bib || '—',
+              seedTime: entry.seedMark || entry.seedTime || 'NT',
+              verified: !!entry.athlete?.uniqueRegistrationNumber || !!entry.verified,
+              status: entry.status || 'CONFIRMED',
+              version: sl.version,
+              publishedAt: sl.publishedAt,
+              scheduledTime: sl.scheduledTime,
+            });
+          }
         }
       }
 
       return Array.from(map.values()).map((g) => {
-        const sortedRounds = Array.from(g.roundsMap.values()).sort((a, b) => a.sortWeight - b.sortWeight);
+        const sortedRounds = Array.from(g.roundsMap.values()).sort(compareRoundsRecentFirst);
         const totalAthletes = sortedRounds.reduce((acc, r) => acc + r.entries.length, 0);
         return {
           key: g.key,
@@ -1114,20 +1215,29 @@ export default function CompetitionDetail({
           });
         }
         const discGroup = map.get(discKey)!;
-        const roundDetails = getStartListRoundDetails(item.round, item.heat);
+        const roundDetails = getStartListRoundDetails(item.round, item.heat, item.stage);
         if (!discGroup.roundsMap.has(roundDetails.roundKey)) {
           discGroup.roundsMap.set(roundDetails.roundKey, {
             ...roundDetails,
             heatNum: roundDetails.heatNum,
+            scheduledTime: item.scheduledTime,
+            publishedAt: item.publishedAt,
             entries: [],
           });
         }
         const roundObj = discGroup.roundsMap.get(roundDetails.roundKey)!;
-        roundObj.entries.push(item);
+        const isDuplicate = roundObj.entries.some((existing: any) =>
+          (existing.id && item.id && existing.id === item.id) ||
+          (existing.bib !== '—' && item.bib && existing.bib === item.bib) ||
+          (existing.name?.toLowerCase().trim() === item.name?.toLowerCase().trim() && existing.lane === item.lane)
+        );
+        if (!isDuplicate) {
+          roundObj.entries.push(item);
+        }
       }
 
       return Array.from(map.values()).map((g) => {
-        const sortedRounds = Array.from(g.roundsMap.values()).sort((a, b) => a.sortWeight - b.sortWeight);
+        const sortedRounds = Array.from(g.roundsMap.values()).sort(compareRoundsRecentFirst);
         const totalAthletes = sortedRounds.reduce((acc, r) => acc + r.entries.length, 0);
         return {
           key: g.key,
@@ -1953,6 +2063,11 @@ export default function CompetitionDetail({
                             <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: '#F1F5F9', color: '#475569' }}>
                               {activeStarterDiscipline.gender} · {activeStarterDiscipline.category}
                             </span>
+                            {activeStarterDiscipline.rounds.length > 1 && (
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', background: '#DCFCE7', color: '#15803D' }}>
+                                {activeStarterDiscipline.rounds.length} Rounds (Recent-First)
+                              </span>
+                            )}
                           </h3>
                           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>
                             Official lane seedings, heat allocations, and trial orders certified under World Athletics Technical Rules.
@@ -2038,7 +2153,7 @@ export default function CompetitionDetail({
                           <Layers size={13} />
                           All Rounds / Heats ({activeStarterDiscipline.totalAthletes})
                         </button>
-                        {activeStarterDiscipline.rounds.map((rnd) => {
+                        {activeStarterDiscipline.rounds.map((rnd, idx) => {
                           const isSelected = selectedStarterRoundKey === rnd.roundKey;
                           return (
                             <button
@@ -2060,6 +2175,11 @@ export default function CompetitionDetail({
                             >
                               {rnd.stageType === 'FINAL' ? <Trophy size={13} /> : rnd.stageType === 'SEMIFINAL' ? <Zap size={13} /> : <Flame size={13} />}
                               <span>{rnd.roundLabel}</span>
+                              {idx === 0 && activeStarterDiscipline.rounds.length > 1 && (
+                                <span style={{ fontSize: '0.62rem', padding: '1px 5px', borderRadius: '4px', background: isSelected ? 'rgba(255,255,255,0.3)' : '#DCFCE7', color: isSelected ? '#FFFFFF' : '#15803D', fontWeight: 800 }}>
+                                  Latest
+                                </span>
+                              )}
                               <span style={{ fontSize: '0.7rem', padding: '1px 5px', borderRadius: '4px', background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.06)' }}>
                                 {rnd.entries.length}
                               </span>
@@ -2090,10 +2210,13 @@ export default function CompetitionDetail({
                               if (!starterSearchQuery.trim()) return true;
                               const q = starterSearchQuery.toLowerCase().trim();
                               const nameStr = String(st.name || st.athleteName || st.athleteNameSnapshot || '').toLowerCase();
+                              const amharicStr = String(st.amharicName || '').toLowerCase();
                               const clubStr = String(typeof st.club === 'string' ? st.club : (st.club?.name || st.clubName || '')).toLowerCase();
                               const bibStr = String(st.bib || st.bibNumber || '').toLowerCase();
-                              return nameStr.includes(q) || clubStr.includes(q) || bibStr.includes(q);
+                              return nameStr.includes(q) || amharicStr.includes(q) || clubStr.includes(q) || bibStr.includes(q);
                             });
+
+                            const isTopRound = activeStarterDiscipline.rounds.length > 1 && round.roundKey === activeStarterDiscipline.rounds[0].roundKey;
 
                             return (
                               <div
@@ -2102,17 +2225,17 @@ export default function CompetitionDetail({
                                 style={{
                                   background: '#FFFFFF',
                                   borderRadius: '18px',
-                                  border: '1px solid #E2E8F0',
+                                  border: isTopRound ? '2px solid rgba(217, 119, 6, 0.4)' : '1px solid #E2E8F0',
                                   overflow: 'hidden',
                                   padding: 0,
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                                  boxShadow: isTopRound ? '0 4px 14px rgba(217, 119, 6, 0.08)' : '0 2px 8px rgba(0,0,0,0.03)'
                                 }}
                               >
                                 {/* Round Header Bar */}
                                 <div
                                   style={{
                                     padding: '16px 20px',
-                                    background: '#F8FAFC',
+                                    background: isTopRound ? 'linear-gradient(90deg, #FEF3C7 0%, #FFFBEB 100%)' : '#F8FAFC',
                                     borderBottom: '1px solid #E2E8F0',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -2121,7 +2244,7 @@ export default function CompetitionDetail({
                                     gap: '10px'
                                   }}
                                 >
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                                     <span
                                       style={{
                                         display: 'inline-flex',
@@ -2139,6 +2262,24 @@ export default function CompetitionDetail({
                                       {round.stageType === 'FINAL' ? <Trophy size={14} /> : round.stageType === 'SEMIFINAL' ? <Zap size={14} /> : <Flame size={14} />}
                                       {round.roundLabel}
                                     </span>
+                                    {isTopRound && (
+                                      <span
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          padding: '3px 8px',
+                                          borderRadius: '6px',
+                                          fontSize: '0.72rem',
+                                          fontWeight: 800,
+                                          background: '#FEF3C7',
+                                          color: '#B45309',
+                                          border: '1px solid #FCD34D'
+                                        }}
+                                      >
+                                        <Sparkles size={11} /> Top / Recent Stage
+                                      </span>
+                                    )}
                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                                       {round.entries.length} {round.entries.length === 1 ? 'Athlete Allocated' : 'Athletes Allocated'}
                                     </span>
