@@ -4,7 +4,8 @@ import {
   CheckCircle2, User, UserCheck, UserPlus, Building, Clock, ChevronRight, ShieldCheck, X, Download, Printer, Check,
   Lock, QrCode, Camera,
   AlertTriangle,
-  Flame, Wind, Sparkles, Medal, Activity, Layers, Search, RefreshCw
+  Flame, Wind, Sparkles, Medal, Activity, Layers, Search, RefreshCw,
+  ListOrdered, ArrowLeft, Eye, Zap
 } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { getProfilePhotoUrl } from '../utils/profilePhoto';
@@ -120,6 +121,90 @@ const RealisticQRCode = ({ size = 150 }) => (
     <circle cx="50" cy="50" r="6" fill="var(--primary)" />
   </svg>
 );
+
+function getStartListRoundDetails(rawRound: string | undefined, heatNum?: number | string) {
+  const r = (rawRound || 'FINAL').toUpperCase().trim();
+  const h = Number(heatNum) || 1;
+
+  if (r.startsWith('HEAT_') || r.startsWith('HEAT ')) {
+    const num = parseInt(r.replace(/HEAT[_\s]/, ''), 10) || h;
+    return {
+      roundKey: `HEAT_${num}`,
+      roundLabel: `Round 1 - Heat ${num}`,
+      stageType: 'HEAT' as const,
+      badgeText: `Heat ${num}`,
+      badgeColor: '#EA580C',
+      sortWeight: 10 + num,
+      heatNum: num,
+    };
+  }
+  if (r === 'HEATS' || r === 'PRELIMINARY') {
+    return {
+      roundKey: `HEAT_${h}`,
+      roundLabel: `Round 1 - Heat ${h}`,
+      stageType: 'HEAT' as const,
+      badgeText: `Heat ${h}`,
+      badgeColor: '#EA580C',
+      sortWeight: 10 + h,
+      heatNum: h,
+    };
+  }
+  if (r.startsWith('SF_') || r.startsWith('SF ') || r.startsWith('SEMI_') || r.startsWith('SEMI ')) {
+    const num = parseInt(r.replace(/(SF|SEMI)[_\s]/, ''), 10) || h;
+    return {
+      roundKey: `SF_${num}`,
+      roundLabel: `Semi-Final ${num}`,
+      stageType: 'SEMIFINAL' as const,
+      badgeText: `Semi-Final ${num}`,
+      badgeColor: '#2563EB',
+      sortWeight: 20 + num,
+      heatNum: num,
+    };
+  }
+  if (r === 'SEMIFINALS' || r === 'SEMI-FINALS' || r === 'SF') {
+    return {
+      roundKey: `SF_${h}`,
+      roundLabel: `Semi-Final ${h}`,
+      stageType: 'SEMIFINAL' as const,
+      badgeText: `Semi-Final ${h}`,
+      badgeColor: '#2563EB',
+      sortWeight: 20 + h,
+      heatNum: h,
+    };
+  }
+  if (r.startsWith('FLIGHT_') || r.startsWith('FLIGHT ')) {
+    const grp = r.replace(/FLIGHT[_\s]/, '');
+    return {
+      roundKey: `FLIGHT_${grp}`,
+      roundLabel: `Qualification Group ${grp}`,
+      stageType: 'ROUND' as const,
+      badgeText: `Group ${grp}`,
+      badgeColor: '#0D9488',
+      sortWeight: 5,
+      heatNum: h,
+    };
+  }
+  if (r === 'FINAL' || r === 'FN') {
+    return {
+      roundKey: 'FINAL',
+      roundLabel: 'Championship Final',
+      stageType: 'FINAL' as const,
+      badgeText: 'Final 🏆',
+      badgeColor: '#D97706',
+      sortWeight: 30,
+      heatNum: 1,
+    };
+  }
+  return {
+    roundKey: r,
+    roundLabel: r.replace(/_/g, ' '),
+    stageType: 'ROUND' as const,
+    badgeText: r.replace(/_/g, ' '),
+    badgeColor: '#475569',
+    sortWeight: 15,
+    heatNum: h,
+  };
+}
 
 interface CompetitionDetailProps {
   meet: any;
@@ -238,6 +323,8 @@ export default function CompetitionDetail({
   const [starterEventFilter, setStarterEventFilter] = useState<string>('ALL');
   const [starterGenderFilter, setStarterGenderFilter] = useState<string>('ALL');
   const [starterSearchQuery, setStarterSearchQuery] = useState<string>('');
+  const [selectedStarterDisciplineKey, setSelectedStarterDisciplineKey] = useState<string | null>(null);
+  const [selectedStarterRoundKey, setSelectedStarterRoundKey] = useState<string>('ALL');
 
   // Individual Meet Registration Modal State
   const [showIndividualModal, setShowIndividualModal] = useState<boolean>(false);
@@ -512,21 +599,57 @@ export default function CompetitionDetail({
     const items: any[] = [];
     for (const sl of publicHubData.startLists) {
       for (const entry of (sl.entries || [])) {
+        const resolvedName =
+          entry.athleteName ||
+          entry.name ||
+          entry.fullName ||
+          entry.athleteNameSnapshot ||
+          (entry.athlete?.user ? `${entry.athlete.user.firstName || ''} ${entry.athlete.user.lastName || ''}`.trim() : '') ||
+          entry.athlete?.name ||
+          (entry.relayTeam ? entry.relayTeam.teamName : '') ||
+          'Athlete';
+
+        const resolvedClub =
+          (typeof entry.club === 'string' ? entry.club : entry.club?.name) ||
+          entry.clubName ||
+          entry.clubNameSnapshot ||
+          entry.athlete?.club?.name ||
+          entry.athlete?.clubName ||
+          (typeof entry.delegation === 'string' ? entry.delegation : entry.delegation?.name) ||
+          entry.teamName ||
+          (entry.relayTeam ? entry.relayTeam.teamName : '') ||
+          'Unattached';
+
+        const resolvedRegion =
+          (typeof entry.region === 'string' ? entry.region : entry.region?.name) ||
+          entry.regionName ||
+          entry.athlete?.club?.region ||
+          entry.athlete?.region ||
+          entry.club?.region ||
+          'National';
+
+        const resolvedAmharic =
+          entry.amharicName ||
+          entry.athlete?.amharicName ||
+          (entry.athlete?.user?.firstNameAm ? `${entry.athlete.user.firstNameAm} ${entry.athlete.user.lastNameAm || ''}`.trim() : null) ||
+          resolvedName;
+
         items.push({
           id: entry.id,
-          name: entry.athleteName,
-          amharicName: entry.athlete?.user?.firstNameAm ? `${entry.athlete.user.firstNameAm} ${entry.athlete.user.lastNameAm || ''}` : entry.athleteName,
-          club: entry.clubName || 'Unattached',
-          region: entry.regionName || 'National',
+          name: resolvedName,
+          amharicName: resolvedAmharic,
+          club: resolvedClub,
+          region: resolvedRegion,
           event: sl.discipline,
           gender: sl.gender === 'MEN' ? 'Male' : sl.gender === 'WOMEN' ? 'Female' : 'Mixed',
           ageGroup: sl.category || 'Senior',
           round: sl.round || 'Final',
           heat: entry.heat || 1,
           lane: entry.lane ?? entry.order ?? '—',
-          bib: entry.bibNumber || '—',
-          seedTime: entry.seedMark || 'NT',
-          verified: !!entry.athlete?.uniqueRegistrationNumber,
+          order: entry.order,
+          bib: entry.bibNumber || entry.bib || '—',
+          seedTime: entry.seedMark || entry.seedTime || 'NT',
+          verified: !!entry.athlete?.uniqueRegistrationNumber || !!entry.verified,
           status: entry.status || 'CONFIRMED',
           version: sl.version,
           publishedAt: sl.publishedAt,
@@ -556,11 +679,25 @@ export default function CompetitionDetail({
           if (athleteKey) seenAthleteRoundKeys.add(uniqueKey);
 
           const pos = entry.position ?? 99;
+          const resolvedName =
+            entry.athleteName ||
+            entry.athleteNameSnapshot ||
+            entry.name ||
+            entry.fullName ||
+            (entry.athlete?.user ? `${entry.athlete.user.firstName || ''} ${entry.athlete.user.lastName || ''}`.trim() : '') ||
+            'Athlete';
+          const resolvedClub =
+            (typeof entry.club === 'string' ? entry.club : entry.club?.name) ||
+            entry.clubName ||
+            entry.clubNameSnapshot ||
+            entry.athlete?.club?.name ||
+            'Unattached';
+
           items.push({
             id: entry.id || uniqueKey,
             rank: pos,
-            name: entry.athleteName,
-            club: entry.clubName || 'Unattached',
+            name: resolvedName,
+            club: resolvedClub,
             bib: entry.bibNo || '—',
             lane: entry.lane ? String(entry.lane) : '—',
             heat: entry.heat ? String(entry.heat) : '1',
@@ -613,11 +750,23 @@ export default function CompetitionDetail({
           if (athleteKey) seenAthleteRoundKeys.add(uniqueKey);
 
           const pos = entry.rank ?? entry.position ?? 99;
+          const resolvedName =
+            entry.athleteName ||
+            entry.name ||
+            entry.athleteNameSnapshot ||
+            entry.fullName ||
+            'Athlete';
+          const resolvedClub =
+            (typeof entry.club === 'string' ? entry.club : entry.club?.name) ||
+            entry.clubName ||
+            entry.clubNameSnapshot ||
+            'Unattached';
+
           items.push({
             id: entry.id || uniqueKey,
             rank: pos,
-            name: entry.athleteName || entry.name,
-            club: entry.club || entry.clubName || 'Unattached',
+            name: resolvedName,
+            club: resolvedClub,
             bib: entry.bib || entry.bibNo || '—',
             lane: entry.lane ? String(entry.lane) : '—',
             heat: entry.heat ? String(entry.heat) : '1',
@@ -789,6 +938,267 @@ export default function CompetitionDetail({
     link.setAttribute('href', encodedUri);
     const fileName = customName ? `EAF_Results_${customName}.csv` : `EAF_Results_${meet?.title?.replace(/[^a-zA-Z0-9]/g, '_') || 'Competition'}.csv`;
     link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // ── Structured Start Lists by Discipline and Round ──
+  const groupedStarterDisciplines = useMemo(() => {
+    const rawLists = publicHubData?.startLists;
+    if (rawLists && Array.isArray(rawLists) && rawLists.length > 0) {
+      const map = new Map<string, {
+        key: string;
+        discipline: string;
+        gender: string;
+        category: string;
+        version?: number;
+        publishedAt?: string;
+        roundsMap: Map<string, {
+          roundKey: string;
+          roundLabel: string;
+          stageType: 'HEAT' | 'SEMIFINAL' | 'FINAL' | 'ROUND';
+          badgeText: string;
+          badgeColor: string;
+          sortWeight: number;
+          heatNum: number;
+          scheduledTime?: string;
+          venue?: string;
+          entries: any[];
+        }>;
+      }>();
+
+      for (const sl of rawLists) {
+        const genderStr = sl.gender === 'MEN' ? 'Men' : sl.gender === 'WOMEN' ? 'Women' : 'Mixed';
+        const discKey = `${sl.discipline}__${genderStr}`;
+
+        if (!map.has(discKey)) {
+          map.set(discKey, {
+            key: discKey,
+            discipline: sl.discipline,
+            gender: genderStr,
+            category: sl.category || 'Senior',
+            version: sl.version,
+            publishedAt: sl.publishedAt,
+            roundsMap: new Map(),
+          });
+        }
+        const discGroup = map.get(discKey)!;
+
+        const entries = sl.entries || [];
+        for (const entry of entries) {
+          const roundDetails = getStartListRoundDetails(sl.round, entry.heat);
+          if (!discGroup.roundsMap.has(roundDetails.roundKey)) {
+            discGroup.roundsMap.set(roundDetails.roundKey, {
+              ...roundDetails,
+              heatNum: roundDetails.heatNum,
+              scheduledTime: sl.scheduledTime,
+              venue: sl.venue,
+              entries: [],
+            });
+          }
+          const roundObj = discGroup.roundsMap.get(roundDetails.roundKey)!;
+
+          const resolvedName =
+            entry.athleteName ||
+            entry.name ||
+            entry.fullName ||
+            entry.athleteNameSnapshot ||
+            (entry.athlete?.user ? `${entry.athlete.user.firstName || ''} ${entry.athlete.user.lastName || ''}`.trim() : '') ||
+            entry.athlete?.name ||
+            (entry.relayTeam ? entry.relayTeam.teamName : '') ||
+            'Athlete';
+
+          const resolvedClub =
+            (typeof entry.club === 'string' ? entry.club : entry.club?.name) ||
+            entry.clubName ||
+            entry.clubNameSnapshot ||
+            entry.athlete?.club?.name ||
+            entry.athlete?.clubName ||
+            (typeof entry.delegation === 'string' ? entry.delegation : entry.delegation?.name) ||
+            entry.teamName ||
+            (entry.relayTeam ? entry.relayTeam.teamName : '') ||
+            'Unattached';
+
+          const resolvedRegion =
+            (typeof entry.region === 'string' ? entry.region : entry.region?.name) ||
+            entry.regionName ||
+            entry.athlete?.club?.region ||
+            entry.athlete?.region ||
+            entry.club?.region ||
+            'National';
+
+          const resolvedAmharic =
+            entry.amharicName ||
+            entry.athlete?.amharicName ||
+            (entry.athlete?.user?.firstNameAm ? `${entry.athlete.user.firstNameAm} ${entry.athlete.user.lastNameAm || ''}`.trim() : null) ||
+            resolvedName;
+
+          roundObj.entries.push({
+            id: entry.id,
+            name: resolvedName,
+            amharicName: resolvedAmharic,
+            club: resolvedClub,
+            region: resolvedRegion,
+            event: sl.discipline,
+            gender: genderStr,
+            ageGroup: sl.category || 'Senior',
+            round: roundDetails.roundLabel,
+            roundKey: roundDetails.roundKey,
+            heat: entry.heat || roundDetails.heatNum,
+            lane: entry.lane ?? entry.order ?? '—',
+            order: entry.order,
+            bib: entry.bibNumber || entry.bib || '—',
+            seedTime: entry.seedMark || entry.seedTime || 'NT',
+            verified: !!entry.athlete?.uniqueRegistrationNumber || !!entry.verified,
+            status: entry.status || 'CONFIRMED',
+            version: sl.version,
+            publishedAt: sl.publishedAt,
+          });
+        }
+      }
+
+      return Array.from(map.values()).map((g) => {
+        const sortedRounds = Array.from(g.roundsMap.values()).sort((a, b) => a.sortWeight - b.sortWeight);
+        const totalAthletes = sortedRounds.reduce((acc, r) => acc + r.entries.length, 0);
+        return {
+          key: g.key,
+          discipline: g.discipline,
+          gender: g.gender,
+          category: g.category,
+          version: g.version,
+          publishedAt: g.publishedAt,
+          totalAthletes,
+          totalHeats: sortedRounds.filter((r) => r.stageType === 'HEAT').length || 1,
+          roundsCount: sortedRounds.length,
+          stagesAvailable: Array.from(new Set(sortedRounds.map((r) => r.badgeText))),
+          rounds: sortedRounds.map((r) => ({
+            ...r,
+            entries: [...r.entries].sort((a, b) => {
+              const numA = parseInt(String(a.lane || a.order || '99'), 10) || 99;
+              const numB = parseInt(String(b.lane || b.order || '99'), 10) || 99;
+              return numA - numB;
+            }),
+          })),
+        };
+      });
+    }
+
+    if (starterList && starterList.length > 0) {
+      const map = new Map<string, {
+        key: string;
+        discipline: string;
+        gender: string;
+        category: string;
+        roundsMap: Map<string, {
+          roundKey: string;
+          roundLabel: string;
+          stageType: 'HEAT' | 'SEMIFINAL' | 'FINAL' | 'ROUND';
+          badgeText: string;
+          badgeColor: string;
+          sortWeight: number;
+          heatNum: number;
+          entries: any[];
+        }>;
+      }>();
+
+      for (const item of starterList) {
+        const discKey = `${item.event}__${item.gender}`;
+        if (!map.has(discKey)) {
+          map.set(discKey, {
+            key: discKey,
+            discipline: item.event,
+            gender: item.gender,
+            category: item.ageGroup || 'Senior',
+            roundsMap: new Map(),
+          });
+        }
+        const discGroup = map.get(discKey)!;
+        const roundDetails = getStartListRoundDetails(item.round, item.heat);
+        if (!discGroup.roundsMap.has(roundDetails.roundKey)) {
+          discGroup.roundsMap.set(roundDetails.roundKey, {
+            ...roundDetails,
+            heatNum: roundDetails.heatNum,
+            entries: [],
+          });
+        }
+        const roundObj = discGroup.roundsMap.get(roundDetails.roundKey)!;
+        roundObj.entries.push(item);
+      }
+
+      return Array.from(map.values()).map((g) => {
+        const sortedRounds = Array.from(g.roundsMap.values()).sort((a, b) => a.sortWeight - b.sortWeight);
+        const totalAthletes = sortedRounds.reduce((acc, r) => acc + r.entries.length, 0);
+        return {
+          key: g.key,
+          discipline: g.discipline,
+          gender: g.gender,
+          category: g.category,
+          totalAthletes,
+          totalHeats: sortedRounds.filter((r) => r.stageType === 'HEAT').length || 1,
+          roundsCount: sortedRounds.length,
+          stagesAvailable: Array.from(new Set(sortedRounds.map((r) => r.badgeText))),
+          rounds: sortedRounds.map((r) => ({
+            ...r,
+            entries: [...r.entries].sort((a, b) => {
+              const numA = parseInt(String(a.lane || a.order || '99'), 10) || 99;
+              const numB = parseInt(String(b.lane || b.order || '99'), 10) || 99;
+              return numA - numB;
+            }),
+          })),
+        };
+      });
+    }
+
+    return [];
+  }, [publicHubData, starterList]);
+
+  const activeStarterDiscipline = useMemo(() => {
+    if (!selectedStarterDisciplineKey) return null;
+    return groupedStarterDisciplines.find((d) => d.key === selectedStarterDisciplineKey) || null;
+  }, [groupedStarterDisciplines, selectedStarterDisciplineKey]);
+
+  const filteredStarterDisciplines = useMemo(() => {
+    return groupedStarterDisciplines.filter((d) => {
+      if (starterGenderFilter !== 'ALL' && d.gender !== starterGenderFilter) return false;
+      if (starterSearchQuery.trim()) {
+        const q = starterSearchQuery.toLowerCase().trim();
+        const matchesDisc = d.discipline.toLowerCase().includes(q) || d.category.toLowerCase().includes(q);
+        const matchesAthlete = d.rounds.some((r) =>
+          r.entries.some(
+            (e: any) =>
+              String(e.name || e.athleteName || '').toLowerCase().includes(q) ||
+              String(typeof e.club === 'string' ? e.club : (e.club?.name || e.clubName || '')).toLowerCase().includes(q) ||
+              String(e.bib || e.bibNumber || '').toLowerCase().includes(q)
+          )
+        );
+        return matchesDisc || matchesAthlete;
+      }
+      return true;
+    });
+  }, [groupedStarterDisciplines, starterGenderFilter, starterSearchQuery]);
+
+  const handleDownloadStarterCsv = (entries: any[], filename: string) => {
+    if (!entries || entries.length === 0) return;
+    const headers = ['Lane/Order', 'Bib', 'Athlete Name', 'Club', 'Region', 'Discipline', 'Gender', 'Round', 'Heat', 'Seed Time', 'Status'];
+    const rows = entries.map((st) => [
+      st.lane,
+      `"${st.bib}"`,
+      `"${st.name}"`,
+      `"${st.club}"`,
+      `"${st.region}"`,
+      `"${st.event}"`,
+      st.gender,
+      `"${st.round}"`,
+      st.heat,
+      `"${st.seedTime}"`,
+      st.status,
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${filename.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1295,13 +1705,14 @@ export default function CompetitionDetail({
         {/* 3. Starter Lists Tab */}
         {activeTab === 'starters' && (
           <div>
-            {starterList.length === 0 ? (
+            {groupedStarterDisciplines.length === 0 ? (
               <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)', borderRadius: '18px' }}>
                 <Users size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
                 <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '6px' }}>Official Start Lists Awaiting Publication</h4>
                 <p style={{ fontSize: '0.85rem' }}>Official heat and lane assignments will be announced here once reviewed and authorized by competition referees.</p>
               </div>
-            ) : (
+            ) : selectedStarterDisciplineKey === null ? (
+              /* ── A. DISCIPLINED LIST VIEW (DISCIPLINES OVERVIEW) ── */
               <div>
                 {/* Search & Filter Header */}
                 <div
@@ -1315,130 +1726,547 @@ export default function CompetitionDetail({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-heading)' }}>
-                      <Filter size={18} />
-                      <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>Filter Start Lists</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-heading)' }}>
+                      <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(200,168,75,0.15)', color: '#C8A84B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ListOrdered size={20} />
+                      </div>
+                      <div>
+                        <span style={{ fontWeight: 800, fontSize: '1.05rem', display: 'block' }}>Official Start Lists by Discipline</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Select any discipline to view official rounds, heat allocations, and lane seeding.</span>
+                      </div>
                     </div>
-                    {starterList[0]?.version && (
-                      <span className="badge badge-green" style={{ fontSize: '0.75rem', padding: '4px 8px' }}>
-                        Official Published Start List · v{starterList[0].version}.0
-                      </span>
-                    )}
+                    <span className="badge badge-green" style={{ fontSize: '0.75rem', padding: '5px 12px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <ShieldCheck size={13} /> {groupedStarterDisciplines.length} Disciplines Available
+                    </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Search Athlete / Bib</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="Type name, bib #, or club..."
-                        value={starterSearchQuery}
-                        onChange={e => setStarterSearchQuery(e.target.value)}
-                        style={{ background: '#FFFFFF' }}
-                      />
+                      <label className="form-label">Search Athlete, Bib, or Discipline</label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="Type name, bib #, or discipline..."
+                          value={starterSearchQuery}
+                          onChange={e => setStarterSearchQuery(e.target.value)}
+                          style={{ background: '#FFFFFF', paddingLeft: '34px' }}
+                        />
+                        <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+                        {starterSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setStarterSearchQuery('')}
+                            style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">{t('competitionDetail.eventType')}</label>
-                      <select 
-                        className="form-select" 
-                        value={starterEventFilter} 
-                        onChange={e => setStarterEventFilter(e.target.value)}
-                        style={{ background: '#FFFFFF' }}
-                      >
-                        <option value="ALL">All Disciplines</option>
-                        {uniqueStarterEvents.map(e => <option key={e} value={e}>{e}</option>)}
-                      </select>
-                    </div>
-
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">{t('common.gender')}</label>
+                      <label className="form-label">{t('common.gender')} Division</label>
                       <select 
                         className="form-select" 
                         value={starterGenderFilter} 
                         onChange={e => setStarterGenderFilter(e.target.value)}
                         style={{ background: '#FFFFFF' }}
                       >
-                        <option value="ALL">All Genders</option>
-                        <option value="Male">Men</option>
-                        <option value="Female">Women</option>
-                        <option value="Mixed">Mixed</option>
+                        <option value="ALL">All Divisions</option>
+                        <option value="Men">Men's Events</option>
+                        <option value="Women">Women's Events</option>
+                        <option value="Mixed">Mixed Events</option>
                       </select>
                     </div>
                   </div>
                 </div>
 
-                {filteredStarters.length === 0 ? (
-                  <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '36px', color: 'var(--text-muted)', borderRadius: '18px' }}>
-                    <p style={{ fontWeight: 700 }}>No athletes matched the selected filters.</p>
+                {filteredStarterDisciplines.length === 0 ? (
+                  <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '40px', color: 'var(--text-muted)', borderRadius: '18px' }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '8px' }}>No disciplines matched your search filter.</p>
+                    <button
+                      type="button"
+                      onClick={() => { setStarterSearchQuery(''); setStarterGenderFilter('ALL'); }}
+                      className="btn btn-secondary"
+                      style={{ fontSize: '0.8rem', padding: '6px 14px' }}
+                    >
+                      Clear Filters
+                    </button>
                   </div>
                 ) : (
-                  <div className="gov-card" style={{ background: '#FFFFFF', padding: '0', overflow: 'hidden', borderRadius: '18px' }}>
-                    <div className="table-responsive">
-                      <table className="gov-table">
-                        <thead>
-                          <tr>
-                            <th>Lane / Pos</th>
-                            <th>{t('competitionDetail.bib')}</th>
-                            <th>{t('competitionDetail.athleteName')}</th>
-                            <th>{t('competitionDetail.clubDelegation')}</th>
-                            <th>Discipline & Round</th>
-                            <th>Heat</th>
-                            <th>{t('competitionDetail.seedTime')}</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredStarters.map((st, i) => (
-                            <tr key={i} style={{ opacity: st.status === 'WITHDRAWN' ? 0.6 : 1 }}>
-                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', textAlign: 'center' }}>
-                                {st.lane}
-                              </td>
-                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)' }}>
-                                #{st.bib}
-                              </td>
-                              <td>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>{st.name}</span>
-                                  {st.verified && (
-                                    <span 
-                                      title={t('competitionDetail.verified')} 
-                                      style={{ 
-                                        display: 'inline-flex', 
-                                        alignItems: 'center', 
-                                        background: '#DCFCE7', 
-                                        color: '#15803D', 
-                                        borderRadius: '50%', 
-                                        padding: '2px'
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+                    {filteredStarterDisciplines.map((disc) => (
+                      <div
+                        key={disc.key}
+                        className="gov-card"
+                        style={{
+                          background: '#FFFFFF',
+                          borderRadius: '16px',
+                          padding: '20px',
+                          border: '1px solid #E2E8F0',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                          transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '12px',
+                                background: 'rgba(200, 168, 75, 0.12)',
+                                color: '#C8A84B',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 900
+                              }}>
+                                <ListOrdered size={20} />
+                              </div>
+                              <div>
+                                <h4 style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-heading)', margin: 0 }}>
+                                  {disc.discipline}
+                                </h4>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                  {disc.gender} · {disc.category}
+                                </div>
+                              </div>
+                            </div>
+                            <span className="badge badge-green" style={{ fontSize: '0.68rem', padding: '3px 8px' }}>
+                              Official Published
+                            </span>
+                          </div>
+
+                          {/* Available Stages / Rounds Tags */}
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+                            {disc.rounds.map((rnd) => (
+                              <span
+                                key={rnd.roundKey}
+                                style={{
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  background: rnd.stageType === 'FINAL' ? '#FEF3C7' : rnd.stageType === 'SEMIFINAL' ? '#EFF6FF' : '#FFF7ED',
+                                  color: rnd.badgeColor,
+                                  border: `1px solid ${rnd.badgeColor}30`,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                {rnd.stageType === 'FINAL' ? <Trophy size={11} /> : rnd.stageType === 'SEMIFINAL' ? <Zap size={11} /> : <Flame size={11} />}
+                                {rnd.badgeText} ({rnd.entries.length})
+                              </span>
+                            ))}
+                          </div>
+
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <Users size={14} style={{ color: 'var(--primary)' }} />
+                              <strong>{disc.totalAthletes}</strong> Athletes
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <Layers size={14} style={{ color: 'var(--primary)' }} />
+                              <strong>{disc.rounds.length}</strong> {disc.rounds.length === 1 ? 'Round' : 'Rounds/Heats'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* View Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedStarterDisciplineKey(disc.key);
+                            setSelectedStarterRoundKey('ALL');
+                          }}
+                          className="btn btn-primary"
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            padding: '10px 14px',
+                            fontSize: '0.88rem',
+                            fontWeight: 700,
+                            borderRadius: '10px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Eye size={16} />
+                          View Start Lists
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* ── B. DISCIPLINE ROUND DETAIL VIEW ── */
+              <div>
+                {activeStarterDiscipline && (
+                  <div>
+                    {/* Discipline Breadcrumb & Top Bar */}
+                    <div
+                      className="gov-card"
+                      style={{
+                        background: '#FFFFFF',
+                        borderRadius: '18px',
+                        marginBottom: '18px',
+                        padding: '18px 22px',
+                        border: '1px solid #E2E8F0',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '14px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStarterDisciplineKey(null)}
+                          className="btn btn-secondary"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '0.82rem',
+                            padding: '7px 14px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            borderRadius: '8px'
+                          }}
+                        >
+                          <ArrowLeft size={15} /> Back to Disciplines List
+                        </button>
+                        <div>
+                          <h3 style={{ fontWeight: 900, fontSize: '1.35rem', color: 'var(--text-heading)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>{activeStarterDiscipline.discipline}</span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', background: '#F1F5F9', color: '#475569' }}>
+                              {activeStarterDiscipline.gender} · {activeStarterDiscipline.category}
+                            </span>
+                          </h3>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>
+                            Official lane seedings, heat allocations, and trial orders certified under World Athletics Technical Rules.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const allEntries = activeStarterDiscipline.rounds.flatMap(r => r.entries);
+                            handleDownloadStarterCsv(allEntries, `StartList_${activeStarterDiscipline.discipline}_${activeStarterDiscipline.gender}`);
+                          }}
+                          className="btn btn-secondary"
+                          style={{ fontSize: '0.8rem', padding: '7px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                        >
+                          <Download size={14} /> Export CSV
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => window.print()}
+                          className="btn btn-secondary"
+                          style={{ fontSize: '0.8rem', padding: '7px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                        >
+                          <Printer size={14} /> Print
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Quick Search inside this discipline */}
+                    <div style={{ marginBottom: '18px' }}>
+                      <div style={{ position: 'relative', maxWidth: '340px' }}>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="Search athlete, bib, or club in this event..."
+                          value={starterSearchQuery}
+                          onChange={e => setStarterSearchQuery(e.target.value)}
+                          style={{ background: '#FFFFFF', paddingLeft: '34px', height: '38px', fontSize: '0.85rem' }}
+                        />
+                        <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', pointerEvents: 'none' }} />
+                        {starterSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setStarterSearchQuery('')}
+                            style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Round / Heat Selector Pills (if more than 1 round exists) */}
+                    {activeStarterDiscipline.rounds.length > 1 && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          overflowX: 'auto',
+                          paddingBottom: '8px',
+                          marginBottom: '16px'
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedStarterRoundKey('ALL')}
+                          className={`btn ${selectedStarterRoundKey === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
+                          style={{
+                            fontSize: '0.8rem',
+                            padding: '6px 14px',
+                            fontWeight: 700,
+                            borderRadius: '8px',
+                            whiteSpace: 'nowrap',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <Layers size={13} />
+                          All Rounds / Heats ({activeStarterDiscipline.totalAthletes})
+                        </button>
+                        {activeStarterDiscipline.rounds.map((rnd) => {
+                          const isSelected = selectedStarterRoundKey === rnd.roundKey;
+                          return (
+                            <button
+                              key={rnd.roundKey}
+                              type="button"
+                              onClick={() => setSelectedStarterRoundKey(rnd.roundKey)}
+                              className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                              style={{
+                                fontSize: '0.8rem',
+                                padding: '6px 14px',
+                                fontWeight: 700,
+                                borderRadius: '8px',
+                                whiteSpace: 'nowrap',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {rnd.stageType === 'FINAL' ? <Trophy size={13} /> : rnd.stageType === 'SEMIFINAL' ? <Zap size={13} /> : <Flame size={13} />}
+                              <span>{rnd.roundLabel}</span>
+                              <span style={{ fontSize: '0.7rem', padding: '1px 5px', borderRadius: '4px', background: isSelected ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.06)' }}>
+                                {rnd.entries.length}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Display Rounds / Heats Accordingly */}
+                    {(() => {
+                      const roundsToRender = selectedStarterRoundKey === 'ALL'
+                        ? activeStarterDiscipline.rounds
+                        : activeStarterDiscipline.rounds.filter(r => r.roundKey === selectedStarterRoundKey);
+
+                      if (roundsToRender.length === 0) {
+                        return (
+                          <div className="gov-card" style={{ background: '#FFFFFF', textAlign: 'center', padding: '36px', color: 'var(--text-muted)', borderRadius: '18px' }}>
+                            <p style={{ fontWeight: 700 }}>No entries found for this round.</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                          {roundsToRender.map((round) => {
+                            const filteredEntries = round.entries.filter((st: any) => {
+                              if (!starterSearchQuery.trim()) return true;
+                              const q = starterSearchQuery.toLowerCase().trim();
+                              const nameStr = String(st.name || st.athleteName || st.athleteNameSnapshot || '').toLowerCase();
+                              const clubStr = String(typeof st.club === 'string' ? st.club : (st.club?.name || st.clubName || '')).toLowerCase();
+                              const bibStr = String(st.bib || st.bibNumber || '').toLowerCase();
+                              return nameStr.includes(q) || clubStr.includes(q) || bibStr.includes(q);
+                            });
+
+                            return (
+                              <div
+                                key={round.roundKey}
+                                className="gov-card"
+                                style={{
+                                  background: '#FFFFFF',
+                                  borderRadius: '18px',
+                                  border: '1px solid #E2E8F0',
+                                  overflow: 'hidden',
+                                  padding: 0,
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                                }}
+                              >
+                                {/* Round Header Bar */}
+                                <div
+                                  style={{
+                                    padding: '16px 20px',
+                                    background: '#F8FAFC',
+                                    borderBottom: '1px solid #E2E8F0',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    flexWrap: 'wrap',
+                                    gap: '10px'
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '5px',
+                                        padding: '4px 10px',
+                                        borderRadius: '8px',
+                                        fontWeight: 800,
+                                        fontSize: '0.85rem',
+                                        background: round.stageType === 'FINAL' ? '#FEF3C7' : round.stageType === 'SEMIFINAL' ? '#EFF6FF' : '#FFF7ED',
+                                        color: round.badgeColor,
+                                        border: `1px solid ${round.badgeColor}30`
                                       }}
                                     >
-                                      <CheckCircle2 size={12} fill="#15803D" stroke="#DCFCE7" />
+                                      {round.stageType === 'FINAL' ? <Trophy size={14} /> : round.stageType === 'SEMIFINAL' ? <Zap size={14} /> : <Flame size={14} />}
+                                      {round.roundLabel}
                                     </span>
-                                  )}
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                      {round.entries.length} {round.entries.length === 1 ? 'Athlete Allocated' : 'Athletes Allocated'}
+                                    </span>
+                                  </div>
+
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                    {round.scheduledTime && (
+                                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Clock size={13} style={{ color: 'var(--primary)' }} /> {round.scheduledTime}
+                                      </span>
+                                    )}
+                                    {round.venue && (
+                                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <MapPin size={13} style={{ color: 'var(--primary)' }} /> {round.venue}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{st.region}</div>
-                              </td>
-                              <td style={{ fontWeight: 600 }}>{st.club}</td>
-                              <td style={{ fontWeight: 700, color: 'var(--primary)' }}>
-                                {st.event}
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>
-                                  {st.round} · {st.gender}
-                                </span>
-                              </td>
-                              <td style={{ fontWeight: 700, color: 'var(--text-heading)' }}>
-                                Heat {st.heat}
-                              </td>
-                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{st.seedTime}</td>
-                              <td>
-                                <span className={`badge ${st.status === 'WITHDRAWN' ? 'badge-red' : 'badge-green'}`} style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
-                                  {st.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+
+                                {/* Start List Table */}
+                                {filteredEntries.length === 0 ? (
+                                  <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                    No athletes match the search query in this heat.
+                                  </div>
+                                ) : (
+                                  <div className="table-responsive">
+                                    <table className="gov-table" style={{ margin: 0 }}>
+                                      <thead>
+                                        <tr>
+                                          <th style={{ width: '80px', textAlign: 'center' }}>Lane / Pos</th>
+                                          <th style={{ width: '80px' }}>{t('competitionDetail.bib')}</th>
+                                          <th>{t('competitionDetail.athleteName')}</th>
+                                          <th>{t('competitionDetail.clubDelegation')}</th>
+                                          <th style={{ width: '90px', textAlign: 'center' }}>Heat #</th>
+                                          <th style={{ width: '120px' }}>{t('competitionDetail.seedTime')}</th>
+                                          <th style={{ width: '100px', textAlign: 'center' }}>Status</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {filteredEntries.map((st: any, i: number) => (
+                                          <tr key={st.id || i} style={{ opacity: st.status === 'WITHDRAWN' ? 0.6 : 1 }}>
+                                            <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--primary)', textAlign: 'center', fontSize: '0.95rem' }}>
+                                              {st.lane ?? st.order ?? '—'}
+                                            </td>
+                                            <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-muted)' }}>
+                                              #{st.bib || st.bibNumber || '—'}
+                                            </td>
+                                            <td>
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <span style={{ fontWeight: 800, color: 'var(--text-heading)' }}>
+                                                  {st.name || st.athleteName || 'Athlete'}
+                                                </span>
+                                                {st.verified && (
+                                                  <span 
+                                                    title={t('competitionDetail.verified')} 
+                                                    style={{ 
+                                                      display: 'inline-flex', 
+                                                      alignItems: 'center', 
+                                                      background: '#DCFCE7', 
+                                                      color: '#15803D', 
+                                                      borderRadius: '50%', 
+                                                      padding: '2px'
+                                                    }}
+                                                  >
+                                                    <CheckCircle2 size={12} fill="#15803D" stroke="#DCFCE7" />
+                                                  </span>
+                                                )}
+                                              </div>
+                                              {st.amharicName && st.amharicName !== (st.name || st.athleteName) && (
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{st.amharicName}</div>
+                                              )}
+                                            </td>
+                                            <td style={{ fontWeight: 600 }}>
+                                              <div style={{ color: 'var(--text-heading)' }}>
+                                                {typeof st.club === 'string' ? st.club : (st.club?.name || st.clubName || 'Unattached')}
+                                              </div>
+                                              {(st.region || st.regionName) && (st.region !== st.club) && (
+                                                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                                                  {typeof st.region === 'string' ? st.region : (st.region?.name || st.regionName)}
+                                                </div>
+                                              )}
+                                            </td>
+                                            <td style={{ fontWeight: 700, color: 'var(--text-heading)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
+                                              {st.heat}
+                                            </td>
+                                            <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-heading)' }}>
+                                              {st.seedTime || st.seedMark || 'NT'}
+                                            </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                              <span
+                                                className={`badge ${st.status === 'WITHDRAWN' ? 'badge-red' : 'badge-green'}`}
+                                                style={{ fontSize: '0.68rem', padding: '3px 8px' }}
+                                              >
+                                                {st.status}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Bottom Back Button */}
+                    <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-start' }}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStarterDisciplineKey(null)}
+                        className="btn btn-secondary"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '0.82rem',
+                          padding: '7px 14px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          borderRadius: '8px'
+                        }}
+                      >
+                        <ArrowLeft size={15} /> Back to Disciplines List
+                      </button>
                     </div>
                   </div>
                 )}
