@@ -12,6 +12,7 @@ import { getProfilePhotoUrl } from '../utils/profilePhoto';
 import { getEventRegistrationStatus, isEventRegistrationClosed } from '../utils/eventRegistration';
 import { STORAGE_KEYS } from '../store/persistence';
 import { useGetPublishedResultsQuery } from '../store/api/athleteApi';
+import { isRegionMatch } from '../utils/region-utils';
 
 // Helper to determine banner image based on meet ID
 const getBannerUrl = (meet: any) => {
@@ -550,6 +551,26 @@ export default function CompetitionDetail({
   );
 
   const handleApplyClick = () => {
+    // Regional Competition Restriction:
+    // If this is a regional competition, only athletes and clubs belonging to that regional state may apply
+    const compRegion = publicHubData?.competition?.region || meet?.region || meet?.regionName || null;
+    const isRegionalComp = Boolean(compRegion && compRegion !== 'National' && compRegion !== 'NATIONAL');
+    if (isRegionalComp) {
+      const athleteRegion = realAthleteData.region || currentAthlete?.region || currentAthlete?.club?.region || '';
+      const isEligible = isRegionMatch(athleteRegion, compRegion);
+      if (!isEligible) {
+        window.dispatchEvent(
+          new CustomEvent('eaf-notify', {
+            detail: {
+              message: `Regional Restriction: This competition is restricted to athletes and clubs from ${compRegion}. You are registered in ${athleteRegion || 'another region'} and cannot participate.`,
+              type: 'error',
+            },
+          })
+        );
+        return;
+      }
+    }
+
     if (currentRole === 'CLUB') {
       window.dispatchEvent(
         new CustomEvent('eaf-open-club-enrollment', {
@@ -593,6 +614,24 @@ export default function CompetitionDetail({
     if (!selectedDisciplines.length || selectedDisciplines.some((discipline) => !availableDisciplines.includes(discipline))) {
       window.dispatchEvent(new CustomEvent('eaf-notify', { detail: { message: 'Select at least one published discipline.', type: 'error' } }));
       return;
+    }
+
+    // Regional Competition Restriction:
+    const compRegion = publicHubData?.competition?.region || meet?.region || meet?.regionName || null;
+    const isRegionalComp = Boolean(compRegion && compRegion !== 'National' && compRegion !== 'NATIONAL');
+    if (isRegionalComp) {
+      const athleteRegion = realAthleteData.region || currentAthlete?.region || currentAthlete?.club?.region || '';
+      if (!isRegionMatch(athleteRegion, compRegion)) {
+        window.dispatchEvent(
+          new CustomEvent('eaf-notify', {
+            detail: {
+              message: `Regional Restriction: This competition is restricted to athletes and clubs from ${compRegion}. You are registered in ${athleteRegion || 'another region'}.`,
+              type: 'error',
+            },
+          })
+        );
+        return;
+      }
     }
     setIsPendingApproval(true);
     const token = localStorage.getItem('eaf_accessToken') || localStorage.getItem('token') || localStorage.getItem('eaf_token');
