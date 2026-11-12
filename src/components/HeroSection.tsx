@@ -452,7 +452,7 @@ export function FederationHeader({
 }
 
 // ============================================================================
-// Sub-Component 2: Stadium Background Overlay
+// Sub-Component 2: Stadium Background Overlay (Vibrant, Clearly Visible Action Canvas)
 // ============================================================================
 
 export function StadiumBackground() {
@@ -461,14 +461,19 @@ export function StadiumBackground() {
       aria-hidden="true"
       className="absolute inset-0 overflow-hidden pointer-events-none select-none z-0"
     >
-      {/* High-Contrast Radial Gradients */}
-      <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[1000px] h-[550px] rounded-full bg-gradient-to-b from-blue-600/18 via-indigo-600/10 to-transparent blur-3xl" />
-      <div className="absolute top-[25%] -left-[10%] w-[500px] h-[400px] rounded-full bg-gradient-to-tr from-emerald-500/10 to-transparent blur-3xl" />
-      <div className="absolute top-[20%] -right-[10%] w-[500px] h-[400px] rounded-full bg-gradient-to-tl from-amber-500/10 via-rose-500/5 to-transparent blur-3xl" />
+      {/* Stadium Photo Background - Clearly Visible */}
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-100"
+        style={{ backgroundImage: `url('/images/banner_grand_prix.png')` }}
+      />
+
+      {/* Gentle Directional Scrim (keeps photo bright while maintaining text readability) */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/25" />
 
       {/* Subtle Stadium Running Track Curve Geometry */}
       <svg
-        className="absolute inset-0 w-full h-full opacity-[0.04] dark:opacity-[0.07] stroke-current text-slate-900 dark:text-white"
+        className="absolute inset-0 w-full h-full opacity-[0.06] stroke-current text-white"
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
       >
@@ -498,9 +503,6 @@ export function StadiumBackground() {
           <path d="M -200 760 C 300 460, 700 360, 1600 460" strokeDasharray="8 8" />
         </g>
       </svg>
-
-      {/* Subtle vignette darkening towards bottom to cleanly blend with next section */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white dark:to-slate-950" />
     </div>
   );
 }
@@ -546,28 +548,32 @@ export interface HeroHeadlineProps {
 }
 
 export function HeroHeadline({
-  headline = "Ethiopian Athletics Federation Digital Athlete Portal",
-  subtitle = "The unified national infrastructure for biometric athlete licensing, anti-doping governance, club delegation registry, and World Athletics-synchronized live competition results.",
+  headline = "Discover & track great competitions",
+  subtitle = "For athletes, by athletes",
 }: HeroHeadlineProps) {
   return (
-    <div className="space-y-5 max-w-4xl mx-auto text-center">
+    <div className="space-y-4 max-w-4xl mx-auto text-center">
       <motion.h1
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-        className="text-4xl lg:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-[1.12]"
+        className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.08]"
       >
-        EAF Digital Athlete Portal:{" "}
-        <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500 dark:from-blue-400 dark:via-indigo-300 dark:to-emerald-400 bg-clip-text text-transparent">
-          Governance & Live Results
-        </span>
+        {headline === "Discover & track great competitions" ? (
+          <>
+            Discover & track <br />
+            <span className="text-white">great competitions</span>
+          </>
+        ) : (
+          headline
+        )}
       </motion.h1>
 
       <motion.p
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-        className="text-base sm:text-lg lg:text-xl text-slate-600 dark:text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed"
+        className="text-lg sm:text-xl lg:text-2xl text-slate-200 max-w-3xl mx-auto font-medium leading-relaxed"
       >
         {subtitle}
       </motion.p>
@@ -576,7 +582,7 @@ export function HeroHeadline({
 }
 
 // ============================================================================
-// Sub-Component 5: Interactive Live Event Widget Card
+// Sub-Component 5: Interactive Registration Spotlight Widget Card
 // ============================================================================
 
 export interface LiveEventCardProps {
@@ -622,12 +628,12 @@ export function LiveEventCard({
       onMouseLeave={() => setIsPaused(false)}
       role="region"
       aria-roledescription="carousel"
-      aria-label="Live Athletics Events"
+      aria-label="Athletics Competitions"
     >
-      {/* Elevated Card with subtle glow/ring effect */}
-      <div className="relative group rounded-2xl bg-white backdrop-blur-xl ring-1 ring-blue-200 border-l-4 border-l-[#0038A5] shadow-xl hover:shadow-2xl hover:ring-blue-500/40 transition-all duration-300 overflow-hidden p-4 sm:p-5">
+      {/* Elevated High-Contrast Spotlight Card */}
+      <div className="relative group rounded-2xl bg-slate-900/90 backdrop-blur-2xl ring-1 ring-emerald-500/25 border-l-4 border-l-emerald-500 shadow-2xl hover:shadow-emerald-500/10 hover:ring-emerald-500/45 transition-all duration-300 overflow-hidden p-4 sm:p-5 text-left">
         {/* Subtle Ambient Accent Sheen */}
-        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent" />
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -638,84 +644,81 @@ export function LiveEventCard({
             transition={{ duration: 0.35, ease: "easeInOut" }}
             className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6"
           >
-            {/* Left Side: Thumbnail Image with Pulsing Red LIVE Status Badge */}
+            {/* Left Side: Thumbnail Image with Energetic Emerald/Blue Registration Badge */}
             <div className="relative w-full sm:w-44 h-28 sm:h-24 rounded-xl overflow-hidden shrink-0 bg-slate-950 shadow-md">
               <img
-                src={currentEvent.thumbnail}
+                src={currentEvent.thumbnail || "/images/banner_grand_prix.png"}
                 alt={currentEvent.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => {
-                  // Fallback if image path does not exist
                   (e.currentTarget as HTMLImageElement).src =
-                    "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=600&q=80";
+                    "/images/banner_grand_prix.png";
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
 
-              {/* Pulsing Red LIVE Status Badge */}
-              {currentEvent.isLive && (
-                <div className="absolute top-2.5 left-2.5 bg-red-600 text-white text-[10px] font-black tracking-wider uppercase px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-md shadow-red-600/40 animate-pulse">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
-                  </span>
-                  <Radio size={11} className="shrink-0" />
-                  <span>LIVE</span>
-                </div>
-              )}
+              {/* Energetic Emerald/Blue Registration Badge */}
+              <div className="absolute top-2.5 left-2.5 bg-gradient-to-r from-emerald-600 to-blue-600 text-white text-[10px] font-black tracking-wider uppercase px-2.5 py-1 rounded-md flex items-center gap-1.5 shadow-md shadow-emerald-600/40">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-80" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+                </span>
+                <span>OPEN</span>
+              </div>
             </div>
 
-            {/* Middle: Event Title, Location tag, Category tag, Date badge */}
+            {/* Middle: Event Title, Registration Status, Venue, and Discipline Tags */}
             <div className="flex-1 min-w-0 text-left w-full">
-              {/* Event Title */}
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate tracking-tight mb-2">
-                {currentEvent.title}
-              </h2>
+              {/* Badges Row */}
+              <div className="flex flex-wrap items-center gap-2 text-xs mb-2">
+                {/* Registration Open State Badge */}
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 font-bold border border-emerald-500/30 text-[11px] tracking-wide">
+                  <Sparkles size={11} className="shrink-0" />
+                  <span>REGISTRATION OPEN</span>
+                </span>
 
-              {/* Tag Array */}
-              <div className="flex flex-wrap items-center gap-2 text-xs">
                 {/* Location Tag */}
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
-                  <MapPin size={12} className="text-blue-500 shrink-0" />
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 text-slate-300 font-medium">
+                  <MapPin size={11} className="text-blue-400 shrink-0" />
                   <span>{currentEvent.location}</span>
                 </span>
 
-                {/* Category Tag */}
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 font-semibold border border-emerald-200/50 dark:border-emerald-800/50">
-                  <Trophy size={12} className="shrink-0" />
-                  <span>{currentEvent.category}</span>
-                </span>
-
-                {/* Date Badge */}
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-medium border border-blue-200/50 dark:border-blue-900/50">
-                  <Calendar size={12} className="shrink-0" />
-                  <span>{currentEvent.date}</span>
+                {/* Deadline countdown / Date Badge */}
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-300 font-bold border border-blue-500/30">
+                  <Calendar size={11} className="shrink-0" />
+                  <span>Deadline: {currentEvent.date || "Upcoming"}</span>
                 </span>
               </div>
 
-              {/* Live Ticker info if present */}
-              {currentEvent.leader && (
-                <div className="mt-2.5 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                  <Activity size={12} className="text-emerald-500 shrink-0" />
-                  <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {currentEvent.leader}
-                  </span>
-                  {currentEvent.paceOrSplit && (
-                    <span className="font-mono text-[11px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400">
-                      {currentEvent.paceOrSplit}
-                    </span>
-                  )}
-                </div>
-              )}
+              {/* Event Title */}
+              <h2 className="text-base sm:text-lg font-bold text-white truncate tracking-tight mb-2">
+                {currentEvent.title}
+              </h2>
+
+              {/* Discipline Tags */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="text-emerald-400 font-bold inline-flex items-center gap-1">
+                  <Trophy size={11} className="shrink-0" /> Disciplines:
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 font-medium border border-emerald-500/25">
+                  {currentEvent.category || "Track & Field"}
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 font-medium border border-emerald-500/25">
+                  Sprints & Relays
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 font-medium border border-emerald-500/25">
+                  Distance
+                </span>
+              </div>
             </div>
 
-            {/* Right Side: High-contrast red action button */}
+            {/* Right Side: Energetic Emerald/Blue "Register Now" Button */}
             <div className="shrink-0 w-full sm:w-auto">
               <button
                 onClick={() => onViewStandings?.(currentEvent.id)}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs sm:text-sm tracking-tight shadow-lg shadow-red-600/25 hover:shadow-red-600/35 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-400 hover:to-blue-500 text-white font-extrabold text-xs sm:text-sm tracking-tight shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/35 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
               >
-                <span>{currentEvent.actionText || "Live Standings"}</span>
+                <span>Register Now</span>
                 <ArrowRight size={15} />
               </button>
             </div>
@@ -723,9 +726,9 @@ export function LiveEventCard({
         </AnimatePresence>
 
         {/* Bottom Carousel Controls: Minimalist indicator dots and navigation arrows */}
-        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-400 dark:text-slate-500 mr-1.5">
+            <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-400 mr-1.5">
               Event {currentIndex + 1} of {events.length}
             </span>
             {events.map((evt, idx) => (
@@ -735,8 +738,8 @@ export function LiveEventCard({
                 aria-label={`Jump to event ${idx + 1}`}
                 className={`transition-all duration-200 rounded-full ${
                   currentIndex === idx
-                    ? "w-6 h-1.5 bg-red-600"
-                    : "w-1.5 h-1.5 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400"
+                    ? "w-6 h-1.5 bg-emerald-500"
+                    : "w-1.5 h-1.5 bg-slate-700 hover:bg-slate-600"
                 }`}
               />
             ))}
@@ -746,8 +749,23 @@ export function LiveEventCard({
             <button
               onClick={handlePrev}
               aria-label="Previous Live Event"
-              className="p-1 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={handleNext}
+              aria-label="Next Live Event"
+              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
               <ChevronLeft size={16} />
             </button>
             <button
@@ -765,7 +783,7 @@ export function LiveEventCard({
 }
 
 // ============================================================================
-// Sub-Component 6: Main Action Buttons
+// Sub-Component 6: Main Action Buttons & Bento Trust Strip
 // ============================================================================
 
 export interface HeroActionButtonsProps {
@@ -780,38 +798,143 @@ export function HeroActionButtons({
   currentLanguage = "en",
 }: HeroActionButtonsProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.35, ease: "easeOut" }}
-      className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 max-w-md mx-auto"
-    >
-      {/* Primary: "Sign In to Your Portal" */}
-      <button
-        onClick={onSignIn}
-        className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm sm:text-base tracking-tight shadow-xl shadow-blue-600/30 hover:shadow-blue-600/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+    <div className="space-y-8 max-w-4xl mx-auto">
+      {/* Primary & Secondary Action CTAs matching reference */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.35, ease: "easeOut" }}
+        className="flex flex-wrap items-center justify-center gap-4 sm:gap-6"
       >
-        <UserCheck size={18} />
-        <span>
-          {currentLanguage === "am"
-            ? "ወደ ፖርታልዎ ይግቡ"
-            : "Sign In to Your Portal"}
-        </span>
-      </button>
+        {/* Primary Solid Green Button: "View the competition calendar ->" */}
+        <button
+          onClick={onExplore}
+          className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold text-sm sm:text-base tracking-tight shadow-xl shadow-emerald-600/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <span>View the competition calendar</span>
+          <ArrowRight size={17} />
+        </button>
 
-      {/* Secondary: "Explore Competitions" (white/slate glass card with trophy icon) */}
-      <button
-        onClick={onExplore}
-        className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 font-bold text-sm sm:text-base tracking-tight shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+        {/* Secondary Green Ghost Link: "Find an athlete ->" */}
+        <button
+          onClick={() => {
+            const el = document.getElementById("athletes");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+          }}
+          className="inline-flex items-center justify-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-bold text-sm sm:text-base transition-colors"
+        >
+          <span>Find an athlete</span>
+          <ArrowRight size={17} />
+        </button>
+
+        {/* Sign In to Portal CTA */}
+        <button
+          onClick={onSignIn}
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs sm:text-sm shadow-md transition-all duration-200"
+        >
+          <UserCheck size={16} />
+          <span>{currentLanguage === "am" ? "ወደ ፖርታልዎ ይግቡ" : "Sign In to Your Portal"}</span>
+        </button>
+      </motion.div>
+
+      {/* App Store & Google Play Badges Strip matching reference */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="flex flex-col items-center gap-2"
       >
-        <Trophy size={18} className="text-amber-500" />
-        <span>
-          {currentLanguage === "am"
-            ? "ውድድሮችን ያስሱ"
-            : "Explore Competitions"}
+        <span className="text-xs sm:text-sm font-semibold text-slate-300">
+          Athletics app on your phone. It is free
         </span>
-      </button>
-    </motion.div>
+        <div className="flex items-center gap-4 flex-wrap justify-center">
+          {/* App Store */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-2 bg-black border border-white/20 rounded-xl px-3.5 py-1.5 text-white shadow-lg cursor-pointer">
+              <svg width="16" height="19" viewBox="0 0 170 170" fill="currentColor">
+                <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.07-7.77-7.94-12.22-14.6-6.19-9.35-11.11-20.2-14.75-32.55-3.64-12.35-5.46-24.08-5.46-35.18 0-15.54 3.8-28.16 11.41-37.86 7.6-9.7 17.1-14.65 28.5-14.86 5.86 0 12.16 1.62 18.9 4.86 6.74 3.24 11.23 4.97 13.48 5.19 1.96-.22 6.53-1.95 13.72-5.19 7.19-3.24 13.38-4.75 18.57-4.54 13.91.65 24.99 5.86 33.24 15.64-12.17 7.4-18.15 17.39-17.93 29.99.22 9.79 3.91 18.04 11.08 24.77 7.17 6.74 15.65 10.54 25.43 11.41-2.17 6.74-4.89 13.59-8.16 20.54zM119.22 33.04c0-7.39 2.61-14.35 7.82-20.87 5.22-6.52 11.74-10.98 19.57-13.37-.22 1.3-.43 2.5-.65 3.59-1.52 7.17-4.57 13.8-9.13 19.9-4.57 6.09-10.43 10.43-17.61 13.04z" />
+              </svg>
+              <div className="flex flex-col text-left leading-none">
+                <span className="text-[9px] uppercase tracking-wider text-slate-300">Download on the</span>
+                <span className="text-xs font-bold">App Store</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-amber-400">
+              <span>★★★★★</span>
+              <span className="text-white">4.8</span>
+            </div>
+          </div>
+
+          {/* Google Play */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-2 bg-black border border-white/20 rounded-xl px-3.5 py-1.5 text-white shadow-lg cursor-pointer">
+              <svg width="15" height="17" viewBox="0 0 512 512" fill="none">
+                <path d="M47.2 12.7C41.4 18.8 38 28.2 38 40.2V471.8c0 12 3.4 21.4 9.2 27.5l1.5 1.5L273 276.5v-5L48.7 11.2l-1.5 1.5z" fill="#00D7FF"/>
+                <path d="M351.4 355.2l-78.4-78.7v-5l78.4-78.7 1.8 1 93 52.8c26.5 15 26.5 39.7 0 54.8l-93 52.8-1.8 1z" fill="#FFCF00"/>
+                <path d="M273 271.5L48.7 499.3c8.9 9.4 23.4 10.6 39.9 1.3l264.6-150.4-80.2-78.7z" fill="#FF3A44"/>
+                <path d="M273 240.5l80.2-78.7L88.6 11.4C72.1 2.1 57.6 3.3 48.7 12.7L273 240.5z" fill="#00E676"/>
+              </svg>
+              <div className="flex flex-col text-left leading-none">
+                <span className="text-[9px] uppercase tracking-wider text-slate-300">GET IT ON</span>
+                <span className="text-xs font-bold">Google Play</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] font-bold text-amber-400">
+              <span>★★★★★</span>
+              <span className="text-white">4.5</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Bento-Style Action & Trust Strip */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.45 }}
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 p-4 rounded-2xl bg-slate-900/70 backdrop-blur-xl border border-slate-800/80 shadow-2xl text-left"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+            <ShieldCheck size={18} className="text-emerald-400" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-slate-100">Fayda Verified</div>
+            <div className="text-[11px] text-slate-400">Biometric identity</div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center shrink-0">
+            <Activity size={18} className="text-blue-400" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-slate-100">World Athletics TR</div>
+            <div className="text-[11px] text-slate-400">Official rulesets</div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+            <Globe size={18} className="text-amber-400" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-slate-100">11 Regional Hubs</div>
+            <div className="text-[11px] text-slate-400">Nationwide registry</div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center shrink-0">
+            <CheckCircle2 size={18} className="text-teal-400" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-slate-100">Digital Licensing</div>
+            <div className="text-[11px] text-slate-400">Certified credentials</div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -911,28 +1034,40 @@ export function HeroSection({
             onViewStandings={onViewLiveStandings}
           />
 
-          {/* Main Action Buttons */}
+          {/* Main Action Buttons & Bento Trust Strip */}
           <HeroActionButtons
             onSignIn={onLogin}
             onExplore={onExploreCompetitions}
             currentLanguage={language}
           />
+        </div>
 
-          {/* Trust/Integrity Micro-Badges */}
-          <div className="mt-12 pt-6 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-xs font-semibold text-slate-500 dark:text-slate-400">
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck size={15} className="text-blue-500" />
-              <span>Fayda Biometric Verified</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Sparkles size={15} className="text-amber-500" />
-              <span>World Athletics Synchronized</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Flame size={15} className="text-emerald-500" />
-              <span>Clean Sport Anti-Doping Governance</span>
-            </div>
-          </div>
+        {/* Curved Wave Bottom Boundary matching reference image */}
+        <svg
+          viewBox="0 0 1440 65"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="absolute -bottom-1 left-0 w-full h-[50px] pointer-events-none z-10"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0 65 Q 720 0 1440 65 L 1440 65 L 0 65 Z"
+            className="fill-slate-50 dark:fill-slate-950"
+          />
+        </svg>
+
+        {/* Centered Circular Scroll-Down Button matching reference image */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20">
+          <button
+            onClick={() => {
+              const el = document.getElementById("competitions");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 shadow-lg flex items-center justify-center hover:scale-105 hover:shadow-xl transition-all"
+            aria-label="Scroll down to competitions"
+          >
+            <ChevronDown size={20} strokeWidth={2.5} />
+          </button>
         </div>
       </main>
     </div>

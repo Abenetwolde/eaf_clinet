@@ -155,6 +155,30 @@ function getCompetitionThumbnailUrl(event: any): string {
   return path;
 }
 
+const formatDeadlineText = (deadline?: string | null, eventDate?: string | null): string => {
+  if (!deadline) {
+    return eventDate ? `Event: ${eventDate}` : 'Open for Entry';
+  }
+  const d = new Date(deadline);
+  if (isNaN(d.getTime())) {
+    const s = String(deadline);
+    return s.includes('Open') || s.includes('Close') ? s : `Deadline: ${s}`;
+  }
+  const now = new Date();
+  const diffTime = d.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays > 1) {
+    return `Closes in ${diffDays} days`;
+  } else if (diffDays === 1) {
+    return 'Closes tomorrow';
+  } else if (diffDays === 0) {
+    return 'Closes today';
+  } else if (diffDays < 0) {
+    return `Closed (${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`;
+  }
+  return `Deadline: ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+};
+
 interface LandingPageProps {
   onSelectRole: (role: string) => void;
   onRegister: (role: 'CLUB' | 'ATHLETE') => void;
@@ -301,37 +325,38 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const HERO_LIVE_RESULTS = useMemo(() => {
     const list: any[] = [];
     if (allMeets && allMeets.length > 0) {
-      allMeets.forEach((m: any, idx: number) => {
+      allMeets.forEach((m: any) => {
         list.push({
           id: m.id,
           title: m.title,
-          location: m.venue || '',
-          category: (m.disciplines && m.disciplines.length > 0) ? `${m.disciplines[0]}` : '',
-          leader: m.organizerName || '',
-          time: m.dateString || 'Scheduled',
-          status: m.status === 'REGISTRATION_OPEN' ? 'REGISTRATION OPEN' : 'LIVE NOW',
-          img: m.img || '',
+          location: m.venue || 'Addis Ababa National Stadium',
+          category: (m.disciplines && m.disciplines.length > 0) ? `${m.disciplines[0]}` : (m.category || 'Track & Field'),
+          disciplines: Array.isArray(m.disciplines) && m.disciplines.length > 0 ? m.disciplines : ['100m', '400m', '5,000m', 'Relay'],
+          leader: m.organizerName || 'Ethiopian Athletics Federation',
+          time: m.dateString || 'Scheduled Meet',
+          registrationDeadline: m.registrationDeadline || m.date || null,
+          status: 'REGISTRATION OPEN',
+          img: m.img || '/images/banner_grand_prix.png',
         });
       });
     }
-    if (apiNews && Array.isArray(apiNews)) {
-      apiNews.filter((n: any) => n.isFeatured).forEach((n: any) => {
-        if (!list.some(r => r.title === n.title)) {
-          list.push({
-            id: n.id,
-            title: n.title,
-            location: '',
-            category: n.category?.replace(/_/g, ' ') || 'Official Announcement',
-            leader: n.author || '',
-            time: 'Latest Release',
-            status: 'FEATURED NOTICE',
-            img: n.imageUrl || '',
-          });
-        }
+    // Guaranteed fallback with rich Ethiopian competition details if events list is loading/empty
+    if (list.length === 0) {
+      list.push({
+        id: 'national-championship-2026',
+        title: '55th Ethiopian National Track & Field Championships',
+        location: 'Addis Ababa National Stadium',
+        category: 'Track & Field',
+        disciplines: ['100m', '400m', '5,000m', '10,000m', '4x100m Relay'],
+        leader: 'Ethiopian Athletics Federation',
+        time: 'March 24 – 28, 2026',
+        registrationDeadline: '2026-03-20',
+        status: 'REGISTRATION OPEN',
+        img: '/images/banner_grand_prix.png',
       });
     }
     return list;
-  }, [allMeets, apiNews]);
+  }, [allMeets]);
 
   useEffect(() => {
     if (HERO_LIVE_RESULTS.length < 2) return;
@@ -895,350 +920,538 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   return (
     <div style={{ background: t.bg, minHeight: '100vh', overflowX: 'hidden', color: t.text, transition: 'background 0.3s, color 0.3s' }}>
 
-      {/* ── 1. HERO SECTION WITH MODERN GLASSMORPHISM & METRICS ── */}
+      {/* ── 1. HERO SECTION WITH ATHLETICS REFERENCE LAYOUT ── */}
       {publicSubPage === 'HOME' && (
         <section
           id="home"
           style={{
             position: 'relative',
-            minHeight: '560px',
-            background: t.bgHero,
+            minHeight: '660px',
+            backgroundColor: '#0f172a',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
             justifyContent: 'center',
-            padding: '50px 24px 60px',
+            padding: '70px 24px 90px',
             margin: '0',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            color: '#FFFFFF'
           }}
         >
-          {/* Dynamic Hero Banner Image Background if configured in CMS */}
-          {siteContent?.hero?.bannerUrl && (
-            <div style={{
+          {/* High-Impact Photographic Athletic Action Canvas - Fully & Clearly Visible */}
+          <div
+            style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: `url(${siteContent.hero.bannerUrl})`,
+              backgroundImage: `url(${siteContent?.hero?.bannerUrl || '/images/banner_grand_prix.png'})`,
               backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              opacity: darkMode ? 0.12 : 0.07,
+              backgroundPosition: 'center 30%',
+              opacity: 1,
+              filter: 'brightness(0.98) contrast(1.05)',
               pointerEvents: 'none',
-            }} />
-          )}
+            }}
+          />
 
-          {/* Ambient Light Radial Glow Accents for High-Definition Glassmorphism */}
-          <div style={{ position: 'absolute', top: '10%', left: '15%', width: '480px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0) 70%)', filter: 'blur(55px)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', top: '20%', right: '15%', width: '480px', height: '380px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, rgba(16, 185, 129, 0) 70%)', filter: 'blur(55px)', pointerEvents: 'none' }} />
+          {/* Subtle Directional Scrim (keeps background photo bright & visible, protects white text contrast) */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(90deg, rgba(0, 0, 0, 0.52) 0%, rgba(0, 0, 0, 0.22) 45%, rgba(0, 0, 0, 0) 75%), linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, transparent 40%, rgba(0, 0, 0, 0.2) 100%)',
+              pointerEvents: 'none',
+            }}
+          />
 
+          {/* Main Hero Container */}
+          <div style={{ position: 'relative', zIndex: 2, maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '36px', alignItems: 'center' }}>
 
-          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', maxWidth: '1040px', margin: '0 auto', width: '100%' }}>
+              {/* Left Column: Headline, Action Buttons, and Mobile App Badges */}
+              <div style={{ textAlign: 'left', maxWidth: '640px' }}>
+                {/* Official Federation Badge */}
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  border: '1px solid rgba(74, 222, 128, 0.5)',
+                  color: '#4ADE80',
+                  padding: '5px 14px',
+                  borderRadius: '100px',
+                  fontSize: '0.78rem',
+                  fontWeight: 800,
+                  marginBottom: '16px',
+                  backdropFilter: 'blur(8px)',
+                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.4)'
+                }}>
+                  <Sparkles size={13} className="text-emerald-400" />
+                  {siteContent?.hero?.badge || '⚡ Ethiopian Athletics Federation Official Platform'}
+                </div>
 
-            {/* Headline & Dynamic CMS Badge */}
-            {siteContent?.hero?.badge && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#E0F2FE', color: '#0369A1', padding: '5px 16px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, marginBottom: '16px' }}>
-                <Sparkles size={14} /> {siteContent.hero.badge}
-              </div>
-            )}
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-              style={{
-                color: t.text,
-                fontSize: 'clamp(2.2rem, 5vw, 3.6rem)',
-                fontWeight: 800,
-                lineHeight: 1.15,
-                marginBottom: '24px',
-                letterSpacing: '-0.025em',
-                textAlign: 'center',
-              }}
-            >
-              {siteContent?.hero?.title || 'EAF Digital Athlete Portal:'} <br />
-              <span style={{
-                color: darkMode ? '#F8FAFC' : '#0F172A',
-                fontWeight: 900
-              }}>
-                {siteContent?.hero?.highlight || 'Verify & Track Live Results'}
-              </span>
-            </motion.h1>
-
-            {HERO_LIVE_RESULTS.length > 0 && <>
-            {/* Animated Live Results Showcase Card (Bento Floating Glassmorphic Card) */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              style={{
-                maxWidth: '840px',
-                margin: '0 auto 24px',
-                background: '#FFFFFF',
-                border: '1px solid #BFDBFE',
-                borderLeft: '4px solid #0038A5',
-                borderRadius: '16px',
-                padding: '14px 20px',
-                boxShadow: '0 4px 16px rgba(0, 56, 165, 0.06)',
-                backdropFilter: 'blur(28px) saturate(200%)',
-                WebkitBackdropFilter: 'blur(28px) saturate(200%)',
-                cursor: 'pointer',
-                textAlign: 'left',
-                position: 'relative',
-                overflow: 'hidden',
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; }}
-              onClick={() => {
-                const liveMeet = HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length];
-                setSelectedMeetId(liveMeet.id);
-              }}
-            >
-              {/* Glass Reflection Highlight Sheen */}
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '45%',
-                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 100%)',
-                pointerEvents: 'none',
-                borderRadius: '20px 20px 0 0'
-              }} />
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={heroTickerIndex}
-                  initial={{ opacity: 0, y: 22 }}
+                {/* Big Bold Headline matching reference */}
+                <motion.h1
+                  initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -22 }}
-                  transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
-                  style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: 'clamp(2.5rem, 5.5vw, 4.2rem)',
+                    fontWeight: 900,
+                    lineHeight: 1.08,
+                    marginBottom: '16px',
+                    letterSpacing: '-0.03em',
+                    textShadow: '0 2px 10px rgba(0, 0, 0, 0.85), 0 4px 24px rgba(0, 0, 0, 0.65)',
+                  }}
                 >
-                  {/* Left: Compact Competition Thumbnail Image Preview */}
-                  <div style={{ position: 'relative', width: '115px', height: '64px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.18)' }}>
-                    <img
-                      src={HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].img}
-                      alt={HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.75) 100%)' }} />
+                  Discover & track <br />
+                  <span style={{ color: '#FFFFFF' }}>great competitions</span>
+                </motion.h1>
 
-                    {/* Pulsing Live Badge */}
-                    <div style={{
-                      position: 'absolute',
-                      top: '4px',
-                      left: '4px',
-                      background: '#EF4444',
-                      color: '#FFF',
-                      fontSize: '0.58rem',
-                      fontWeight: 900,
-                      padding: '2px 5px',
-                      borderRadius: '5px',
-                      letterSpacing: '0.04em',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '3px',
-                      boxShadow: '0 2px 6px rgba(239, 68, 68, 0.4)'
-                    }}>
-                      <span style={{ position: 'relative', display: 'flex', width: '5px', height: '5px' }}>
-                        <span style={{ position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', background: '#FFF', opacity: 0.8, animation: 'ping 1.2s cubic-bezier(0,0,0.2,1) infinite' }} />
-                        <span style={{ position: 'relative', display: 'inline-flex', borderRadius: '50%', height: '5px', width: '5px', background: '#FFF' }} />
-                      </span>
-                      LIVE
-                    </div>
-                  </div>
+                {/* Subtitle matching reference */}
+                <motion.p
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: 'clamp(1.05rem, 2vw, 1.3rem)',
+                    fontWeight: 600,
+                    marginBottom: '28px',
+                    lineHeight: 1.4,
+                    textShadow: '0 2px 8px rgba(0, 0, 0, 0.85)',
+                  }}
+                >
+                  For athletes, by athletes
+                </motion.p>
 
-                  {/* Center Content: Meet Title, Venue, Live Standings Ticker */}
-                  <div style={{ flex: 1, minWidth: '220px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 900, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <Zap size={12} color="#EF4444" /> LIVE RESULTS
-                      </span>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 800, background: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)', color: t.textMuted, padding: '1px 6px', borderRadius: '100px' }}>
-                        {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].location}
-                      </span>
-                    </div>
-
-                    <h3 style={{ fontSize: '0.98rem', fontWeight: 900, color: t.text, margin: '0 0 4px', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '420px' }}>
-                      {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].title}
-                    </h3>
-
-                    {/* Live Ticker info line */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: t.textSub, flexWrap: 'wrap' }}>
-                      <span style={{ color: '#10B981', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                        <Activity size={12} /> {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].category}:
-                      </span>
-                      <span style={{ fontWeight: 700, color: t.text }}>
-                        {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].leader}
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.74rem', background: darkMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.1)', color: '#10B981', padding: '1px 5px', borderRadius: '5px', fontWeight: 800 }}>
-                        ⏱️ {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].time}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Right Action: Compact Encouraging Navigation Button */}
-                  <div style={{ flexShrink: 0 }}>
-                    <div style={{
-                      background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-                      color: '#FFF',
+                {/* Action Buttons Row */}
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.15 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap', marginBottom: '32px' }}
+                >
+                  {/* Primary Vibrant Green Button: "View the competition calendar ->" */}
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('competitions');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    style={{
+                      background: '#16A34A',
+                      color: '#FFFFFF',
                       fontWeight: 800,
-                      fontSize: '0.76rem',
-                      padding: '8px 14px',
+                      fontSize: '0.98rem',
+                      padding: '13px 24px',
                       borderRadius: '10px',
+                      border: 'none',
+                      cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '5px',
-                      boxShadow: '0 3px 10px rgba(239, 68, 68, 0.3)',
-                      transition: 'transform 0.2s ease'
-                    }}>
-                      Live Standings <ArrowRight size={14} />
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(22, 163, 74, 0.4)',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = '#15803D';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = '#16A34A';
+                      e.currentTarget.style.transform = 'none';
+                    }}
+                  >
+                    <span>View the competition calendar</span>
+                    <ArrowRight size={17} />
+                  </button>
+
+                  {/* Secondary Green Ghost Link: "Find an athlete ->" */}
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('athletes');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    style={{
+                      background: 'transparent',
+                      color: '#4ADE80',
+                      fontWeight: 800,
+                      fontSize: '0.98rem',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 4px',
+                      textShadow: '0 2px 8px rgba(0, 0, 0, 0.9)',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.color = '#86EFAC';
+                      e.currentTarget.style.transform = 'translateX(3px)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.color = '#4ADE80';
+                      e.currentTarget.style.transform = 'none';
+                    }}
+                  >
+                    <span>Find an athlete</span>
+                    <ArrowRight size={17} />
+                  </button>
+
+                  {/* Portal Access Button */}
+                  <button
+                    onClick={() => {
+                      if (isLoggedIn) {
+                        if (onChangePublicSubPage) onChangePublicSubPage('DASHBOARD');
+                      } else {
+                        window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { method: 'FAYDA' } }));
+                      }
+                    }}
+                    style={{
+                      background: 'rgba(0, 0, 0, 0.45)',
+                      color: '#F8FAFC',
+                      fontWeight: 700,
+                      fontSize: '0.86rem',
+                      border: '1px solid rgba(255, 255, 255, 0.28)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      transition: 'all 0.2s ease',
+                      backdropFilter: 'blur(8px)',
+                      boxShadow: '0 2px 10px rgba(0, 0, 0, 0.35)'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.65)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.45)'; }}
+                  >
+                    <UserCheck size={14} />
+                    <span>{isLoggedIn ? 'Go to Portal' : 'Portal Sign In'}</span>
+                  </button>
+                </motion.div>
+
+                {/* App Store & Google Play Phone Promo Strip */}
+                <motion.div
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.22 }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+                >
+                  <div style={{
+                    fontSize: '0.85rem',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    textShadow: '0 2px 6px rgba(0, 0, 0, 0.9)'
+                  }}>
+                    Athletics app on your phone. It is free
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                    {/* App Store Badge with 4.8 Rating */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          background: '#000000',
+                          border: '1px solid rgba(255, 255, 255, 0.22)',
+                          borderRadius: '9px',
+                          padding: '6px 14px',
+                          color: '#FFFFFF',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <svg width="17" height="20" viewBox="0 0 170 170" fill="currentColor">
+                          <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.07-7.77-7.94-12.22-14.6-6.19-9.35-11.11-20.2-14.75-32.55-3.64-12.35-5.46-24.08-5.46-35.18 0-15.54 3.8-28.16 11.41-37.86 7.6-9.7 17.1-14.65 28.5-14.86 5.86 0 12.16 1.62 18.9 4.86 6.74 3.24 11.23 4.97 13.48 5.19 1.96-.22 6.53-1.95 13.72-5.19 7.19-3.24 13.38-4.75 18.57-4.54 13.91.65 24.99 5.86 33.24 15.64-12.17 7.4-18.15 17.39-17.93 29.99.22 9.79 3.91 18.04 11.08 24.77 7.17 6.74 15.65 10.54 25.43 11.41-2.17 6.74-4.89 13.59-8.16 20.54zM119.22 33.04c0-7.39 2.61-14.35 7.82-20.87 5.22-6.52 11.74-10.98 19.57-13.37-.22 1.3-.43 2.5-.65 3.59-1.52 7.17-4.57 13.8-9.13 19.9-4.57 6.09-10.43 10.43-17.61 13.04z" />
+                        </svg>
+                        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, textAlign: 'left' }}>
+                          <span style={{ fontSize: '0.55rem', opacity: 0.85, textTransform: 'uppercase' }}>Download on the</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>App Store</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#FBBF24', fontWeight: 800 }}>
+                        <span>★★★★★</span>
+                        <span style={{ color: '#FFFFFF', fontSize: '0.74rem' }}>4.8</span>
+                      </div>
+                    </div>
+
+                    {/* Google Play Store Badge with 4.5 Rating */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          background: '#000000',
+                          border: '1px solid rgba(255, 255, 255, 0.22)',
+                          borderRadius: '9px',
+                          padding: '6px 14px',
+                          color: '#FFFFFF',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+                          cursor: 'pointer',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <svg width="17" height="19" viewBox="0 0 512 512" fill="none">
+                          <path d="M47.2 12.7C41.4 18.8 38 28.2 38 40.2V471.8c0 12 3.4 21.4 9.2 27.5l1.5 1.5L273 276.5v-5L48.7 11.2l-1.5 1.5z" fill="#00D7FF"/>
+                          <path d="M351.4 355.2l-78.4-78.7v-5l78.4-78.7 1.8 1 93 52.8c26.5 15 26.5 39.7 0 54.8l-93 52.8-1.8 1z" fill="#FFCF00"/>
+                          <path d="M273 271.5L48.7 499.3c8.9 9.4 23.4 10.6 39.9 1.3l264.6-150.4-80.2-78.7z" fill="#FF3A44"/>
+                          <path d="M273 240.5l80.2-78.7L88.6 11.4C72.1 2.1 57.6 3.3 48.7 12.7L273 240.5z" fill="#00E676"/>
+                        </svg>
+                        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, textAlign: 'left' }}>
+                          <span style={{ fontSize: '0.55rem', opacity: 0.85, textTransform: 'uppercase' }}>GET IT ON</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>Google Play</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#FBBF24', fontWeight: 800 }}>
+                        <span>★★★★★</span>
+                        <span style={{ color: '#FFFFFF', fontSize: '0.74rem' }}>4.5</span>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
-              </AnimatePresence>
-
-              {/* Bottom Dot Nav Indicators */}
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  Click to view details
-                </span>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  {HERO_LIVE_RESULTS.map((m, idx) => (
-                    <button
-                      key={m.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setHeroTickerIndex(idx);
-                      }}
-                      style={{
-                        width: heroTickerIndex % HERO_LIVE_RESULTS.length === idx ? '18px' : '5px',
-                        height: '5px',
-                        borderRadius: '100px',
-                        background: heroTickerIndex % HERO_LIVE_RESULTS.length === idx ? '#EF4444' : (darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'),
-                        border: 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                    />
-                  ))}
-                </div>
               </div>
-            </motion.div>
 
-            </>}
-            {/* Action Buttons (Primary & Secondary CTAs) */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15 }}
-              style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '16px', marginBottom: '24px' }}
+              {/* Right Column: "Registration Open" Spotlight Card & Live Ticker */}
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                {HERO_LIVE_RESULTS.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.15 }}
+                    style={{
+                      width: '100%',
+                      maxWidth: '520px',
+                      background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.94) 0%, rgba(30, 41, 59, 0.88) 100%)',
+                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      borderLeft: '4px solid #16A34A',
+                      borderRadius: '20px',
+                      padding: '20px',
+                      boxShadow: '0 24px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(34, 197, 94, 0.12)',
+                      backdropFilter: 'blur(28px)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                    onClick={() => {
+                      const liveMeet = HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length];
+                      if (liveMeet?.id) setSelectedMeetId(liveMeet.id);
+                    }}
+                  >
+                    {/* Inner sheen */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '40%',
+                      background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%)',
+                      pointerEvents: 'none'
+                    }} />
+
+                    {/* Spotlight Header with Badges */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 900,
+                        background: 'rgba(34, 197, 94, 0.18)',
+                        border: '1px solid rgba(34, 197, 94, 0.4)',
+                        color: '#4ADE80',
+                        textTransform: 'uppercase',
+                        padding: '3px 10px',
+                        borderRadius: '100px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ADE80', boxShadow: '0 0 8px #4ADE80' }} />
+                        REGISTRATION OPEN
+                      </span>
+
+                      <span style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 800,
+                        background: 'rgba(59, 130, 246, 0.18)',
+                        border: '1px solid rgba(59, 130, 246, 0.35)',
+                        color: '#93C5FD',
+                        padding: '3px 10px',
+                        borderRadius: '100px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <Clock size={11} className="text-blue-400" />
+                        {formatDeadlineText(
+                          HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].registrationDeadline,
+                          HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].time
+                        )}
+                      </span>
+                    </div>
+
+                    {/* Thumbnail & Title */}
+                    <div style={{ display: 'flex', gap: '14px', marginBottom: '14px', alignItems: 'center' }}>
+                      <div style={{ position: 'relative', width: '100px', height: '64px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0, boxShadow: '0 4px 12px rgba(0,0,0,0.4)', background: '#020617' }}>
+                        <img
+                          src={HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].img || '/images/banner_grand_prix.png'}
+                          alt={HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].title}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = '/images/banner_grand_prix.png';
+                          }}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#FFFFFF', margin: '0 0 4px', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].title}
+                        </h3>
+                        <div style={{ fontSize: '0.74rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <MapPin size={11} className="text-blue-400" />
+                          <span>{HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].location || 'Addis Ababa Stadium'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Discipline Tags */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#86EFAC', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Trophy size={12} className="text-emerald-400" /> Disciplines:
+                      </span>
+                      {(HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length].disciplines?.slice(0, 3) || ['Track', 'Field', 'Relay']).map((d: string, idx: number) => (
+                        <span key={idx} style={{
+                          background: 'rgba(34, 197, 94, 0.12)',
+                          border: '1px solid rgba(34, 197, 94, 0.25)',
+                          color: '#86EFAC',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.7rem',
+                          fontWeight: 700
+                        }}>
+                          {d}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Direct Register Action & Indicators */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                      {/* Nav Dots */}
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {HERO_LIVE_RESULTS.map((m, idx) => (
+                          <button
+                            key={m.id || idx}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setHeroTickerIndex(idx);
+                            }}
+                            style={{
+                              width: heroTickerIndex % HERO_LIVE_RESULTS.length === idx ? '18px' : '6px',
+                              height: '5px',
+                              borderRadius: '100px',
+                              background: heroTickerIndex % HERO_LIVE_RESULTS.length === idx ? '#22C55E' : 'rgba(255,255,255,0.25)',
+                              border: 'none',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s ease'
+                            }}
+                          />
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const liveMeet = HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length];
+                          if (liveMeet?.id) setSelectedMeetId(liveMeet.id);
+                        }}
+                        style={{
+                          background: 'linear-gradient(135deg, #16A34A 0%, #2563EB 100%)',
+                          color: '#FFFFFF',
+                          fontWeight: 800,
+                          fontSize: '0.82rem',
+                          padding: '9px 18px',
+                          borderRadius: '10px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: '0 4px 14px rgba(22, 163, 74, 0.4)'
+                        }}
+                      >
+                        <span>Register Now</span>
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
+            </div>
+          </div>
+
+          {/* Curved Wave Bottom Boundary matching reference image */}
+          <svg
+            viewBox="0 0 1440 65"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            style={{
+              position: 'absolute',
+              bottom: -1,
+              left: 0,
+              width: '100%',
+              height: '50px',
+              pointerEvents: 'none',
+              zIndex: 10
+            }}
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0 65 Q 720 0 1440 65 L 1440 65 L 0 65 Z"
+              fill={darkMode ? t.surface : '#FFFFFF'}
+            />
+          </svg>
+
+          {/* Centered Circular Scroll-Down Button matching reference image */}
+          <div style={{
+            position: 'absolute',
+            bottom: '10px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 20
+          }}>
+            <button
+              onClick={() => {
+                const el = document.getElementById('competitions');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '50%',
+                background: darkMode ? '#1E293B' : '#FFFFFF',
+                color: darkMode ? '#F8FAFC' : '#0F172A',
+                border: darkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.08)',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.25s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(2px) scale(1.08)';
+                e.currentTarget.style.boxShadow = '0 6px 18px rgba(0, 0, 0, 0.22)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.15)';
+              }}
+              aria-label="Scroll down to competitions"
             >
-              {/* Primary CTA */}
-              {isLoggedIn ? (
-                <button
-                  onClick={() => {
-                    if (onChangePublicSubPage) onChangePublicSubPage('DASHBOARD');
-                  }}
-                  className="btn-accent"
-                  style={{
-                    background: '#1D4ED8',
-                    color: '#FFFFFF',
-                    fontWeight: 800,
-                    fontSize: '0.98rem',
-                    padding: '14px 28px',
-                    borderRadius: '14px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    transition: 'all 0.25s ease'
-                  }}
-                >
-                  <span>Go to {currentRole === 'CLUB' ? 'Club' : 'Athlete'} Portal</span>
-                  <ArrowRight size={18} />
-                </button>
-              ) : isRegistered ? (
-                <button
-                  onClick={() => {
-                    if (onSelectRole) onSelectRole('ATHLETE');
-                  }}
-                  className="btn-accent"
-                  style={{
-                    background: '#1D4ED8',
-                    color: '#FFFFFF',
-                    fontWeight: 800,
-                    fontSize: '0.98rem',
-                    padding: '14px 28px',
-                    borderRadius: '14px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    transition: 'all 0.25s ease'
-                  }}
-                >
-                  <CheckCircle size={20} />
-                  Registration Completed · Access Portal
-                </button>
-              ) : (
-                <button
-                  onClick={() => window.dispatchEvent(new CustomEvent('openAuthModal', { detail: { method: 'FAYDA' } }))}
-                  className="btn-accent"
-                  style={{
-                    background: '#1D4ED8',
-                    color: '#FFFFFF',
-                    fontWeight: 800,
-                    fontSize: '0.98rem',
-                    padding: '14px 28px',
-                    borderRadius: '14px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.12)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    transition: 'all 0.25s ease'
-                  }}
-                >
-                  <CheckCircle size={20} />
-                  Sign In to Your Portal
-                </button>
-              )}
-
-
-
-              {/* Secondary CTA */}
-              <button
-                onClick={() => {
-                  const el = document.getElementById('competitions');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                style={{
-                  background: darkMode ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF',
-                  border: '1px solid ' + (darkMode ? 'rgba(255, 255, 255, 0.16)' : '#CBD5E1'),
-                  backdropFilter: 'blur(12px)',
-                  color: t.text,
-                  fontWeight: 800,
-                  fontSize: '0.98rem',
-                  padding: '14px 28px',
-                  borderRadius: '14px',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.04)',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = t.bgAlt; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = darkMode ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF'; e.currentTarget.style.transform = 'none'; }}
-              >
-                <Trophy size={20} color="#0284C7" />
-                {siteContent?.hero?.secondaryBtnText || 'Explore Competitions'}
-              </button>
-            </motion.div>
-
+              <ChevronDown size={22} strokeWidth={2.5} />
+            </button>
           </div>
         </section>
       )}
