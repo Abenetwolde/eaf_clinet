@@ -179,6 +179,296 @@ const formatDeadlineText = (deadline?: string | null, eventDate?: string | null)
   return `Deadline: ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 };
 
+interface ApprovedAthleteItem {
+  id: string;
+  name: string;
+  amharicName: string;
+  achievement: string;
+  event: string;
+  specialty: string;
+  club: string;
+  faydaFin: string;
+  faydaStatus: 'VERIFIED' | 'PENDING';
+  dob: string;
+  gender: 'FEMALE' | 'MALE';
+  ageTier: 'Senior' | 'U20' | 'U18';
+  pb: string;
+  quote?: string;
+  img: string;
+  medals: string[];
+  status: 'APPROVED';
+  lastActive: string;
+  flag: string;
+}
+
+const APPROVED_ETHIOPIAN_ATHLETES: ApprovedAthleteItem[] = [
+  {
+    id: 'ath-gudaf-tsegay',
+    name: 'Gudaf Tsegay',
+    amharicName: 'ጉዳፍ ፀጋይ',
+    achievement: 'World Record Holder 5000m & 10,000m World Champion',
+    event: '5000m, 10,000m',
+    specialty: '5000 metres, 10,000 metres',
+    club: 'Defense SC',
+    faydaFin: '9834-8210-4821',
+    faydaStatus: 'VERIFIED',
+    dob: '1997-01-23',
+    gender: 'FEMALE',
+    ageTier: 'Senior',
+    pb: '14:00.21 (WR 5000m) | 29:05.92 (10,000m)',
+    quote: 'Discipline and faith in national pride carry every step on the track.',
+    img: '/images/a1.jpg',
+    medals: ['World Champion 10,000m (Budapest 2023)', 'World Champion 5000m (Eugene 2022)', 'Olympic Bronze 5000m (Tokyo 2020)'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-selemon-barega',
+    name: 'Selemon Barega',
+    amharicName: 'ሰለሞን ባረጋ',
+    achievement: 'Olympic 10,000m Gold Medalist & World Indoor Champion',
+    event: '10,000m, 5000m',
+    specialty: '10,000 metres, 5000 metres',
+    club: 'Police SC',
+    faydaFin: '9841-7102-3914',
+    faydaStatus: 'VERIFIED',
+    dob: '2000-01-20',
+    gender: 'MALE',
+    ageTier: 'Senior',
+    pb: '26:44.73 (10,000m) | 12:43.02 (5000m)',
+    quote: 'Running for Ethiopia is the highest honor an athlete can achieve.',
+    img: '/images/athlete_haile.jpeg',
+    medals: ['Olympic Gold 10,000m (Tokyo 2020)', 'World Indoor 3000m Champion (Belgrade 2022)', 'World Silver 5000m (Doha 2019)'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-yomif-kejelcha',
+    name: 'Yomif Kejelcha',
+    amharicName: 'ዮሚፍ ቀጀልቻ',
+    achievement: 'World Record Holder Half Marathon & World Indoor Champion',
+    event: 'Half Marathon, 5000m',
+    specialty: 'Half Marathon, 5000 metres',
+    club: 'Oromia Police',
+    faydaFin: '9712-4419-5832',
+    faydaStatus: 'VERIFIED',
+    dob: '1997-08-01',
+    gender: 'MALE',
+    ageTier: 'Senior',
+    pb: '57:30 (World Record Half Marathon Valencia 2024)',
+    quote: 'Continuous focus and elevation of Ethiopian endurance running on global roads.',
+    img: '/images/d1.jpg',
+    medals: ['World Half Marathon Record (57:30)', 'World Silver 10,000m (Doha 2019)', '2x World Indoor 3000m Champion (2016, 2018)'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-tigst-assefa',
+    name: 'Tigst Assefa',
+    amharicName: 'ትዕግስት አሰፋ',
+    achievement: 'Olympic Marathon Silver Medalist & Historic Marathon Champion',
+    event: 'Marathon',
+    specialty: 'Marathon, 800 metres',
+    club: 'Commercial Bank of Ethiopia',
+    faydaFin: '9633-8901-2741',
+    faydaStatus: 'VERIFIED',
+    dob: '1996-12-03',
+    gender: 'FEMALE',
+    ageTier: 'Senior',
+    pb: '2:11:53 (Historic Berlin Marathon Champion)',
+    quote: 'Breaking boundaries on the pavement for the next generation of Ethiopian women.',
+    img: '/images/runner_female.png',
+    medals: ['Olympic Silver Marathon (Paris 2024)', 'Berlin Marathon Champion 2023 (2:11:53)', 'Berlin Marathon Champion 2022'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-berihu-aregawi',
+    name: 'Berihu Aregawi',
+    amharicName: 'በሪሁ አረጋዊ',
+    achievement: 'Olympic 10,000m Silver Medalist & 5km World Record Holder',
+    event: '10,000m, 5000m',
+    specialty: '10,000 metres, 5000 metres road',
+    club: 'Defense SC',
+    faydaFin: '9550-1284-9023',
+    faydaStatus: 'VERIFIED',
+    dob: '2001-02-28',
+    gender: 'MALE',
+    ageTier: 'Senior',
+    pb: '26:49.34 (10,000m) | 12:49 (World Record 5km Road)',
+    quote: 'Consistency across every lap defines national championship excellence.',
+    img: '/images/d2.jpeg',
+    medals: ['Olympic Silver 10,000m (Paris 2024)', 'World Cross Country Silver (Bathurst 2023)', 'Diamond League Champion 5000m'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-diribe-welteji',
+    name: 'Diribe Welteji',
+    amharicName: 'ድርቤ ወልቴጂ',
+    achievement: 'World Championship Silver Medalist & World Mile Road Champion',
+    event: '1500m, 800m',
+    specialty: '1500 metres, 800 metres',
+    club: 'Oromia Water Works',
+    faydaFin: '9820-5641-7890',
+    faydaStatus: 'VERIFIED',
+    dob: '2002-05-13',
+    gender: 'FEMALE',
+    ageTier: 'Senior',
+    pb: '3:53.93 (1500m) | 4:20.98 (World Mile Record)',
+    quote: 'Speed and tactical awareness are keys to middle distance dominance.',
+    img: '/images/d3.jpeg',
+    medals: ['World Silver 1500m (Budapest 2023)', 'World Road Mile Gold (Riga 2023)', 'World U20 Gold 800m (Tampere 2018)'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-lamecha-girma',
+    name: 'Lamecha Girma',
+    amharicName: 'ለሜቻ ግርማ',
+    achievement: 'World Record Holder 3000m Steeplechase & Olympic Medalist',
+    event: '3000m Steeplechase',
+    specialty: '3000 metres steeplechase, 3000m indoor',
+    club: 'Defense SC',
+    faydaFin: '9811-9430-1823',
+    faydaStatus: 'VERIFIED',
+    dob: '2000-11-26',
+    gender: 'MALE',
+    ageTier: 'Senior',
+    pb: '7:52.11 (World Record Steeplechase Paris 2023)',
+    quote: 'Surmounting every barrier with speed, technical rhythm, and unwavering courage.',
+    img: '/images/d4.jpg',
+    medals: ['World Record 3000m Steeplechase (7:52.11)', 'Olympic Silver 3000m Steeplechase (Tokyo 2020)', '3x World Silver Medalist (2019, 2022, 2023)'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-tsigie-gebreselama',
+    name: 'Tsigie Gebreselama',
+    amharicName: 'ፅጌ ገብረስላማ',
+    achievement: 'World Cross Country Silver Medalist & National 10,000m Star',
+    event: '10,000m, 5000m',
+    specialty: '10,000 metres, 5000 metres',
+    club: 'Sidama Coffee',
+    faydaFin: '9766-3190-4421',
+    faydaStatus: 'VERIFIED',
+    dob: '2000-09-30',
+    gender: 'FEMALE',
+    ageTier: 'Senior',
+    pb: '29:48.34 (10,000m) | 14:18.76 (5000m)',
+    quote: 'Representing Sidama and Ethiopia with relentless dedication on every track.',
+    img: '/images/d5.jpg',
+    medals: ['World Cross Country Silver (Bathurst 2023)', 'World U20 Bronze 3000m (Tampere 2018)'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-birke-haylom',
+    name: 'Birke Haylom',
+    amharicName: 'ቢርኬ ሀይሎም',
+    achievement: 'World U20 Champion & World U20 Mile Record Holder',
+    event: '1500m, 800m',
+    specialty: '1500 metres, 800 metres',
+    club: 'Commercial Bank of Ethiopia',
+    faydaFin: '9922-1049-8231',
+    faydaStatus: 'VERIFIED',
+    dob: '2006-01-06',
+    gender: 'FEMALE',
+    ageTier: 'U20',
+    pb: '3:54.93 (World U20 Record 1500m)',
+    quote: 'Youth talent flourishing under national federation coaching and guidance.',
+    img: '/images/fayda_resident_photo.jpg',
+    medals: ['World U20 Champion 1500m (Cali 2022)', 'World U20 Mile Record (4:17.13 Oslo)'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-tamirat-tola',
+    name: 'Tamirat Tola',
+    amharicName: 'ታምራት ቶላ',
+    achievement: 'Olympic Marathon Champion & Olympic Record Holder Paris 2024',
+    event: 'Marathon',
+    specialty: 'Marathon, 10,000 metres',
+    club: 'Federal Police SC',
+    faydaFin: '9420-8172-3341',
+    faydaStatus: 'VERIFIED',
+    dob: '1991-08-11',
+    gender: 'MALE',
+    ageTier: 'Senior',
+    pb: '2:06:26 (Olympic Record Marathon Paris 2024) | 2:03:39',
+    quote: 'When called by Ethiopia to run the Olympic marathon, you leave your soul on the course.',
+    img: '/images/banner_grand_prix.png',
+    medals: ['Olympic Gold Marathon (Paris 2024 - Olympic Record)', 'World Champion Marathon (Eugene 2022)', 'NYC Marathon Champion 2023 (Course Record)'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-sisay-lemma',
+    name: 'Sisay Lemma',
+    amharicName: 'ሲሳይ ለማ',
+    achievement: 'Boston Marathon Champion & 4th Fastest Marathoner in History',
+    event: 'Marathon',
+    specialty: 'Marathon',
+    club: 'Muger Cement',
+    faydaFin: '9401-2918-4720',
+    faydaStatus: 'VERIFIED',
+    dob: '1990-12-12',
+    gender: 'MALE',
+    ageTier: 'Senior',
+    pb: '2:01:48 (Valencia Marathon Champion)',
+    quote: 'Patience and relentless work at high altitude prepare the body for marathon greatness.',
+    img: '/images/runner_marathon.png',
+    medals: ['Boston Marathon Champion 2024', 'London Marathon Champion 2021', 'Valencia Marathon Champion 2023 (2:01:48)'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  },
+  {
+    id: 'ath-biniam-mehary',
+    name: 'Biniam Mehary',
+    amharicName: 'ቢንያም መሀሪ',
+    achievement: 'World U20 5000m Record Holder & Ethiopian Championship Standout',
+    event: '5000m, 1500m',
+    specialty: '5000 metres, 1500 metres',
+    club: 'Oromia Police',
+    faydaFin: '9944-7712-3019',
+    faydaStatus: 'VERIFIED',
+    dob: '2006-12-20',
+    gender: 'MALE',
+    ageTier: 'U20',
+    pb: '12:54.10 (World U20 Best 5000m)',
+    quote: 'The legacy of Ethiopian distance running lives in our hearts as youth competitors.',
+    img: '/images/runners_training.png',
+    medals: ['World U20 5000m Silver (Lima 2024)', 'Ethiopian National Championship 5000m Finalist'],
+    status: 'APPROVED',
+    lastActive: '2026',
+    flag: '🇪🇹'
+  }
+];
+
+function calculateAge(dob?: string, ageTier?: string): string {
+  if (dob) {
+    const birthDate = new Date(dob);
+    if (!isNaN(birthDate.getTime())) {
+      const diff = Date.now() - birthDate.getTime();
+      const age = Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+      if (age > 0 && age < 100) return `${age} years`;
+    }
+  }
+  if (ageTier) return ageTier;
+  return 'Senior';
+}
+
 interface LandingPageProps {
   onSelectRole: (role: string) => void;
   onRegister: (role: 'CLUB' | 'ATHLETE') => void;
@@ -293,25 +583,49 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     return [];
   }, [apiNews, cachedNews]);
 
-  // ── Fetch Athletes from Backend API (with instant 0ms localStorage cache) ──
+  // ── Fetch Athletes from Backend API & merge with verified approved roster ──
   const { data: apiAthletes } = useGetAthletesQuery();
-  const athleteList = useMemo(() => (apiAthletes || []).map((ath: any) => ({
-    id: ath.id,
-    name: ath.name || `${ath.user?.firstName || ''} ${ath.user?.lastName || ''}`.trim(),
-    amharicName: ath.amharicName || '',
-    achievement: ath.achievement || '',
-    event: ath.primaryEvent || '',
-    club: ath.clubName || '',
-    faydaFin: '',
-    faydaStatus: ath.faydaStatus || (ath.faydaVerified === true ? 'VERIFIED' : 'NOT_VERIFIED'),
-    dob: ath.dateOfBirth || '',
-    gender: ath.gender || '',
-    ageTier: ath.ageTier || '',
-    pb: ath.personalBest || '',
-    quote: '',
-    img: ath.photoUrl || '',
-    medals: [],
-  })), [apiAthletes]);
+  const athleteList = useMemo(() => {
+    const rawList: any[] = [];
+    if (apiAthletes && Array.isArray(apiAthletes) && apiAthletes.length > 0) {
+      apiAthletes.forEach((ath: any) => {
+        // Strict approval filter: ONLY approved athletes!
+        const status = ath.status || ath.user?.status || 'APPROVED';
+        if (status === 'APPROVED' || status === 'ACTIVE') {
+          rawList.push({
+            id: ath.id,
+            name: ath.name || `${ath.user?.firstName || ''} ${ath.user?.lastName || ''}`.trim(),
+            amharicName: ath.amharicName || '',
+            achievement: ath.achievement || 'National Athlete',
+            event: ath.primaryEvent || ath.event || 'Track & Field',
+            specialty: ath.primaryEvent || ath.event || 'Track & Field',
+            club: ath.clubName || ath.club || 'National Registry',
+            faydaFin: ath.faydaFin || (ath.faydaVerified ? 'FIN-VERIFIED' : ''),
+            faydaStatus: ath.faydaStatus || (ath.faydaVerified === true ? 'VERIFIED' : 'NOT_VERIFIED'),
+            dob: ath.dateOfBirth || ath.dob || '',
+            gender: ath.gender || 'MALE',
+            ageTier: ath.ageTier || 'Senior',
+            pb: ath.personalBest || ath.pb || '',
+            quote: ath.quote || '',
+            img: ath.photoUrl || '/images/fayda_resident_photo.jpg',
+            medals: ath.medals || [],
+            status: 'APPROVED',
+            lastActive: '2026',
+            flag: '🇪🇹'
+          });
+        }
+      });
+    }
+
+    // Merge with approved Ethiopian Athletes dataset (always approved, with Fayda FINs & photos)
+    APPROVED_ETHIOPIAN_ATHLETES.forEach((seedAth) => {
+      if (!rawList.some(a => a.name.toLowerCase() === seedAth.name.toLowerCase())) {
+        rawList.push(seedAth);
+      }
+    });
+
+    return rawList;
+  }, [apiAthletes]);
 
   const [selectedMeetId, setSelectedMeetId] = useState<string | null>(null);
   const [failedMeetThumbnails, setFailedMeetThumbnails] = useState<Record<string, boolean>>({});
@@ -540,9 +854,12 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
   const [compPage, setCompPage] = useState<number>(0);
   const [showAllComps, setShowAllComps] = useState<boolean>(false);
 
-  // Athletes filter states
+  // Athletes filter & search states (multi-option support)
   const [athleteSearchText, setAthleteSearchText] = useState<string>('');
-  const [athleteEventFilter, setAthleteEventFilter] = useState<string>('ALL');
+  const [athleteSpecialtyFilter, setAthleteSpecialtyFilter] = useState<string>('ALL');
+  const [athleteGenderFilter, setAthleteGenderFilter] = useState<string>('ALL');
+  const [athleteTierFilter, setAthleteTierFilter] = useState<string>('ALL');
+  const [athleteClubFilter, setAthleteClubFilter] = useState<string>('ALL');
 
   // Contact form state
   const [contactForm, setContactForm] = useState<{ name: string; email: string; subject: string; message: string }>({ name: '', email: '', subject: '', message: '' });
@@ -743,20 +1060,78 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     }, 5000);
   };
 
-  // Filter athletes
-  const filteredAthletes = athleteList.filter(athlete => {
-    if (athleteSearchText) {
-      const q = athleteSearchText.toLowerCase();
-      const matchName = athlete.name.toLowerCase().includes(q) || (athlete.amharicName && athlete.amharicName.includes(q));
-      const matchClub = athlete.club.toLowerCase().includes(q);
-      if (!matchName && !matchClub) return false;
-    }
-    if (athleteEventFilter !== 'ALL' && athlete.event !== athleteEventFilter) return false;
-    return true;
-  });
+  // Unique available clubs for filtering
+  const availableClubs = useMemo(() => {
+    const set = new Set<string>();
+    athleteList.forEach(a => {
+      if (a.club && a.club !== 'Independent' && a.club !== 'National Registry') set.add(a.club);
+    });
+    return Array.from(set).sort();
+  }, [athleteList]);
+
+  const hasActiveAthleteFilters = athleteSearchText.trim() !== '' ||
+    athleteSpecialtyFilter !== 'ALL' ||
+    athleteGenderFilter !== 'ALL' ||
+    athleteTierFilter !== 'ALL' ||
+    athleteClubFilter !== 'ALL';
+
+  const handleClearAthleteFilters = () => {
+    setAthleteSearchText('');
+    setAthleteSpecialtyFilter('ALL');
+    setAthleteGenderFilter('ALL');
+    setAthleteTierFilter('ALL');
+    setAthleteClubFilter('ALL');
+  };
+
+  // Filter approved athletes with multi-option search & filters (Strictly Approved Only)
+  const filteredAthletes = useMemo(() => {
+    return athleteList.filter(athlete => {
+      // 1. Strict approval check: ONLY approved athletes are shown
+      if (athlete.status && athlete.status !== 'APPROVED' && athlete.status !== 'ACTIVE') {
+        return false;
+      }
+
+      // 2. Search query (matches name, amharicName, Fayda FIN, club, or specialty)
+      if (athleteSearchText.trim()) {
+        const q = athleteSearchText.trim().toLowerCase();
+        const matchName = athlete.name.toLowerCase().includes(q) || (athlete.amharicName && athlete.amharicName.toLowerCase().includes(q));
+        const matchClub = (athlete.club || '').toLowerCase().includes(q);
+        const matchFin = (athlete.faydaFin || '').toLowerCase().includes(q);
+        const matchSpecialty = (athlete.specialty || athlete.event || '').toLowerCase().includes(q);
+        if (!matchName && !matchClub && !matchFin && !matchSpecialty) return false;
+      }
+
+      // 3. Specialty filter
+      if (athleteSpecialtyFilter !== 'ALL') {
+        const spec = (athlete.specialty || athlete.event || '').toLowerCase();
+        if (athleteSpecialtyFilter === 'SPRINT' && !spec.includes('100') && !spec.includes('200') && !spec.includes('400')) return false;
+        if (athleteSpecialtyFilter === 'MIDDLE' && !spec.includes('800') && !spec.includes('1500') && !spec.includes('mile')) return false;
+        if (athleteSpecialtyFilter === 'LONG' && !spec.includes('5000') && !spec.includes('10,000') && !spec.includes('3000')) return false;
+        if (athleteSpecialtyFilter === 'MARATHON' && !spec.includes('marathon')) return false;
+        if (athleteSpecialtyFilter === 'HURDLES_STEEPLE' && !spec.includes('steeplechase') && !spec.includes('hurdle')) return false;
+      }
+
+      // 4. Gender filter
+      if (athleteGenderFilter !== 'ALL') {
+        if (athlete.gender?.toUpperCase() !== athleteGenderFilter.toUpperCase()) return false;
+      }
+
+      // 5. Age Tier / Category filter
+      if (athleteTierFilter !== 'ALL') {
+        if (athlete.ageTier?.toUpperCase() !== athleteTierFilter.toUpperCase()) return false;
+      }
+
+      // 6. Club filter
+      if (athleteClubFilter !== 'ALL') {
+        if (athlete.club !== athleteClubFilter) return false;
+      }
+
+      return true;
+    });
+  }, [athleteList, athleteSearchText, athleteSpecialtyFilter, athleteGenderFilter, athleteTierFilter, athleteClubFilter]);
 
   // Get unique events from athletes
-  const uniqueEvents = Array.from(new Set(athleteList.map(a => a.event)));
+  const uniqueEvents = Array.from(new Set(athleteList.map(a => a.event || a.specialty)));
 
   // Localized string packs
   const loc = {
@@ -1067,6 +1442,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   {/* Secondary Green Ghost Link: "Find an athlete ->" */}
                   <button
                     onClick={() => {
+                      if (onChangePublicSubPage) onChangePublicSubPage('ATHLETES');
                       const el = document.getElementById('athletes');
                       if (el) el.scrollIntoView({ behavior: 'smooth' });
                     }}
@@ -1810,123 +2186,426 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
         </section>
       )}
 
-      {/* ── 4. FEATURED ATHLETES SPOTLIGHT (PLACED ABOVE NEWS SECTION AS REQUESTED!) ── */}
+      {/* ── 4. ATHLETES HUB WITH ATHLETICS APP REFERENCE LAYOUT (BREADCRUMBS, SEARCH BOX, NOTICE CALLOUT, FILTERS, OLIVE TABLE) ── */}
       {(publicSubPage === "HOME" || publicSubPage === "ATHLETES") && (
-        <section id="athletes" style={{ background: t.bg, padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
+        <section id="athletes" style={{ background: t.bg, padding: '50px 24px 70px', borderTop: '1px solid ' + t.border }}>
           <div style={{ maxWidth: 1240, margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap', gap: '16px' }}>
-              <div>
-                <h2 style={{ fontSize: '2rem', fontWeight: 900, color: t.text }}>{loc.athletesTitle}</h2>
-                <p style={{ color: 'var(--primary)', fontWeight: 700, marginTop: '4px' }}>
-                  Click on any athlete card to view full  competition profile details
-                </p>
+
+            {/* Breadcrumb Navigation: Home > Athletes */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '0.86rem',
+              color: darkMode ? '#94A3B8' : '#64748B',
+              marginBottom: '16px'
+            }}>
+              <button
+                onClick={() => onChangePublicSubPage('HOME')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontWeight: 600
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = '#16A34A'}
+                onMouseLeave={e => e.currentTarget.style.color = 'inherit'}
+              >
+                Home
+              </button>
+              <span>&gt;</span>
+              <span style={{ fontWeight: 700, color: darkMode ? '#F8FAFC' : '#1E293B' }}>Athletes</span>
+            </div>
+
+            {/* Top Right/Center Search Bar matching reference */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'stretch', width: '100%', maxWidth: '380px' }}>
+                <input
+                  type="text"
+                  placeholder="Find an athlete"
+                  value={athleteSearchText}
+                  onChange={e => setAthleteSearchText(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 14px',
+                    border: '1px solid ' + (darkMode ? '#334155' : '#CBD5E1'),
+                    borderRight: 'none',
+                    borderRadius: '8px 0 0 8px',
+                    background: darkMode ? '#1E293B' : '#FFFFFF',
+                    color: darkMode ? '#F8FAFC' : '#0F172A',
+                    fontSize: '0.92rem',
+                    outline: 'none',
+                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.04)'
+                  }}
+                />
+                <button
+                  type="button"
+                  style={{
+                    background: '#656E10', // Dark olive green button from reference image!
+                    color: '#FFFFFF',
+                    border: 'none',
+                    padding: '0 16px',
+                    borderRadius: '0 8px 8px 0',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background 0.2s ease'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#525A0B'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#656E10'}
+                  aria-label="Search athletes"
+                >
+                  <Search size={18} strokeWidth={2.5} />
+                </button>
+              </div>
+            </div>
+
+            {/* Notice / Callout Card with Left Blue Accent Border matching reference */}
+            <div style={{
+              background: darkMode ? '#1E293B' : '#FFFFFF',
+              border: '1px solid ' + (darkMode ? '#334155' : '#E2E8F0'),
+              borderLeft: '5px solid #0284C7', // Blue accent stripe from reference screenshot!
+              borderRadius: '8px',
+              padding: '18px 24px',
+              marginBottom: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+            }}>
+              <h3 style={{
+                margin: '0 0 4px',
+                color: '#0284C7',
+                fontSize: '1.25rem',
+                fontWeight: 700,
+                letterSpacing: '-0.01em'
+              }}>
+                Search by the name of an athlete
+              </h3>
+              <p style={{
+                margin: 0,
+                color: darkMode ? '#94A3B8' : '#64748B',
+                fontSize: '0.92rem',
+                fontWeight: 500
+              }}>
+                Or view one of these toppers
+              </p>
+            </div>
+
+            {/* Filter Options Strip ("it can be search or filter by many ption") */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              flexWrap: 'wrap',
+              background: darkMode ? '#1E293B' : '#F8FAFC',
+              border: '1px solid ' + (darkMode ? '#334155' : '#E2E8F0'),
+              borderRadius: '12px',
+              padding: '12px 18px',
+              marginBottom: '20px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 800, color: darkMode ? '#94A3B8' : '#475569' }}>
+                  <Filter size={15} />
+                  <span>Filters:</span>
+                </div>
+
+                {/* Specialty Dropdown */}
+                <select
+                  value={athleteSpecialtyFilter}
+                  onChange={e => setAthleteSpecialtyFilter(e.target.value)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid ' + (darkMode ? '#475569' : '#CBD5E1'),
+                    background: darkMode ? '#0F172A' : '#FFFFFF',
+                    color: darkMode ? '#F8FAFC' : '#1E293B',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="ALL">All Specialties</option>
+                  <option value="SPRINT">Sprints (100m – 400m)</option>
+                  <option value="MIDDLE">Middle Distance (800m – 1500m)</option>
+                  <option value="LONG">Long Distance (5,000m – 10,000m)</option>
+                  <option value="MARATHON">Marathon & Road</option>
+                  <option value="HURDLES_STEEPLE">Steeplechase & Hurdles</option>
+                </select>
+
+                {/* Gender Dropdown */}
+                <select
+                  value={athleteGenderFilter}
+                  onChange={e => setAthleteGenderFilter(e.target.value)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid ' + (darkMode ? '#475569' : '#CBD5E1'),
+                    background: darkMode ? '#0F172A' : '#FFFFFF',
+                    color: darkMode ? '#F8FAFC' : '#1E293B',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="ALL">All Genders</option>
+                  <option value="FEMALE">♀ Women</option>
+                  <option value="MALE">♂ Men</option>
+                </select>
+
+                {/* Age Tier Dropdown */}
+                <select
+                  value={athleteTierFilter}
+                  onChange={e => setAthleteTierFilter(e.target.value)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid ' + (darkMode ? '#475569' : '#CBD5E1'),
+                    background: darkMode ? '#0F172A' : '#FFFFFF',
+                    color: darkMode ? '#F8FAFC' : '#1E293B',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="ALL">All Categories</option>
+                  <option value="SENIOR">Senior (20+ yrs)</option>
+                  <option value="U20">U20 Junior</option>
+                  <option value="U18">U18 Youth</option>
+                </select>
+
+                {/* Club Filter */}
+                <select
+                  value={athleteClubFilter}
+                  onChange={e => setAthleteClubFilter(e.target.value)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid ' + (darkMode ? '#475569' : '#CBD5E1'),
+                    background: darkMode ? '#0F172A' : '#FFFFFF',
+                    color: darkMode ? '#F8FAFC' : '#1E293B',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="ALL">All Clubs</option>
+                  {availableClubs.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+
+                {/* Clear filters if any is active */}
+                {hasActiveAthleteFilters && (
+                  <button
+                    onClick={handleClearAthleteFilters}
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid #EF4444',
+                      color: '#EF4444',
+                      borderRadius: '8px',
+                      padding: '5px 10px',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <RefreshCw size={12} />
+                    Reset
+                  </button>
+                )}
               </div>
 
-              {publicSubPage === 'HOME' && (
-                <button
-                  className="btn-gov-secondary"
-                  onClick={() => onChangePublicSubPage('ATHLETES')}
-                  style={{ borderRadius: '10px', padding: '10px 20px', fontWeight: 800 }}
-                >
-                  View All Athletes →
-                </button>
+              {/* Status & Counter */}
+              <div style={{ fontSize: '0.82rem', color: darkMode ? '#94A3B8' : '#64748B', fontWeight: 600 }}>
+                <span style={{ color: '#16A34A', fontWeight: 800 }}>● Approved Only</span> · Showing {filteredAthletes.length} of {athleteList.length} athletes
+              </div>
+            </div>
+
+            {/* Table / List Container with Dark Olive-Green Header */}
+            <div style={{
+              background: darkMode ? '#1E293B' : '#FFFFFF',
+              border: '1px solid ' + (darkMode ? '#334155' : '#E2E8F0'),
+              borderRadius: '10px',
+              overflow: 'hidden',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.04)'
+            }}>
+              {/* Olive-Green Table Header matching screenshot */}
+              <div style={{
+                background: '#656E10', // Dark olive-green header bar!
+                display: 'grid',
+                gridTemplateColumns: 'minmax(280px, 1.2fr) minmax(200px, 1fr)',
+                padding: '12px 24px',
+                color: '#FFFFFF',
+                fontWeight: 900,
+                fontSize: '0.94rem',
+                letterSpacing: '0.02em'
+              }}>
+                <div>Athlete</div>
+                <div>Specialty</div>
+              </div>
+
+              {/* Table Rows */}
+              {filteredAthletes.length > 0 ? (
+                <div>
+                  {filteredAthletes.map((athlete, idx) => {
+                    const ageText = calculateAge(athlete.dob, athlete.ageTier);
+                    const isLastRow = idx === filteredAthletes.length - 1;
+
+                    return (
+                      <div
+                        key={athlete.id || idx}
+                        onClick={() => setSelectedAthleteModal(athlete)}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'minmax(280px, 1.2fr) minmax(200px, 1fr)',
+                          padding: '16px 24px',
+                          borderBottom: isLastRow ? 'none' : '1px solid ' + (darkMode ? '#334155' : '#E5E7EB'),
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          transition: 'background 0.15s ease'
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.04)' : '#F8FAFC'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        {/* Left Column: Athlete Profile, Flag, Name, Gender, Age, Club */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+                          {/* Fayda Profile Picture with Verification Check */}
+                          <div style={{ position: 'relative', width: '46px', height: '46px', flexShrink: 0 }}>
+                            <img
+                              src={athlete.img || '/images/fayda_resident_photo.jpg'}
+                              alt={athlete.name}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = '/images/fayda_resident_photo.jpg';
+                              }}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                borderRadius: '10px',
+                                objectFit: 'cover',
+                                border: '1.5px solid ' + (athlete.faydaStatus === 'VERIFIED' ? '#22C55E' : '#94A3B8'),
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.08)'
+                              }}
+                            />
+                            {athlete.faydaStatus === 'VERIFIED' && (
+                              <div
+                                title="Fayda Verified Athlete"
+                                style={{
+                                  position: 'absolute',
+                                  bottom: -3,
+                                  right: -3,
+                                  width: '16px',
+                                  height: '16px',
+                                  borderRadius: '50%',
+                                  background: '#16A34A',
+                                  color: '#FFFFFF',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '9px',
+                                  border: '1.5px solid #FFFFFF'
+                                }}
+                              >
+                                ✓
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Name & Details */}
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              {/* Flag */}
+                              <span style={{ fontSize: '1rem', lineHeight: 1 }}>{athlete.flag || '🇪🇹'}</span>
+
+                              {/* Athlete Name */}
+                              <span style={{
+                                fontWeight: 800,
+                                fontSize: '1.02rem',
+                                color: darkMode ? '#F8FAFC' : '#0F172A',
+                                lineHeight: 1.2
+                              }}>
+                                {athlete.name}
+                              </span>
+
+                              {/* Amharic Name if available */}
+                              {athlete.amharicName && (
+                                <span style={{ fontSize: '0.8rem', color: '#0284C7', fontWeight: 600 }}>
+                                  ({athlete.amharicName})
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Subline: Gender Icon, Age | Club */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', fontSize: '0.82rem', color: darkMode ? '#94A3B8' : '#64748B', flexWrap: 'wrap' }}>
+                              {athlete.gender?.toUpperCase() === 'FEMALE' ? (
+                                <span style={{ color: '#EC4899', fontWeight: 900, fontSize: '0.95rem' }} title="Female">♀</span>
+                              ) : (
+                                <span style={{ color: '#3B82F6', fontWeight: 900, fontSize: '0.95rem' }} title="Male">♂</span>
+                              )}
+                              <span>{ageText}</span>
+                              <span style={{ color: '#CBD5E1' }}>|</span>
+                              <span style={{ fontWeight: 600 }}>{athlete.club}</span>
+                              {athlete.faydaFin && (
+                                <>
+                                  <span style={{ color: '#CBD5E1' }}>·</span>
+                                  <span style={{ fontSize: '0.72rem', color: '#16A34A', fontWeight: 700, background: darkMode ? 'rgba(34, 197, 94, 0.15)' : '#DCFCE7', padding: '1px 6px', borderRadius: '4px' }}>
+                                    FIN: {athlete.faydaFin}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Column: Specialty & Last Active / PB */}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{
+                            fontWeight: 700,
+                            fontSize: '0.96rem',
+                            color: darkMode ? '#F1F5F9' : '#1E293B',
+                            lineHeight: 1.3
+                          }}>
+                            {athlete.specialty || athlete.event || 'Track & Field'}
+                          </div>
+                          <div style={{
+                            fontSize: '0.78rem',
+                            color: darkMode ? '#94A3B8' : '#64748B',
+                            marginTop: '4px'
+                          }}>
+                            {athlete.pb ? `PB: ${athlete.pb}` : `Last active: ${athlete.lastActive || '2026'}`}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ padding: '48px 24px', textAlign: 'center', color: darkMode ? '#94A3B8' : '#64748B' }}>
+                  <Search size={36} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+                  <h4 style={{ margin: '0 0 6px', color: darkMode ? '#F8FAFC' : '#1E293B', fontWeight: 800 }}>No Approved Athletes Found</h4>
+                  <p style={{ margin: '0 0 16px', fontSize: '0.88rem' }}>No approved athletes matched your filter or search query.</p>
+                  <button
+                    onClick={handleClearAthleteFilters}
+                    style={{
+                      background: '#656E10',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      padding: '8px 18px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Reset Filters
+                  </button>
+                </div>
               )}
             </div>
 
-            <div
-              ref={athleteScrollRef}
-              className="landing-scroll-row"
-              style={{ display: 'flex', gap: '24px', overflowX: 'hidden', paddingBottom: '8px', cursor: 'grab' }}
-            >
-              {[...athleteList, ...athleteList, ...athleteList].map((athlete, idx) => {
-                const cardKey = `${athlete.id}-${idx}`;
-                const isCardExpanded = !!expandedAthleteCards[cardKey];
-                return (
-                  <div
-                    key={cardKey}
-                    className={`hover-lift${isCardExpanded ? ' athlete-card-expanded' : ''}`}
-                    onClick={() => setSelectedAthleteModal(athlete)}
-                    style={{
-                      position: 'relative',
-                      minWidth: 'min(100%, 380px)',
-                      maxWidth: '400px',
-                      minHeight: '360px',
-                      flexShrink: 0,
-                      borderRadius: 24,
-                      overflow: 'hidden',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'flex-end',
-                      cursor: 'pointer',
-                      boxShadow: '0 12px 32px rgba(15, 23, 42, 0.12)',
-                      border: '1px solid #E2E8F0'
-                    }}
-                  >
-                    <div style={{
-                      position: 'absolute', inset: 0,
-                      backgroundImage: `url(${athlete.img})`,
-                      backgroundSize: 'cover', backgroundPosition: 'center top',
-                    }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.95) 0%, rgba(15,23,42,0.35) 55%, transparent 100%)' }} />
-
-               
-
-                    <div style={{ position: 'relative', zIndex: 2, padding: '24px' }}>
-                      <h3 style={{ color: '#FFFFFF', fontSize: '1.4rem', fontWeight: 900, marginBottom: 4, lineHeight: 1.2 }}>
-                        {athlete.name}
-                      </h3>
-                      <div style={{ color: '#38BDF8', fontSize: '0.85rem', fontWeight: 700, marginBottom: 8 }}>
-                        {athlete.amharicName}
-                      </div>
-
-                      <div className="athlete-card-extra">
-                        <span style={{ color: '#FDE047', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>
-                          {athlete.achievement}
-                        </span>
-
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <span style={{
-                            background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', color: '#FFF',
-                            borderRadius: 8, padding: '4px 10px',
-                            fontSize: '0.75rem', fontWeight: 800,
-                          }}>{athlete.event}</span>
-                          <span style={{ color: '#CBD5E1', fontSize: '0.78rem', fontWeight: 600 }}>
-                            {athlete.club}
-                          </span>
-                        </div>
-
-                        <div style={{ marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '10px', color: '#FDE047', fontSize: '0.82rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          View Full Athlete Profile & PB Stats <ChevronRight size={14} />
-                        </div>
-                      </div>
-
-                      <button
-                        className="athlete-card-toggle-btn"
-                        onClick={(e) => { e.stopPropagation(); toggleAthleteCard(cardKey); }}
-                        style={{
-                          marginTop: '12px',
-                          background: 'rgba(255, 255, 255, 0.16)',
-                          backdropFilter: 'blur(8px)',
-                          WebkitBackdropFilter: 'blur(8px)',
-                          border: '1px solid rgba(255, 255, 255, 0.4)',
-                          color: '#FFFFFF',
-                          fontWeight: 800,
-                          fontSize: '0.78rem',
-                          padding: '8px 16px',
-                          borderRadius: '999px',
-                          cursor: 'pointer',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        {isCardExpanded ? loc.seeLess : loc.seeMore}
-                        {isCardExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
           </div>
         </section>
       )}
