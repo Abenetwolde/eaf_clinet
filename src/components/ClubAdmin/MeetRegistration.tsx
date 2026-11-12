@@ -40,6 +40,54 @@ import {
 import { useGetPublishedResultsQuery } from '../../store/api/athleteApi';
 import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 
+/**
+ * Resolves authentic competition banner from backend API / database.
+ * Supports absolute URLs, relative API upload/image paths, and contextual federation fallbacks.
+ */
+export function getCompetitionBannerUrl(comp: any): string {
+  const candidate = [
+    comp?.bannerUrl,
+    comp?.banner,
+    comp?.imageUrl,
+    comp?.image,
+    comp?.img,
+    comp?.thumbnailUrl,
+  ].find((v) => typeof v === 'string' && v.trim());
+
+  if (candidate) {
+    const raw = candidate.trim();
+    if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+
+    const path = raw.startsWith('/') ? raw : `/${raw}`;
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    try {
+      const origin = new URL(apiBase, typeof window === 'undefined' ? 'http://localhost:3000' : window.location.origin).origin;
+      if (/^\/(uploads|images)\//i.test(path) && origin !== window.location.origin) {
+        return `${origin}${path}`;
+      }
+    } catch {}
+    return path;
+  }
+
+  // Fallback to real federation competition banner based on category or discipline
+  const title = (comp?.title || comp?.name || '').toLowerCase();
+  const category = (comp?.category || '').toLowerCase();
+
+  if (title.includes('cross') || category.includes('cross')) {
+    return '/images/banner_jan_meda.png';
+  }
+  if (title.includes('marathon') || category.includes('marathon') || title.includes('road')) {
+    return '/images/event2.jpg';
+  }
+  if (title.includes('youth') || category.includes('youth') || category.includes('u20')) {
+    return '/images/banner_youth_games.png';
+  }
+  if (title.includes('track') || title.includes('field') || title.includes('national')) {
+    return '/images/event3.jpg';
+  }
+  return '/images/banner_grand_prix.png';
+}
+
 interface MeetRegistrationProps {
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
   initialCompetition?: ClubCompetition | null;
@@ -477,21 +525,41 @@ export default function MeetRegistration({
           </button>
         </div>
 
-        {/* ── Competition Context Header Banner (Clean Light Surface, No Black Background) ── */}
-        <div className="rounded-2xl bg-white border border-slate-200 p-6 md:p-8 shadow-xs text-slate-900">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="space-y-3 max-w-2xl">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                  {selectedCompetition.category || 'National Championship'}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  {selectedCompetition.isRegistrationOpen ? 'Registration Active' : 'Deadline Passed'}
-                </span>
-                <span className="text-xs text-slate-500 flex items-center gap-1 font-semibold">
-                  <ShieldCheck size={14} className="text-emerald-600" /> EAF Sanctioned Meet
-                </span>
-              </div>
+        {/* ── Competition Context Header Banner ── */}
+        <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-xs text-slate-900">
+          <div className="relative h-32 md:h-44 w-full bg-slate-100 overflow-hidden">
+            <img
+              src={getCompetitionBannerUrl(selectedCompetition)}
+              alt={selectedCompetition.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                if (!target.src.includes('banner_grand_prix.png')) {
+                  target.src = '/images/banner_grand_prix.png';
+                }
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-900/10 to-transparent" />
+            <div className="absolute bottom-3 left-6 right-6 flex items-center justify-between text-white text-xs">
+              <span className="px-2.5 py-0.5 rounded-md font-bold bg-blue-600/90 text-white backdrop-blur-xs">
+                {selectedCompetition.category || 'National Championship'}
+              </span>
+              <span className="backdrop-blur-xs bg-slate-900/60 px-2.5 py-0.5 rounded-md text-emerald-300 font-semibold flex items-center gap-1">
+                <ShieldCheck size={13} className="text-emerald-400" /> EAF Official Competition
+              </span>
+            </div>
+          </div>
+          <div className="p-6 md:p-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-3 max-w-2xl">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    {selectedCompetition.category || 'National Championship'}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {selectedCompetition.isRegistrationOpen ? 'Registration Active' : 'Deadline Passed'}
+                  </span>
+                </div>
 
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight m-0">
                 {selectedCompetition.title}
@@ -558,6 +626,7 @@ export default function MeetRegistration({
             </div>
           </div>
         </div>
+      </div>
 
         {/* ── 3-Step Wizard Navigation Stepper (Clean & Disciplined Palette) ── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1312,21 +1381,25 @@ export default function MeetRegistration({
                     className="flex flex-col rounded-xl border border-slate-200 bg-white overflow-hidden shadow-xs hover:border-slate-300 transition-all"
                   >
                     {/* Header Banner */}
-                    <div className="relative h-40 bg-slate-100 overflow-hidden">
+                    <div className="relative h-44 bg-slate-100 overflow-hidden">
                       <img
-                        src={comp.bannerUrl || '/images/runner_marathon.png'}
+                        src={getCompetitionBannerUrl(comp)}
                         alt={comp.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                         onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = '/images/runner_marathon.png';
+                          const target = e.currentTarget as HTMLImageElement;
+                          if (!target.src.includes('banner_grand_prix.png')) {
+                            target.src = '/images/banner_grand_prix.png';
+                          }
                         }}
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent pointer-events-none" />
                       <div className="absolute top-3 right-3">
                         <span
-                          className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                          className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider backdrop-blur-xs ${
                             isOpen
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-slate-100 text-slate-600 border border-slate-200'
+                              ? 'bg-emerald-600/95 text-white shadow-xs'
+                              : 'bg-slate-800/80 text-slate-200'
                           }`}
                         >
                           {isOpen ? 'Registration Open' : 'Deadline Passed'}

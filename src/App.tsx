@@ -5,7 +5,6 @@ import AuthModal from './components/AuthModal';
 import LoginPage from './components/LoginPage';
 import RegistrationModal from './components/RegistrationModal';
 import FaydaVerifiedProfileModal, { FaydaResidentIdentity, formatFin } from './components/FaydaVerifiedProfileModal';
-import RBACSecurityMatrix from './components/Security/RBACSecurityMatrix';
 import Callback from './components/Callback';
 import AppLayout from './components/Layout/AppLayout';
 import ClientLayout from './components/Layout/ClientLayout';
@@ -199,7 +198,6 @@ export default function App() {
   const [regModalRole, setRegModalRole] = useState<'CLUB' | 'ATHLETE' | null>(null);
   const [verifiedCitizen, setVerifiedCitizen] = useState<FaydaResidentIdentity | null>(null);
   const [showCitizenModal, setShowCitizenModal] = useState(false);
-  const [showRbacMatrix, setShowRbacMatrix] = useState(false);
   const [showVerifiedBanner, setShowVerifiedBanner] = useState(true);
   const [paymentData, setPaymentData] = useState<any>(null);
   const [toast, setToast] = useState<any>(null);
@@ -498,18 +496,23 @@ export default function App() {
         else window.history.replaceState({}, '', '/');
       }
       // Restore club sub-page from URL on direct load / refresh
-      const clubPathMap: Record<string, string> = {
-        '/club/dashboard':        'OVERVIEW',
-        '/club/roster':           'ROSTER',
-        '/club/register-member':  'REGISTER_MEMBER',
-        '/club/competitions':     'MEETS',
-        '/club/seeding':          'SEEDING',
-        '/club/transfers':        'TRANSFERS',
-        '/club/security':         'RBAC',
-      };
-      if (clubPathMap[path]) {
-        setClubSubPage(clubPathMap[path]);
+      if (path === '/club/security') {
+        window.history.replaceState({}, '', '/club/dashboard');
+        setClubSubPage('OVERVIEW');
         setPublicSubPage('DASHBOARD');
+      } else {
+        const clubPathMap: Record<string, string> = {
+          '/club/dashboard':        'OVERVIEW',
+          '/club/roster':           'ROSTER',
+          '/club/register-member':  'REGISTER_MEMBER',
+          '/club/competitions':     'MEETS',
+          '/club/seeding':          'SEEDING',
+          '/club/transfers':        'TRANSFERS',
+        };
+        if (clubPathMap[path]) {
+          setClubSubPage(clubPathMap[path]);
+          setPublicSubPage('DASHBOARD');
+        }
       }
     }
     const handlePopState = () => {
@@ -525,6 +528,10 @@ export default function App() {
       } else if (['/competitions', '/results', '/athletes', '/professionals', '/media'].includes(path)) {
         const publicPathMap: Record<string, string> = { '/competitions': 'COMPETITIONS', '/results': 'RESULTS', '/athletes': 'ATHLETES', '/professionals': 'PROFESSIONALS', '/media': 'MEDIA' };
         setPublicSubPage(publicPathMap[path]);
+      } else if (path === '/club/security') {
+        window.history.replaceState({}, '', '/club/dashboard');
+        setClubSubPage('OVERVIEW');
+        setPublicSubPage('DASHBOARD');
       } else if (path.startsWith('/club/')) {
         const clubPathMap: Record<string, string> = {
           '/club/dashboard':        'OVERVIEW',
@@ -533,7 +540,6 @@ export default function App() {
           '/club/competitions':     'MEETS',
           '/club/seeding':          'SEEDING',
           '/club/transfers':        'TRANSFERS',
-          '/club/security':         'RBAC',
         };
         const subPage = clubPathMap[path];
         if (subPage) {
@@ -638,7 +644,7 @@ export default function App() {
       const clubPageToUrl2: Record<string, string> = {
         'OVERVIEW': '/club/dashboard', 'ROSTER': '/club/roster',
         'REGISTER_MEMBER': '/club/register-member', 'MEETS': '/club/competitions',
-        'SEEDING': '/club/seeding', 'TRANSFERS': '/club/transfers', 'RBAC': '/club/security',
+        'SEEDING': '/club/seeding', 'TRANSFERS': '/club/transfers',
       };
       const targetSubPage = registrationData.payload.targetSubPage || 'OVERVIEW';
       setClubSubPage(targetSubPage);
@@ -1445,7 +1451,6 @@ export default function App() {
           onRegisterSuccess={handleRegisterSuccess}
         />
       )}
-      <RBACSecurityMatrix isOpen={showRbacMatrix} onClose={() => setShowRbacMatrix(false)} />
       <NotificationToast toast={toast} onClose={() => setToast(null)} />
       {sessionExpiredModal}
     </>
@@ -1459,7 +1464,6 @@ export default function App() {
       'MEETS':            '/club/competitions',
       'SEEDING':          '/club/seeding',
       'TRANSFERS':        '/club/transfers',
-      'RBAC':             '/club/security',
     };
     const navigateClub = (page: string) => {
       setClubSubPage(page);
@@ -1512,13 +1516,6 @@ export default function App() {
         {clubSubPage === 'TRANSFERS' && (
           <TransferRegistry
             onInitiateTransfer={handleInitiateTransfer}
-          />
-        )}
-        {clubSubPage === 'RBAC' && (
-          <RBACSecurityMatrix
-            isOpen={true}
-            isInline={true}
-            onClose={() => navigateClub('OVERVIEW')}
           />
         )}
         {sharedModals}

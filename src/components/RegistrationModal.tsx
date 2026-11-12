@@ -1137,56 +1137,32 @@ export default function RegistrationModal({
       {
         id: 'ATHLETE',
         title: 'Athlete',
-        subtitle: 'Competitors & Runners',
-        desc: 'Track & field competitors, marathon runners, youth & senior divisions.',
-        icon: <Activity size={24} className="text-blue-600" />,
-        badge: 'Biometrics & PBs',
-        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+        subtitle: 'Competitors & Track/Field Runners',
       },
       {
         id: 'CLUB_PRESIDENT',
         title: 'Club President',
-        subtitle: 'Executive Leadership',
-        desc: 'Club leadership, federation charter contracts & athlete transfers.',
-        icon: <Building2 size={24} className="text-blue-600" />,
-        badge: 'Charter Signatory',
-        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+        subtitle: 'Club Leadership & Delegations',
       },
       {
         id: 'COACH',
         title: 'Coach & Technical',
-        subtitle: 'Training & Conditioning',
-        desc: 'Endurance, sprint and field coaches with World Athletics certifications.',
-        icon: <Clock size={24} className="text-blue-600" />,
-        badge: 'WA Accredited',
-        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+        subtitle: 'Technical Training & Coaching Staff',
       },
       {
         id: 'MEDICAL_HEAD',
         title: 'Health & Medical Head',
-        subtitle: 'Sports Medicine & Cardiac',
-        desc: 'Team physicians, sports medicine, cardiac ECG clearances & TUE liaison.',
-        icon: <HeartPulse size={24} className="text-blue-600" />,
-        badge: 'MoH Licensed',
-        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+        subtitle: 'Sports Medicine & Team Physicians',
       },
       {
         id: 'OFFICIAL',
         title: 'Technical Official',
-        subtitle: 'Technical operations',
-        desc: 'Photo-finish timing, track operations, and technical officials.',
-        icon: <Award size={24} className="text-blue-600" />,
-        badge: 'WA Certified',
-        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+        subtitle: 'Photo-Finish & Meet Officials',
       },
       {
         id: 'REFEREE',
         title: 'Referee',
-        subtitle: 'Competition officiating',
-        desc: 'Track and field referees, judges, and race marshals.',
-        icon: <ShieldCheck size={24} className="text-blue-600" />,
-        badge: 'Official review',
-        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+        subtitle: 'Judges, Starters & Marshals',
       },
     ];
 
@@ -1201,47 +1177,41 @@ export default function RegistrationModal({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {rolesConfig.map((r) => {
             const isSelected = selectedRole === r.id;
             return (
               <motion.div
-                whileHover={{ y: -2 }}
+                whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.99 }}
                 key={r.id}
                 onClick={() => {
                   setSelectedRole(r.id as any);
                 }}
-                className={`bg-white rounded-2xl p-5 border-2 cursor-pointer transition-all flex flex-col justify-between gap-4 shadow-sm ${
+                className={`rounded-xl p-4 border transition-all cursor-pointer flex flex-col justify-between shadow-xs ${
                   isSelected
-                    ? 'border-blue-600 ring-4 ring-blue-100 shadow-md'
-                    : 'border-slate-200 hover:border-blue-400'
+                    ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60'
                 }`}
               >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
-                      {r.icon}
-                    </div>
-                    <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-md border ${r.badgeBg}`}>
-                      {r.badge}
-                    </span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h5 className="text-sm font-bold text-slate-900 m-0 truncate">
+                      {r.title}
+                    </h5>
+                    <p className="text-xs text-slate-500 mt-1 m-0 leading-normal">
+                      {r.subtitle}
+                    </p>
                   </div>
-
-                  <h5 className="text-base font-black text-slate-900 m-0">
-                    {r.title}
-                  </h5>
-                  <div className="text-xs font-bold text-blue-700 mb-1.5">
-                    {r.subtitle}
+                  <div
+                    className={`w-4 h-4 rounded-full border shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
+                      isSelected
+                        ? 'border-blue-600 bg-blue-600 text-white'
+                        : 'border-slate-300 bg-white'
+                    }`}
+                  >
+                    {isSelected && <Check size={10} strokeWidth={3} />}
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed m-0">
-                    {r.desc}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs font-bold text-blue-600">
-                  <span>{isSelected ? '✓ Selected Role' : 'Select Role'}</span>
-                  <ArrowRight size={14} />
                 </div>
               </motion.div>
             );

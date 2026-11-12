@@ -71,7 +71,6 @@ export default function AppLayout({
     { id: 'ROSTER',     label: 'Athlete & Member Management', icon: Users },
     { id: 'MEETS',      label: 'Competitions & Meets',        icon: Trophy },
     { id: 'TRANSFERS',  label: 'Transfers',                   icon: ArrowRightLeft },
-    { id: 'RBAC',       label: 'Security & RBAC Matrix',      icon: ShieldCheck },
   ];
 
   const athleteNavItems = [
