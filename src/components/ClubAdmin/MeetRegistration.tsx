@@ -26,6 +26,7 @@ import {
   Award,
   ShieldAlert,
   Globe,
+  Zap,
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import { useGetMeQuery } from '../../store/api/authApi';
@@ -266,9 +267,156 @@ export default function MeetRegistration({
   );
   const clubEligibleAthletes: EligibleAthlete[] = eligibleData?.athletes || [];
 
-  // Form selections for chosen athletes
+  // ── Discipline & Relay Squad Helpers ──
+  const isRelayDiscipline = (disciplineName?: string): boolean => {
+    if (!disciplineName) return false;
+    const lower = disciplineName.toLowerCase();
+    return (
+      lower.includes('relay') ||
+      lower.includes('4x') ||
+      lower.includes('4×') ||
+      lower.includes('medley')
+    );
+  };
+
+  const detectRelayFormat = (disciplineName?: string): string => {
+    const lower = (disciplineName || '').toLowerCase();
+    if (lower.includes('mixed') || lower.includes('mix')) return 'RELAY_4X400M_MIXED';
+    if (lower.includes('4x400') || lower.includes('4×400')) return 'RELAY_4X400M';
+    if (lower.includes('4x100') || lower.includes('4×100')) return 'RELAY_4X100M';
+    if (lower.includes('sprint medley')) return 'SPRINT_MEDLEY';
+    if (lower.includes('distance medley')) return 'DISTANCE_MEDLEY';
+    return 'RELAY_4X100M';
+  };
+
+  const detectRelayGender = (disciplineName?: string): 'MEN' | 'WOMEN' | 'MIXED' => {
+    const lower = (disciplineName || '').toLowerCase();
+    if (lower.includes('mixed') || lower.includes('mix')) return 'MIXED';
+    if (lower.includes('women') || lower.includes('female') || lower.includes('girls') || lower.includes("women's")) return 'WOMEN';
+    if (lower.includes('men') || lower.includes('male') || lower.includes('boys') || lower.includes("men's")) return 'MEN';
+    return 'MIXED';
+  };
+
+  const getFormatLabel = (fmt?: string) => {
+    switch (fmt) {
+      case 'RELAY_4X100M':
+        return '4x100m Relay (4 × 100m)';
+      case 'RELAY_4X400M':
+        return '4x400m Relay (4 × 400m)';
+      case 'RELAY_4X400M_MIXED':
+        return '4x400m Mixed Relay (2M + 2W)';
+      case 'SPRINT_MEDLEY':
+        return 'Sprint Medley (100m-100m-200m-400m)';
+      case 'DISTANCE_MEDLEY':
+        return 'Distance Medley (1200m-400m-800m-1600m)';
+      case 'CUSTOM':
+        return 'Custom Relay Format';
+      default:
+        return fmt || 'Relay Event';
+    }
+  };
+
+  const getGenderLabel = (g?: string) => {
+    switch (g) {
+      case 'MEN':
+        return "Men's Division";
+      case 'WOMEN':
+        return "Women's Division";
+      case 'MIXED':
+        return 'Mixed Division (2 Men + 2 Women)';
+      default:
+        return g || 'Open Division';
+    }
+  };
+
+  // Selected Discipline (Discipline-First Workflow)
+  const [selectedDiscipline, setSelectedDiscipline] = useState<string>('');
+
+  // ── Host Official Discipline Configuration (Derivation from Event Model) ──
+  const hostDisciplineConfig = useMemo(() => {
+    if (!selectedDiscipline) return null;
+    return (
+      (selectedCompetition as any)?.disciplineConfigs?.[selectedDiscipline] ||
+      (eligibleData as any)?.competition?.disciplineConfigs?.[selectedDiscipline] ||
+      null
+    );
+  }, [selectedCompetition, eligibleData, selectedDiscipline]);
+
+  const isCurrentRelay = useMemo(() => {
+    if (hostDisciplineConfig) {
+      if (typeof hostDisciplineConfig.isRelay === 'boolean') return hostDisciplineConfig.isRelay;
+      if (typeof hostDisciplineConfig.relayConfig?.isRelay === 'boolean') return hostDisciplineConfig.relayConfig.isRelay;
+    }
+    return isRelayDiscipline(selectedDiscipline);
+  }, [hostDisciplineConfig, selectedDiscipline]);
+
+  const hostRelayFormat = useMemo(() => {
+    return (
+      hostDisciplineConfig?.relayFormat ||
+      hostDisciplineConfig?.relayConfig?.format ||
+      detectRelayFormat(selectedDiscipline)
+    );
+  }, [hostDisciplineConfig, selectedDiscipline]);
+
+  const hostRelayGender: 'MEN' | 'WOMEN' | 'MIXED' = useMemo(() => {
+    return (
+      hostDisciplineConfig?.relayGender ||
+      hostDisciplineConfig?.relayConfig?.gender ||
+      detectRelayGender(selectedDiscipline)
+    );
+  }, [hostDisciplineConfig, selectedDiscipline]);
+
+  const hostRequiredLegs: number = useMemo(() => {
+    return (
+      hostDisciplineConfig?.requiredLegs ||
+      hostDisciplineConfig?.relayConfig?.requiredLegs ||
+      4
+    );
+  }, [hostDisciplineConfig]);
+
+  const hostMaxAlternates: number = useMemo(() => {
+    return (
+      hostDisciplineConfig?.maxAlternates ??
+      hostDisciplineConfig?.relayConfig?.maxAlternates ??
+      2
+    );
+  }, [hostDisciplineConfig]);
+
+  const hostRelayRulesNote = useMemo(() => {
+    return (
+      hostDisciplineConfig?.relayRulesNote ||
+      hostDisciplineConfig?.relayConfig?.rulesNote ||
+      ''
+    );
+  }, [hostDisciplineConfig]);
+
+  // Relay Squad State (4 Active Legs + Reserves)
+  const [relaySquad, setRelaySquad] = useState<{
+    teamName: string;
+    format: string;
+    gender: 'MEN' | 'WOMEN' | 'MIXED';
+    seedTime: string;
+    leg1AthleteId: string;
+    leg2AthleteId: string;
+    leg3AthleteId: string;
+    leg4AthleteId: string;
+    alt1AthleteId: string;
+    alt2AthleteId: string;
+  }>({
+    teamName: '',
+    format: 'RELAY_4X100M',
+    gender: 'MIXED',
+    seedTime: '',
+    leg1AthleteId: '',
+    leg2AthleteId: '',
+    leg3AthleteId: '',
+    leg4AthleteId: '',
+    alt1AthleteId: '',
+    alt2AthleteId: '',
+  });
+
+  // Individual Event Selections
   const [selectedAthleteIds, setSelectedAthleteIds] = useState<Set<string>>(new Set());
-  const [athleteDisciplineMap, setAthleteDisciplineMap] = useState<Record<string, string[]>>({});
   const [athleteSeedMap, setAthleteSeedMap] = useState<Record<string, string>>({});
 
   // Representative & Declarations
@@ -295,6 +443,63 @@ export default function MeetRegistration({
 
   // Application detail modal
   const [viewingApplication, setViewingApplication] = useState<ClubApplication | null>(null);
+
+  // Eligible verified roster members
+  const eligibleRosterAthletes = useMemo(() => {
+    return clubEligibleAthletes.filter((a) => a.isEligible);
+  }, [clubEligibleAthletes]);
+
+  // Relay calculations & validations
+  const activeLegAthletes = useMemo(() => {
+    return [
+      relaySquad.leg1AthleteId,
+      relaySquad.leg2AthleteId,
+      relaySquad.leg3AthleteId,
+      relaySquad.leg4AthleteId,
+    ]
+      .map((id) => clubEligibleAthletes.find((a) => a.id === id))
+      .filter(Boolean) as EligibleAthlete[];
+  }, [relaySquad, clubEligibleAthletes]);
+
+  const activeLegCount = activeLegAthletes.length;
+
+  const maleLegCount = useMemo(() => {
+    return activeLegAthletes.filter(
+      (a) => (a.gender || '').toUpperCase() === 'MALE' || (a.gender || '').toUpperCase() === 'M'
+    ).length;
+  }, [activeLegAthletes]);
+
+  const femaleLegCount = useMemo(() => {
+    return activeLegAthletes.filter(
+      (a) =>
+        (a.gender || '').toUpperCase() === 'FEMALE' ||
+        (a.gender || '').toUpperCase() === 'W' ||
+        (a.gender || '').toUpperCase() === 'F'
+    ).length;
+  }, [activeLegAthletes]);
+
+  const isRelayConfigValid = useMemo(() => {
+    if (!isCurrentRelay) return true;
+    if (activeLegCount !== hostRequiredLegs) return false;
+    const all = [
+      relaySquad.leg1AthleteId,
+      relaySquad.leg2AthleteId,
+      relaySquad.leg3AthleteId,
+      relaySquad.leg4AthleteId,
+      relaySquad.alt1AthleteId,
+      relaySquad.alt2AthleteId,
+    ].filter(Boolean);
+    if (new Set(all).size !== all.length) return false;
+
+    if (hostRelayGender === 'MIXED') {
+      if (maleLegCount !== 2 || femaleLegCount !== 2) return false;
+    } else if (hostRelayGender === 'MEN') {
+      if (femaleLegCount > 0) return false;
+    } else if (hostRelayGender === 'WOMEN') {
+      if (maleLegCount > 0) return false;
+    }
+    return true;
+  }, [isCurrentRelay, activeLegCount, hostRequiredLegs, relaySquad, hostRelayGender, maleLegCount, femaleLegCount]);
 
   // ── Wizard Handlers ──
   const handleStartEnrollment = (comp: ClubCompetition) => {
@@ -330,9 +535,27 @@ export default function MeetRegistration({
 
     setSelectedCompetition(comp);
     setWizardStep(1);
+    const initialDisc = comp.disciplines?.[0] || '100m';
+    setSelectedDiscipline(initialDisc);
     setSelectedAthleteIds(new Set());
-    setAthleteDisciplineMap({});
     setAthleteSeedMap({});
+
+    const initialCfg = comp.disciplineConfigs?.[initialDisc];
+    const initialFmt = initialCfg?.relayFormat || initialCfg?.relayConfig?.format || detectRelayFormat(initialDisc);
+    const initialG = (initialCfg?.relayGender || initialCfg?.relayConfig?.gender || detectRelayGender(initialDisc)) as 'MEN' | 'WOMEN' | 'MIXED';
+
+    setRelaySquad({
+      teamName: `${club?.name || 'Club'} Relay Team A`,
+      format: initialFmt,
+      gender: initialG,
+      seedTime: '',
+      leg1AthleteId: '',
+      leg2AthleteId: '',
+      leg3AthleteId: '',
+      leg4AthleteId: '',
+      alt1AthleteId: '',
+      alt2AthleteId: '',
+    });
     setRepName(club?.manager || '');
     setRepPhone(club?.phone || '');
     setRepEmail(club?.email || '');
@@ -344,33 +567,66 @@ export default function MeetRegistration({
     setSelectedCompetition(null);
     setWizardStep(1);
     setSelectedAthleteIds(new Set());
+    setSelectedDiscipline('');
     if (onCloseWizard) onCloseWizard();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const toggleAthleteSelection = (athlete: EligibleAthlete) => {
-    if (!athlete.isEligible) return;
+  const handleSelectDiscipline = (disc: string) => {
+    setSelectedDiscipline(disc);
+    const cfg =
+      (selectedCompetition as any)?.disciplineConfigs?.[disc] ||
+      (eligibleData as any)?.competition?.disciplineConfigs?.[disc] ||
+      null;
+    const isRel = Boolean(
+      cfg?.isRelay ?? cfg?.relayConfig?.isRelay ?? isRelayDiscipline(disc)
+    );
+    if (isRel) {
+      const fmt = cfg?.relayFormat || cfg?.relayConfig?.format || detectRelayFormat(disc);
+      const g = (cfg?.relayGender || cfg?.relayConfig?.gender || detectRelayGender(disc)) as 'MEN' | 'WOMEN' | 'MIXED';
+      setRelaySquad((prev) => ({
+        ...prev,
+        teamName: prev.teamName || `${club?.name || 'Club'} Relay Team A`,
+        format: fmt,
+        gender: g,
+      }));
+    }
+  };
 
+  const setRelaySlotAthlete = (
+    slot: 'leg1AthleteId' | 'leg2AthleteId' | 'leg3AthleteId' | 'leg4AthleteId' | 'alt1AthleteId' | 'alt2AthleteId',
+    athleteId: string
+  ) => {
+    setRelaySquad((prev) => {
+      const next = { ...prev };
+      // Smart swap: if athlete was in another slot, clear that slot
+      (
+        ['leg1AthleteId', 'leg2AthleteId', 'leg3AthleteId', 'leg4AthleteId', 'alt1AthleteId', 'alt2AthleteId'] as const
+      ).forEach((k) => {
+        if (k !== slot && next[k] === athleteId && athleteId !== '') {
+          next[k] = '';
+        }
+      });
+      next[slot] = athleteId;
+      return next;
+    });
+  };
+
+  const toggleIndividualAthlete = (athlete: EligibleAthlete) => {
+    if (!athlete.isEligible) return;
     setSelectedAthleteIds((prev) => {
       const next = new Set(prev);
       if (next.has(athlete.id)) {
         next.delete(athlete.id);
-        const nextDisc = { ...athleteDisciplineMap };
-        delete nextDisc[athlete.id];
-        setAthleteDisciplineMap(nextDisc);
+        const nextSeed = { ...athleteSeedMap };
+        delete nextSeed[athlete.id];
+        setAthleteSeedMap(nextSeed);
       } else {
         next.add(athlete.id);
-        const matchingDisc =
-          (selectedCompetition?.disciplines || []).find(
-            (d) => d.toLowerCase() === (athlete.primaryEvent || athlete.discipline).toLowerCase()
-          ) || selectedCompetition?.disciplines?.[0] || '10,000m';
-
-        setAthleteDisciplineMap((prevDisc) => ({
-          ...prevDisc,
-          [athlete.id]: [matchingDisc],
-        }));
-
-        const pb = athlete.personalRecords?.[0]?.mark || '';
+        const pb =
+          athlete.personalRecords?.find(
+            (pr) => pr.discipline.toLowerCase() === selectedDiscipline.toLowerCase()
+          )?.mark || athlete.personalRecords?.[0]?.mark || '';
         setAthleteSeedMap((prevSeed) => ({
           ...prevSeed,
           [athlete.id]: pb,
@@ -380,115 +636,189 @@ export default function MeetRegistration({
     });
   };
 
-  const handleSelectAllEligible = () => {
-    const eligibleAthletes = wizardFilteredAthletes.filter((a) => a.isEligible);
-    if (eligibleAthletes.length === 0) return;
-
+  const handleSelectAllIndividual = () => {
+    const eligible = wizardFilteredAthletes.filter((a) => a.isEligible);
+    if (eligible.length === 0) return;
     const nextIds = new Set(selectedAthleteIds);
-    const nextDisc = { ...athleteDisciplineMap };
     const nextSeed = { ...athleteSeedMap };
-
-    eligibleAthletes.forEach((athlete) => {
-      nextIds.add(athlete.id);
-      if (!nextDisc[athlete.id]) {
-        const matchingDisc =
-          (selectedCompetition?.disciplines || []).find(
-            (d) => d.toLowerCase() === (athlete.primaryEvent || athlete.discipline).toLowerCase()
-          ) || selectedCompetition?.disciplines?.[0] || '10,000m';
-        nextDisc[athlete.id] = [matchingDisc];
-      }
-      if (!nextSeed[athlete.id]) {
-        nextSeed[athlete.id] = athlete.personalRecords?.[0]?.mark || '';
+    eligible.forEach((ath) => {
+      nextIds.add(ath.id);
+      if (!nextSeed[ath.id]) {
+        nextSeed[ath.id] =
+          ath.personalRecords?.find(
+            (pr) => pr.discipline.toLowerCase() === selectedDiscipline.toLowerCase()
+          )?.mark || ath.personalRecords?.[0]?.mark || '';
       }
     });
-
     setSelectedAthleteIds(nextIds);
-    setAthleteDisciplineMap(nextDisc);
     setAthleteSeedMap(nextSeed);
   };
 
-  const handleDeselectAll = () => {
+  const handleClearIndividual = () => {
     setSelectedAthleteIds(new Set());
-    setAthleteDisciplineMap({});
     setAthleteSeedMap({});
-  };
-
-  const toggleAthleteDiscipline = (athleteId: string, disc: string) => {
-    setAthleteDisciplineMap((prev) => {
-      const current = prev[athleteId] || [];
-      const exists = current.includes(disc);
-      const next = exists ? current.filter((d) => d !== disc) : [...current, disc];
-      return { ...prev, [athleteId]: next };
-    });
   };
 
   const handleFinalSubmit = async () => {
     if (!selectedCompetition) return;
-    if (selectedAthleteIds.size === 0) {
-      onNotify('Please select at least one eligible athlete.', 'error');
-      return;
-    }
-
-    for (const id of selectedAthleteIds) {
-      const discs = athleteDisciplineMap[id] || [];
-      if (discs.length === 0) {
-        const ath = clubEligibleAthletes.find((a) => a.id === id);
-        onNotify(`Please assign at least one event discipline for ${ath?.name || 'athlete'}.`, 'error');
-        return;
-      }
-    }
 
     if (!repConfirmed || !consentConfirmed || !medicalConfirmed) {
       onNotify('All three regulatory and medical declarations are required before submission.', 'error');
       return;
     }
 
-    const payloadAthletes = Array.from(selectedAthleteIds).map((id) => {
-      const ath = clubEligibleAthletes.find((a) => a.id === id);
-      return {
-        athleteId: id,
-        athleteName: ath?.name || '',
-        disciplines: athleteDisciplineMap[id] || [],
-        seedMark: athleteSeedMap[id] || '',
-      };
-    });
+    const isRelay = isCurrentRelay;
 
-    try {
-      const res = await submitApplication({
-        clubId,
-        eventId: selectedCompetition.id,
-        body: {
-          athletes: payloadAthletes,
-          representative: {
-            name: repName,
-            phone: repPhone,
-            email: repEmail,
-            roleTitle: repRole,
-          },
-          declarations: {
-            authorizedRepConfirmed: repConfirmed,
-            athleteConsentConfirmed: consentConfirmed,
-            medicalClearanceConfirmed: medicalConfirmed,
-          },
-          notes,
-        },
-      }).unwrap();
+    if (isRelay) {
+      if (activeLegCount !== hostRequiredLegs) {
+        onNotify(`Relay application requires all ${hostRequiredLegs} active leg positions to be assigned. Current: ${activeLegCount}/${hostRequiredLegs}.`, 'error');
+        return;
+      }
+      if (hostRelayGender === 'MIXED' && (maleLegCount !== 2 || femaleLegCount !== 2)) {
+        onNotify(`Mixed relay composition requires exactly 2 male and 2 female runners. Current: ${maleLegCount} Male, ${femaleLegCount} Female.`, 'error');
+        return;
+      }
+      if (hostRelayGender === 'MEN' && femaleLegCount > 0) {
+        onNotify("Men's relay requires all active runners to be male.", 'error');
+        return;
+      }
+      if (hostRelayGender === 'WOMEN' && maleLegCount > 0) {
+        onNotify("Women's relay requires all active runners to be female.", 'error');
+        return;
+      }
 
-      onNotify('Club competition enrollment application submitted successfully!', 'success');
-      setSubmissionSuccess({
-        reference: res.data?.reference || 'APP-CONFIRMED',
-        competitionTitle: selectedCompetition.title,
-        athleteCount: payloadAthletes.length,
+      const squadAthleteIds = [
+        relaySquad.leg1AthleteId,
+        relaySquad.leg2AthleteId,
+        relaySquad.leg3AthleteId,
+        relaySquad.leg4AthleteId,
+        relaySquad.alt1AthleteId,
+        relaySquad.alt2AthleteId,
+      ].filter(Boolean);
+
+      const payloadAthletes = squadAthleteIds.map((id) => {
+        const ath = clubEligibleAthletes.find((a) => a.id === id);
+        return {
+          athleteId: id,
+          athleteName: ath?.name || '',
+          disciplines: [selectedDiscipline],
+          seedMark: relaySquad.seedTime || '',
+        };
       });
-      handleCloseWizard();
-      setActiveTab('tracking');
-      refetchApplications();
-      refetchCompetitions();
-    } catch (err: any) {
-      onNotify(
-        err?.data?.message || err?.message || 'Failed to submit application. Please check eligibility rules.',
-        'error'
-      );
+
+      const payloadRelaySquad = {
+        teamName: relaySquad.teamName || `${club?.name || 'Club'} Relay Team A`,
+        discipline: selectedDiscipline,
+        format: hostRelayFormat,
+        gender: hostRelayGender,
+        category: 'Senior',
+        seedTime: relaySquad.seedTime || undefined,
+        members: [
+          { athleteId: relaySquad.leg1AthleteId, legNumber: 1, isAlternate: false },
+          { athleteId: relaySquad.leg2AthleteId, legNumber: 2, isAlternate: false },
+          { athleteId: relaySquad.leg3AthleteId, legNumber: 3, isAlternate: false },
+          { athleteId: relaySquad.leg4AthleteId, legNumber: 4, isAlternate: false },
+          ...(relaySquad.alt1AthleteId
+            ? [{ athleteId: relaySquad.alt1AthleteId, legNumber: null, isAlternate: true, alternateOrder: 1 }]
+            : []),
+          ...(relaySquad.alt2AthleteId
+            ? [{ athleteId: relaySquad.alt2AthleteId, legNumber: null, isAlternate: true, alternateOrder: 2 }]
+            : []),
+        ],
+      };
+
+      try {
+        const res = await submitApplication({
+          clubId,
+          eventId: selectedCompetition.id,
+          body: {
+            athletes: payloadAthletes,
+            relaySquad: payloadRelaySquad,
+            representative: {
+              name: repName,
+              phone: repPhone,
+              email: repEmail,
+              roleTitle: repRole,
+            },
+            declarations: {
+              authorizedRepConfirmed: repConfirmed,
+              athleteConsentConfirmed: consentConfirmed,
+              medicalClearanceConfirmed: medicalConfirmed,
+            },
+            notes,
+          },
+        }).unwrap();
+
+        onNotify(`Relay squad "${relaySquad.teamName || 'Relay Team'}" submitted successfully for ${selectedDiscipline}!`, 'success');
+        setSubmissionSuccess({
+          reference: res.data?.reference || 'APP-RELAY-CONFIRMED',
+          competitionTitle: selectedCompetition.title,
+          athleteCount: payloadAthletes.length,
+        });
+        handleCloseWizard();
+        setActiveTab('tracking');
+        refetchApplications();
+        refetchCompetitions();
+      } catch (err: any) {
+        onNotify(
+          err?.data?.message || err?.message || 'Failed to submit relay application. Please check eligibility rules.',
+          'error'
+        );
+      }
+    } else {
+      // Individual discipline
+      if (selectedAthleteIds.size === 0) {
+        onNotify('Please select at least one eligible athlete to enter for this discipline.', 'error');
+        return;
+      }
+
+      const payloadAthletes = Array.from(selectedAthleteIds).map((id) => {
+        const ath = clubEligibleAthletes.find((a) => a.id === id);
+        return {
+          athleteId: id,
+          athleteName: ath?.name || '',
+          disciplines: [selectedDiscipline],
+          seedMark: athleteSeedMap[id] || '',
+        };
+      });
+
+      try {
+        const res = await submitApplication({
+          clubId,
+          eventId: selectedCompetition.id,
+          body: {
+            athletes: payloadAthletes,
+            representative: {
+              name: repName,
+              phone: repPhone,
+              email: repEmail,
+              roleTitle: repRole,
+            },
+            declarations: {
+              authorizedRepConfirmed: repConfirmed,
+              athleteConsentConfirmed: consentConfirmed,
+              medicalClearanceConfirmed: medicalConfirmed,
+            },
+            notes,
+          },
+        }).unwrap();
+
+        onNotify(`Championship application submitted successfully for ${selectedDiscipline} (${payloadAthletes.length} athlete${payloadAthletes.length > 1 ? 's' : ''})!`, 'success');
+        setSubmissionSuccess({
+          reference: res.data?.reference || 'APP-CONFIRMED',
+          competitionTitle: selectedCompetition.title,
+          athleteCount: payloadAthletes.length,
+        });
+        handleCloseWizard();
+        setActiveTab('tracking');
+        refetchApplications();
+        refetchCompetitions();
+      } catch (err: any) {
+        onNotify(
+          err?.data?.message || err?.message || 'Failed to submit application. Please check eligibility rules.',
+          'error'
+        );
+      }
     }
   };
 
@@ -636,23 +966,25 @@ export default function MeetRegistration({
           </div>
         </div>
 
-        {/* ── 3-Step Wizard Navigation Stepper (Clean & Disciplined Palette) ── */}
+        {/* ── 3-Step Wizard Navigation Stepper (Discipline-First Workflow) ── */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             {
               step: 1,
-              title: '1. Athlete Selection',
-              desc: 'Select eligible verified roster members',
+              title: '1. Discipline Selection',
+              desc: 'Choose competition event to apply for',
             },
             {
               step: 2,
-              title: '2. Disciplines & Declarations',
-              desc: 'Assign events, seed marks & compliance',
+              title: '2. Athlete / Squad Allocation',
+              desc: isRelayDiscipline(selectedDiscipline)
+                ? 'Assign 4 active legs + up to 2 reserves'
+                : 'Select athlete(s) & qualifying seed marks',
             },
             {
               step: 3,
               title: '3. Review & Submit',
-              desc: 'Official delegation verification',
+              desc: 'Compliance declarations & submission',
             },
           ].map((s) => {
             const isCurrent = wizardStep === s.step;
@@ -699,7 +1031,7 @@ export default function MeetRegistration({
           })}
         </div>
 
-        {/* ── STEP 1: ATHLETE SELECTION & ELIGIBILITY ── */}
+        {/* ── STEP 1: DISCIPLINE SELECTION FIRST ── */}
         {wizardStep === 1 && (() => {
           const isSelectedRegional = Boolean(
             selectedCompetition.isRegional ||
@@ -719,6 +1051,13 @@ export default function MeetRegistration({
             selectedCompetition.isRegionEligible !== undefined
               ? selectedCompetition.isRegionEligible
               : (!isSelectedRegional || isRegionMatch(clubRegionName, selCompRegionName, clubRegionId, selCompRegionId));
+
+          const compDisciplines =
+            selectedCompetition.disciplines && selectedCompetition.disciplines.length > 0
+              ? selectedCompetition.disciplines
+              : ['100m', '200m', '400m', '800m', '1,500m', '5,000m', '10,000m', '4x100m Relay', '4x400m Relay', '4x400m Mixed Relay'];
+
+          const selectedIsRelay = isRelayDiscipline(selectedDiscipline);
 
           return (
             <div className="p-6 md:p-8 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-6">
@@ -742,345 +1081,1028 @@ export default function MeetRegistration({
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200">
                 <div>
                   <h2 className="text-xl font-black text-slate-900 m-0">
-                    Select Club Athletes for Championship Enrollment
+                    Step 1: Select Competition Discipline
                   </h2>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    Athletes must have an active license, valid Fayda biometric identity verification, and no active sanctions.
-                    Data is verified in real-time against Ethiopian Athletics Federation records.
+                    First choose the competition discipline your club wants to enter.
+                    For <strong>Relay Events</strong>, the system will enforce selecting exactly <strong>4 active leg runners</strong> (Legs 1 to 4) and up to <strong>2 reserve athletes</strong>.
+                    For <strong>Individual Events</strong>, you can select club athletes with individual seed marks.
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 self-start md:self-auto">
-                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                    {selectedAthleteIds.size} of {eligibleCount} Eligible Athletes Selected
-                  </span>
-                </div>
-              </div>
-
-            {/* Filter & Search Bar */}
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
-              <div className="relative flex-1">
-                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search athletes by name, Fayda FIN, or primary event..."
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:bg-white"
-                  value={wizardAthleteSearch}
-                  onChange={(e) => setWizardAthleteSearch(e.target.value)}
-                />
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                <select
-                  className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700"
-                  value={wizardTierFilter}
-                  onChange={(e) => setWizardTierFilter(e.target.value)}
-                >
-                  <option value="ALL">All Categories</option>
-                  <option value="Senior">Senior Division</option>
-                  <option value="U20">U20 Division</option>
-                  <option value="U18">U18 Division</option>
-                </select>
-
-                <button
-                  type="button"
-                  onClick={handleSelectAllEligible}
-                  className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer flex items-center gap-1.5"
-                >
-                  <CheckSquare size={13} /> Select All Eligible
-                </button>
-
-                {selectedAthleteIds.size > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleDeselectAll}
-                    className="px-3 py-2 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 text-xs font-bold hover:bg-slate-50 cursor-pointer flex items-center gap-1"
-                  >
-                    <Square size={13} /> Clear
-                  </button>
+                {selectedDiscipline && (
+                  <div className="flex items-center gap-2 self-start md:self-auto">
+                    <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1.5">
+                      {selectedIsRelay ? <Zap size={14} className="text-blue-600" /> : <Medal size={14} className="text-blue-600" />}
+                      <span>Selected: {selectedDiscipline}</span>
+                    </span>
+                  </div>
                 )}
               </div>
-            </div>
 
-            {/* Athletes Selectable List */}
-            {isLoadingEligible ? (
-              <div className="py-16 text-center text-slate-400 space-y-3">
-                <RefreshCw size={24} className="animate-spin mx-auto text-blue-600" />
-                <p className="font-bold text-xs text-slate-700">
-                  Retrieving verified club athlete eligibility from database...
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  Checking Fayda biometric identity records, license statuses, and active disciplinary sanctions.
-                </p>
-              </div>
-            ) : wizardFilteredAthletes.length === 0 ? (
-              <div className="py-14 text-center rounded-xl border border-dashed border-slate-200 text-slate-400 space-y-2">
-                <Users size={32} className="mx-auto opacity-30 text-slate-500" />
-                <p className="font-bold text-sm text-slate-700">
-                  No athletes found matching your search.
-                </p>
-                <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Make sure athletes are registered under your club in the Digital Roster tab and hold verified Fayda credentials.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {wizardFilteredAthletes.map((ath) => {
-                  const isSelected = selectedAthleteIds.has(ath.id);
-                  const isEligible = ath.isEligible;
+              {/* Discipline Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {compDisciplines.map((disc) => {
+                  const isRelay = isRelayDiscipline(disc);
+                  const isSelected = selectedDiscipline.toLowerCase() === disc.toLowerCase();
 
                   return (
                     <div
-                      key={ath.id}
-                      onClick={() => isEligible && toggleAthleteSelection(ath)}
-                      className={`p-4 rounded-xl border transition-all flex items-start justify-between gap-3 ${
-                        !isEligible
-                          ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
-                          : isSelected
-                          ? 'bg-blue-50/60 border-blue-500 ring-1 ring-blue-500/20 shadow-xs cursor-pointer'
-                          : 'bg-white border-slate-200 hover:border-slate-300 cursor-pointer'
+                      key={disc}
+                      onClick={() => handleSelectDiscipline(disc)}
+                      className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                        isSelected
+                          ? 'bg-blue-50/70 border-blue-600 ring-2 ring-blue-500/20 shadow-xs'
+                          : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                       }`}
                     >
-                      <div className="flex items-start gap-3 min-w-0">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          disabled={!isEligible}
-                          onChange={() => {}}
-                          className="w-4 h-4 rounded text-blue-600 accent-blue-600 mt-1 cursor-pointer shrink-0"
-                        />
-                        <img
-                          src={
-                            getProfilePhotoUrl({
-                              photoUrl: ath.photoUrl,
-                              faydaFin: ath.faydaFin,
-                              faydaNin: ath.faydaFin,
-                            }) || '/images/profile-placeholder.svg'
-                          }
-                          alt={ath.name}
-                          className="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src = '/images/profile-placeholder.svg';
-                          }}
-                        />
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-extrabold text-sm text-slate-900 truncate">
-                              {ath.name}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1 min-w-0">
+                          <div className="font-black text-base text-slate-900 truncate">
+                            {disc}
+                          </div>
+                          {isRelay ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              <Zap size={11} className="text-indigo-600" />
+                              <span>Relay (4 Active + 2 Reserves)</span>
                             </span>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
-                              {ath.category || 'Senior'}
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                              <Medal size={11} className="text-slate-500" />
+                              <span>Individual Event</span>
                             </span>
+                          )}
+                        </div>
+
+                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                          isSelected
+                            ? 'border-blue-600 bg-blue-600 text-white'
+                            : 'border-slate-300 bg-white'
+                        }`}>
+                          {isSelected && <Check size={12} strokeWidth={3} />}
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-slate-500 border-t border-slate-100 pt-2 flex items-center justify-between">
+                        <span className="font-semibold text-slate-600">
+                          {isRelay ? '4-Leg Squad Required' : 'Individual Athlete Entry'}
+                        </span>
+                        <span className="font-bold text-blue-600 flex items-center gap-0.5">
+                          {isSelected ? 'Selected' : 'Select'} <ChevronRight size={12} />
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Selected Discipline Info Card */}
+              {selectedDiscipline && (
+                <div className={`p-4 rounded-xl border flex items-start gap-3 ${
+                  selectedIsRelay
+                    ? 'bg-indigo-50/70 border-indigo-200 text-indigo-950'
+                    : 'bg-blue-50/70 border-blue-200 text-blue-950'
+                }`}>
+                  {selectedIsRelay ? (
+                    <Zap size={20} className="text-indigo-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <CheckCircle2 size={20} className="text-blue-600 shrink-0 mt-0.5" />
+                  )}
+                  <div className="space-y-1 text-xs">
+                    <p className="font-bold text-sm">
+                      {selectedIsRelay ? 'Relay Squad Event Selected:' : 'Individual Track/Field Discipline Selected:'}{' '}
+                      <span className="underline decoration-2">{selectedDiscipline}</span>
+                    </p>
+                    <p className="leading-relaxed opacity-90">
+                      {selectedIsRelay
+                        ? 'Next step will configure your 4-runner relay squad (Legs 1 to 4: Starter, Back Straight, Curve, Anchor) plus up to 2 alternate reserves.'
+                        : 'Next step will allow you to select eligible athlete(s) from your club roster and enter their qualifying seed marks.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 1 Footer Controls */}
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={handleCloseWizard}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer"
+                >
+                  Cancel Enrollment
+                </button>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                  <span className="text-xs font-bold text-slate-500">
+                    {selectedDiscipline ? `Selected: ${selectedDiscipline}` : 'Choose an event above'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isSelectedRegional && !isSelectedEligible) {
+                        onNotify(`Regional Restriction: This competition is restricted to clubs from ${selCompRegionName || 'the host region'}.`, 'error');
+                        return;
+                      }
+                      if (!selectedDiscipline) {
+                        onNotify('Please select a discipline to proceed.', 'error');
+                        return;
+                      }
+                      setWizardStep(2);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={!selectedDiscipline || (isSelectedRegional && !isSelectedEligible)}
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer border-0 flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span>Continue to Athlete / Squad Allocation</span>
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── STEP 2: ATHLETE / SQUAD ALLOCATION (DISCIPLINE-DRIVEN) ── */}
+        {wizardStep === 2 && (
+          <div className="p-6 md:p-8 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    Step 2
+                  </span>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    {isCurrentRelay ? 'Relay Squad Builder' : 'Individual Event Selection'}
+                  </span>
+                </div>
+                <h2 className="text-xl font-black text-slate-900 m-0 mt-1">
+                  {isCurrentRelay
+                    ? `Assign ${hostRequiredLegs} Active Leg Runners & Up to ${hostMaxAlternates} Reserves for ${selectedDiscipline}`
+                    : `Select Club Athlete(s) for ${selectedDiscipline}`}
+                </h2>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  {isCurrentRelay
+                    ? `Official relay specifications mandate assigning exactly ${hostRequiredLegs} active runners across Legs 1 to ${hostRequiredLegs}. Up to ${hostMaxAlternates} reserve athletes are permitted.`
+                    : `Choose the athlete(s) to represent your club in ${selectedDiscipline} and enter their qualifying seed marks.`}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setWizardStep(1);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="self-start sm:self-auto px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-bold cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <ArrowLeft size={13} />
+                <span>Change Discipline</span>
+              </button>
+            </div>
+
+            {/* ─── CASE A: RELAY DISCIPLINE BUILDER ─── */}
+            {isCurrentRelay ? (
+              <div className="space-y-6">
+                {/* 1. Official Host Relay Specifications (Locked from Hosting Body) */}
+                <div className="p-5 rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50/70 via-slate-50/80 to-purple-50/50 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                        <ShieldCheck size={16} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xs font-black uppercase tracking-wider text-indigo-950 m-0">
+                            Official Host Relay Specifications & Event Rules
+                          </h3>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                            Locked by Hosting Body
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 m-0 mt-0.5">
+                          Format and division criteria are set by the hosting body and loaded from the competition database.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <div className="p-3 bg-white rounded-lg border border-indigo-100 shadow-2xs">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block tracking-wider">
+                        Official Relay Format
+                      </span>
+                      <strong className="text-slate-900 block font-black text-sm mt-0.5">
+                        {getFormatLabel(hostRelayFormat)}
+                      </strong>
+                      <span className="text-[10px] font-mono text-indigo-600 font-semibold block mt-0.5">
+                        {hostRelayFormat}
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-lg border border-indigo-100 shadow-2xs">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block tracking-wider">
+                        Division / Gender Scope
+                      </span>
+                      <strong className="text-slate-900 block font-black text-sm mt-0.5">
+                        {getGenderLabel(hostRelayGender)}
+                      </strong>
+                      <span className="text-[10px] font-mono text-indigo-600 font-semibold block mt-0.5">
+                        {hostRelayGender}
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-lg border border-indigo-100 shadow-2xs">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block tracking-wider">
+                        Active Squad Quota
+                      </span>
+                      <strong className="text-slate-900 block font-black text-sm mt-0.5">
+                        {hostRequiredLegs} Active Runners
+                      </strong>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">
+                        Legs 1 to {hostRequiredLegs} required
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-lg border border-indigo-100 shadow-2xs">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block tracking-wider">
+                        Reserve Allowance
+                      </span>
+                      <strong className="text-slate-900 block font-black text-sm mt-0.5">
+                        Up to {hostMaxAlternates} Reserves
+                      </strong>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">
+                        Optional named alternates
+                      </span>
+                    </div>
+                  </div>
+
+                  {hostRelayRulesNote && (
+                    <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-200 text-xs text-indigo-900 flex items-start gap-2">
+                      <Info size={15} className="text-indigo-600 shrink-0 mt-0.5" />
+                      <span>
+                        <strong className="font-bold">Host Federation Notice: </strong>
+                        {hostRelayRulesNote}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Club Squad Registration Details (Club-Provided) */}
+                <div className="p-5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-4">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                    <Zap size={15} className="text-indigo-600" />
+                    <span>Club Relay Squad Identification & Seed Mark</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">
+                        Relay Team Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Defence SC Team A"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-900 focus:outline-hidden focus:border-blue-500"
+                        value={relaySquad.teamName}
+                        onChange={(e) => setRelaySquad((prev) => ({ ...prev, teamName: e.target.value }))}
+                      />
+                      <span className="text-[11px] text-slate-500 block mt-1">
+                        Designation for your club squad (e.g. Club Name Team A).
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">
+                        Qualifying Seed Time / Entry Mark
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 39.85 or 3:12.40"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-mono font-bold text-slate-900 focus:outline-hidden focus:border-blue-500"
+                        value={relaySquad.seedTime}
+                        onChange={(e) => setRelaySquad((prev) => ({ ...prev, seedTime: e.target.value }))}
+                      />
+                      <span className="text-[11px] text-slate-500 block mt-1">
+                        Official qualifying mark or seasonal best for seeding purposes.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Relay Status and Regulatory Compliance Banner */}
+                <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${
+                  isRelayConfigValid
+                    ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950'
+                    : 'bg-amber-50/80 border-amber-300 text-amber-950'
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    {isRelayConfigValid ? (
+                      <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                    ) : (
+                      <AlertTriangle size={18} className="text-amber-600 shrink-0" />
+                    )}
+                    <div>
+                      <span className="font-extrabold text-sm block">
+                        {isRelayConfigValid
+                          ? 'Relay Squad Fully Configured & Ready for Review'
+                          : `Relay Allocation Incomplete: ${activeLegCount} of ${hostRequiredLegs} Active Legs Assigned`}
+                      </span>
+                      <span className="text-[11px] opacity-90">
+                        {hostRelayGender === 'MIXED'
+                          ? `Mixed Rule Check: 2 Men & 2 Women required on active legs (Current: ${maleLegCount} Men, ${femaleLegCount} Women).`
+                          : hostRelayGender === 'MEN'
+                          ? `Men's Division: All active runners must be male (Current: ${maleLegCount} Men).`
+                          : `Women's Division: All active runners must be female (Current: ${femaleLegCount} Women).`}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${
+                      activeLegCount === hostRequiredLegs
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : 'bg-amber-100 text-amber-800 border-amber-300'
+                    }`}>
+                      {activeLegCount} / {hostRequiredLegs} Active Legs
+                    </span>
+                    {hostRelayGender === 'MIXED' && (
+                      <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${
+                        maleLegCount === 2 && femaleLegCount === 2
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          : 'bg-amber-100 text-amber-800 border-amber-300'
+                      }`}>
+                        {maleLegCount}M : {femaleLegCount}W
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4 Active Legs Section (Mandatory 4 Runners) */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 m-0 flex items-center gap-1.5">
+                      <Zap size={14} className="text-indigo-600" />
+                      <span>Active Leg Runners (Exactly 4 Required)</span>
+                    </h3>
+                    <span className="text-[11px] font-bold text-slate-500">
+                      Legs 1 to 4 must each be assigned
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      {
+                        slot: 'leg1AthleteId' as const,
+                        legNumber: 1,
+                        title: 'Leg 1: Starter / Lead-Off',
+                        roleDesc: 'Starting blocks & first bend specialist',
+                        athleteId: relaySquad.leg1AthleteId,
+                      },
+                      {
+                        slot: 'leg2AthleteId' as const,
+                        legNumber: 2,
+                        title: 'Leg 2: Back Straight',
+                        roleDesc: 'Speed endurance & second leg carry',
+                        athleteId: relaySquad.leg2AthleteId,
+                      },
+                      {
+                        slot: 'leg3AthleteId' as const,
+                        legNumber: 3,
+                        title: 'Leg 3: Curve Runner',
+                        roleDesc: 'Bend running specialist & third carry',
+                        athleteId: relaySquad.leg3AthleteId,
+                      },
+                      {
+                        slot: 'leg4AthleteId' as const,
+                        legNumber: 4,
+                        title: 'Leg 4: Anchor Finisher',
+                        roleDesc: 'Finishing speed & home straight sprint',
+                        athleteId: relaySquad.leg4AthleteId,
+                      },
+                    ].map((leg) => {
+                      const athlete = clubEligibleAthletes.find((a) => a.id === leg.athleteId);
+                      const isAssigned = Boolean(athlete);
+
+                      return (
+                        <div
+                          key={leg.slot}
+                          className={`p-4 rounded-xl border transition-all space-y-3 ${
+                            isAssigned
+                              ? 'bg-blue-50/50 border-blue-300 ring-1 ring-blue-500/10'
+                              : 'bg-slate-50/60 border-slate-200'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                                  isAssigned ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
+                                }`}>
+                                  Leg {leg.legNumber}
+                                </span>
+                                <span className="font-extrabold text-xs text-slate-900">
+                                  {leg.title}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-slate-500 block mt-0.5">
+                                {leg.roleDesc}
+                              </span>
+                            </div>
+
+                            {isAssigned && (
+                              <button
+                                type="button"
+                                onClick={() => setRelaySlotAthlete(leg.slot, '')}
+                                className="text-[11px] font-bold text-red-600 hover:text-red-800 cursor-pointer bg-transparent border-0 p-0"
+                              >
+                                Clear
+                              </button>
+                            )}
                           </div>
 
-                          {ath.amharicName && (
-                            <div className="text-[11px] text-slate-500 font-semibold truncate">
-                              {ath.amharicName}
+                          {/* Athlete Dropdown Picker */}
+                          <select
+                            className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-hidden focus:border-blue-500 cursor-pointer"
+                            value={leg.athleteId}
+                            onChange={(e) => setRelaySlotAthlete(leg.slot, e.target.value)}
+                          >
+                            <option value="">-- Choose Runner for Leg {leg.legNumber} (Required) --</option>
+                            {eligibleRosterAthletes.map((ath) => {
+                              const isPickedElsewhere = (
+                                ['leg1AthleteId', 'leg2AthleteId', 'leg3AthleteId', 'leg4AthleteId', 'alt1AthleteId', 'alt2AthleteId'] as const
+                              ).some((k) => k !== leg.slot && relaySquad[k] === ath.id);
+
+                              return (
+                                <option key={ath.id} value={ath.id}>
+                                  {ath.name} ({ath.gender === 'MALE' ? '♂ Male' : '♀ Female'}, {ath.category || 'Senior'})
+                                  {ath.personalRecords?.[0] ? ` · PB: ${ath.personalRecords[0].mark}` : ''}
+                                  {isPickedElsewhere ? ' (Swap Position)' : ''}
+                                </option>
+                              );
+                            })}
+                          </select>
+
+                          {/* Assigned Runner Card Preview */}
+                          {athlete && (
+                            <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white border border-slate-200">
+                              <img
+                                src={
+                                  getProfilePhotoUrl({
+                                    photoUrl: athlete.photoUrl,
+                                    faydaFin: athlete.faydaFin,
+                                    faydaNin: athlete.faydaFin,
+                                  }) || '/images/profile-placeholder.svg'
+                                }
+                                alt={athlete.name}
+                                className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = '/images/profile-placeholder.svg';
+                                }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-extrabold text-xs text-slate-900 truncate">
+                                    {athlete.name}
+                                  </span>
+                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                    athlete.gender === 'MALE'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-rose-100 text-rose-800'
+                                  }`}>
+                                    {athlete.gender === 'MALE' ? '♂ Male' : '♀ Female'}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-mono mt-0.5 flex items-center gap-2">
+                                  <span>FIN: {athlete.faydaFin || 'Biometric ID'}</span>
+                                  {athlete.personalRecords?.[0] && (
+                                    <span className="font-bold text-slate-700">PB: {athlete.personalRecords[0].mark}</span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                          <div className="text-xs text-slate-600 mt-1 space-y-0.5">
-                            <div>
-                              Primary Event:{' '}
-                              <strong className="text-slate-800">
-                                {ath.primaryEvent || ath.discipline}
-                              </strong>
-                              {ath.personalRecords?.[0] && ` · PB: ${ath.personalRecords[0].mark}`}
+                {/* Alternate / Reserve Runners Section (Governed by Host Max Alternates) */}
+                {hostMaxAlternates > 0 && (
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-700 m-0">
+                        Alternate / Reserve Runners (Up to {hostMaxAlternates} Permitted by Host)
+                      </h3>
+                      <span className="text-[11px] text-slate-500">
+                        Substitutable prior to call room closure
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[
+                        {
+                          slot: 'alt1AthleteId' as const,
+                          order: 1,
+                          title: 'Reserve 1 (Alternate 1)',
+                          athleteId: relaySquad.alt1AthleteId,
+                        },
+                        ...(hostMaxAlternates >= 2
+                          ? [
+                              {
+                                slot: 'alt2AthleteId' as const,
+                                order: 2,
+                                title: 'Reserve 2 (Alternate 2)',
+                                athleteId: relaySquad.alt2AthleteId,
+                              },
+                            ]
+                          : []),
+                      ].map((alt) => {
+                        const athlete = clubEligibleAthletes.find((a) => a.id === alt.athleteId);
+                        const isAssigned = Boolean(athlete);
+
+                        return (
+                          <div
+                            key={alt.slot}
+                            className={`p-4 rounded-xl border transition-all space-y-3 ${
+                              isAssigned
+                                ? 'bg-slate-50 border-slate-300'
+                                : 'bg-white border-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 uppercase">
+                                  Reserve {alt.order}
+                                </span>
+                                <span className="font-bold text-xs text-slate-800">
+                                  {alt.title}
+                                </span>
+                              </div>
+                              {isAssigned && (
+                                <button
+                                  type="button"
+                                  onClick={() => setRelaySlotAthlete(alt.slot, '')}
+                                  className="text-[11px] font-bold text-red-600 hover:text-red-800 cursor-pointer bg-transparent border-0 p-0"
+                                >
+                                  Clear
+                                </button>
+                              )}
                             </div>
-                            <div className="flex items-center gap-1.5 text-[11px]">
-                              <span className="font-mono text-slate-500">
-                                FIN: {ath.faydaFin || 'Biometric ID'}
-                              </span>
-                              {ath.faydaStatus === 'verified' && (
-                                <span className="inline-flex items-center gap-0.5 text-emerald-700 font-bold">
-                                  <ShieldCheck size={11} /> Verified
+
+                            <select
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-900 focus:outline-hidden focus:border-blue-500 cursor-pointer"
+                              value={alt.athleteId}
+                              onChange={(e) => setRelaySlotAthlete(alt.slot, e.target.value)}
+                            >
+                              <option value="">-- None (Leave Empty) --</option>
+                              {eligibleRosterAthletes.map((ath) => (
+                                <option key={ath.id} value={ath.id}>
+                                  {ath.name} ({ath.gender === 'MALE' ? '♂ Male' : '♀ Female'}, {ath.category || 'Senior'})
+                                </option>
+                              ))}
+                            </select>
+
+                            {athlete && (
+                              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white border border-slate-200">
+                                <img
+                                  src={
+                                    getProfilePhotoUrl({
+                                      photoUrl: athlete.photoUrl,
+                                      faydaFin: athlete.faydaFin,
+                                      faydaNin: athlete.faydaFin,
+                                    }) || '/images/profile-placeholder.svg'
+                                  }
+                                  alt={athlete.name}
+                                  className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = '/images/profile-placeholder.svg';
+                                  }}
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <span className="font-extrabold text-xs text-slate-900 truncate block">
+                                    {athlete.name}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 font-mono">
+                                    {athlete.gender === 'MALE' ? 'Male' : 'Female'} · FIN: {athlete.faydaFin || 'ID'}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 2 Footer for Relay */}
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWizardStep(1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <ArrowLeft size={14} /> Back to Disciplines
+                  </button>
+
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                    <span className="text-xs font-bold text-slate-500">
+                      {activeLegCount === hostRequiredLegs ? `${hostRequiredLegs}/${hostRequiredLegs} legs assigned` : `${hostRequiredLegs - activeLegCount} legs remaining`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (activeLegCount !== hostRequiredLegs) {
+                          onNotify(`Relay application requires all ${hostRequiredLegs} active leg positions to be assigned.`, 'error');
+                          return;
+                        }
+                        if (hostRelayGender === 'MIXED' && (maleLegCount !== 2 || femaleLegCount !== 2)) {
+                          onNotify(`Mixed relay composition requires exactly 2 male and 2 female runners. Current selection: ${maleLegCount} Male, ${femaleLegCount} Female.`, 'error');
+                          return;
+                        }
+                        setWizardStep(3);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      disabled={!isRelayConfigValid}
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer border-0 flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span>Continue to Declarations & Review</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* ─── CASE B: INDIVIDUAL EVENT ATHLETE SELECTION ─── */
+              <div className="space-y-6">
+                {/* Search & Filter Bar */}
+                <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
+                  <div className="relative flex-1">
+                    <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder={`Search club athletes for ${selectedDiscipline}...`}
+                      className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:bg-white"
+                      value={wizardAthleteSearch}
+                      onChange={(e) => setWizardAthleteSearch(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <select
+                      className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700"
+                      value={wizardTierFilter}
+                      onChange={(e) => setWizardTierFilter(e.target.value)}
+                    >
+                      <option value="ALL">All Categories</option>
+                      <option value="Senior">Senior Division</option>
+                      <option value="U20">U20 Division</option>
+                      <option value="U18">U18 Division</option>
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={handleSelectAllIndividual}
+                      className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer flex items-center gap-1.5"
+                    >
+                      <CheckSquare size={13} /> Select All Eligible
+                    </button>
+
+                    {selectedAthleteIds.size > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearIndividual}
+                        className="px-3 py-2 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 text-xs font-bold hover:bg-slate-50 cursor-pointer flex items-center gap-1"
+                      >
+                        <Square size={13} /> Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Athletes Selectable List */}
+                {isLoadingEligible ? (
+                  <div className="py-16 text-center text-slate-400 space-y-3">
+                    <RefreshCw size={24} className="animate-spin mx-auto text-blue-600" />
+                    <p className="font-bold text-xs text-slate-700">
+                      Retrieving verified club athlete eligibility from database...
+                    </p>
+                  </div>
+                ) : wizardFilteredAthletes.length === 0 ? (
+                  <div className="py-14 text-center rounded-xl border border-dashed border-slate-200 text-slate-400 space-y-2">
+                    <Users size={32} className="mx-auto opacity-30 text-slate-500" />
+                    <p className="font-bold text-sm text-slate-700">
+                      No athletes found matching your search.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {wizardFilteredAthletes.map((ath) => {
+                      const isSelected = selectedAthleteIds.has(ath.id);
+                      const isEligible = ath.isEligible;
+                      const seedMark = athleteSeedMap[ath.id] || '';
+
+                      return (
+                        <div
+                          key={ath.id}
+                          className={`p-4 rounded-xl border transition-all space-y-3 ${
+                            !isEligible
+                              ? 'bg-slate-50 border-slate-200 opacity-60 cursor-not-allowed'
+                              : isSelected
+                              ? 'bg-blue-50/60 border-blue-500 ring-1 ring-blue-500/20 shadow-xs'
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div
+                            onClick={() => isEligible && toggleIndividualAthlete(ath)}
+                            className="flex items-start justify-between gap-3 cursor-pointer"
+                          >
+                            <div className="flex items-start gap-3 min-w-0">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                disabled={!isEligible}
+                                onChange={() => {}}
+                                className="w-4 h-4 rounded text-blue-600 accent-blue-600 mt-1 cursor-pointer shrink-0"
+                              />
+                              <img
+                                src={
+                                  getProfilePhotoUrl({
+                                    photoUrl: ath.photoUrl,
+                                    faydaFin: ath.faydaFin,
+                                    faydaNin: ath.faydaFin,
+                                  }) || '/images/profile-placeholder.svg'
+                                }
+                                alt={ath.name}
+                                className="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = '/images/profile-placeholder.svg';
+                                }}
+                              />
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-extrabold text-sm text-slate-900 truncate">
+                                    {ath.name}
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                                    {ath.category || 'Senior'}
+                                  </span>
+                                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                                    ath.gender === 'MALE' ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
+                                  }`}>
+                                    {ath.gender === 'MALE' ? '♂ M' : '♀ F'}
+                                  </span>
+                                </div>
+
+                                <div className="text-xs text-slate-600 mt-1 space-y-0.5">
+                                  <div>
+                                    Primary: <strong className="text-slate-800">{ath.primaryEvent || ath.discipline}</strong>
+                                    {ath.personalRecords?.[0] && ` · PB: ${ath.personalRecords[0].mark}`}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-[11px]">
+                                    <span className="font-mono text-slate-500">
+                                      FIN: {ath.faydaFin || 'Biometric ID'}
+                                    </span>
+                                    {ath.faydaStatus === 'verified' && (
+                                      <span className="inline-flex items-center gap-0.5 text-emerald-700 font-bold">
+                                        <ShieldCheck size={11} /> Verified
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              {isEligible ? (
+                                <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md border ${
+                                  isSelected ? 'bg-blue-600 text-white border-blue-600' : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+                                }`}>
+                                  {isSelected ? <Check size={12} /> : null}
+                                  {isSelected ? 'Selected' : 'Eligible'}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
+                                  <AlertTriangle size={11} /> Ineligible
                                 </span>
                               )}
                             </div>
                           </div>
-                        </div>
-                      </div>
 
-                      <div className="text-right shrink-0">
-                        {isEligible ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-                            <Check size={12} /> Eligible
-                          </span>
-                        ) : (
-                          <div className="text-right">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-                              <AlertTriangle size={11} /> Ineligible
-                            </span>
-                            <span className="text-[10px] text-slate-500 block max-w-44 truncate mt-1">
-                              {ath.ineligibilityReasons[0] || 'Restriction'}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                          {/* Seed Mark Input when selected */}
+                          {isSelected && (
+                            <div className="pt-2 border-t border-slate-200 flex items-center gap-3 text-xs">
+                              <label className="font-bold text-slate-700 shrink-0">
+                                Qualifying Seed Mark / PB:
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="e.g. 10.25s or 13:20.10"
+                                className="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-mono font-bold text-slate-900 focus:outline-hidden focus:border-blue-500"
+                                value={seedMark}
+                                onChange={(e) =>
+                                  setAthleteSeedMap((prev) => ({ ...prev, [ath.id]: e.target.value }))
+                                }
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Step 2 Footer for Individual */}
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWizardStep(1);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <ArrowLeft size={14} /> Back to Disciplines
+                  </button>
+
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                    <span className="text-xs font-bold text-slate-500">
+                      {selectedAthleteIds.size} athlete(s) selected
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedAthleteIds.size === 0) {
+                          onNotify(`Please select at least one eligible athlete to enter in ${selectedDiscipline}.`, 'error');
+                          return;
+                        }
+                        setWizardStep(3);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      disabled={selectedAthleteIds.size === 0}
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer border-0 flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span>Continue to Declarations & Review</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
-
-            {/* Step 1 Footer Controls */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={handleCloseWizard}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer"
-              >
-                Cancel Enrollment
-              </button>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                <span className="text-xs font-bold text-slate-500">
-                  {selectedAthleteIds.size} athlete(s) selected
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isSelectedRegional && !isSelectedEligible) {
-                      onNotify(`Regional Restriction: This competition is restricted to clubs from ${selCompRegionName || 'the host region'}.`, 'error');
-                      return;
-                    }
-                    if (selectedAthleteIds.size === 0) {
-                      onNotify('Please select at least one eligible athlete to proceed.', 'error');
-                      return;
-                    }
-                    setWizardStep(2);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  disabled={selectedAthleteIds.size === 0 || (isSelectedRegional && !isSelectedEligible)}
-                  className="w-full sm:w-auto px-6 py-2.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer border-0 flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span>Continue to Disciplines & Declarations</span>
-                  <ArrowRight size={14} />
-                </button>
-              </div>
-            </div>
           </div>
-          );
-        })()}
+        )}
 
-        {/* ── STEP 2: DISCIPLINES & DECLARATIONS ── */}
-        {wizardStep === 2 && (
+        {/* ── STEP 3: REVIEW & FINAL SUBMISSION ── */}
+        {wizardStep === 3 && (
           <div className="p-6 md:p-8 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-6">
-            <div className="pb-4 border-b border-slate-200">
-              <h2 className="text-xl font-black text-slate-900 m-0">
-                Assign Competition Disciplines & Confirm Club Declarations
-              </h2>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Specify one or more eligible events for each enrolled athlete, enter qualifying seed marks, and confirm authorized club compliance.
+            <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 space-y-1.5">
+              <div className="flex items-center gap-2 text-blue-900 font-black text-sm">
+                <CheckCircle2 size={18} /> Official Championship Application Ready for Submission
+              </div>
+              <p className="text-xs text-blue-800 m-0 leading-relaxed">
+                Review your club's entry details below. Upon submission, the application and athlete squad records
+                will be transmitted directly to the Ethiopian Athletics Federation championship database.
               </p>
             </div>
 
-            {/* Athletes Event Assignment Cards */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 m-0">
-                Athlete Event Assignments ({selectedAthleteIds.size} Athletes)
-              </h3>
-
-              <div className="space-y-3">
-                {Array.from(selectedAthleteIds).map((id) => {
-                  const ath = clubEligibleAthletes.find((a) => a.id === id);
-                  if (!ath) return null;
-                  const selectedDiscs = athleteDisciplineMap[id] || [];
-                  const seedMark = athleteSeedMap[id] || '';
-
-                  return (
-                    <div
-                      key={id}
-                      className="p-5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-4"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={
-                              getProfilePhotoUrl({
-                                photoUrl: ath.photoUrl,
-                                faydaFin: ath.faydaFin,
-                                faydaNin: ath.faydaFin,
-                              }) || '/images/profile-placeholder.svg'
-                            }
-                            alt={ath.name}
-                            className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src = '/images/profile-placeholder.svg';
-                            }}
-                          />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-extrabold text-sm text-slate-900">
-                                {ath.name}
-                              </span>
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
-                                {ath.category}
-                              </span>
-                            </div>
-                            <span className="text-[11px] text-slate-500">
-                              Primary: <strong>{ath.primaryEvent || ath.discipline}</strong>
-                              {ath.faydaFin && ` · FIN: ${ath.faydaFin}`}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="text-xs text-blue-700 font-bold">
-                          {selectedDiscs.length} event(s) assigned
-                        </div>
-                      </div>
-
-                      {/* Multi-discipline Selector */}
-                      <div>
-                        <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-2">
-                          Eligible Events in this Competition:
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          {(selectedCompetition.disciplines || []).map((disc) => {
-                            const isChecked = selectedDiscs.includes(disc);
-                            return (
-                              <button
-                                key={disc}
-                                type="button"
-                                onClick={() => toggleAthleteDiscipline(id, disc)}
-                                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer flex items-center gap-1.5 ${
-                                  isChecked
-                                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                                }`}
-                              >
-                                {isChecked && <Check size={13} />}
-                                <span>{disc}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Seed Mark */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <div>
-                          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
-                            Seed Mark / Qualifying Personal Best
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="e.g. 28:45.10 or 2:04:12"
-                            className="w-full px-3.5 py-2 rounded-lg border border-slate-200 bg-white text-xs font-mono text-slate-900 focus:outline-hidden focus:border-blue-500"
-                            value={seedMark}
-                            onChange={(e) =>
-                              setAthleteSeedMap((prev) => ({ ...prev, [id]: e.target.value }))
-                            }
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+            {/* Application Summary Box */}
+            <div className="p-5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3 text-xs">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                    Discipline Entry
+                  </span>
+                  <span className="font-black text-base text-slate-900">
+                    {selectedDiscipline}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                    Entry Type
+                  </span>
+                  <span className="font-extrabold text-xs text-blue-700">
+                    {isCurrentRelay ? `Relay Squad Entry (${hostRequiredLegs} Legs + Reserves)` : 'Individual Track/Field Entry'}
+                  </span>
+                </div>
               </div>
+
+              {/* If Relay: Show Legs + Reserves */}
+              {isCurrentRelay ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-white p-3 rounded-lg border border-slate-200">
+                    <div>
+                      <span className="text-slate-500 block text-[10px] font-bold uppercase">Squad Name</span>
+                      <strong className="text-slate-900">{relaySquad.teamName || 'Relay Team'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] font-bold uppercase">Host Format</span>
+                      <strong className="text-slate-900">{getFormatLabel(hostRelayFormat)}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] font-bold uppercase">Host Division</span>
+                      <strong className="text-slate-900">{getGenderLabel(hostRelayGender)}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block text-[10px] font-bold uppercase">Seed Time</span>
+                      <strong className="font-mono text-slate-900">{relaySquad.seedTime || '—'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 overflow-hidden text-xs">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-600 font-bold uppercase text-[11px] border-b border-slate-200">
+                          <th className="py-2.5 px-3">Position</th>
+                          <th className="py-2.5 px-3">Athlete Name</th>
+                          <th className="py-2.5 px-3">Gender</th>
+                          <th className="py-2.5 px-3">Category</th>
+                          <th className="py-2.5 px-3">Fayda FIN</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {[
+                          { pos: 'Leg 1 (Starter)', id: relaySquad.leg1AthleteId },
+                          { pos: 'Leg 2 (Back Straight)', id: relaySquad.leg2AthleteId },
+                          { pos: 'Leg 3 (Curve)', id: relaySquad.leg3AthleteId },
+                          { pos: 'Leg 4 (Anchor)', id: relaySquad.leg4AthleteId },
+                          ...(relaySquad.alt1AthleteId ? [{ pos: 'Reserve 1', id: relaySquad.alt1AthleteId }] : []),
+                          ...(relaySquad.alt2AthleteId ? [{ pos: 'Reserve 2', id: relaySquad.alt2AthleteId }] : []),
+                        ].map((item, idx) => {
+                          const ath = clubEligibleAthletes.find((a) => a.id === item.id);
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50/60">
+                              <td className="py-2.5 px-3 font-bold text-slate-800">
+                                <span className={`px-2 py-0.5 rounded text-[10px] ${
+                                  item.pos.startsWith('Reserve') ? 'bg-slate-100 text-slate-700' : 'bg-blue-100 text-blue-800 font-extrabold'
+                                }`}>
+                                  {item.pos}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 font-extrabold text-slate-900">
+                                {ath?.name || '—'}
+                              </td>
+                              <td className="py-2.5 px-3 text-slate-600">
+                                {ath?.gender === 'MALE' ? '♂ Male' : '♀ Female'}
+                              </td>
+                              <td className="py-2.5 px-3 text-slate-600">
+                                {ath?.category || 'Senior'}
+                              </td>
+                              <td className="py-2.5 px-3 font-mono text-slate-500">
+                                {ath?.faydaFin || 'Biometric ID'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                /* Individual Table */
+                <div className="rounded-xl border border-slate-200 overflow-hidden text-xs">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-600 font-bold uppercase text-[11px] border-b border-slate-200">
+                        <th className="py-2.5 px-3">Athlete Name</th>
+                        <th className="py-2.5 px-3">Category</th>
+                        <th className="py-2.5 px-3">Fayda FIN</th>
+                        <th className="py-2.5 px-3">Discipline</th>
+                        <th className="py-2.5 px-3">Seed Mark / PB</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {Array.from(selectedAthleteIds).map((id) => {
+                        const ath = clubEligibleAthletes.find((a) => a.id === id);
+                        if (!ath) return null;
+                        return (
+                          <tr key={id} className="hover:bg-slate-50/60">
+                            <td className="py-2.5 px-3 font-bold text-slate-900">
+                              {ath.name}
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-600">{ath.category}</td>
+                            <td className="py-2.5 px-3 font-mono text-[11px] text-slate-500">
+                              {ath.faydaFin || 'Biometric FIN'}
+                            </td>
+                            <td className="py-2.5 px-3 font-bold text-blue-700">
+                              {selectedDiscipline}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-slate-700">
+                              {athleteSeedMap[id] || '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
-            {/* Representative & Compliance Declarations */}
+            {/* Representative & Regulatory Certification Card */}
             <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 space-y-5">
               <div>
                 <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 m-0">
@@ -1183,120 +2205,6 @@ export default function MeetRegistration({
               </div>
             </div>
 
-            {/* Step 2 Footer Controls */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-              <button
-                type="button"
-                onClick={() => {
-                  setWizardStep(1);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="px-5 py-2.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
-              >
-                <ArrowLeft size={14} /> Back to Athlete Selection
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  for (const id of selectedAthleteIds) {
-                    const discs = athleteDisciplineMap[id] || [];
-                    if (discs.length === 0) {
-                      const ath = clubEligibleAthletes.find((a) => a.id === id);
-                      onNotify(`Please assign at least one discipline for ${ath?.name || 'athlete'}.`, 'error');
-                      return;
-                    }
-                  }
-                  if (!repConfirmed || !consentConfirmed || !medicalConfirmed) {
-                    onNotify('All three regulatory and medical declarations are required.', 'error');
-                    return;
-                  }
-                  setWizardStep(3);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="px-6 py-2.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer border-0 flex items-center gap-1.5 shadow-xs"
-              >
-                <span>Continue to Review & Submit</span>
-                <ArrowRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 3: REVIEW & FINAL SUBMISSION ── */}
-        {wizardStep === 3 && (
-          <div className="p-6 md:p-8 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-6">
-            <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 space-y-1.5">
-              <div className="flex items-center gap-2 text-blue-900 font-black text-sm">
-                <CheckCircle2 size={18} /> Official Delegation Ready for Federation Submission
-              </div>
-              <p className="text-xs text-blue-800 m-0 leading-relaxed">
-                Review your club's enrolled athletes and registered disciplines below. Upon submission, your application will be saved directly into the championship registry and an official reference tracking code will be issued.
-              </p>
-            </div>
-
-            {/* Roster Summary Table */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 m-0">
-                Official Club Roster ({selectedAthleteIds.size} Athletes)
-              </h3>
-
-              <div className="rounded-xl border border-slate-200 overflow-hidden text-xs">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-600 font-bold uppercase text-[11px] border-b border-slate-200">
-                      <th className="py-3 px-4">Athlete Name</th>
-                      <th className="py-3 px-4">Category</th>
-                      <th className="py-3 px-4">Fayda FIN</th>
-                      <th className="py-3 px-4">Assigned Disciplines</th>
-                      <th className="py-3 px-4">Seed Mark / PB</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {Array.from(selectedAthleteIds).map((id) => {
-                      const ath = clubEligibleAthletes.find((a) => a.id === id);
-                      if (!ath) return null;
-                      return (
-                        <tr key={id} className="hover:bg-slate-50/60">
-                          <td className="py-3 px-4 font-bold text-slate-900">
-                            {ath.name}
-                            {ath.amharicName && (
-                              <span className="text-[10px] text-slate-500 block font-normal">
-                                {ath.amharicName}
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-slate-600">{ath.category}</td>
-                          <td className="py-3 px-4 font-mono text-[11px] text-slate-500">
-                            {ath.faydaFin || 'Biometric FIN'}
-                          </td>
-                          <td className="py-3 px-4 font-bold text-blue-700">
-                            {(athleteDisciplineMap[id] || []).join(', ')}
-                          </td>
-                          <td className="py-3 px-4 font-mono text-slate-700">
-                            {athleteSeedMap[id] || '—'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Representative & Regulatory Certification Card */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
-              <div className="font-extrabold text-slate-900 text-sm">
-                Authorized Submitting Official:
-              </div>
-              <div className="text-slate-600">
-                {repName} ({repRole}) · Phone: {repPhone} · Club: {club?.name || 'Club'}
-              </div>
-              <div className="text-emerald-700 font-semibold flex items-center gap-1.5 pt-1">
-                <CheckCircle2 size={13} /> All regulatory, anti-doping, and medical clearance declarations confirmed.
-              </div>
-            </div>
-
             {/* Step 3 Footer Controls */}
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
               <button
@@ -1307,7 +2215,7 @@ export default function MeetRegistration({
                 }}
                 className="px-5 py-2.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 cursor-pointer flex items-center gap-1.5"
               >
-                <ArrowLeft size={14} /> Back to Disciplines
+                <ArrowLeft size={14} /> Back to Athlete Allocation
               </button>
 
               <button
@@ -2078,6 +2986,32 @@ export default function MeetRegistration({
                 <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
                   <span className="font-bold block mb-0.5">Reviewer Feedback:</span>
                   <span>{viewingApplication.decisionNote}</span>
+                </div>
+              )}
+
+              {/* If relay squad was submitted with the application */}
+              {(viewingApplication as any).relaySquad && (
+                <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 block">
+                        Official Relay Squad
+                      </span>
+                      <span className="font-black text-slate-900 text-sm">
+                        {(viewingApplication as any).relaySquad.teamName || 'Relay Squad'}
+                      </span>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-indigo-600 text-white">
+                      {(viewingApplication as any).relaySquad.discipline}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] text-slate-600">
+                    <div>Format: <strong className="text-slate-800">{(viewingApplication as any).relaySquad.format}</strong></div>
+                    <div>Division: <strong className="text-slate-800">{(viewingApplication as any).relaySquad.gender}</strong></div>
+                    {(viewingApplication as any).relaySquad.seedTime && (
+                      <div>Seed Mark: <strong className="font-mono text-slate-800">{(viewingApplication as any).relaySquad.seedTime}</strong></div>
+                    )}
+                  </div>
                 </div>
               )}
 

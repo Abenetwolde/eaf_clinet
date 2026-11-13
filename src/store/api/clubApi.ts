@@ -8,6 +8,7 @@ export interface ClubCompetition {
   venue: string;
   rules?: string[];
   disciplines: string[];
+  disciplineConfigs?: Record<string, any>;
   schedule?: Array<{ startsAt?: string; endsAt?: string }>;
   startDate: string;
   endDate: string;
@@ -72,6 +73,7 @@ export interface EligibleAthletesResponse {
     category: string;
     venue: string;
     disciplines: string[];
+    disciplineConfigs?: Record<string, any>;
     registrationDeadline: string;
   };
   athletes: EligibleAthlete[];
@@ -84,6 +86,22 @@ export interface SubmitCompetitionApplicationPayload {
     disciplines: string[];
     seedMark?: string;
   }>;
+  relaySquad?: {
+    teamName: string;
+    discipline: string;
+    format?: string;
+    gender?: 'MEN' | 'WOMEN' | 'MIXED';
+    category?: string;
+    seedTime?: string;
+    rulesConfig?: any;
+    members: Array<{
+      athleteId: string;
+      legNumber?: number | null;
+      isAlternate: boolean;
+      alternateOrder?: number | null;
+      bibNumber?: string | null;
+    }>;
+  };
   representative?: {
     name: string;
     phone: string;
@@ -111,6 +129,22 @@ export interface ClubApplication {
   eventId: string | null;
   eventTitle: string;
   athleteCount: number;
+  relaySquad?: {
+    teamName: string;
+    discipline: string;
+    format?: string;
+    gender?: 'MEN' | 'WOMEN' | 'MIXED';
+    category?: string;
+    seedTime?: string;
+    members: Array<{
+      athleteId: string;
+      legNumber?: number | null;
+      isAlternate: boolean;
+      alternateOrder?: number | null;
+      bibNumber?: string | null;
+    }>;
+  } | null;
+  relayTeamId?: string | null;
   athleteEntries: Array<{
     athleteId: string;
     athleteName: string;
