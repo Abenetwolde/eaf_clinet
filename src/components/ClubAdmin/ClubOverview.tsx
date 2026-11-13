@@ -22,8 +22,8 @@ interface ClubOverviewProps {
 
 
 export default function ClubOverview({ club: propClub, athletes: propAthletes, transfers: propTransfers, onChangeSubPage, onNotify, onAddClub, onPayClubMembership }: ClubOverviewProps) {
-  const storeClub = useAppSelector((state) => state.auth.club);
-  const storeTransfers = useAppSelector((state) => state.club.transfers);
+  const storeClub = useAppSelector((state) => state.auth?.club);
+  const storeTransfers = useAppSelector((state) => state.club?.transfers) || [];
   const dispatch = useAppDispatch();
 
   // Always fetch live profile to keep session in sync with database
@@ -52,15 +52,16 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   // Retrieve club renewals dynamically from database strictly for active club
   const { data: renewalsData } = useGetClubRenewalsQuery(activeClubId, { skip: !activeClubId });
   const renewalClub = renewalsData?.club;
-  const renewalPeriods = renewalsData?.periods || [];
+  const renewalPeriods = Array.isArray(renewalsData?.periods) ? renewalsData.periods : [];
 
-  const baseClub = (propClub?.id && propClub.name)
+  const baseClub: Club = (propClub?.id && propClub.name)
     ? propClub
     : (storeClub?.id && storeClub.name)
     ? storeClub
     : fallbackClub;
 
   const club: Club = {
+    ...fallbackClub,
     ...baseClub,
     ...(accountClub || {}),
     ...(renewalClub ? {
@@ -68,17 +69,17 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
       affiliationExpiresAt: renewalClub.affiliationExpiresAt,
       currentSeasonYear: renewalClub.currentSeasonYear,
     } : {}),
-    id: accountClub?.id || renewalClub?.id || baseClub.id,
-    name: accountClub?.name || renewalClub?.name || baseClub.name,
-    shortName: accountClub?.shortName || baseClub.shortName || '',
-    region: accountClub?.region || renewalClub?.region || baseClub.region || '',
-    manager: accountClub?.manager || baseClub.manager || '',
-    email: accountClub?.email || baseClub.email || '',
-    phone: accountClub?.phone || baseClub.phone || '',
-    logo: accountClub?.logo || baseClub.logo || '',
-    verificationStatus: accountClub?.verificationStatus || baseClub.verificationStatus,
-    clubRank: baseClub.clubRank || 1,
-    totalPoints: baseClub.totalPoints || 0,
+    id: accountClub?.id || renewalClub?.id || baseClub?.id || '',
+    name: accountClub?.name || renewalClub?.name || baseClub?.name || 'Club Administration',
+    shortName: accountClub?.shortName || baseClub?.shortName || 'CLB',
+    region: accountClub?.region || renewalClub?.region || baseClub?.region || 'Ethiopia',
+    manager: accountClub?.manager || baseClub?.manager || 'Club Admin',
+    email: accountClub?.email || baseClub?.email || '',
+    phone: accountClub?.phone || baseClub?.phone || '',
+    logo: accountClub?.logo || baseClub?.logo || '',
+    verificationStatus: accountClub?.verificationStatus || baseClub?.verificationStatus,
+    clubRank: baseClub?.clubRank || 1,
+    totalPoints: baseClub?.totalPoints || 0,
   };
 
   const activeClubName = club?.name || accountClub?.name || '';
@@ -87,13 +88,13 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   // Sync fresh club status to Redux store if updated
   React.useEffect(() => {
     if (accountClub?.id) {
-      const isPaid = Boolean((accountClub as any).isAffiliationPaid || storeClub.isAffiliationPaid);
+      const isPaid = Boolean((accountClub as any).isAffiliationPaid || storeClub?.isAffiliationPaid);
       if (
-        (accountClub as any).isAffiliationPaid !== storeClub.isAffiliationPaid ||
-        (accountClub as any).affiliationStatus !== storeClub.affiliationStatus
+        (accountClub as any).isAffiliationPaid !== storeClub?.isAffiliationPaid ||
+        (accountClub as any).affiliationStatus !== storeClub?.affiliationStatus
       ) {
         dispatch(setClub({
-          ...storeClub,
+          ...(storeClub || fallbackClub),
           ...(accountClub as any),
           isAffiliationPaid: isPaid,
         }));
@@ -147,33 +148,39 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   const { data: overviewStats } = useGetOverviewStatsQuery();
 
   const dynamicAthletes: Athlete[] = React.useMemo(() => {
-    return (backendAthletes || [])
+    const rawList = Array.isArray(backendAthletes)
+      ? backendAthletes
+      : Array.isArray((backendAthletes as any)?.data)
+      ? (backendAthletes as any).data
+      : [];
+
+    return rawList
       .filter((b: any) => {
         if (!activeClubId) return true;
-        const matchesId = b.clubId === activeClubId;
-        const matchesName = activeClubName && b.clubName && (
-          b.clubName.trim().toLowerCase() === activeClubName.trim().toLowerCase()
+        const matchesId = b?.clubId === activeClubId;
+        const matchesName = activeClubName && b?.clubName && (
+          String(b.clubName).trim().toLowerCase() === String(activeClubName).trim().toLowerCase()
         );
         return matchesId || matchesName;
       })
       .map((b: any) => ({
-        id: b.id,
-        name: b.name || `${b.user?.firstName || ""} ${b.user?.lastName || ""}`.trim() || 'Athlete',
-        amharicName: b.amharicName,
-        dob: b.dateOfBirth,
-        gender: b.gender,
-        ageTier: b.ageTier,
-        clubId: b.clubId || activeClubId,
-        clubName: b.clubName || activeClubName,
-        faydaFin: b.faydaFin || b.user?.faydaIdentity?.nin,
-        faydaFan: b.faydaFan || b.fanNumber || b.user?.faydaIdentity?.faydaSub,
-        faydaStatus: (b.user?.faydaIdentity?.verified || b.faydaVerified) ? "VERIFIED" : "PENDING",
-        primaryEvent: b.primaryEvent || b.athleteSports?.[0]?.sport?.name || 'Athletics',
-        licenseStatus: b.status,
-        licenseNumber: b.licenseNumber || (b.status === 'ACTIVE' || b.status === 'APPROVED' ? `ETH-${b.id.slice(-6).toUpperCase()}` : undefined),
-        photoUrl: b.photoUrl || "",
+        id: b?.id || '',
+        name: b?.name || `${b?.user?.firstName || ""} ${b?.user?.lastName || ""}`.trim() || 'Athlete',
+        amharicName: b?.amharicName,
+        dob: b?.dateOfBirth,
+        gender: b?.gender,
+        ageTier: b?.ageTier,
+        clubId: b?.clubId || activeClubId,
+        clubName: b?.clubName || activeClubName,
+        faydaFin: b?.faydaFin || b?.user?.faydaIdentity?.nin,
+        faydaFan: b?.faydaFan || b?.fanNumber || b?.user?.faydaIdentity?.faydaSub,
+        faydaStatus: (b?.user?.faydaIdentity?.verified || b?.faydaVerified) ? "VERIFIED" : "PENDING",
+        primaryEvent: b?.primaryEvent || b?.athleteSports?.[0]?.sport?.name || 'Athletics',
+        licenseStatus: b?.status,
+        licenseNumber: b?.licenseNumber || (b?.status === 'ACTIVE' || b?.status === 'APPROVED' ? `ETH-${String(b?.id || '').slice(-6).toUpperCase()}` : undefined),
+        photoUrl: b?.photoUrl || "",
         checkinStatus: "NOT_CHECKED_IN",
-        personalBests: Array.isArray(b.personalBests) ? b.personalBests : [],
+        personalBests: Array.isArray(b?.personalBests) ? b.personalBests : [],
         seasonBests: [], weightLog: [], trainingLog: [], achievements: [],
       } as Athlete));
   }, [backendAthletes, activeClubId, activeClubName]);
@@ -184,10 +191,11 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   const activeLicenseCount = athletes.filter(a => a.licenseStatus === 'ACTIVE').length;
   const expiredCount = athletes.filter(a => a.licenseStatus !== 'ACTIVE').length;
 
-  const performanceData = (overviewStats?.monthlyGrowth && overviewStats.monthlyGrowth.length > 0)
-    ? overviewStats.monthlyGrowth.map((m: any, idx: number) => ({
-        month: m.month,
-        points: Math.round(((club.totalPoints || 60) / 6) * (idx + 1) + (m.athletes * 4)),
+  const monthlyGrowth = Array.isArray(overviewStats?.monthlyGrowth) ? overviewStats.monthlyGrowth : [];
+  const performanceData = monthlyGrowth.length > 0
+    ? monthlyGrowth.map((m: any, idx: number) => ({
+        month: m?.month || `M${idx + 1}`,
+        points: Math.round(((club?.totalPoints || 60) / 6) * (idx + 1) + ((m?.athletes || 0) * 4)),
       }))
     : [
         { month: 'May', points: 12 },
@@ -195,19 +203,20 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
         { month: 'Jul', points: 42 },
         { month: 'Aug', points: 65 },
         { month: 'Sep', points: 88 },
-        { month: 'Oct', points: club.totalPoints || 120 },
+        { month: 'Oct', points: club?.totalPoints || 120 },
       ];
 
-  const eventsData = (athletes.length > 0 && athletes.some(a => a.primaryEvent))
+  const disciplineDist = Array.isArray(overviewStats?.disciplineDistribution) ? overviewStats.disciplineDistribution : [];
+  const eventsData = (athletes.length > 0 && athletes.some(a => a?.primaryEvent))
     ? athletes.reduce<{ name: string; value: number }[]>((counts, athlete) => {
-        const name = athlete.primaryEvent || 'Athletics';
+        const name = athlete?.primaryEvent || 'Athletics';
         const current = counts.find((item) => item.name === name);
         if (current) current.value += 1;
         else counts.push({ name, value: 1 });
         return counts;
       }, [])
-    : (overviewStats?.disciplineDistribution && overviewStats.disciplineDistribution.length > 0)
-    ? overviewStats.disciplineDistribution.slice(0, 5).map((d: any) => ({ name: d.name, value: d.count || d.value }))
+    : disciplineDist.length > 0
+    ? disciplineDist.slice(0, 5).map((d: any) => ({ name: d?.name || 'Other', value: d?.count || d?.value || 0 }))
     : [
         { name: '5,000m / 10,000m', value: 4 },
         { name: 'Middle Distance', value: 3 },
@@ -223,16 +232,22 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
       <div className="flex items-center justify-between mb-[20px] flex-wrap gap-[16px]">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden shrink-0">
-            {((club as any)?.logoUrl || club?.logo) && (((club as any)?.logoUrl || club?.logo).startsWith("http") || ((club as any)?.logoUrl || club?.logo).startsWith("/") || ((club as any)?.logoUrl || club?.logo).startsWith("data:")) ? (
-              <img
-                src={(club as any)?.logoUrl || club?.logo}
-                alt={club?.name || 'Club'}
-                className="w-full h-full object-contain p-1.5"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-            ) : (
-              <span className="text-xl font-black text-primary">{(club?.shortName || club?.name?.slice(0, 3) || "CLB").toUpperCase()}</span>
-            )}
+            {(() => {
+              const rawLogo = (club as any)?.logoUrl || club?.logo;
+              const isStringLogo = typeof rawLogo === "string" && (rawLogo.startsWith("http") || rawLogo.startsWith("/") || rawLogo.startsWith("data:"));
+              if (isStringLogo) {
+                return (
+                  <img
+                    src={rawLogo}
+                    alt={club?.name || 'Club'}
+                    className="w-full h-full object-contain p-1.5"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                );
+              }
+              const short = String(club?.shortName || club?.name || "CLB").trim().slice(0, 3).toUpperCase();
+              return <span className="text-xl font-black text-primary">{short || "CLB"}</span>;
+            })()}
           </div>
           <div>
             <div className="flex items-center gap-3 flex-wrap">
@@ -400,7 +415,7 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
           <h3 className="text-[1.1rem] font-bold mb-[16px] text-text-heading">Federation Regional Benchmark</h3>
           <div className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={(overviewStats?.regionalDistribution || []).slice(0, 5)} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+              <BarChart data={(Array.isArray(overviewStats?.regionalDistribution) ? overviewStats.regionalDistribution : []).slice(0, 5)} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="region" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />

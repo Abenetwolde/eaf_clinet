@@ -24,6 +24,8 @@ import {
   ChevronRight,
   Filter,
   Award,
+  ShieldAlert,
+  Globe,
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import { useGetMeQuery } from '../../store/api/authApi';
@@ -39,6 +41,7 @@ import {
 } from '../../store/api/clubApi';
 import { useGetPublishedResultsQuery } from '../../store/api/athleteApi';
 import { getProfilePhotoUrl } from '../../utils/profilePhoto';
+import { isRegionMatch } from '../../utils/region-utils';
 
 interface MeetRegistrationProps {
   onNotify: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -121,6 +124,39 @@ export default function MeetRegistration({
     isLoading: isLoadingCompetitions,
     refetch: refetchCompetitions,
   } = useGetClubCompetitionsQuery(clubId || 'all');
+
+  // Competitions visible to this club:
+  // Only display national competitions or regional competitions for the club's specific region.
+  // Ineligible regional competitions from other regions are completely filtered out.
+  const visibleCompetitions = useMemo(() => {
+    return (competitions || []).filter((comp) => {
+      const isRegional = Boolean(comp.isRegional || comp.regionId || comp.region || comp.regionName);
+      if (!isRegional) return true; // National championships are open to all clubs
+
+      const compRegionName =
+        comp.region?.name ||
+        comp.regionName ||
+        (typeof comp.region === 'string' ? comp.region : '') ||
+        '';
+      const compRegionId = comp.regionId || comp.region?.id;
+
+      const clubRegionName =
+        club?.region ||
+        (club as any)?.regionName ||
+        accountClub?.region ||
+        '';
+      const clubRegionId =
+        (club as any)?.regionId ||
+        (accountClub as any)?.regionId;
+
+      const isRegionEligible =
+        comp.isRegionEligible !== undefined
+          ? comp.isRegionEligible
+          : isRegionMatch(clubRegionName, compRegionName, clubRegionId, compRegionId);
+
+      return isRegionEligible;
+    });
+  }, [competitions, club, accountClub]);
 
   const {
     data: applications = [],
@@ -262,6 +298,36 @@ export default function MeetRegistration({
 
   // ── Wizard Handlers ──
   const handleStartEnrollment = (comp: ClubCompetition) => {
+    const isRegional = Boolean(comp.isRegional || comp.regionId || comp.region || comp.regionName);
+    const compRegionName =
+      comp.region?.name ||
+      comp.regionName ||
+      (typeof comp.region === 'string' ? comp.region : '') ||
+      '';
+    const compRegionId = comp.regionId || comp.region?.id;
+
+    const clubRegionName =
+      club?.region ||
+      (club as any)?.regionName ||
+      accountClub?.region ||
+      '';
+    const clubRegionId =
+      (club as any)?.regionId ||
+      (accountClub as any)?.regionId;
+
+    const isRegionEligible =
+      comp.isRegionEligible !== undefined
+        ? comp.isRegionEligible
+        : (!isRegional || isRegionMatch(clubRegionName, compRegionName, clubRegionId, compRegionId));
+
+    if (isRegional && !isRegionEligible) {
+      onNotify(
+        `Regional Competition Restriction: Only clubs and athletes from ${compRegionName || 'the host region'} may participate. ${club?.name || 'Your club'} is registered under ${clubRegionName || 'another region'}.`,
+        'error'
+      );
+      return;
+    }
+
     setSelectedCompetition(comp);
     setWizardStep(1);
     setSelectedAthleteIds(new Set());
@@ -488,6 +554,17 @@ export default function MeetRegistration({
                 <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   {selectedCompetition.isRegistrationOpen ? 'Registration Active' : 'Deadline Passed'}
                 </span>
+                {Boolean(selectedCompetition.isRegional || selectedCompetition.regionId || selectedCompetition.region || selectedCompetition.regionName) ? (
+                  <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
+                    <ShieldAlert size={13} className="text-amber-600" />
+                    <span>Host Region: {selectedCompetition.region?.name || selectedCompetition.regionName || 'Regional Scope'}</span>
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1">
+                    <Globe size={13} className="text-slate-500" />
+                    <span>National Championship</span>
+                  </span>
+                )}
                 <span className="text-xs text-slate-500 flex items-center gap-1 font-semibold">
                   <ShieldCheck size={14} className="text-emerald-600" /> EAF Sanctioned Meet
                 </span>
@@ -623,25 +700,62 @@ export default function MeetRegistration({
         </div>
 
         {/* ── STEP 1: ATHLETE SELECTION & ELIGIBILITY ── */}
-        {wizardStep === 1 && (
-          <div className="p-6 md:p-8 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-              <div>
-                <h2 className="text-xl font-black text-slate-900 m-0">
-                  Select Club Athletes for Championship Enrollment
-                </h2>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  Athletes must have an active license, valid Fayda biometric identity verification, and no active sanctions.
-                  Data is verified in real-time against Ethiopian Athletics Federation records.
-                </p>
-              </div>
+        {wizardStep === 1 && (() => {
+          const isSelectedRegional = Boolean(
+            selectedCompetition.isRegional ||
+            selectedCompetition.regionId ||
+            selectedCompetition.region ||
+            selectedCompetition.regionName
+          );
+          const selCompRegionName =
+            selectedCompetition.region?.name ||
+            selectedCompetition.regionName ||
+            (typeof selectedCompetition.region === 'string' ? selectedCompetition.region : '') ||
+            '';
+          const selCompRegionId = selectedCompetition.regionId || selectedCompetition.region?.id;
+          const clubRegionName = club?.region || (club as any)?.regionName || accountClub?.region || '';
+          const clubRegionId = (club as any)?.regionId || (accountClub as any)?.regionId;
+          const isSelectedEligible =
+            selectedCompetition.isRegionEligible !== undefined
+              ? selectedCompetition.isRegionEligible
+              : (!isSelectedRegional || isRegionMatch(clubRegionName, selCompRegionName, clubRegionId, selCompRegionId));
 
-              <div className="flex items-center gap-2 self-start md:self-auto">
-                <span className="px-3 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                  {selectedAthleteIds.size} of {eligibleCount} Eligible Athletes Selected
-                </span>
+          return (
+            <div className="p-6 md:p-8 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-6">
+              {/* Regional Restriction Alert Banner */}
+              {isSelectedRegional && !isSelectedEligible && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 flex items-start gap-3">
+                  <ShieldAlert size={20} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-sm text-amber-950">
+                      Regional Scope Restriction: Club Ineligible for this Meet
+                    </p>
+                    <p className="leading-relaxed">
+                      This competition is an official regional championship hosted strictly for clubs and delegations from <strong>{selCompRegionName || 'the host region'}</strong>.
+                      Your club (<strong>{club?.name || 'Club'}</strong>) is registered under <strong>{clubRegionName || 'another region'}</strong>.
+                      Athletes from outside the host region cannot be entered into this championship.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 m-0">
+                    Select Club Athletes for Championship Enrollment
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Athletes must have an active license, valid Fayda biometric identity verification, and no active sanctions.
+                    Data is verified in real-time against Ethiopian Athletics Federation records.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 self-start md:self-auto">
+                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    {selectedAthleteIds.size} of {eligibleCount} Eligible Athletes Selected
+                  </span>
+                </div>
               </div>
-            </div>
 
             {/* Filter & Search Bar */}
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
@@ -826,6 +940,10 @@ export default function MeetRegistration({
                 <button
                   type="button"
                   onClick={() => {
+                    if (isSelectedRegional && !isSelectedEligible) {
+                      onNotify(`Regional Restriction: This competition is restricted to clubs from ${selCompRegionName || 'the host region'}.`, 'error');
+                      return;
+                    }
                     if (selectedAthleteIds.size === 0) {
                       onNotify('Please select at least one eligible athlete to proceed.', 'error');
                       return;
@@ -833,7 +951,7 @@ export default function MeetRegistration({
                     setWizardStep(2);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  disabled={selectedAthleteIds.size === 0}
+                  disabled={selectedAthleteIds.size === 0 || (isSelectedRegional && !isSelectedEligible)}
                   className="w-full sm:w-auto px-6 py-2.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer border-0 flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>Continue to Disciplines & Declarations</span>
@@ -842,7 +960,8 @@ export default function MeetRegistration({
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ── STEP 2: DISCIPLINES & DECLARATIONS ── */}
         {wizardStep === 2 && (
@@ -1285,7 +1404,7 @@ export default function MeetRegistration({
               Federation Meets Open for Club Entry
             </h3>
             <span className="text-xs text-slate-500 font-medium">
-              Showing {competitions.length} available competitions from database
+              Showing {visibleCompetitions.length} available competition{visibleCompetitions.length === 1 ? '' : 's'}
             </span>
           </div>
 
@@ -1294,18 +1413,25 @@ export default function MeetRegistration({
               <RefreshCw size={24} className="animate-spin mx-auto text-blue-600" />
               <p className="font-bold text-xs text-slate-700">Loading open federation competitions...</p>
             </div>
-          ) : competitions.length === 0 ? (
+          ) : visibleCompetitions.length === 0 ? (
             <div className="p-12 text-center rounded-xl border border-slate-200 bg-white text-slate-400">
               <Trophy size={36} className="mx-auto mb-2 opacity-30 text-slate-500" />
-              <p className="font-bold text-sm text-slate-700">No competitions are currently open for registration.</p>
+              <p className="font-bold text-sm text-slate-700">No competitions are currently open for your club's registration.</p>
               <p className="text-xs text-slate-500 mt-1">
-                Please check back when the federation publishes new championship fixtures.
+                Please check back when the federation publishes new championship fixtures for {club?.region ? `${club.region} or national` : 'your'} division.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {competitions.map((comp) => {
+              {visibleCompetitions.map((comp) => {
                 const isOpen = comp.isRegistrationOpen;
+                const isRegional = Boolean(comp.isRegional || comp.regionId || comp.region || comp.regionName);
+                const compRegionName =
+                  comp.region?.name ||
+                  comp.regionName ||
+                  (typeof comp.region === 'string' ? comp.region : '') ||
+                  '';
+
                 return (
                   <div
                     key={comp.id}
@@ -1321,6 +1447,23 @@ export default function MeetRegistration({
                           (e.currentTarget as HTMLImageElement).src = '/images/runner_marathon.png';
                         }}
                       />
+
+                      {/* Top-Left: Regional / National Scope Badge */}
+                      <div className="absolute top-3 left-3">
+                        {isRegional ? (
+                          <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-blue-700/90 text-white shadow-xs backdrop-blur-xs flex items-center gap-1">
+                            <ShieldCheck size={11} />
+                            <span>Regional: {compRegionName || 'Host Region'}</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-900/80 text-white shadow-xs backdrop-blur-xs flex items-center gap-1">
+                            <Globe size={11} />
+                            <span>National Championship</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Top-Right: Registration Status Badge */}
                       <div className="absolute top-3 right-3">
                         <span
                           className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
@@ -1338,8 +1481,9 @@ export default function MeetRegistration({
                     <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
                       <div>
                         <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block mb-1">
-                          {comp.category || 'National Championship'}
+                          {comp.category || (isRegional ? 'Regional Championship' : 'National Championship')}
                         </span>
+
                         <h4 className="text-base font-bold text-slate-900 leading-snug">
                           {comp.title}
                         </h4>
@@ -1388,18 +1532,23 @@ export default function MeetRegistration({
 
                       {/* Action Button: Opens the Enrollment Page directly on Step 1 */}
                       <div className="pt-2 border-t border-slate-100">
-                        <button
-                          onClick={() => handleStartEnrollment(comp)}
-                          disabled={!isOpen}
-                          className={`w-full py-2.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-0 ${
-                            isOpen
-                              ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-xs'
-                              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                          }`}
-                        >
-                          <UserCheck size={14} />
-                          <span>Start Club Enrollment Application</span>
-                        </button>
+                        {isOpen ? (
+                          <button
+                            onClick={() => handleStartEnrollment(comp)}
+                            className="w-full py-2.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-0 bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-xs"
+                          >
+                            <UserCheck size={14} />
+                            <span>Start Club Enrollment Application</span>
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="w-full py-2.5 px-4 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-0 bg-slate-100 text-slate-400 cursor-not-allowed"
+                          >
+                            <Clock size={14} />
+                            <span>Registration Deadline Passed</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

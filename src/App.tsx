@@ -35,6 +35,7 @@ import RegionalFederationsHub from './components/RegionalFederationsHub';
 import AthleteRepresentativesHub from './components/AthleteRepresentativesHub';
 import FederationResultsHub from './components/Results/FederationResultsHub';
 import NotificationToast from './components/NotificationToast';
+import { ErrorBoundary } from './components/Common/ErrorBoundary';
 
 import { Sun, Moon, Menu, X, ShieldCheck, Sparkles, ArrowRight, UserCheck, Eye, CheckCircle2, User, Building2, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1476,51 +1477,53 @@ export default function App() {
         onSwitchRole={handleSwitchRoleDirectly}
         onLogout={handleLogout}
       >
-        {clubSubPage === 'OVERVIEW' && (
-          <ClubOverview
-            onChangeSubPage={navigateClub}
-            onNotify={handleNotify}
-            onAddClub={handleAddClub}
-            onPayClubMembership={handleInitiateClubMembershipPayment}
-          />
-        )}
-        {clubSubPage === 'REGISTER_MEMBER' && (
-          <RegisterMember
-            onBack={() => navigateClub('ROSTER')}
-            onNotify={handleNotify}
-            onMemberAdded={() => setRosterRefreshKey(prev => prev + 1)}
-          />
-        )}
-        {clubSubPage === 'ROSTER' && (
-          <RosterManagement
-            key={rosterRefreshKey}
-            onRenewLicense={handleInitiateLicensePayment}
-            onRegisterMember={() => navigateClub('REGISTER_MEMBER')}
-            onUpdateAthlete={handleUpdateAthlete}
-          />
-        )}
-        {clubSubPage === 'MEETS' && (
-          <MeetRegistration
-            initialCompetition={activeEnrollmentCompetition}
-            onCloseWizard={() => setActiveEnrollmentCompetition(null)}
-            onNotify={handleNotify}
-          />
-        )}
-        {clubSubPage === 'SEEDING' && (
-          <SeedingGenerator onNotify={handleNotify} />
-        )}
-        {clubSubPage === 'TRANSFERS' && (
-          <TransferRegistry
-            onInitiateTransfer={handleInitiateTransfer}
-          />
-        )}
-        {clubSubPage === 'RBAC' && (
-          <RBACSecurityMatrix
-            isOpen={true}
-            isInline={true}
-            onClose={() => navigateClub('OVERVIEW')}
-          />
-        )}
+        <ErrorBoundary fallbackTitle="Club Dashboard Error">
+          {clubSubPage === 'OVERVIEW' && (
+            <ClubOverview
+              onChangeSubPage={navigateClub}
+              onNotify={handleNotify}
+              onAddClub={handleAddClub}
+              onPayClubMembership={handleInitiateClubMembershipPayment}
+            />
+          )}
+          {clubSubPage === 'REGISTER_MEMBER' && (
+            <RegisterMember
+              onBack={() => navigateClub('ROSTER')}
+              onNotify={handleNotify}
+              onMemberAdded={() => setRosterRefreshKey(prev => prev + 1)}
+            />
+          )}
+          {clubSubPage === 'ROSTER' && (
+            <RosterManagement
+              key={rosterRefreshKey}
+              onRenewLicense={handleInitiateLicensePayment}
+              onRegisterMember={() => navigateClub('REGISTER_MEMBER')}
+              onUpdateAthlete={handleUpdateAthlete}
+            />
+          )}
+          {clubSubPage === 'MEETS' && (
+            <MeetRegistration
+              initialCompetition={activeEnrollmentCompetition}
+              onCloseWizard={() => setActiveEnrollmentCompetition(null)}
+              onNotify={handleNotify}
+            />
+          )}
+          {clubSubPage === 'SEEDING' && (
+            <SeedingGenerator onNotify={handleNotify} />
+          )}
+          {clubSubPage === 'TRANSFERS' && (
+            <TransferRegistry
+              onInitiateTransfer={handleInitiateTransfer}
+            />
+          )}
+          {clubSubPage === 'RBAC' && (
+            <RBACSecurityMatrix
+              isOpen={true}
+              isInline={true}
+              onClose={() => navigateClub('OVERVIEW')}
+            />
+          )}
+        </ErrorBoundary>
         {sharedModals}
       </AppLayout>
     );

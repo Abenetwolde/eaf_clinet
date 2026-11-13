@@ -18,6 +18,11 @@ export interface ClubCompetition {
   organizerEmail?: string;
   organizerPhone?: string;
   registeredCount?: number;
+  regionId?: string | null;
+  region?: { id: string; name: string } | null;
+  regionName?: string | null;
+  isRegional?: boolean;
+  isRegionEligible?: boolean;
 }
 
 export interface EligibleAthlete {
