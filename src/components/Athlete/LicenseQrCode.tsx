@@ -19,6 +19,35 @@ interface LicenseQrCodeProps {
   showPdfButton?: boolean;
 }
 
+export async function downloadAthleteLicensePdf(athlete: Athlete): Promise<void> {
+  const token = typeof window !== 'undefined'
+    ? (localStorage.getItem(STORAGE_KEYS.accessToken) || localStorage.getItem('token') || localStorage.getItem('eaf_token'))
+    : null;
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`/api/v1/athletes/${encodeURIComponent(athlete.id)}/license-pdf`, {
+    headers,
+  });
+
+  if (!res.ok) {
+    const errJson = await res.json().catch(() => ({}));
+    throw new Error(errJson?.message || 'Failed to generate official license card PDF');
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `EAF_Official_License_${athlete.licenseNumber || athlete.id}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+}
+
 export default function LicenseQrCode({ athlete, size = 180, showPdfButton = true }: LicenseQrCodeProps) {
   const [open, setOpen] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -35,42 +64,10 @@ export default function LicenseQrCode({ athlete, size = 180, showPdfButton = tru
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const getAuthToken = () => {
-    if (typeof window === 'undefined') return null;
-    return (
-      localStorage.getItem(STORAGE_KEYS.accessToken) ||
-      localStorage.getItem('token') ||
-      localStorage.getItem('eaf_token')
-    );
-  };
-
   const handleDownloadPdf = async () => {
     try {
       setDownloadingPdf(true);
-      const token = getAuthToken();
-      const headers: Record<string, string> = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const res = await fetch(`/api/v1/athletes/${encodeURIComponent(athlete.id)}/license-pdf`, {
-        headers,
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson?.message || 'Failed to generate official license card PDF');
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `EAF_Official_License_${athlete.licenseNumber || athlete.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      await downloadAthleteLicensePdf(athlete);
     } catch (err: any) {
       alert(err?.message || 'Could not download official license card.');
     } finally {

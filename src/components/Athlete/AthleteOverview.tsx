@@ -5,12 +5,14 @@ import {
   Medal, MapPin, Flag, QrCode, CheckCircle2, Clock, Sparkles,
   Heart, Zap, BarChart3, Flame, ChevronRight, Download, Printer,
   FileText, Check, Copy, User, Lock, ExternalLink, LogOut, Phone,
-  Mail, Globe, BadgeCheck, AlertCircle
+  Mail, Globe, BadgeCheck, AlertCircle, Loader2
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import type { Athlete } from '../../types';
 import { useAppSelector } from '../../store/hooks';
 import { useGetAthleteDashboardQuery, useGetAthletePersonalBestsQuery, useGetAthleteTrainingLogsQuery, useGetAthleteWeightLogsQuery, useGetMyAthleteResultsQuery, useUpdateAthleteProfileMutation, useCreateAthletePersonalBestMutation, useCreateAthleteTrainingLogMutation, useCreateAthleteWeightLogMutation } from '../../store/api/athleteApi';
-import LicenseQrCode from './LicenseQrCode';
+import LicenseQrCode, { buildLicenseQrValue, downloadAthleteLicensePdf } from './LicenseQrCode';
+import AthleteDigitalIdCard from './AthleteDigitalIdCard';
 import { getProfilePhotoUrl } from '../../utils/profilePhoto';
 
 interface AthleteOverviewProps {
@@ -90,6 +92,20 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
   const [editingStats, setEditingStats] = useState(false);
   const [editWeight, setEditWeight] = useState<string | number>(athlete?.weight ?? '');
   const [editHeight, setEditHeight] = useState<string | number>(athlete?.height ?? '');
+  const [downloadingCardPdf, setDownloadingCardPdf] = useState(false);
+
+  const handleDownloadDigitalIdPdf = async () => {
+    try {
+      setDownloadingCardPdf(true);
+      await downloadAthleteLicensePdf(athlete);
+      if (onNotify) onNotify('Official National Athlete Digital ID PDF downloaded successfully.', 'success');
+    } catch (err: any) {
+      if (onNotify) onNotify(err?.message || 'Failed to download official digital ID card.', 'error');
+      else alert(err?.message || 'Failed to download official digital ID card.');
+    } finally {
+      setDownloadingCardPdf(false);
+    }
+  };
 
   useEffect(() => {
     if (athlete) {
@@ -304,7 +320,7 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
                 </div>
                 <div className="text-[0.74rem] text-slate-300">Valid Through: Dec 31, 2026</div>
                 <div className="pt-1 flex flex-wrap items-center gap-2 justify-end">
-                  <LicenseQrCode athlete={athlete} />
+                  <LicenseQrCode athlete={athlete} showPdfButton={false} />
                   {onLogout && (
                     <button
                       type="button"
@@ -506,83 +522,8 @@ export default function AthleteOverview({ onChangeSubPage, onPayLicense, onUpdat
           {/* ── RIGHT / SIDEBAR COLUMN (4 cols) ── */}
           <div className="lg:col-span-4 space-y-6">
 
-            {/* 1. Athlete profile card */}
-            <div className="rounded-2xl bg-gradient-to-br from-[#06152B] via-[#0A2540] to-[#0F172A] p-5 text-white shadow-2xl border border-amber-500/30 relative overflow-hidden">
-              {/* Background watermark hologram & gradient accent */}
-              <div className="pointer-events-none absolute -right-12 -bottom-12 w-44 h-44 rounded-full bg-gradient-to-br from-amber-500/10 to-emerald-500/10 blur-2xl" />
-              <div className="pointer-events-none absolute top-0 right-0 w-32 h-1 bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-400" />
-
-              {/* Card Header Banner */}
-              <div className="flex justify-between items-center pb-3 mb-3.5 border-b border-white/15">
-                <div className="flex items-center gap-2">
-                  <img src="/images/logo.jpeg" alt="EAF" className="w-6 h-6 rounded-md object-cover border border-white/20" />
-                  <div>
-                    <div className="text-[0.62rem] font-black text-[#FCD34D] tracking-widest uppercase leading-tight">
-                      ETHIOPIAN ATHLETICS FEDERATION
-                    </div>
-                    <div className="text-[0.72rem] font-extrabold text-white leading-tight">
-                      NATIONAL ATHLETE DIGITAL ID
-                    </div>
-                  </div>
-                </div>
-                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 text-[0.62rem] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
-                  <CheckCircle2 size={10} /> {dashboard?.faydaVerified ? 'VERIFIED' : 'NOT VERIFIED'}
-                </span>
-              </div>
-
-              {/* Card Body: Athlete Photo + Details + Embedded Verification QR */}
-              <div className="flex items-start gap-3.5">
-                {/* Athlete Portrait Photo */}
-                <div className="relative shrink-0">
-                  <img
-                    src={getProfilePhotoUrl({ photoUrl: athlete.photoUrl, faydaFin: athlete.faydaFin }) || '/images/profile-placeholder.svg'}
-                    alt={athlete.name}
-                    className="w-16 h-20 rounded-xl object-cover border-2 border-amber-400/80 shadow-md bg-slate-800"
-                  />
-                  <div className="absolute -bottom-1 -right-1 bg-amber-500 text-slate-950 font-black text-[0.58rem] px-1 rounded border border-white">
-                    {athlete.ageTier || '—'}
-                  </div>
-                </div>
-
-                {/* ID Details */}
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="text-sm font-black text-white truncate leading-tight">{athlete.name}</div>
-                  <div className="text-[0.75rem] font-bold text-amber-300 truncate">{athlete.amharicName || '—'}</div>
-                  
-                  <div className="text-[0.7rem] text-slate-300 pt-0.5 space-y-0.5">
-                    <div>Event: <strong className="text-white">{athlete.primaryEvent}</strong></div>
-                    <div>Club: <strong className="text-white">{athlete.clubName || 'Not recorded'}</strong></div>
-                    <div className="flex items-center gap-1">
-                      FIN: <strong className="text-[#FCD34D] font-mono text-[0.72rem]">{athlete.faydaFin || 'Not provided'}</strong>
-                      <button
-                        onClick={handleCopyFin}
-                        title="Copy FIN"
-                        className="text-slate-300 hover:text-white bg-white/10 p-0.5 rounded border-none cursor-pointer"
-                      >
-                        {copiedFin ? <Check size={10} className="text-emerald-400" /> : <Copy size={10} />}
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      FAN: <strong className="text-emerald-300 font-mono text-[0.72rem]">{athlete.faydaFan || 'Not provided'}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Small Security Verification QR Thumbnail */}
-                <div className="shrink-0 bg-white p-1.5 rounded-lg border border-slate-700 shadow-sm flex flex-col items-center">
-                  <QrCode size={38} className="text-slate-950" />
-                  <span className="text-[0.55rem] font-extrabold text-slate-700 mt-0.5">ID</span>
-                </div>
-              </div>
-
-              {/* Card Footer Bar */}
-              <div className="mt-3.5 pt-2.5 border-t border-white/15 flex justify-between items-center text-[0.68rem] text-slate-300">
-                <span>LIC: <strong className="font-mono text-white">{athlete.licenseNumber || 'Not recorded'}</strong></span>
-                <span className="text-emerald-400 font-bold flex items-center gap-1">
-                  <ShieldCheck size={12} /> {athlete.licenseStatus === 'ACTIVE' ? 'Active license' : athlete.licenseStatus || 'License status not recorded'}
-                </span>
-              </div>
-            </div>
+            {/* 1. Official National Athlete Digital ID Preview Card & Download */}
+            <AthleteDigitalIdCard athlete={athlete} onNotify={onNotify} />
 
             {/* 2. Upcoming National Championships Widget (Commented out per user request) */}
             {/*

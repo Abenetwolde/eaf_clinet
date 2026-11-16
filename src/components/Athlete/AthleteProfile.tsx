@@ -10,6 +10,7 @@ import { useGetAthleteApplicationsQuery, useUpdateAthleteProfileMutation } from 
 import { useAppSelector } from '../../store/hooks';
 import type { Athlete } from '../../types';
 import { getProfilePhotoUrl } from '../../utils/profilePhoto';
+import AthleteDigitalIdCard from './AthleteDigitalIdCard';
 
 interface AthleteProfileProps {
   onUpdateAthlete: (athlete: Athlete) => void;
@@ -711,38 +712,8 @@ export default function AthleteProfile({ onUpdateAthlete, onNotify, onLogout }: 
         {/* ── RIGHT / SIDEBAR COLUMN (4 cols) ── */}
         <div className="lg:col-span-4 space-y-6">
 
-          {/* 1. Official Digital Pass Credential */}
-          <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-[#0F172A] to-[#1E293B] p-5 text-white shadow-xl border border-slate-700/60 relative overflow-hidden">
-            <div className="flex justify-between items-center pb-3 mb-3 border-b border-white/10">
-              <div>
-                <div className="text-[0.65rem] font-black text-[#FCD34D] tracking-wider uppercase">
-                  ATHLETE PROFILE
-                </div>
-                <div className="text-xs font-extrabold text-white">Athlete profile</div>
-              </div>
-              <div className="text-slate-300 text-[0.65rem] font-bold px-2 py-0.5 rounded">
-                Federation athlete record
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="bg-white p-2 rounded-xl shrink-0 shadow-md">
-                {(athlete as any).credentialQrValue ? <QRCodeSVG value={(athlete as any).credentialQrValue} size={64} /> : <span className="text-xs text-slate-500">No credential QR</span>}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-black text-white truncate">{athlete.name}</div>
-                <div className="text-xs text-primary-light truncate">{athlete.amharicName}</div>
-                <div className="text-[0.72rem] text-slate-400 mt-1.5">
-                  FIN: <strong className="text-[#FCD34D] font-mono">{athlete.faydaFin || 'Not provided'}</strong>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center text-[0.7rem] text-slate-400">
-              <span>WA ID: <strong className="text-white">{(athlete as any).worldAthleticsId || 'Not linked'}</strong></span>
-              <span className="text-slate-400 font-bold">{athlete.licenseStatus || 'License status not recorded'}</span>
-            </div>
-          </div>
+          {/* 1. Official National Athlete Digital ID Card (Preview & PDF Download) */}
+          <AthleteDigitalIdCard athlete={athlete} onNotify={onNotify} />
 
           {/* 1B. Official Competition Accreditation Passes (Feature 6) */}
           <div className="bg-white dark:bg-[#121829] rounded-2xl border-2 border-emerald-500/40 dark:border-emerald-500/30 p-5 shadow-lg space-y-4 relative overflow-hidden">
