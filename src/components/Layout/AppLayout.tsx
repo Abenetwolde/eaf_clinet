@@ -41,7 +41,7 @@ export default function AppLayout({
   const currentClub = useAppSelector((state) => state.auth.club);
   const currentAthlete = useAppSelector((state) => state.auth.athlete);
   const userData = useAppSelector((state) => state.auth.userData);
-  const clubAdminName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || currentClub.manager || 'Club Admin';
+  const clubAdminName = `${userData?.firstName || ''} ${userData?.lastName || ''}`.trim() || currentClub?.manager || 'Club Admin';
   const clubAdminPhotoCandidate = (userData as any)?.photoUrl || (userData as any)?.picture || (userData as any)?.avatarUrl || '';
   const clubAdminPhoto = /runner_female\.png|avatar-placeholder|profile-placeholder/i.test(clubAdminPhotoCandidate) ? '' : clubAdminPhotoCandidate;
   const isClub = currentRole === 'CLUB';
@@ -49,16 +49,16 @@ export default function AppLayout({
   // Live lookup from clubs list to get up-to-date club crest
   const { data: clubsList = [] } = useGetClubsQuery();
   const matchedClub = (clubsList as any[]).find(
-    (c: any) => c.id === currentClub.id || (c.name && currentClub.name && c.name.trim().toLowerCase() === currentClub.name.trim().toLowerCase())
+    (c: any) => c.id === currentClub?.id || (c.name && currentClub?.name && c.name.trim().toLowerCase() === currentClub?.name?.trim().toLowerCase())
   );
   const resolvedClubLogo = (
-    currentClub.logoUrl ||
-    (currentClub as any).logo ||
+    currentClub?.logoUrl ||
+    (currentClub as any)?.logo ||
     matchedClub?.logoUrl ||
     matchedClub?.logo ||
     ''
   );
-  const clubDisplayName = currentClub.name || matchedClub?.name || 'Club Portal';
+  const clubDisplayName = currentClub?.name || matchedClub?.name || 'Club Portal';
 
   const athleteClubName = currentAthlete?.club || (currentAthlete as any)?.clubName || '';
   const athleteMatchedClub = athleteClubName ? (clubsList as any[]).find(

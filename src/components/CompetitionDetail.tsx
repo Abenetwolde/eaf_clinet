@@ -12,6 +12,7 @@ import { getProfilePhotoUrl } from '../utils/profilePhoto';
 import { getEventRegistrationStatus, isEventRegistrationClosed } from '../utils/eventRegistration';
 import { STORAGE_KEYS } from '../store/persistence';
 import { useGetPublishedResultsQuery } from '../store/api/athleteApi';
+import { isRegionMatch } from '../utils/region-utils';
 
 // Helper to determine banner image based on meet ID
 const getBannerUrl = (meet: any) => {
@@ -550,6 +551,26 @@ export default function CompetitionDetail({
   );
 
   const handleApplyClick = () => {
+    // Regional Competition Restriction:
+    // If this is a regional competition, only athletes and clubs belonging to that regional state may apply
+    const compRegion = publicHubData?.competition?.region || meet?.region || meet?.regionName || null;
+    const isRegionalComp = Boolean(compRegion && compRegion !== 'National' && compRegion !== 'NATIONAL');
+    if (isRegionalComp) {
+      const athleteRegion = realAthleteData.region || currentAthlete?.region || currentAthlete?.club?.region || '';
+      const isEligible = isRegionMatch(athleteRegion, compRegion);
+      if (!isEligible) {
+        window.dispatchEvent(
+          new CustomEvent('eaf-notify', {
+            detail: {
+              message: `Regional Restriction: This competition is restricted to athletes and clubs from ${compRegion}. You are registered in ${athleteRegion || 'another region'} and cannot participate.`,
+              type: 'error',
+            },
+          })
+        );
+        return;
+      }
+    }
+
     if (currentRole === 'CLUB') {
       window.dispatchEvent(
         new CustomEvent('eaf-open-club-enrollment', {
@@ -593,6 +614,24 @@ export default function CompetitionDetail({
     if (!selectedDisciplines.length || selectedDisciplines.some((discipline) => !availableDisciplines.includes(discipline))) {
       window.dispatchEvent(new CustomEvent('eaf-notify', { detail: { message: 'Select at least one published discipline.', type: 'error' } }));
       return;
+    }
+
+    // Regional Competition Restriction:
+    const compRegion = publicHubData?.competition?.region || meet?.region || meet?.regionName || null;
+    const isRegionalComp = Boolean(compRegion && compRegion !== 'National' && compRegion !== 'NATIONAL');
+    if (isRegionalComp) {
+      const athleteRegion = realAthleteData.region || currentAthlete?.region || currentAthlete?.club?.region || '';
+      if (!isRegionMatch(athleteRegion, compRegion)) {
+        window.dispatchEvent(
+          new CustomEvent('eaf-notify', {
+            detail: {
+              message: `Regional Restriction: This competition is restricted to athletes and clubs from ${compRegion}. You are registered in ${athleteRegion || 'another region'}.`,
+              type: 'error',
+            },
+          })
+        );
+        return;
+      }
     }
     setIsPendingApproval(true);
     const token = localStorage.getItem('eaf_accessToken') || localStorage.getItem('token') || localStorage.getItem('eaf_token');
@@ -675,33 +714,39 @@ export default function CompetitionDetail({
     const items: any[] = [];
     for (const sl of publicHubData.startLists) {
       for (const entry of (sl.entries || [])) {
+        const validAthleteName = entry.athleteName && entry.athleteName !== 'Athlete' ? entry.athleteName : '';
+        const validAthleteUserName = entry.athlete?.user ? `${entry.athlete.user.firstName || ''} ${entry.athlete.user.lastName || ''}`.trim() : '';
         const resolvedName =
-          entry.athleteName ||
-          entry.name ||
-          entry.fullName ||
-          entry.athleteNameSnapshot ||
-          (entry.athlete?.user ? `${entry.athlete.user.firstName || ''} ${entry.athlete.user.lastName || ''}`.trim() : '') ||
+          validAthleteName ||
+          (entry.name && entry.name !== 'Athlete' ? entry.name : '') ||
+          validAthleteUserName ||
+          (entry.fullName && entry.fullName !== 'Athlete' ? entry.fullName : '') ||
+          (entry.athleteNameSnapshot && entry.athleteNameSnapshot !== 'Athlete' ? entry.athleteNameSnapshot : '') ||
           entry.athlete?.name ||
           (entry.relayTeam ? entry.relayTeam.teamName : '') ||
+          entry.athleteName ||
           'Athlete';
 
+        const validClubName = entry.clubName && entry.clubName !== 'Unattached' ? entry.clubName : '';
+        const validAthleteClubName = entry.athlete?.club?.name || entry.athlete?.clubName;
         const resolvedClub =
-          (typeof entry.club === 'string' ? entry.club : entry.club?.name) ||
-          entry.clubName ||
-          entry.clubNameSnapshot ||
-          entry.athlete?.club?.name ||
-          entry.athlete?.clubName ||
+          validClubName ||
+          (typeof entry.club === 'string' && entry.club !== 'Unattached' ? entry.club : entry.club?.name) ||
+          validAthleteClubName ||
+          (entry.clubNameSnapshot && entry.clubNameSnapshot !== 'Unattached' ? entry.clubNameSnapshot : '') ||
           (typeof entry.delegation === 'string' ? entry.delegation : entry.delegation?.name) ||
           entry.teamName ||
           (entry.relayTeam ? entry.relayTeam.teamName : '') ||
+          entry.clubName ||
           'Unattached';
 
+        const validRegionName = entry.regionName && entry.regionName !== 'National' ? entry.regionName : '';
+        const validAthleteRegion = entry.athlete?.club?.region || entry.athlete?.region || entry.club?.region;
         const resolvedRegion =
-          (typeof entry.region === 'string' ? entry.region : entry.region?.name) ||
+          validRegionName ||
+          (typeof entry.region === 'string' && entry.region !== 'National' ? entry.region : entry.region?.name) ||
+          validAthleteRegion ||
           entry.regionName ||
-          entry.athlete?.club?.region ||
-          entry.athlete?.region ||
-          entry.club?.region ||
           'National';
 
         const resolvedAmharic =
@@ -1091,33 +1136,39 @@ export default function CompetitionDetail({
           }
           const roundObj = discGroup.roundsMap.get(roundDetails.roundKey)!;
 
+          const validAthleteName = entry.athleteName && entry.athleteName !== 'Athlete' ? entry.athleteName : '';
+          const validAthleteUserName = entry.athlete?.user ? `${entry.athlete.user.firstName || ''} ${entry.athlete.user.lastName || ''}`.trim() : '';
           const resolvedName =
-            entry.athleteName ||
-            entry.name ||
-            entry.fullName ||
-            entry.athleteNameSnapshot ||
-            (entry.athlete?.user ? `${entry.athlete.user.firstName || ''} ${entry.athlete.user.lastName || ''}`.trim() : '') ||
+            validAthleteName ||
+            (entry.name && entry.name !== 'Athlete' ? entry.name : '') ||
+            validAthleteUserName ||
+            (entry.fullName && entry.fullName !== 'Athlete' ? entry.fullName : '') ||
+            (entry.athleteNameSnapshot && entry.athleteNameSnapshot !== 'Athlete' ? entry.athleteNameSnapshot : '') ||
             entry.athlete?.name ||
             (entry.relayTeam ? entry.relayTeam.teamName : '') ||
+            entry.athleteName ||
             'Athlete';
 
+          const validClubName = entry.clubName && entry.clubName !== 'Unattached' ? entry.clubName : '';
+          const validAthleteClubName = entry.athlete?.club?.name || entry.athlete?.clubName;
           const resolvedClub =
-            (typeof entry.club === 'string' ? entry.club : entry.club?.name) ||
-            entry.clubName ||
-            entry.clubNameSnapshot ||
-            entry.athlete?.club?.name ||
-            entry.athlete?.clubName ||
+            validClubName ||
+            (typeof entry.club === 'string' && entry.club !== 'Unattached' ? entry.club : entry.club?.name) ||
+            validAthleteClubName ||
+            (entry.clubNameSnapshot && entry.clubNameSnapshot !== 'Unattached' ? entry.clubNameSnapshot : '') ||
             (typeof entry.delegation === 'string' ? entry.delegation : entry.delegation?.name) ||
             entry.teamName ||
             (entry.relayTeam ? entry.relayTeam.teamName : '') ||
+            entry.clubName ||
             'Unattached';
 
+          const validRegionName = entry.regionName && entry.regionName !== 'National' ? entry.regionName : '';
+          const validAthleteRegion = entry.athlete?.club?.region || entry.athlete?.region || entry.club?.region;
           const resolvedRegion =
-            (typeof entry.region === 'string' ? entry.region : entry.region?.name) ||
+            validRegionName ||
+            (typeof entry.region === 'string' && entry.region !== 'National' ? entry.region : entry.region?.name) ||
+            validAthleteRegion ||
             entry.regionName ||
-            entry.athlete?.club?.region ||
-            entry.athlete?.region ||
-            entry.club?.region ||
             'National';
 
           const resolvedAmharic =
