@@ -79,7 +79,6 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
   { id: "home", label: "Home", labelAm: "ዋና ገጽ", href: "#home" },
   { id: "competitions", label: "Competitions", labelAm: "ውድድሮች", href: "#competitions" },
   { id: "athletes", label: "Athletes", labelAm: "አትሌቶች", href: "#athletes" },
-  { id: "professionals", label: "Professionals", labelAm: "ባለሙያዎች", href: "#professionals" },
   { id: "media", label: "Media", labelAm: "ሚዲያ", href: "#media" },
 ];
 

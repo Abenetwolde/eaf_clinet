@@ -343,7 +343,7 @@ export default function ClubRegistrationForm({
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
-      <main className="flex-1 max-w-3xl w-full mx-auto p-4 sm:p-8 my-4 sm:my-6">
+      <main className="flex-1 max-w-5xl xl:max-w-6xl w-full mx-auto p-4 sm:p-8 my-4 sm:my-6">
         <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
 
           {/* Header */}

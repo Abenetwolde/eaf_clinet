@@ -9,7 +9,7 @@ import { useI18n } from '../i18n';
 import { getEventRegistrationStatus } from '../utils/eventRegistration';
 import { useGetNewsQuery, type NewsArticle } from '../store/api/newsApi';
 import { useGetPublishedEventsQuery, useGetOverviewStatsQuery, useGetGalleryQuery, useGetSiteContentQuery, useSubmitContactFormMutation } from '../store/api/apiSlice';
-import { useGetAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
+import { useGetAthletesQuery, useGetPublicAthletesQuery, type BackendAthleteItem } from '../store/api/athleteApi';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, Legend as ChartLegend } from 'recharts';
 
 /* ─────────────────────────────────────────────
@@ -583,31 +583,58 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     return [];
   }, [apiNews, cachedNews]);
 
-  // ── Fetch Athletes from Backend API & merge with verified approved roster ──
+  // ── Fetch Athletes from Public Backend API & merge with verified approved roster ──
+  const { data: apiPublicAthletes } = useGetPublicAthletesQuery({ limit: 100 });
   const { data: apiAthletes } = useGetAthletesQuery();
   const athleteList = useMemo(() => {
     const rawList: any[] = [];
-    if (apiAthletes && Array.isArray(apiAthletes) && apiAthletes.length > 0) {
-      apiAthletes.forEach((ath: any) => {
-        // Strict approval filter: ONLY approved athletes!
+    const sourceAthletes: any[] = (apiPublicAthletes && Array.isArray(apiPublicAthletes) && apiPublicAthletes.length > 0)
+      ? apiPublicAthletes
+      : (apiAthletes && Array.isArray(apiAthletes) && apiAthletes.length > 0 ? apiAthletes : []);
+
+    const seedPhotoMap: Record<string, string> = {
+      'gudaf tsegay': '/images/a1.jpg',
+      'selemon barega': '/images/a2.jpg',
+      'berihu aregawi': '/images/a3.jpg',
+      'diribe welteji': '/images/a4.jpg',
+      'lamecha girma': '/images/a5.jpg',
+      'yomif kejelcha': '/images/a6.jpg',
+      'tigist assefa': '/images/a7.jpg',
+      'medina eisa': '/images/a8.jpg',
+      'samuel tefera': '/images/a1.jpg',
+      'freweyni hailu': '/images/a4.jpg',
+      'addisu yihune': '/images/a2.jpg',
+      'tadese worku': '/images/a3.jpg',
+      'ejgayehu taye': '/images/a7.jpg',
+      'worknesh mesele': '/images/a8.jpg',
+    };
+
+    if (sourceAthletes.length > 0) {
+      sourceAthletes.forEach((ath: any) => {
+        // Strict approval filter: ONLY approved/active athletes!
         const status = ath.status || ath.user?.status || 'APPROVED';
         if (status === 'APPROVED' || status === 'ACTIVE') {
+          const fullName = ath.name || `${ath.user?.firstName || ''} ${ath.user?.lastName || ''}`.trim();
+          const normName = fullName.toLowerCase();
+          const matchedKey = Object.keys(seedPhotoMap).find(k => normName.includes(k));
+          const resolvedPhoto = ath.photoUrl || (matchedKey ? seedPhotoMap[matchedKey] : '/images/fayda_resident_photo.jpg');
+
           rawList.push({
             id: ath.id,
-            name: ath.name || `${ath.user?.firstName || ''} ${ath.user?.lastName || ''}`.trim(),
+            name: fullName,
             amharicName: ath.amharicName || '',
             achievement: ath.achievement || 'National Athlete',
             event: ath.primaryEvent || ath.event || 'Track & Field',
             specialty: ath.primaryEvent || ath.event || 'Track & Field',
-            club: ath.clubName || ath.club || 'National Registry',
-            faydaFin: ath.faydaFin || (ath.faydaVerified ? 'FIN-VERIFIED' : ''),
-            faydaStatus: ath.faydaStatus || (ath.faydaVerified === true ? 'VERIFIED' : 'NOT_VERIFIED'),
+            club: ath.clubName || ath.club?.name || ath.club || 'National Registry',
+            faydaFin: ath.faydaNin || ath.faydaFin || (ath.faydaVerified ? 'FIN-VERIFIED' : ''),
+            faydaStatus: (ath.faydaVerified || ath.user?.faydaIdentity?.verified !== false) ? 'VERIFIED' : 'NOT_VERIFIED',
             dob: ath.dateOfBirth || ath.dob || '',
             gender: ath.gender || 'MALE',
             ageTier: ath.ageTier || 'Senior',
             pb: ath.personalBest || ath.pb || '',
             quote: ath.quote || '',
-            img: ath.photoUrl || '/images/fayda_resident_photo.jpg',
+            img: resolvedPhoto,
             medals: ath.medals || [],
             status: 'APPROVED',
             lastActive: '2026',
@@ -625,7 +652,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
     });
 
     return rawList;
-  }, [apiAthletes]);
+  }, [apiPublicAthletes, apiAthletes]);
 
   const [selectedMeetId, setSelectedMeetId] = useState<string | null>(null);
   const [failedMeetThumbnails, setFailedMeetThumbnails] = useState<Record<string, boolean>>({});
@@ -1738,8 +1765,9 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          const liveMeet = HERO_LIVE_RESULTS[heroTickerIndex % HERO_LIVE_RESULTS.length];
-                          if (liveMeet?.id) setSelectedMeetId(liveMeet.id);
+                          setStatusFilter('REGISTRATION_OPEN');
+                          const el = document.getElementById('competitions');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
                         }}
                         style={{
                           background: 'linear-gradient(135deg, #16A34A 0%, #2563EB 100%)',
@@ -1887,19 +1915,60 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                   routeKey: 'REPRESENTATIVES',
                 },
               ]).map((sys: any) => {
-                const colors = sys.routeKey === 'ANTI_DOPING'
-                  ? { bg: '#ECFDF5', border: '#A7F3D0', text: '#059669', badgeBg: 'rgba(5, 150, 105, 0.9)', img: sys.img || '/images/d2.jpeg' }
-                  : sys.routeKey === 'OFFICIALS'
-                  ? { bg: '#EFF6FF', border: '#BFDBFE', text: '#2563EB', badgeBg: 'rgba(37, 99, 235, 0.9)', img: sys.img || '/images/d5.jpg' }
-                  : sys.routeKey === 'REGIONS'
-                  ? { bg: '#FEF3C7', border: '#FDE68A', text: '#D97706', badgeBg: 'rgba(217, 119, 6, 0.9)', img: sys.img || '/images/runners_training.png' }
-                  : { bg: '#F3E8FF', border: '#E9D5FF', text: '#9333EA', badgeBg: 'rgba(147, 51, 234, 0.9)', img: sys.img || '/images/d1.jpg' };
+                const subKey = String(sys.actionSubPage || sys.routeKey || sys.id || '').toUpperCase();
+                const isAntiDoping = subKey.includes('ANTI') || subKey.includes('DOPING');
+                const isOfficials = subKey.includes('OFFICIAL') || subKey.includes('PROFESSIONAL');
+                const isRegions = subKey.includes('REGION');
+
+                const colors = isAntiDoping
+                  ? { 
+                      bg: '#ECFDF5', 
+                      border: '#A7F3D0', 
+                      text: '#059669', 
+                      badgeBg: 'rgba(5, 150, 105, 0.95)', 
+                      img: sys.img || '/images/anti_doping_clean_sport.png',
+                      category: sys.category || 'Clean Sport Compliance',
+                      targetSubPage: 'ANTI_DOPING',
+                      defaultAction: 'Access Integrity Hub'
+                    }
+                  : isOfficials
+                  ? { 
+                      bg: '#EFF6FF', 
+                      border: '#BFDBFE', 
+                      text: '#2563EB', 
+                      badgeBg: 'rgba(37, 99, 235, 0.95)', 
+                      img: sys.img || '/images/d5.jpg',
+                      category: sys.category || 'Technical Workforce & Coaches',
+                      targetSubPage: 'ATHLETES',
+                      defaultAction: 'View Certified Roster'
+                    }
+                  : isRegions
+                  ? { 
+                      bg: '#FEF3C7', 
+                      border: '#FDE68A', 
+                      text: '#D97706', 
+                      badgeBg: 'rgba(217, 119, 6, 0.95)', 
+                      img: sys.img || '/images/runners_training.png',
+                      category: sys.category || '11 Regional Member Federations',
+                      targetSubPage: 'REGIONS',
+                      defaultAction: 'Explore Regions & Calendars'
+                    }
+                  : { 
+                      bg: '#F3E8FF', 
+                      border: '#E9D5FF', 
+                      text: '#9333EA', 
+                      badgeBg: 'rgba(147, 51, 234, 0.95)', 
+                      img: sys.img || '/images/d1.jpg',
+                      category: sys.category || 'World Athletics Authorized Agents',
+                      targetSubPage: 'REPRESENTATIVES',
+                      defaultAction: 'View Authorized Agents'
+                    };
 
                 return (
                   <div
                     key={sys.id}
                     className="hover-lift group"
-                    onClick={() => onChangePublicSubPage(sys.routeKey || 'ANTI_DOPING')}
+                    onClick={() => onChangePublicSubPage(colors.targetSubPage)}
                     style={{
                       background: t.bgAlt,
                       border: '1px solid ' + t.border,
@@ -1948,7 +2017,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                           style={{
                             position: 'absolute',
                             inset: 0,
-                            background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 100%)',
+                            background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.65) 100%)',
                             pointerEvents: 'none'
                           }}
                         />
@@ -1970,7 +2039,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                             backdropFilter: 'blur(4px)'
                           }}
                         >
-                          {sys.category || 'Portal'}
+                          {colors.category}
                         </div>
                       </div>
 
@@ -1982,7 +2051,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                       </p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.text, fontSize: '0.85rem', fontWeight: 800, marginTop: 'auto', paddingTop: '8px' }}>
-                      <span>{sys.actionText || 'Access Portal'}</span>
+                      <span>{sys.actionText || sys.badge || colors.defaultAction}</span>
                       <ArrowRight size={14} />
                     </div>
                   </div>
@@ -2062,11 +2131,11 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 <button type="button" role="tab" aria-selected={false} onClick={() => navigateCompetitionTab('RESULTS')} style={{ border: 0, borderRight: '1px solid ' + t.borderSubtle, background: t.surface, color: t.textSub, padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>
                   <Trophy size={14} /> Results
                 </button>
-                <button type="button" role="tab" aria-selected={true} onClick={() => navigateCompetitionTab('COMPETITIONS')} style={{ border: 0, borderRight: '1px solid ' + t.borderSubtle, background: 'var(--primary)', color: '#fff', padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}>
-                  <Calendar size={14} /> Calendar
+                <button type="button" role="tab" aria-selected={statusFilter !== 'REGISTRATION_OPEN'} onClick={() => { setStatusFilter('ALL'); navigateCompetitionTab('COMPETITIONS'); }} style={{ border: 0, borderRight: '1px solid ' + t.borderSubtle, background: statusFilter !== 'REGISTRATION_OPEN' ? 'var(--primary)' : t.surface, color: statusFilter !== 'REGISTRATION_OPEN' ? '#fff' : t.textSub, padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}>
+                  <Calendar size={14} /> Calendar (All)
                 </button>
-                <button type="button" role="tab" aria-selected={false} onClick={() => onRegister('ATHLETE')} style={{ border: 0, background: t.surface, color: t.textSub, padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>
-                  <UserCheck size={14} /> Register
+                <button type="button" role="tab" aria-selected={statusFilter === 'REGISTRATION_OPEN'} onClick={() => setStatusFilter('REGISTRATION_OPEN')} style={{ border: 0, background: statusFilter === 'REGISTRATION_OPEN' ? 'var(--primary)' : t.surface, color: statusFilter === 'REGISTRATION_OPEN' ? '#fff' : t.textSub, padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>
+                  <UserCheck size={14} /> Open for Registration
                 </button>
               </div>
 
@@ -2889,303 +2958,6 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             </div>
           </section>
         </>
-      )}
-
-      {/* ── 6. ABOUT & FEDERATION GOVERNANCE ── */}
-      {publicSubPage === 'HOME' && (
-        <section id="about" style={{ background: t.bg, padding: '60px 24px', borderTop: '1px solid ' + t.border }}>
-          <div style={{ maxWidth: 1240, margin: '0 auto', display: 'flex', gap: 48, flexWrap: 'wrap' }}>
-            <div style={{ flex: '1 1 360px' }}>
-              <h2 style={{ color: t.text, fontSize: '2rem', fontWeight: 900, marginBottom: 12 }}>
-                {loc.aboutTitle}
-              </h2>
-              <ResponsiveSeeMoreText
-                text="The Ethiopian Athletics Federation (EAF) is the national governing body for athletics in Ethiopia, officially recognized by World Athletics (WA) and a member of the African Athletics Confederation (AAC). Founded in 1964, EAF governs all track and field, road, cross-country, and marathon events in Ethiopia. EAF oversees the licensing of athletes and clubs through Fayda digital IDs, organizes national championships, selects national teams for international competitions, and develops grassroots talent across all Ethiopian regional states."
-                maxLength={180}
-                style={{ color: t.textSub, lineHeight: 1.8, marginBottom: 24, fontSize: '0.95rem' }}
-              />
-              <div className="stack-on-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                {[
-                  { label: 'Founded', value: '1964' },
-                  { label: 'Licensed Clubs', value: Number.isFinite(overviewStats?.clubsCount) ? `${overviewStats.clubsCount} Clubs` : 'Unavailable' },
-                  { label: 'Registered Athletes', value: Number.isFinite(overviewStats?.athletesCount) ? `${overviewStats.athletesCount} Athletes` : 'Unavailable' },
-                  { label: 'Annual Competitions', value: Number.isFinite(overviewStats?.publishedEventsCount) ? `${overviewStats.publishedEventsCount} Events` : 'Unavailable' },
-                ].map(s => (
-                  <div key={s.label} style={{
-                    background: t.bgAlt, borderRadius: 14,
-                    padding: '16px 18px', textAlign: 'center',
-                    border: '1px solid ' + t.border,
-                    borderTop: '3px solid var(--primary)',
-                  }}>
-                    <div style={{ color: t.text, fontSize: '1.1rem', fontWeight: 900 }}>{s.value}</div>
-                    <div style={{ color: t.textMuted, fontSize: '0.78rem', fontWeight: 700, marginTop: 4 }}>{s.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ flex: '1 1 320px' }}>
-              <h3 style={{ color: t.text, fontSize: '1.4rem', fontWeight: 900, marginBottom: 24 }}>
-                {loc.structureTitle}
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {STRUCTURE_ITEMS.map(item => {
-                  const isActive = activeStructure?.title === item.title;
-                  return (
-                    <div key={item.title}>
-                      {/* Header row */}
-                      <div
-                        onClick={() => setActiveStructure(isActive ? null : item)}
-                        style={{
-                          background: isActive
-                            ? (darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)')
-                            : t.bgAlt,
-                          border: isActive ? '1px solid var(--primary)' : '1px solid ' + t.border,
-                          borderRadius: isActive ? '14px 14px 0 0' : 14,
-                          padding: '18px 20px',
-                          display: 'flex', alignItems: 'center', gap: 16,
-                          cursor: 'pointer', transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={e => {
-                          if (!isActive) {
-                            e.currentTarget.style.background = darkMode ? 'rgba(14, 165, 233, 0.1)' : '#F0F9FF';
-                            e.currentTarget.style.borderColor = 'var(--primary)';
-                          }
-                        }}
-                        onMouseLeave={e => {
-                          if (!isActive) {
-                            e.currentTarget.style.background = t.bgAlt;
-                            e.currentTarget.style.borderColor = t.border;
-                          }
-                        }}
-                      >
-                        {item.icon}
-                        <div style={{ flex: 1 }}>
-                          <div style={{ color: t.text, fontWeight: 800, fontSize: '0.98rem' }}>{item.title}</div>
-                          <div style={{ color: 'var(--primary)', fontSize: '0.8rem', marginTop: 2, fontWeight: 700 }}>{item.amharic}</div>
-                        </div>
-                        <ChevronRight
-                          size={18}
-                          color={isActive ? 'var(--primary)' : '#94A3B8'}
-                          style={{ transform: isActive ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', flexShrink: 0 }}
-                        />
-                      </div>
-
-                      {/* Expanded detail panel */}
-                      {isActive && (
-                        <div style={{
-                          background: t.surface,
-                          border: '1px solid var(--primary)',
-                          borderTop: 'none',
-                          borderRadius: '0 0 14px 14px',
-                          padding: '18px 22px 20px',
-                        }}>
-                          <p style={{ color: t.textSub, fontSize: '0.88rem', lineHeight: 1.75, marginBottom: 14 }}>
-                            {item.description}
-                          </p>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                              <span style={{
-                                background: darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)',
-                                color: darkMode ? '#38BDF8' : 'var(--primary)',
-                                borderRadius: 6, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0
-                              }}>
-                                Members
-                              </span>
-                              <span style={{ color: t.textSub, fontSize: '0.85rem', fontWeight: 600 }}>{item.members}</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                              <span style={{
-                                background: darkMode ? 'rgba(14, 165, 233, 0.15)' : 'var(--primary-light)',
-                                color: darkMode ? '#38BDF8' : 'var(--primary)',
-                                borderRadius: 6, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0
-                              }}>
-                                Meets
-                              </span>
-                              <span style={{ color: t.textSub, fontSize: '0.85rem', fontWeight: 600 }}>{item.meets}</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── 6b. LIVE FEDERATION ANALYTICS & CHAMPIONSHIP PERFORMANCE (RECHARTS) ── */}
-      {publicSubPage === 'HOME' && (
-        <section id="analytics" style={{ padding: '64px 24px', background: t.bg, borderTop: '1px solid ' + t.border, position: 'relative' }}>
-          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-            {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: 36 }}>
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'linear-gradient(135deg, #0072CE 0%, #004A8F 100%)',
-                color: '#FFFFFF',
-                padding: '6px 18px',
-                borderRadius: '999px',
-                fontWeight: 800,
-                fontSize: '0.76rem',
-                marginBottom: '14px',
-                letterSpacing: '0.06em',
-                boxShadow: '0 6px 18px rgba(0, 114, 206, 0.25)',
-              }}>
-                <Activity size={14} /> LIVE FEDERATION INTELLIGENCE
-              </div>
-              <h2 style={{ color: t.text, fontSize: '2.1rem', fontWeight: 900, marginBottom: 12 }}>
-                National Athletics Performance & Talent Registry
-              </h2>
-              <p style={{ color: t.textSub, fontSize: '0.96rem', maxWidth: 650, margin: '0 auto', lineHeight: 1.6 }}>
-                Real-time metrics from the Ethiopian Athletics Federation database tracking athlete development, club registrations, and regional representation.
-              </p>
-            </div>
-
-            {/* 3 Analytics Cards Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 24 }}>
-              {/* Card 1: Growth Trend */}
-              <div style={{
-                background: '#FFFFFF',
-                border: '1px solid #BBF7D0',
-                borderLeft: '4px solid #00A859',
-                borderRadius: 18,
-                padding: '24px 20px',
-                boxShadow: '0 4px 16px rgba(0, 168, 89, 0.05)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <div>
-                    <h4 style={{ color: '#0F172A', fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Registration & Licensing Growth</h4>
-                    <span style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 600 }}>Rolling 6-month progression</span>
-                  </div>
-                  <span style={{ background: 'rgba(0, 168, 89, 0.12)', color: '#00A859', padding: '4px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800 }}>
-                    Active Trend
-                  </span>
-                </div>
-                <div style={{ height: 230 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={overviewStats?.monthlyGrowth || [
-                        { month: 'May', registered: 1, athletes: 1, applications: 1 },
-                        { month: 'Jun', registered: 1, athletes: 1, applications: 2 },
-                        { month: 'Jul', registered: 2, athletes: 1, applications: 2 },
-                        { month: 'Aug', registered: 2, athletes: 2, applications: 3 },
-                        { month: 'Sep', registered: 3, athletes: 2, applications: 3 },
-                        { month: 'Oct', registered: 3, athletes: 2, applications: 4 },
-                      ]}
-                      margin={{ top: 8, right: 12, left: -22, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient id="clientGrowthGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0072CE" stopOpacity={0.4} />
-                          <stop offset="100%" stopColor="#0072CE" stopOpacity={0.02} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                      <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                      <ChartTooltip contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: '0.8rem' }} />
-                      <Area type="monotone" dataKey="athletes" stroke="#0072CE" fill="url(#clientGrowthGrad)" strokeWidth={2.5} name="Athletes" />
-                      <Line type="monotone" dataKey="registered" stroke="#00A859" strokeWidth={2} name="Clubs" />
-                      <ChartLegend wrapperStyle={{ fontSize: 11 }} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Card 2: Discipline Distribution */}
-              <div style={{
-                background: '#FFFFFF',
-                border: '1px solid #BFDBFE',
-                borderLeft: '4px solid #0072CE',
-                borderRadius: 18,
-                padding: '24px 20px',
-                boxShadow: '0 4px 16px rgba(0, 114, 206, 0.05)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <div>
-                    <h4 style={{ color: '#0F172A', fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Athlete Discipline Breakdown</h4>
-                    <span style={{ color: '#64748B', fontSize: '0.78rem', fontWeight: 600 }}>National talent pool disciplines</span>
-                  </div>
-                  <span style={{ background: 'rgba(0, 114, 206, 0.12)', color: '#0072CE', padding: '4px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800 }}>
-                    Verified Pool
-                  </span>
-                </div>
-                <div style={{ height: 230, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={overviewStats?.disciplineDistribution || [
-                          { name: 'Long Distance (5K/10K)', value: 33 },
-                          { name: 'Marathon & Road', value: 25 },
-                          { name: 'Middle Distance (800/1500m)', value: 21 },
-                          { name: 'Sprints & Relays', value: 13 },
-                          { name: 'Field & Jumps', value: 8 },
-                        ]}
-                        innerRadius={50}
-                        outerRadius={75}
-                        paddingAngle={4}
-                        dataKey="value"
-                      >
-                        {['#0072CE', '#00A859', '#FFB800', '#7C3AED', '#EC4899', '#10B981'].map((color, idx) => (
-                          <Cell key={idx} fill={color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip formatter={(v: number) => `${v}%`} contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: '0.8rem' }} />
-                      <ChartLegend wrapperStyle={{ fontSize: 11 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Card 3: Regional Distribution */}
-              <div style={{
-                background: '#FFFFFF',
-                border: '1px solid #FED7AA',
-                borderLeft: '4px solid #D97706',
-                borderRadius: 18,
-                padding: '24px 20px',
-                boxShadow: '0 4px 16px rgba(217, 119, 6, 0.05)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <div>
-                    <h4 style={{ color: t.text, fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Regional Capacity & Clubs</h4>
-                    <span style={{ color: t.textMuted, fontSize: '0.78rem', fontWeight: 600 }}>Member regional state distribution</span>
-                  </div>
-                  <span style={{ background: 'rgba(255, 184, 0, 0.15)', color: '#D97706', padding: '4px 10px', borderRadius: 8, fontSize: '0.72rem', fontWeight: 800 }}>
-                    12 Regions
-                  </span>
-                </div>
-                <div style={{ height: 230 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={(overviewStats?.regionalDistribution || [
-                        { region: 'Addis Ababa', athletes: 6, clubs: 3 },
-                        { region: 'Oromia', athletes: 5, clubs: 3 },
-                        { region: 'Amhara', athletes: 4, clubs: 2 },
-                        { region: 'Sidama', athletes: 3, clubs: 2 },
-                        { region: 'Tigray', athletes: 2, clubs: 1 },
-                      ]).slice(0, 5)}
-                      margin={{ top: 8, right: 12, left: -22, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#334155' : '#E2E8F0'} vertical={false} />
-                      <XAxis dataKey="region" stroke="#94A3B8" fontSize={10} tickLine={false} axisLine={false} />
-                      <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                      <ChartTooltip contentStyle={{ borderRadius: 8, border: '1px solid #E2E8F0', fontSize: '0.8rem' }} />
-                      <Bar dataKey="athletes" fill="#0072CE" name="Athletes" radius={[3, 3, 0, 0]} />
-                      <Bar dataKey="clubs" fill="#FFB800" name="Clubs" radius={[3, 3, 0, 0]} />
-                      <ChartLegend wrapperStyle={{ fontSize: 11 }} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
       )}
 
       {/* ── 7. SPONSORS & PARTNERS (IN ORIGINAL OWN COLOR & INFINITE HORIZONTAL MARQUEE SCROLL) ── */}

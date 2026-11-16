@@ -93,6 +93,25 @@ function getStageType(roundKey: string): 'FINAL' | 'SEMIFINALS' | 'HEATS' | 'QUA
   return 'HEATS';
 }
 
+function getEventThumbnail(evt?: EventResultsGroup | null): string {
+  if (!evt) return '/images/banner_grand_prix.png';
+  if ((evt as any).thumbnailUrl) return (evt as any).thumbnailUrl;
+  const t = `${evt.eventTitle || ''} ${evt.id || ''}`.toLowerCase();
+  if (t.includes('youth') || t.includes('u20') || t.includes('trials') || t.includes('u18')) {
+    return '/images/banner_youth_games.png';
+  }
+  if (t.includes('jan') || t.includes('meda') || t.includes('cross')) {
+    return '/images/banner_jan_meda.png';
+  }
+  if (t.includes('prix')) {
+    return '/images/banner_grand_prix.png';
+  }
+  if (t.includes('national') || t.includes('champ')) {
+    return '/images/hero2.jpeg';
+  }
+  return '/images/banner_grand_prix.png';
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ETHIOPIAN NATIONAL FEDERATION DATASET (COMPREHENSIVE MULTI-ROUND ARCHITECTURE)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -815,8 +834,16 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
               }`}
             >
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-[#C8A84B]/20 text-[#C8A84B] flex items-center justify-center shrink-0 border border-[#C8A84B]/30">
-                  <Trophy size={20} />
+                <div className="w-12 h-10 sm:w-14 sm:h-11 rounded-lg overflow-hidden shrink-0 border border-slate-300 dark:border-slate-700 bg-slate-900 shadow-sm relative">
+                  <img
+                    src={getEventThumbnail(currentEvent)}
+                    alt={currentEvent?.eventTitle || 'Event'}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/images/banner_grand_prix.png';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/10" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -909,8 +936,16 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
                           }`}
                         >
                           <div className="min-w-0 flex items-start gap-3">
-                            <div className={`mt-0.5 p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-[#C8A84B] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
-                              <Trophy size={14} />
+                            <div className={`w-11 h-9 rounded-lg overflow-hidden shrink-0 border relative mt-0.5 shadow-xs bg-slate-900 ${isSelected ? 'border-[#C8A84B] ring-2 ring-[#C8A84B]/40' : 'border-slate-200 dark:border-slate-700'}`}>
+                              <img
+                                src={getEventThumbnail(evt)}
+                                alt={evt.eventTitle}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src = '/images/banner_grand_prix.png';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/10" />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">

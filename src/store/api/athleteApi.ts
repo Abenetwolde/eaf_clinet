@@ -218,6 +218,20 @@ export const athleteApi = apiSlice.injectEndpoints({
       keepUnusedDataFor: 5,
     }),
 
+    getPublicAthletes: builder.query<any[], { search?: string; club?: string; region?: string; page?: number; limit?: number; status?: string } | void>({
+      query: (params) => ({
+        url: '/athletes/public',
+        params: params || { limit: 100 },
+      }),
+      transformResponse: (response: any) => {
+        if (Array.isArray(response?.data)) return response.data;
+        if (Array.isArray(response)) return response;
+        return [];
+      },
+      providesTags: ['Athletes'],
+      keepUnusedDataFor: 30,
+    }),
+
     getRegistrationOptions: builder.query<RegistrationOptionsData, void>({
       query: () => '/meta/registration-options',
       transformResponse: (response: RegistrationOptionsResponse) => response.data,
@@ -413,6 +427,7 @@ export const athleteApi = apiSlice.injectEndpoints({
 
 export const {
   useGetAthletesQuery,
+  useGetPublicAthletesQuery,
   useGetRegistrationOptionsQuery,
   useInitiateFaydaMutation,
   useConfirmFaydaOtpMutation,

@@ -489,8 +489,13 @@ export default function App() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
-      const publicPathMap: Record<string, string> = { '/': 'HOME', '/competitions': 'COMPETITIONS', '/results': 'RESULTS', '/athletes': 'ATHLETES', '/professionals': 'PROFESSIONALS', '/media': 'MEDIA' };
-      if (publicPathMap[path]) setPublicSubPage(publicPathMap[path]);
+      const publicPathMap: Record<string, string> = { '/': 'HOME', '/competitions': 'COMPETITIONS', '/results': 'RESULTS', '/athletes': 'ATHLETES', '/media': 'MEDIA' };
+      if (path === '/professionals') {
+        window.history.replaceState({}, '', '/');
+        setPublicSubPage('HOME');
+      } else if (publicPathMap[path]) {
+        setPublicSubPage(publicPathMap[path]);
+      }
       if (path === '/login') {
         if (!isLoggedIn) setPublicSubPage('LOGIN');
         else window.history.replaceState({}, '', '/');
@@ -525,8 +530,11 @@ export default function App() {
         setRegModalRole(isClub ? 'CLUB' : 'ATHLETE');
       } else if (path === '/') {
         setPublicSubPage('HOME');
-      } else if (['/competitions', '/results', '/athletes', '/professionals', '/media'].includes(path)) {
-        const publicPathMap: Record<string, string> = { '/competitions': 'COMPETITIONS', '/results': 'RESULTS', '/athletes': 'ATHLETES', '/professionals': 'PROFESSIONALS', '/media': 'MEDIA' };
+      } else if (path === '/professionals') {
+        window.history.replaceState({}, '', '/');
+        setPublicSubPage('HOME');
+      } else if (['/competitions', '/results', '/athletes', '/media'].includes(path)) {
+        const publicPathMap: Record<string, string> = { '/competitions': 'COMPETITIONS', '/results': 'RESULTS', '/athletes': 'ATHLETES', '/media': 'MEDIA' };
         setPublicSubPage(publicPathMap[path]);
       } else if (path === '/club/security') {
         window.history.replaceState({}, '', '/club/dashboard');
@@ -839,13 +847,12 @@ export default function App() {
       { label: t('nav.competitions'), page: 'COMPETITIONS' },
       { label: t('nav.results'), page: 'RESULTS' },
       { label: t('nav.athletes'), page: 'ATHLETES' },
-      { label: "Professionals", page: "PROFESSIONALS" },
       { label: t('nav.media'), page: 'MEDIA' },
     ];
 
     const handleNavClick = (page: string) => {
       setPublicSubPage(page);
-      const pagePath: Record<string, string> = { HOME: '/', COMPETITIONS: '/competitions', RESULTS: '/results', ATHLETES: '/athletes', PROFESSIONALS: '/professionals', MEDIA: '/media' };
+      const pagePath: Record<string, string> = { HOME: '/', COMPETITIONS: '/competitions', RESULTS: '/results', ATHLETES: '/athletes', MEDIA: '/media' };
       window.history.pushState(null, '', pagePath[page] || '/');
       setMobileMenuOpen(false);
       setNavNonce(prev => prev + 1);
@@ -1337,33 +1344,6 @@ export default function App() {
           />
         ) : publicSubPage === 'ANTI_DOPING' ? (
           <AntiDopingHub darkMode={darkMode} />
-        ) : publicSubPage === 'PROFESSIONALS' ? (
-          <LandingPage
-            darkMode={darkMode}
-            onToggleDarkMode={() => setDarkMode(!darkMode)}
-            onLogin={() => setAuthModalConfig({ isOpen: true, method: 'FIN', credential: '' })}
-            onRegister={(role: 'CLUB' | 'ATHLETE') => {
-              setPublicSubPage('HOME');
-              setRegModalRole(role);
-              window.history.pushState(null, '', role === 'CLUB' ? '/register?role=club' : '/register');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            onChangePublicSubPage={setPublicSubPage}
-            publicSubPage="HOME"
-            onNotify={handleNotify}
-            currentRole={currentRole}
-            currentClub={currentClub}
-            currentAthlete={currentAthlete}
-            onLoginSuccess={handleLoginSuccess}
-            navNonce={navNonce}
-            isRegistered={isLoggedIn && isUserRegistered}
-            registeredStatus={registeredStatusText}
-            isLoggedIn={isLoggedIn}
-            onSelectRole={(role: string) => {
-              if (role === 'CLUB') handleLoginSuccess('CLUB', { club: currentClub });
-              else handleLoginSuccess('ATHLETE', { athlete: currentAthlete });
-            }}
-          />
         ) : publicSubPage === 'REGIONS' ? (
           <RegionalFederationsHub darkMode={darkMode} />
         ) : publicSubPage === 'REPRESENTATIVES' ? (
