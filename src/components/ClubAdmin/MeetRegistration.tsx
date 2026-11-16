@@ -27,6 +27,7 @@ import {
   ShieldAlert,
   Globe,
   Zap,
+  Info,
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import { useGetMeQuery } from '../../store/api/authApi';
