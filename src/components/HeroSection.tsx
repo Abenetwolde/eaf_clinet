@@ -464,7 +464,7 @@ export function StadiumBackground() {
       {/* Stadium Photo Background - Clearly Visible */}
       <div
         className="absolute inset-0 bg-cover bg-center opacity-100"
-        style={{ backgroundImage: `url('/images/banner_grand_prix.png')` }}
+        style={{ backgroundImage: `url('/images/hero2.jpeg')` }}
       />
 
       {/* Gentle Directional Scrim (keeps photo bright while maintaining text readability) */}

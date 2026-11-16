@@ -564,6 +564,21 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
   const [activeTab, setActiveTab] = useState<'RESULTS' | 'MEDALS'>('RESULTS');
   const [activeAthleteDetail, setActiveAthleteDetail] = useState<AthleteFinisher | null>(null);
 
+  // Championship / Event Dropdown State
+  const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
+  const [eventFilterSearch, setEventFilterSearch] = useState('');
+  const eventDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (eventDropdownRef.current && !eventDropdownRef.current.contains(event.target as Node)) {
+        setIsEventDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Active Event
   const currentEvent = useMemo(() => {
     return eventGroups.find((e) => e.id === selectedEventId) || eventGroups[0];
@@ -785,47 +800,154 @@ export default function FederationResultsHub({ darkMode = false, onNotify, onBac
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-2.5">
-            {eventGroups.map((evt) => {
-              const isSelected = evt.id === currentEvent?.id;
-              return (
-                <button
-                  key={evt.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedEventId(evt.id);
-                    if (evt.disciplines[0]) {
-                      setSelectedDiscipline(evt.disciplines[0].discipline);
-                    }
-                    setSelectedRoundKey('FINAL');
-                  }}
-                  className={`text-left p-3.5 rounded-xl border transition-all cursor-pointer flex-1 min-w-[280px] max-w-md ${
-                    isSelected
-                      ? 'border-[#C8A84B] bg-[#C8A84B]/5 dark:bg-[#C8A84B]/10 ring-2 ring-[#C8A84B]/30 shadow-sm'
-                      : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 hover:border-slate-300 dark:hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="font-bold text-sm text-slate-900 dark:text-white line-clamp-1">
-                      {evt.eventTitle}
-                    </div>
-                    {evt.isOfficial && (
-                      <span className="shrink-0 text-[10px] px-1.5 py-0.5 font-bold uppercase rounded bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                        Official
+          {/* Dropdown Component for Event Selection */}
+          <div ref={eventDropdownRef} className="relative w-full">
+            {/* Dropdown Trigger Button */}
+            <button
+              type="button"
+              onClick={() => setIsEventDropdownOpen((prev) => !prev)}
+              aria-haspopup="listbox"
+              aria-expanded={isEventDropdownOpen}
+              className={`w-full flex items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                isEventDropdownOpen
+                  ? 'border-[#C8A84B] ring-2 ring-[#C8A84B]/30 bg-[#C8A84B]/5 dark:bg-[#C8A84B]/10 shadow-md'
+                  : 'border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/50 hover:border-[#C8A84B]/60 hover:bg-white dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-[#C8A84B]/20 text-[#C8A84B] flex items-center justify-center shrink-0 border border-[#C8A84B]/30">
+                  <Trophy size={20} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white truncate">
+                      {currentEvent?.eventTitle || 'Select Championship / Event'}
+                    </span>
+                    {currentEvent?.isOfficial && (
+                      <span className="shrink-0 text-[10px] px-2 py-0.5 font-bold uppercase rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                        Official Ratified
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-                    <span className="flex items-center gap-1">
-                      <MapPin size={12} className="text-[#C8A84B]" /> {evt.venue.split(',')[0]}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar size={12} className="text-[#C8A84B]" /> {evt.date}
-                    </span>
+                  {currentEvent && (
+                    <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      <span className="flex items-center gap-1 shrink-0">
+                        <MapPin size={12} className="text-[#C8A84B]" />
+                        {currentEvent.venue.split(',')[0]}
+                      </span>
+                      <span className="text-slate-300 dark:text-slate-600">•</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        <Calendar size={12} className="text-[#C8A84B]" />
+                        {currentEvent.date}
+                      </span>
+                      <span className="text-slate-300 dark:text-slate-600">•</span>
+                      <span className="text-[#C8A84B] font-semibold">
+                        {currentEvent.disciplines.length} Disciplines
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="hidden sm:inline-block text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  Change Event
+                </span>
+                <div className={`p-1.5 rounded-lg bg-slate-200/50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 transition-transform duration-200 ${isEventDropdownOpen ? 'rotate-180 text-[#C8A84B]' : ''}`}>
+                  <ChevronDown size={18} />
+                </div>
+              </div>
+            </button>
+
+            {/* Dropdown Menu Popup */}
+            {isEventDropdownOpen && (
+              <div className="absolute left-0 right-0 top-full mt-2 z-40 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in slide-in-from-top-2 duration-150">
+                {/* Search / Filter within dropdown if many events */}
+                {eventGroups.length > 3 && (
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800">
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+                      <input
+                        type="text"
+                        value={eventFilterSearch}
+                        onChange={(e) => setEventFilterSearch(e.target.value)}
+                        placeholder="Search championship by name or venue..."
+                        className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#C8A84B]"
+                        autoFocus
+                      />
+                    </div>
                   </div>
-                </button>
-              );
-            })}
+                )}
+
+                {/* List of Championships */}
+                <div className="max-h-[340px] overflow-y-auto p-1.5 space-y-1">
+                  {eventGroups
+                    .filter((evt) => {
+                      if (!eventFilterSearch.trim()) return true;
+                      const q = eventFilterSearch.toLowerCase();
+                      return evt.eventTitle.toLowerCase().includes(q) || evt.venue.toLowerCase().includes(q);
+                    })
+                    .map((evt) => {
+                      const isSelected = evt.id === currentEvent?.id;
+                      return (
+                        <button
+                          key={evt.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedEventId(evt.id);
+                            if (evt.disciplines[0]) {
+                              setSelectedDiscipline(evt.disciplines[0].discipline);
+                            }
+                            setSelectedRoundKey('FINAL');
+                            setIsEventDropdownOpen(false);
+                            setEventFilterSearch('');
+                          }}
+                          className={`w-full text-left p-3 rounded-xl transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                            isSelected
+                              ? 'bg-[#C8A84B]/10 text-slate-900 dark:text-white font-bold border border-[#C8A84B]/40'
+                              : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/70 border border-transparent'
+                          }`}
+                        >
+                          <div className="min-w-0 flex items-start gap-3">
+                            <div className={`mt-0.5 p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-[#C8A84B] text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                              <Trophy size={14} />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-sm line-clamp-1 ${isSelected ? 'font-black text-slate-900 dark:text-white' : 'font-semibold text-slate-800 dark:text-slate-100'}`}>
+                                  {evt.eventTitle}
+                                </span>
+                                {evt.isOfficial && (
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                    Official
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                <span className="flex items-center gap-1">
+                                  <MapPin size={11} className="text-[#C8A84B]" />
+                                  {evt.venue.split(',')[0]}
+                                </span>
+                                <span>•</span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar size={11} className="text-[#C8A84B]" />
+                                  {evt.date}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {isSelected && (
+                            <div className="shrink-0 text-[#C8A84B] font-bold p-1 rounded-full bg-[#C8A84B]/10">
+                              <Check size={16} />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

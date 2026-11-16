@@ -146,7 +146,7 @@ export default function LoginPage({
         const response = await loginWithFaydaApi({ verificationToken }).unwrap();
         finishLogin(response.data);
       } catch (err: any) {
-        setError(err?.data?.message || 'No active EAF account is linked to this Fayda identity.');
+        setError(err?.data?.message || err?.error || err?.message || 'No active EAF account is linked to this Fayda identity.');
       }
     };
     window.addEventListener('message', handleFaydaLogin);

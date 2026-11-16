@@ -1317,7 +1317,7 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: `url(${siteContent?.hero?.bannerUrl || '/images/banner_grand_prix.png'})`,
+              backgroundImage: `url(${siteContent?.hero?.bannerUrl && siteContent?.hero?.bannerUrl !== '/images/banner_grand_prix.png' ? siteContent.hero.bannerUrl : '/images/hero2.jpeg'})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center 30%',
               opacity: 1,
@@ -1888,45 +1888,100 @@ export default function LandingPage({ onSelectRole, onRegister, language = 'en',
                 },
               ]).map((sys: any) => {
                 const colors = sys.routeKey === 'ANTI_DOPING'
-                  ? { bg: '#ECFDF5', border: '#A7F3D0', text: '#059669' }
+                  ? { bg: '#ECFDF5', border: '#A7F3D0', text: '#059669', badgeBg: 'rgba(5, 150, 105, 0.9)', img: sys.img || '/images/d2.jpeg' }
                   : sys.routeKey === 'OFFICIALS'
-                  ? { bg: '#EFF6FF', border: '#BFDBFE', text: '#2563EB' }
+                  ? { bg: '#EFF6FF', border: '#BFDBFE', text: '#2563EB', badgeBg: 'rgba(37, 99, 235, 0.9)', img: sys.img || '/images/d5.jpg' }
                   : sys.routeKey === 'REGIONS'
-                  ? { bg: '#FEF3C7', border: '#FDE68A', text: '#D97706' }
-                  : { bg: '#F3E8FF', border: '#E9D5FF', text: '#9333EA' };
+                  ? { bg: '#FEF3C7', border: '#FDE68A', text: '#D97706', badgeBg: 'rgba(217, 119, 6, 0.9)', img: sys.img || '/images/runners_training.png' }
+                  : { bg: '#F3E8FF', border: '#E9D5FF', text: '#9333EA', badgeBg: 'rgba(147, 51, 234, 0.9)', img: sys.img || '/images/d1.jpg' };
 
                 return (
                   <div
                     key={sys.id}
-                    className="hover-lift"
+                    className="hover-lift group"
                     onClick={() => onChangePublicSubPage(sys.routeKey || 'ANTI_DOPING')}
                     style={{
                       background: t.bgAlt,
                       border: '1px solid ' + t.border,
                       borderRadius: '20px',
-                      padding: '24px',
+                      padding: '18px',
                       cursor: 'pointer',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'space-between',
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+                      transition: 'all 0.25s ease'
                     }}
                   >
                     <div>
-                      <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: colors.bg, border: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
-                        {sys.routeKey === 'ANTI_DOPING' ? <ShieldAlert size={22} color={colors.text} /> :
-                         sys.routeKey === 'OFFICIALS' ? <Award size={22} color={colors.text} /> :
-                         sys.routeKey === 'REGIONS' ? <Map size={22} color={colors.text} /> :
-                         <Briefcase size={22} color={colors.text} />}
+                      {/* Photographic Representation of System Description */}
+                      <div
+                        style={{
+                          width: '100%',
+                          height: '148px',
+                          borderRadius: '14px',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          marginBottom: '16px',
+                          backgroundColor: '#0f172a',
+                          border: `1px solid ${colors.border}`,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                        }}
+                      >
+                        <img
+                          src={colors.img}
+                          alt={sys.title}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                            transition: 'transform 0.4s ease'
+                          }}
+                          className="group-hover:scale-105"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = '/images/banner_grand_prix.png';
+                          }}
+                        />
+                        {/* Gradient Scrim for Contrast */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 100%)',
+                            pointerEvents: 'none'
+                          }}
+                        />
+                        {/* Category Tag Badge */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: '10px',
+                            left: '10px',
+                            background: colors.badgeBg,
+                            color: '#FFFFFF',
+                            padding: '3px 10px',
+                            borderRadius: '12px',
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            letterSpacing: '0.03em',
+                            textTransform: 'uppercase',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                            backdropFilter: 'blur(4px)'
+                          }}
+                        >
+                          {sys.category || 'Portal'}
+                        </div>
                       </div>
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: t.text, marginBottom: '6px' }}>
+
+                      <h3 style={{ fontSize: '1.12rem', fontWeight: 800, color: t.text, marginBottom: '6px', lineHeight: 1.3 }}>
                         {sys.title}
                       </h3>
                       <p style={{ fontSize: '0.84rem', color: t.textMuted, lineHeight: 1.5, marginBottom: '16px' }}>
                         {sys.description}
                       </p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.text, fontSize: '0.85rem', fontWeight: 800 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.text, fontSize: '0.85rem', fontWeight: 800, marginTop: 'auto', paddingTop: '8px' }}>
                       <span>{sys.actionText || 'Access Portal'}</span>
                       <ArrowRight size={14} />
                     </div>

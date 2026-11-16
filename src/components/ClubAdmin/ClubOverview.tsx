@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, Download, Plus, Building2, Smartphone, Calendar, Clock, CheckCircle2 } from 'lucide-react';
+import { 
+  Users, ShieldCheck, ArrowRightLeft, Trophy, AlertTriangle, ArrowRight, 
+  Download, Plus, Building2, Smartphone, Calendar, Clock, CheckCircle2,
+  MessageSquare, Send, Bot, Sparkles, Check, RefreshCw
+} from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import type { Club, Athlete, Transfer } from '../../types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -8,7 +12,12 @@ import { useGetMeQuery } from '../../store/api/authApi';
 import { useGetAthletesQuery } from '../../store/api/athleteApi';
 import { useGetOverviewStatsQuery } from '../../store/api/apiSlice';
 import { useGetPaymentConfigQuery } from '../../store/api/paymentApi';
-import { useGetClubRenewalsQuery } from '../../store/api/clubApi';
+import { 
+  useGetClubRenewalsQuery, 
+  useGetClubDashboardStatsQuery, 
+  useGetClubChatHistoryQuery, 
+  useSendClubChatMessageMutation 
+} from '../../store/api/clubApi';
 
 interface ClubOverviewProps {
   club?: Club;
@@ -48,6 +57,51 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
   };
 
   const activeClubId = propClub?.id || storeClub?.id || accountClub?.id || (typeof window !== 'undefined' ? localStorage.getItem('eaf_currentClubId') : '') || '';
+
+  // Retrieve real club dashboard stats directly from backend API
+  const { data: dashboardStats, refetch: refetchDashboardStats } = useGetClubDashboardStatsQuery(activeClubId, { skip: !activeClubId, pollingInterval: 6000 });
+
+  // Retrieve real chat history from backend API
+  const { data: chatHistory, refetch: refetchChat } = useGetClubChatHistoryQuery(activeClubId, { skip: !activeClubId });
+  const [sendChatMessage, { isLoading: isSendingChat }] = useSendClubChatMessageMutation();
+
+  const [chatInput, setChatInput] = useState('');
+  const [localMessages, setLocalMessages] = useState<any[]>([]);
+  const chatMessagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (chatHistory && chatHistory.length > 0) {
+      setLocalMessages(chatHistory);
+    }
+  }, [chatHistory]);
+
+  React.useEffect(() => {
+    chatMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [localMessages]);
+
+  const handleSendChat = async (messageToSend?: string) => {
+    const text = (messageToSend || chatInput).trim();
+    if (!text || !activeClubId || isSendingChat) return;
+
+    const optimisticUserMsg = {
+      id: `local-u-${Date.now()}`,
+      sender: 'user',
+      text,
+      timestamp: new Date().toISOString(),
+    };
+    setLocalMessages((prev) => [...prev, optimisticUserMsg]);
+    setChatInput('');
+
+    try {
+      const resp = await sendChatMessage({ clubId: activeClubId, message: text }).unwrap();
+      if (resp) {
+        setLocalMessages((prev) => [...prev, resp]);
+      }
+    } catch (err: any) {
+      console.error('Chat error:', err);
+      onNotify?.('Could not reach Federation Assistant. Please try again.', 'error');
+    }
+  };
 
   // Retrieve club renewals dynamically from database strictly for active club
   const { data: renewalsData } = useGetClubRenewalsQuery(activeClubId, { skip: !activeClubId });
@@ -180,25 +234,31 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
 
   const athletes = dynamicAthletes;
 
-  const verifiedCount = athletes.filter(a => a.faydaStatus === 'VERIFIED').length;
-  const activeLicenseCount = athletes.filter(a => a.licenseStatus === 'ACTIVE').length;
-  const expiredCount = athletes.filter(a => a.licenseStatus !== 'ACTIVE').length;
+  const totalAthletesCount = dashboardStats?.totalAthletes ?? athletes.length;
+  const verifiedCount = dashboardStats?.faydaVerified ?? athletes.filter(a => a.faydaStatus === 'VERIFIED').length;
+  const activeLicenseCount = dashboardStats?.activeLicenses ?? athletes.filter(a => a.licenseStatus === 'ACTIVE').length;
+  const expiredCount = dashboardStats?.pendingRenewals ?? athletes.filter(a => a.licenseStatus !== 'ACTIVE').length;
+  const totalPoints = dashboardStats?.totalPoints ?? club?.totalPoints ?? 120;
 
-  const performanceData = (overviewStats?.monthlyGrowth && overviewStats.monthlyGrowth.length > 0)
+  const performanceData = (dashboardStats?.monthlyPerformance && dashboardStats.monthlyPerformance.length > 0)
+    ? dashboardStats.monthlyPerformance
+    : (overviewStats?.monthlyGrowth && overviewStats.monthlyGrowth.length > 0)
     ? overviewStats.monthlyGrowth.map((m: any, idx: number) => ({
         month: m.month,
-        points: Math.round(((club.totalPoints || 60) / 6) * (idx + 1) + (m.athletes * 4)),
+        points: Math.round(((totalPoints || 60) / 6) * (idx + 1) + (m.athletes * 4)),
       }))
     : [
-        { month: 'May', points: 12 },
-        { month: 'Jun', points: 28 },
-        { month: 'Jul', points: 42 },
-        { month: 'Aug', points: 65 },
-        { month: 'Sep', points: 88 },
-        { month: 'Oct', points: club.totalPoints || 120 },
+        { month: 'May', points: 24 },
+        { month: 'Jun', points: 52 },
+        { month: 'Jul', points: 88 },
+        { month: 'Aug', points: 135 },
+        { month: 'Sep', points: 180 },
+        { month: 'Oct', points: totalPoints || 216 },
       ];
 
-  const eventsData = (athletes.length > 0 && athletes.some(a => a.primaryEvent))
+  const eventsData = (dashboardStats?.disciplineDistribution && dashboardStats.disciplineDistribution.length > 0)
+    ? dashboardStats.disciplineDistribution
+    : (athletes.length > 0 && athletes.some(a => a.primaryEvent))
     ? athletes.reduce<{ name: string; value: number }[]>((counts, athlete) => {
         const name = athlete.primaryEvent || 'Athletics';
         const current = counts.find((item) => item.name === name);
@@ -206,13 +266,12 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
         else counts.push({ name, value: 1 });
         return counts;
       }, [])
-    : (overviewStats?.disciplineDistribution && overviewStats.disciplineDistribution.length > 0)
-    ? overviewStats.disciplineDistribution.slice(0, 5).map((d: any) => ({ name: d.name, value: d.count || d.value }))
     : [
-        { name: '5,000m / 10,000m', value: 4 },
-        { name: 'Middle Distance', value: 3 },
-        { name: 'Marathon & Road', value: 2 },
-        { name: 'Field & Jumps', value: 1 },
+        { name: '10,000m', value: 3 },
+        { name: '5,000m', value: 2 },
+        { name: '1,500m', value: 2 },
+        { name: '3,000m Steeplechase', value: 1 },
+        { name: '800m', value: 1 },
       ];
 
   const COLORS = ['var(--primary)', '#10B981', '#F59E0B', '#8B5CF6', '#0072CE', '#EC4899'];
@@ -316,7 +375,7 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
             <span className="text-[0.8rem] font-bold text-blue-700">Registered Roster</span>
             <Users size={20} className="text-blue-600" />
           </div>
-          <div className="text-[1.8rem] font-extrabold text-slate-900">{athletes.length} Athletes</div>
+          <div className="text-[1.8rem] font-extrabold text-slate-900">{totalAthletesCount} Athletes</div>
           <div className="text-[0.78rem] text-emerald-700 font-semibold mt-[4px]">
             ✓ {verifiedCount} Fayda Verified
           </div>
@@ -335,10 +394,10 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
 
         <div className="gov-card card-amber">
           <div className="flex justify-between items-center mb-[10px]">
-            <span className="text-[0.8rem] font-bold text-amber-800">Active Transfers</span>
+            <span className="text-[0.8rem] font-bold text-amber-800">Active Contracts & Transfers</span>
             <ArrowRightLeft size={20} className="text-amber-600" />
           </div>
-          <div className="text-[1.8rem] font-extrabold text-amber-600">{transfers.length} Transfers</div>
+          <div className="text-[1.8rem] font-extrabold text-amber-600">{dashboardStats?.totalContracts || transfers.length} Contracts</div>
           <div className="text-[0.78rem] text-slate-500 font-semibold mt-[4px]">
             Deadline: Aug 15, 2026
           </div>
@@ -349,9 +408,9 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
             <span className="text-[0.8rem] font-bold text-blue-800">Regional Ranking</span>
             <Trophy size={20} className="text-blue-600" />
           </div>
-          <div className="text-[1.8rem] font-extrabold text-slate-900">Rank #{club?.clubRank ?? 1}</div>
+          <div className="text-[1.8rem] font-extrabold text-slate-900">Rank #{dashboardStats?.clubRank ?? club?.clubRank ?? 1}</div>
           <div className="text-[0.78rem] text-blue-600 font-semibold mt-[4px]">
-            {club?.totalPoints ?? 0} Points Total
+            {totalPoints} Points Total
           </div>
         </div>
       </div>
@@ -577,6 +636,262 @@ export default function ClubOverview({ club: propClub, athletes: propAthletes, t
               <span className="badge badge-blue mt-[8px]">Registration Open</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ── CLUB OPERATIONS & FEDERATION ASSISTANCE AI CHAT ── */}
+      <div className="mt-8 bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-7 shadow-xl text-white">
+        {/* Chat Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 shrink-0">
+              <Bot size={26} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                  EAF Club Operations & Intelligence Assistant
+                </h3>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Live Federation API
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Connected to {club.name} live database, licensing records & EAF technical directives
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => refetchChat?.()}
+            className="text-xs text-slate-400 hover:text-white transition flex items-center gap-1.5 cursor-pointer bg-slate-800/60 hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700/60"
+          >
+            <RefreshCw size={13} />
+            Refresh Stream
+          </button>
+        </div>
+
+        {/* Suggested Quick Prompt Chips */}
+        <div className="py-4 border-b border-slate-800/80">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+            <Sparkles size={13} className="text-amber-400" />
+            Quick Operational Inquiries
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: '📊 Check Roster & License Compliance', q: 'How many athletes on our roster have valid licenses for upcoming meets?' },
+              { label: '🏆 Upcoming Meets & Deadlines', q: 'What are the upcoming certified meet registration deadlines?' },
+              { label: '🔄 Inter-Club Transfer Rules', q: 'What are the rules and deadline for inter-club athlete transfers?' },
+              { label: '✅ Club Affiliation & Telebirr', q: 'What is our club affiliation and Telebirr payment status?' },
+              { label: '🛡️ Fayda National ID Policy', q: 'How does Fayda verification work for registering new athletes?' },
+            ].map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSendChat(chip.q)}
+                disabled={isSendingChat}
+                className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/70 hover:border-slate-600 transition cursor-pointer disabled:opacity-50"
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Chat Messages Stream */}
+        <div className="my-4 max-h-[360px] min-h-[160px] overflow-y-auto space-y-3.5 pr-2 custom-scrollbar">
+          {localMessages.map((msg, index) => {
+            const isUser = msg.sender === 'user';
+            return (
+              <div
+                key={msg.id || index}
+                className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
+              >
+                {!isUser && (
+                  <div className="w-8 h-8 rounded-xl bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot size={16} />
+                  </div>
+                )}
+
+                <div
+                  className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 text-sm leading-relaxed ${
+                    isUser
+                      ? 'bg-blue-600 text-white rounded-tr-none'
+                      : 'bg-slate-800/90 border border-slate-700/80 text-slate-200 rounded-tl-none'
+                  }`}
+                >
+                  <div className="whitespace-pre-wrap font-sans">
+                    {msg.text}
+                  </div>
+
+                  {/* Action Link Chips on Assistant Replies */}
+                  {msg.actionLinks && msg.actionLinks.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-700/60">
+                      {msg.actionLinks.map((action: any, aIdx: number) => (
+                        <button
+                          key={aIdx}
+                          type="button"
+                          onClick={() => onChangeSubPage(action.page)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 transition cursor-pointer"
+                        >
+                          <span>{action.label}</span>
+                          <ArrowRight size={12} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className={`text-[10px] mt-2 opacity-60 ${isUser ? 'text-right' : 'text-left'}`}>
+                    {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                  </div>
+                </div>
+
+                {isUser && (
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/30 border border-blue-400/40 text-blue-300 flex items-center justify-center shrink-0 mt-0.5">
+                    <Users size={16} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {isSendingChat && (
+            <div className="flex gap-3 justify-start items-center text-xs text-slate-400 italic">
+              <div className="w-8 h-8 rounded-xl bg-emerald-600/30 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 animate-pulse">
+                <Bot size={16} />
+              </div>
+              <div className="flex items-center gap-1.5 bg-slate-800/90 border border-slate-700/80 px-4 py-2.5 rounded-2xl rounded-tl-none">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span>Consulting Federation Technical Database...</span>
+              </div>
+            </div>
+          )}
+
+          <div ref={chatMessagesEndRef} />
+        </div>
+
+        {/* Chat Input Box */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSendChat();
+          }}
+          className="pt-3 border-t border-slate-800 flex items-center gap-2"
+        >
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Ask anything (e.g. 'Which athletes need license renewals?', 'Grand Prix deadline')..."
+              className="w-full bg-slate-800/90 text-white placeholder-slate-400 text-sm px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+              disabled={isSendingChat}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!chatInput.trim() || isSendingChat}
+            className="px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm flex items-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-lg shadow-emerald-600/20"
+          >
+            <Send size={15} />
+            <span>Send</span>
+          </button>
+        </form>
+      </div>
+
+      {/* ── REAL CLUB ATHLETE ROSTER SHOWCASE ── */}
+      <div className="mt-8 gov-card">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5 pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">
+                Official Club Roster ({totalAthletesCount} Registered Athletes)
+              </h3>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold border border-emerald-200">
+                Fayda NIN Verified
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Active competitor index certified by the Ethiopian Athletics Federation for {club.name}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onChangeSubPage('ROSTER')}
+            className="btn-accent text-xs font-bold flex items-center gap-1.5"
+          >
+            <Users size={14} />
+            Manage Full Roster ({totalAthletesCount})
+          </button>
+        </div>
+
+        {/* Athletes Grid / List */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {athletes.map((ath, idx) => (
+            <div
+              key={ath.id || idx}
+              className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/40 hover:border-emerald-500/50 transition-all flex flex-col justify-between gap-3"
+            >
+              <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                      {ath.name}
+                      {ath.amharicName && (
+                        <span className="text-[11px] text-slate-400 font-normal">
+                          ({ath.amharicName})
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      {ath.primaryEvent || 'Athletics'}
+                    </div>
+                  </div>
+
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                    {ath.licenseStatus || 'ACTIVE'}
+                  </span>
+                </div>
+
+                <div className="mt-3 space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                  <div className="flex items-center justify-between">
+                    <span>License No:</span>
+                    <strong className="text-slate-700 dark:text-slate-300 font-mono text-[11px]">
+                      {ath.licenseNumber || `ETH-${ath.id.slice(-6).toUpperCase()}`}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Fayda Status:</span>
+                    <span className="font-bold text-emerald-600 flex items-center gap-1">
+                      <CheckCircle2 size={11} /> Verified
+                    </span>
+                  </div>
+                  {ath.personalBests && ath.personalBests.length > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span>Personal Best:</span>
+                      <strong className="text-primary font-bold">
+                        {ath.personalBests[0].mark} ({ath.personalBests[0].event})
+                      </strong>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                <span className="text-[11px] text-slate-400">Gender: {ath.gender || 'MALE'}</span>
+                <button
+                  type="button"
+                  onClick={() => onChangeSubPage('ROSTER')}
+                  className="text-primary font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  View Details <ArrowRight size={12} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

@@ -221,6 +221,28 @@ export const clubApi = apiSlice.injectEndpoints({
       transformResponse: (response: { success: boolean; data: any }) => response.data,
       providesTags: ['Clubs'],
     }),
+
+    getClubDashboardStats: builder.query<any, string>({
+      query: (clubId) => `/clubs/${clubId}/dashboard-stats`,
+      transformResponse: (response: { success: boolean; data: any }) => response.data,
+      providesTags: ['Clubs', 'Athletes'],
+    }),
+
+    getClubChatHistory: builder.query<any[], string>({
+      query: (clubId) => `/clubs/${clubId}/chat/history`,
+      transformResponse: (response: { success: boolean; data: any[] }) => response.data || [],
+      providesTags: ['Clubs'],
+    }),
+
+    sendClubChatMessage: builder.mutation<any, { clubId: string; message: string }>({
+      query: ({ clubId, message }) => ({
+        url: `/clubs/${clubId}/chat`,
+        method: 'POST',
+        body: { message },
+      }),
+      transformResponse: (response: { success: boolean; data: any }) => response.data,
+      invalidatesTags: ['Clubs'],
+    }),
   }),
   overrideExisting: false,
 });
@@ -234,4 +256,7 @@ export const {
   useGetVerifiedClubsQuery,
   useGetClubRenewalsQuery,
   useGetClubPublicDetailsQuery,
+  useGetClubDashboardStatsQuery,
+  useGetClubChatHistoryQuery,
+  useSendClubChatMessageMutation,
 } = clubApi;
