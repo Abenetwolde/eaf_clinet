@@ -289,12 +289,65 @@ export default function MeetRegistration({
     return 'RELAY_4X100M';
   };
 
-  const detectRelayGender = (disciplineName?: string): 'MEN' | 'WOMEN' | 'MIXED' => {
-    const lower = (disciplineName || '').toLowerCase();
-    if (lower.includes('mixed') || lower.includes('mix')) return 'MIXED';
-    if (lower.includes('women') || lower.includes('female') || lower.includes('girls') || lower.includes("women's")) return 'WOMEN';
-    if (lower.includes('men') || lower.includes('male') || lower.includes('boys') || lower.includes("men's")) return 'MEN';
+  const isMaleAthlete = (g?: string) => {
+    const u = (g || '').trim().toUpperCase();
+    return u === 'MALE' || u === 'M' || u === 'MEN';
+  };
+
+  const isFemaleAthlete = (g?: string) => {
+    const u = (g || '').trim().toUpperCase();
+    return u === 'FEMALE' || u === 'W' || u === 'F' || u === 'WOMEN';
+  };
+
+  const getDisciplineGender = (
+    disciplineName?: string,
+    config?: any
+  ): 'MEN' | 'WOMEN' | 'MIXED' => {
+    if (!disciplineName) return 'MIXED';
+
+    const direct = config?.gender || config?.relayGender || config?.relayConfig?.gender;
+    if (direct) {
+      const u = String(direct).toUpperCase();
+      if (u.includes('FEMALE') || u.includes('WOMEN') || u === 'W' || u === 'F') return 'WOMEN';
+      if (u.includes('MALE') || u.includes('MEN') || u === 'M') return 'MEN';
+      if (u.includes('MIX')) return 'MIXED';
+    }
+
+    const cat = (config?.category || '').toLowerCase();
+    if (cat.includes('women') || cat.includes('female') || cat.includes('girls')) return 'WOMEN';
+    if (cat.includes('men') || cat.includes('male') || cat.includes('boys')) return 'MEN';
+    if (cat.includes('mix')) return 'MIXED';
+
+    const name = disciplineName.toLowerCase();
+    if (name.includes('mixed') || name.includes('mix')) return 'MIXED';
+    if (name.includes('100m hurdles') || name.includes('heptathlon')) return 'WOMEN';
+    if (name.includes('110m hurdles') || name.includes('decathlon')) return 'MEN';
+    if (
+      name.includes('women') ||
+      name.includes('female') ||
+      name.includes('girls') ||
+      name.includes("women's") ||
+      name.endsWith(' women') ||
+      name.endsWith(' w')
+    ) {
+      return 'WOMEN';
+    }
+    if (
+      name.includes('men') ||
+      name.includes('male') ||
+      name.includes('boys') ||
+      name.includes("men's") ||
+      name.endsWith(' men') ||
+      name.endsWith(' m')
+    ) {
+      return 'MEN';
+    }
+
     return 'MIXED';
+  };
+
+  const detectRelayGender = (disciplineName?: string): 'MEN' | 'WOMEN' | 'MIXED' => {
+    return getDisciplineGender(disciplineName);
   };
 
   const getFormatLabel = (fmt?: string) => {
@@ -362,9 +415,14 @@ export default function MeetRegistration({
     return (
       hostDisciplineConfig?.relayGender ||
       hostDisciplineConfig?.relayConfig?.gender ||
+      hostDisciplineConfig?.gender ||
       detectRelayGender(selectedDiscipline)
     );
   }, [hostDisciplineConfig, selectedDiscipline]);
+
+  const targetDisciplineGender: 'MEN' | 'WOMEN' | 'MIXED' = useMemo(() => {
+    return getDisciplineGender(selectedDiscipline, hostDisciplineConfig);
+  }, [selectedDiscipline, hostDisciplineConfig]);
 
   const hostRequiredLegs: number = useMemo(() => {
     return (
@@ -433,6 +491,8 @@ export default function MeetRegistration({
   // Athlete search & filter inside wizard
   const [wizardAthleteSearch, setWizardAthleteSearch] = useState<string>('');
   const [wizardTierFilter, setWizardTierFilter] = useState<string>('ALL');
+  const [wizardGenderFilter, setWizardGenderFilter] = useState<'ALL' | 'MEN' | 'WOMEN'>('ALL');
+  const [disciplineDivisionFilter, setDisciplineDivisionFilter] = useState<'ALL' | 'MEN' | 'WOMEN' | 'MIXED'>('ALL');
 
   // Success Confirmation State
   const [submissionSuccess, setSubmissionSuccess] = useState<{
@@ -464,18 +524,11 @@ export default function MeetRegistration({
   const activeLegCount = activeLegAthletes.length;
 
   const maleLegCount = useMemo(() => {
-    return activeLegAthletes.filter(
-      (a) => (a.gender || '').toUpperCase() === 'MALE' || (a.gender || '').toUpperCase() === 'M'
-    ).length;
+    return activeLegAthletes.filter((a) => isMaleAthlete(a.gender)).length;
   }, [activeLegAthletes]);
 
   const femaleLegCount = useMemo(() => {
-    return activeLegAthletes.filter(
-      (a) =>
-        (a.gender || '').toUpperCase() === 'FEMALE' ||
-        (a.gender || '').toUpperCase() === 'W' ||
-        (a.gender || '').toUpperCase() === 'F'
-    ).length;
+    return activeLegAthletes.filter((a) => isFemaleAthlete(a.gender)).length;
   }, [activeLegAthletes]);
 
   const isRelayConfigValid = useMemo(() => {
@@ -822,20 +875,38 @@ export default function MeetRegistration({
     }
   };
 
-  // Filtered athletes in wizard search
+  // Filtered athletes in wizard search (Enforces Event Division Gender Scope)
   const wizardFilteredAthletes = useMemo(() => {
-    return clubEligibleAthletes.filter((ath) => {
-      if (wizardTierFilter !== 'ALL' && ath.category !== wizardTierFilter) return false;
-      if (wizardAthleteSearch.trim()) {
-        const q = wizardAthleteSearch.toLowerCase();
-        const matchesName = ath.name.toLowerCase().includes(q);
-        const matchesFin = ath.faydaFin?.toLowerCase().includes(q) ?? false;
-        const matchesEvent = ath.primaryEvent?.toLowerCase().includes(q) ?? false;
-        if (!matchesName && !matchesFin && !matchesEvent) return false;
-      }
-      return true;
-    });
-  }, [clubEligibleAthletes, wizardTierFilter, wizardAthleteSearch]);
+    return clubEligibleAthletes
+      .filter((ath) => {
+        // Strict event division gender enforcement
+        if (targetDisciplineGender === 'WOMEN' && !isFemaleAthlete(ath.gender)) return false;
+        if (targetDisciplineGender === 'MEN' && !isMaleAthlete(ath.gender)) return false;
+
+        // Interactive gender sub-filter
+        if (wizardGenderFilter === 'MEN' && !isMaleAthlete(ath.gender)) return false;
+        if (wizardGenderFilter === 'WOMEN' && !isFemaleAthlete(ath.gender)) return false;
+
+        if (wizardTierFilter !== 'ALL' && ath.category !== wizardTierFilter) return false;
+        if (wizardAthleteSearch.trim()) {
+          const q = wizardAthleteSearch.toLowerCase();
+          const matchesName = ath.name.toLowerCase().includes(q);
+          const matchesFin = ath.faydaFin?.toLowerCase().includes(q) ?? false;
+          const matchesEvent = ath.primaryEvent?.toLowerCase().includes(q) ?? false;
+          if (!matchesName && !matchesFin && !matchesEvent) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        // If mixed or open, group Men together and Women together, then alphabetically
+        if (targetDisciplineGender === 'MIXED') {
+          const gA = isMaleAthlete(a.gender) ? 0 : 1;
+          const gB = isMaleAthlete(b.gender) ? 0 : 1;
+          if (gA !== gB) return gA - gB;
+        }
+        return a.name.localeCompare(b.name);
+      });
+  }, [clubEligibleAthletes, targetDisciplineGender, wizardGenderFilter, wizardTierFilter, wizardAthleteSearch]);
 
   const eligibleCount = useMemo(() => {
     return clubEligibleAthletes.filter((a) => a.isEligible).length;
@@ -1057,6 +1128,13 @@ export default function MeetRegistration({
               ? selectedCompetition.disciplines
               : ['100m', '200m', '400m', '800m', '1,500m', '5,000m', '10,000m', '4x100m Relay', '4x400m Relay', '4x400m Mixed Relay'];
 
+          const filteredCompDisciplines = compDisciplines.filter((disc) => {
+            if (disciplineDivisionFilter === 'ALL') return true;
+            const cfg = (selectedCompetition as any)?.disciplineConfigs?.[disc];
+            const g = getDisciplineGender(disc, cfg);
+            return g === disciplineDivisionFilter;
+          });
+
           const selectedIsRelay = isRelayDiscipline(selectedDiscipline);
 
           return (
@@ -1084,9 +1162,9 @@ export default function MeetRegistration({
                     Step 1: Select Competition Discipline
                   </h2>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                    First choose the competition discipline your club wants to enter.
-                    For <strong>Relay Events</strong>, the system will enforce selecting exactly <strong>4 active leg runners</strong> (Legs 1 to 4) and up to <strong>2 reserve athletes</strong>.
-                    For <strong>Individual Events</strong>, you can select club athletes with individual seed marks.
+                    First choose the competition discipline your club wants to enter. Disciplines are categorized by target gender division (Men, Women, Mixed).
+                    For <strong>Relay Events</strong>, the system enforces selecting exactly <strong>4 active leg runners</strong> (Legs 1 to 4) and up to <strong>2 reserve athletes</strong>.
+                    For <strong>Individual Events</strong>, eligible athletes are filtered by gender division.
                   </p>
                 </div>
 
@@ -1100,11 +1178,42 @@ export default function MeetRegistration({
                 )}
               </div>
 
+              {/* Gender Division Filter Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                {[
+                  { key: 'ALL' as const, label: `All Disciplines (${compDisciplines.length})` },
+                  { key: 'MEN' as const, label: '♂ Men’s Division' },
+                  { key: 'WOMEN' as const, label: '♀ Women’s Division' },
+                  { key: 'MIXED' as const, label: '⚥ Mixed / Open' },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setDisciplineDivisionFilter(tab.key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer border ${
+                      disciplineDivisionFilter === tab.key
+                        ? tab.key === 'MEN'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : tab.key === 'WOMEN'
+                          ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                          : tab.key === 'MIXED'
+                          ? 'bg-purple-600 text-white border-purple-600 shadow-xs'
+                          : 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Discipline Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                {compDisciplines.map((disc) => {
+                {filteredCompDisciplines.map((disc) => {
                   const isRelay = isRelayDiscipline(disc);
                   const isSelected = selectedDiscipline.toLowerCase() === disc.toLowerCase();
+                  const cfg = (selectedCompetition as any)?.disciplineConfigs?.[disc];
+                  const discGender = getDisciplineGender(disc, cfg);
 
                   return (
                     <div
@@ -1117,21 +1226,32 @@ export default function MeetRegistration({
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-1 min-w-0">
+                        <div className="space-y-1.5 min-w-0">
                           <div className="font-black text-base text-slate-900 truncate">
                             {disc}
                           </div>
-                          {isRelay ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                              <Zap size={11} className="text-indigo-600" />
-                              <span>Relay (4 Active + 2 Reserves)</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              discGender === 'WOMEN'
+                                ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                                : discGender === 'MEN'
+                                ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                                : 'bg-purple-50 text-purple-800 border border-purple-200'
+                            }`}>
+                              {discGender === 'WOMEN' ? '♀ Women' : discGender === 'MEN' ? '♂ Men' : '⚥ Mixed'}
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                              <Medal size={11} className="text-slate-500" />
-                              <span>Individual Event</span>
-                            </span>
-                          )}
+                            {isRelay ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                <Zap size={10} className="text-indigo-600" />
+                                <span>Relay (4 Legs)</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                <Medal size={10} className="text-slate-500" />
+                                <span>Individual</span>
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
@@ -1527,19 +1647,25 @@ export default function MeetRegistration({
                             onChange={(e) => setRelaySlotAthlete(leg.slot, e.target.value)}
                           >
                             <option value="">-- Choose Runner for Leg {leg.legNumber} (Required) --</option>
-                            {eligibleRosterAthletes.map((ath) => {
-                              const isPickedElsewhere = (
-                                ['leg1AthleteId', 'leg2AthleteId', 'leg3AthleteId', 'leg4AthleteId', 'alt1AthleteId', 'alt2AthleteId'] as const
-                              ).some((k) => k !== leg.slot && relaySquad[k] === ath.id);
+                            {eligibleRosterAthletes
+                              .filter((ath) => {
+                                if (hostRelayGender === 'MEN') return isMaleAthlete(ath.gender);
+                                if (hostRelayGender === 'WOMEN') return isFemaleAthlete(ath.gender);
+                                return true;
+                              })
+                              .map((ath) => {
+                                const isPickedElsewhere = (
+                                  ['leg1AthleteId', 'leg2AthleteId', 'leg3AthleteId', 'leg4AthleteId', 'alt1AthleteId', 'alt2AthleteId'] as const
+                                ).some((k) => k !== leg.slot && relaySquad[k] === ath.id);
 
-                              return (
-                                <option key={ath.id} value={ath.id}>
-                                  {ath.name} ({ath.gender === 'MALE' ? '♂ Male' : '♀ Female'}, {ath.category || 'Senior'})
-                                  {ath.personalRecords?.[0] ? ` · PB: ${ath.personalRecords[0].mark}` : ''}
-                                  {isPickedElsewhere ? ' (Swap Position)' : ''}
-                                </option>
-                              );
-                            })}
+                                return (
+                                  <option key={ath.id} value={ath.id}>
+                                    {ath.name} ({isMaleAthlete(ath.gender) ? '♂ Male' : '♀ Female'}, {ath.category || 'Senior'})
+                                    {ath.personalRecords?.[0] ? ` · PB: ${ath.personalRecords[0].mark}` : ''}
+                                    {isPickedElsewhere ? ' (Swap Position)' : ''}
+                                  </option>
+                                );
+                              })}
                           </select>
 
                           {/* Assigned Runner Card Preview */}
@@ -1565,11 +1691,11 @@ export default function MeetRegistration({
                                     {athlete.name}
                                   </span>
                                   <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                                    athlete.gender === 'MALE'
+                                    isMaleAthlete(athlete.gender)
                                       ? 'bg-blue-100 text-blue-800'
                                       : 'bg-rose-100 text-rose-800'
                                   }`}>
-                                    {athlete.gender === 'MALE' ? '♂ Male' : '♀ Female'}
+                                    {isMaleAthlete(athlete.gender) ? '♂ Male' : '♀ Female'}
                                   </span>
                                 </div>
                                 <div className="text-[10px] text-slate-500 font-mono mt-0.5 flex items-center gap-2">
@@ -1656,11 +1782,17 @@ export default function MeetRegistration({
                               onChange={(e) => setRelaySlotAthlete(alt.slot, e.target.value)}
                             >
                               <option value="">-- None (Leave Empty) --</option>
-                              {eligibleRosterAthletes.map((ath) => (
-                                <option key={ath.id} value={ath.id}>
-                                  {ath.name} ({ath.gender === 'MALE' ? '♂ Male' : '♀ Female'}, {ath.category || 'Senior'})
-                                </option>
-                              ))}
+                              {eligibleRosterAthletes
+                                .filter((ath) => {
+                                  if (hostRelayGender === 'MEN') return isMaleAthlete(ath.gender);
+                                  if (hostRelayGender === 'WOMEN') return isFemaleAthlete(ath.gender);
+                                  return true;
+                                })
+                                .map((ath) => (
+                                  <option key={ath.id} value={ath.id}>
+                                    {ath.name} ({isMaleAthlete(ath.gender) ? '♂ Male' : '♀ Female'}, {ath.category || 'Senior'})
+                                  </option>
+                                ))}
                             </select>
 
                             {athlete && (
@@ -1684,7 +1816,7 @@ export default function MeetRegistration({
                                     {athlete.name}
                                   </span>
                                   <span className="text-[10px] text-slate-500 font-mono">
-                                    {athlete.gender === 'MALE' ? 'Male' : 'Female'} · FIN: {athlete.faydaFin || 'ID'}
+                                    {isMaleAthlete(athlete.gender) ? 'Male' : 'Female'} · FIN: {athlete.faydaFin || 'ID'}
                                   </span>
                                 </div>
                               </div>
@@ -1739,6 +1871,49 @@ export default function MeetRegistration({
             ) : (
               /* ─── CASE B: INDIVIDUAL EVENT ATHLETE SELECTION ─── */
               <div className="space-y-6">
+                {/* Event Division Scope Alert Banner */}
+                <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                  targetDisciplineGender === 'WOMEN'
+                    ? 'bg-rose-50/70 border-rose-200 text-rose-950'
+                    : targetDisciplineGender === 'MEN'
+                    ? 'bg-blue-50/70 border-blue-200 text-blue-950'
+                    : 'bg-purple-50/70 border-purple-200 text-purple-950'
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shrink-0 ${
+                      targetDisciplineGender === 'WOMEN'
+                        ? 'bg-rose-600 text-white'
+                        : targetDisciplineGender === 'MEN'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-purple-600 text-white'
+                    }`}>
+                      {targetDisciplineGender === 'WOMEN' ? '♀' : targetDisciplineGender === 'MEN' ? '♂' : '⚥'}
+                    </div>
+                    <div>
+                      <div className="font-extrabold text-xs tracking-wide uppercase">
+                        {targetDisciplineGender === 'WOMEN' ? "Women's Event Division" : targetDisciplineGender === 'MEN' ? "Men's Event Division" : 'Mixed / Open Event Division'}
+                      </div>
+                      <div className="text-xs opacity-90 font-medium mt-0.5">
+                        {targetDisciplineGender === 'WOMEN'
+                          ? `Restricted to female athletes. Showing verified women on your roster eligible for ${selectedDiscipline}.`
+                          : targetDisciplineGender === 'MEN'
+                          ? `Restricted to male athletes. Showing verified men on your roster eligible for ${selectedDiscipline}.`
+                          : `Open to both male and female athletes on your roster for ${selectedDiscipline}.`}
+                      </div>
+                    </div>
+                  </div>
+
+                  <span className={`self-start sm:self-auto px-3 py-1 rounded-md text-xs font-black uppercase border ${
+                    targetDisciplineGender === 'WOMEN'
+                      ? 'bg-white text-rose-800 border-rose-300'
+                      : targetDisciplineGender === 'MEN'
+                      ? 'bg-white text-blue-800 border-blue-300'
+                      : 'bg-white text-purple-800 border-purple-300'
+                  }`}>
+                    {targetDisciplineGender === 'WOMEN' ? 'Women Only' : targetDisciplineGender === 'MEN' ? 'Men Only' : 'Mixed / Open'}
+                  </span>
+                </div>
+
                 {/* Search & Filter Bar */}
                 <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
                   <div className="relative flex-1">
@@ -1753,6 +1928,25 @@ export default function MeetRegistration({
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
+                    {targetDisciplineGender === 'MIXED' && (
+                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                        {(['ALL', 'MEN', 'WOMEN'] as const).map((g) => (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => setWizardGenderFilter(g)}
+                            className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all cursor-pointer border-0 ${
+                              wizardGenderFilter === g
+                                ? 'bg-white text-slate-900 shadow-xs'
+                                : 'bg-transparent text-slate-500 hover:text-slate-800'
+                            }`}
+                          >
+                            {g === 'ALL' ? 'All' : g === 'MEN' ? '♂ Men' : '♀ Women'}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <select
                       className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700"
                       value={wizardTierFilter}
@@ -1852,9 +2046,9 @@ export default function MeetRegistration({
                                     {ath.category || 'Senior'}
                                   </span>
                                   <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                                    ath.gender === 'MALE' ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
+                                    isMaleAthlete(ath.gender) ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
                                   }`}>
-                                    {ath.gender === 'MALE' ? '♂ M' : '♀ F'}
+                                    {isMaleAthlete(ath.gender) ? '♂ M' : '♀ F'}
                                   </span>
                                 </div>
 
@@ -2046,7 +2240,7 @@ export default function MeetRegistration({
                                 {ath?.name || '—'}
                               </td>
                               <td className="py-2.5 px-3 text-slate-600">
-                                {ath?.gender === 'MALE' ? '♂ Male' : '♀ Female'}
+                                {isMaleAthlete(ath?.gender) ? '♂ Male' : '♀ Female'}
                               </td>
                               <td className="py-2.5 px-3 text-slate-600">
                                 {ath?.category || 'Senior'}
@@ -2068,6 +2262,7 @@ export default function MeetRegistration({
                     <thead>
                       <tr className="bg-slate-100 text-slate-600 font-bold uppercase text-[11px] border-b border-slate-200">
                         <th className="py-2.5 px-3">Athlete Name</th>
+                        <th className="py-2.5 px-3">Gender</th>
                         <th className="py-2.5 px-3">Category</th>
                         <th className="py-2.5 px-3">Fayda FIN</th>
                         <th className="py-2.5 px-3">Discipline</th>
@@ -2082,6 +2277,13 @@ export default function MeetRegistration({
                           <tr key={id} className="hover:bg-slate-50/60">
                             <td className="py-2.5 px-3 font-bold text-slate-900">
                               {ath.name}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                isMaleAthlete(ath.gender) ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {isMaleAthlete(ath.gender) ? '♂ Male' : '♀ Female'}
+                              </span>
                             </td>
                             <td className="py-2.5 px-3 text-slate-600">{ath.category}</td>
                             <td className="py-2.5 px-3 font-mono text-[11px] text-slate-500">
